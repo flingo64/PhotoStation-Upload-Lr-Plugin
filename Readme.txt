@@ -71,6 +71,14 @@ Features:
 	- generation (via ffpmeg) and upload of a PhotoStation-playable low-res video
 	- support for "DateTimeOriginal" for videos on PhotoStation 
 
+Installation:
+=============
+- unzip the downloaded archive
+- move subdirectory "PhotoStation_upload.lrdevplugin" to machine where Lightroom is installed
+- In Lightroom:
+	File --> Plugin Manager --> Add: Enter the path to the directory 
+		"PhotoStation_upload.lrdevplugin" 
+
 Open issues:
 ============
 - Videos couldn't be exported on Mac, got an error on ffmpeg phase 1 conversion
