@@ -74,7 +74,7 @@ Features:
 Installation:
 =============
 - unzip the downloaded archive
-- move subdirectory "PhotoStation_upload.lrdevplugin" to machine where Lightroom is installed
+- move subdirectory "PhotoStation_upload.lrplugin" to machine where Lightroom is installed
 - In Lightroom:
 	File --> Plugin Manager --> Add: Enter the path to the directory 
 		"PhotoStation_upload.lrdevplugin" 
