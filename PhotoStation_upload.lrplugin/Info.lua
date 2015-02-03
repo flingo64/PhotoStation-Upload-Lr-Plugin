@@ -48,6 +48,6 @@ return {
 		file = 'PSUploadServiceProvider.lua',
 		builtInPresetsDir = "PhotoStation Presets", -- subfolder for presets
 	},
-	VERSION = { major=2, minor=2, revision=1, build=20150203, },
+	VERSION = { major=2, minor=2, revision=2, build=20150203, },
 
 }
