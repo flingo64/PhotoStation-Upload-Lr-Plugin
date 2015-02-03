@@ -367,7 +367,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				},
 	
 				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/isPS6=Oprimize upload for PhotoStation 6",
+					title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize upload for PhotoStation 6",
 					alignment = 'left',
 					width = share 'labelWidth',
 					width_in_chars = 6,
