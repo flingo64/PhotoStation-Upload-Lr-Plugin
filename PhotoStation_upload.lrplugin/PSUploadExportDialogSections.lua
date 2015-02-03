@@ -157,7 +157,6 @@ local function updateExportStatus( propertyTable )
 		
 		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
-		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
 							iif(propertyTable.usePersonalPS,"Personal", "Standard") .. " Album: " .. 
 							iif(propertyTable.personalPSOwner,propertyTable.personalPSOwner, "") .. ":" ..
 							iif(propertyTable.dstRoot, propertyTable.dstRoot, "") 
