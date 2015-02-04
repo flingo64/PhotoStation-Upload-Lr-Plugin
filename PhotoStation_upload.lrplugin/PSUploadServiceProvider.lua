@@ -51,7 +51,11 @@ return {
 	
 	exportPresetFields = {
 --		{ key = 'exiftoolprog', default = nil },
-		{ key = 'PSUploaderPath', default = nil },	-- local path to Synology PhotoStation Uploader
+		{ key = 'PSUploaderPath', default = 		-- local path to Synology PhotoStation Uploader
+					iif(WIN_ENV, 
+						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader\\\ImageMagick\\\convert.EXE',
+						'/Applications/Synology Photo Station Uploader.app/Contents/MacOS') 
+		},											
 		{ key = 'proto', default = 'http' },		-- transport protocol for PhotoStation upload
 		{ key = 'servername', default = nil },		-- name/address of the PhotoStation, may include ':port' extension
 		{ key = 'serverUrl', default = nil },		-- proto + servername

@@ -429,7 +429,7 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated)
 		local newPath = parentDir .. "/" .. newDir
 
 		if not dirsCreated[newPath] then
-			writeLogfile(2,"Create dir - parent: " .. parentDir .. " newDir: " .. newDir .. " newPath: " .. newPath .. " restDir: " .. restDir .. "\n")
+			writeLogfile(2,"Create dir - parent: " .. parentDir .. " newDir: " .. newDir .. " newPath: " .. newPath .. "\n")
 			
 			local paramParentDir
 			if parentDir == "" then paramParentDir = "/" else paramParentDir = parentDir  end  
@@ -533,7 +533,7 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	-- generate first thumb from video
 	cmdline = '"' .. ffmpeg .. 
 					'" -i ' .. srcVideoFilename .. 
-					' -y -vframes 1 -ss 00:00:03 -an -qscale 0 -f mjpeg -s 640x480 -aspect 640:480 ' .. 
+					' -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg -s 640x480 -aspect 640:480 ' .. 
 					thmb_ORG_Filename .. ' 2> ' .. outfile
 
 	writeLogfile(4, cmdline .. "\n")
@@ -688,14 +688,17 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				writeLogfile(4, pathOrMessage .. ": is video\n") 
 				if not uploadVideo(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6) then
 --				if not uploadVideo(srcFilename, srcDateTime, dstDir, filename, exportParams.isPS6) then
-					writeLogfile(1,'Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
+					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
+									': Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
 				else
-					writeLogfile(2,'Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
+					writeLogfile(2, LrDate.formatMediumTime(LrDate.currentTime()) .. 
+									': Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
 				end
 			else
 				if not uploadPicture(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6) then
-					writeLogfile(1,'Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
+					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
+									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
 				else
 					writeLogfile(2,'Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
