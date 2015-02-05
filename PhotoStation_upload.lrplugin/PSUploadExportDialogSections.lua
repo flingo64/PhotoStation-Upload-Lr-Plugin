@@ -377,11 +377,11 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				},
 	
 				f:combo_box {
-					value = bind 'logLevel',
-					items = { 1, 2, 3, 4 },
+					value = bind 'logLevelStr',
+					items = { '1', '2', '3', '4' },
 					truncation = 'middle',
 					immediate = true,
-					fill_horizontal = 0,
+					fill_horizontal = 0, 
 				},
 			}, 
 			

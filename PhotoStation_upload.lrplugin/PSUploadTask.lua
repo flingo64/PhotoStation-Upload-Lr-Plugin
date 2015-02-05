@@ -353,7 +353,7 @@ end
 	MED				1280x720
 	HIGH			1920x1080
 	
-	Note: resolution iscurrently ignored: always use MED resolution !!!
+	Note: resolution is currently ignored: always use MED resolution !!!
 ]]
 function convertVideo(srcVideoFilename, resolution, dstVideoFilename)
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
@@ -497,21 +497,12 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	-- generate thumbs
 
 	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
---[[ 
+if MAC_ENV then
 	if not convertPic(srcFilename, '1280x1280>', 90, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
 	or not convertPic(thmb_XL_Filename, '800x800>', 90, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
 	or not convertPic(thmb_L_Filename, '640x640>', 90, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
 	or not convertPic(thmb_L_Filename, '320x320>', 90, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
 	or not convertPic(thmb_M_Filename, '120x120>', 90, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
-]]
-
-	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
-	if not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
-								'1280x1280>', thmb_XL_Filename,
-								'800x800>',    thmb_L_Filename,
-								'640x640>',    thmb_B_Filename,
-								'320x320>',    thmb_M_Filename,
-								'120x120>',    thmb_S_Filename) 
 
 	-- upload thumbnails and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
@@ -525,6 +516,29 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	else
 		retcode = true
 	end
+
+else
+
+	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
+	if not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'1280x1280>', thmb_XL_Filename,
+								'800x800>',    thmb_L_Filename,
+								'640x640>',    thmb_B_Filename,
+								'320x320>',    thmb_M_Filename,
+								'120x120>',    thmb_S_Filename) 
+	-- upload thumbnails and original file
+	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
+	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
+	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
+	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
+	or not PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
+	then
+		retcode = false
+	else
+		retcode = true
+	end
+end
 
 	LrFileUtils.delete(thmb_B_Filename)
 	LrFileUtils.delete(thmb_M_Filename)
@@ -582,13 +596,32 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	-- generate all other thumb from first thumb
 
 	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
---[[ 
+if MAC_ENV then
 	if not convertPic(thmb_ORG_Filename, '1280x1280>', 70, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
 	or not convertPic(thmb_XL_Filename, '800x800>', 70, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
 	or not convertPic(thmb_L_Filename, '640x640>', 70, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
 	or not convertPic(thmb_L_Filename, '320x320>', 70, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
 	or not convertPic(thmb_M_Filename, '120x120>', 70, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
-]]
+
+	-- generate preview video
+	or not convertVideo(srcVideoFilename, "LOW", vid_LOW_Filename) 
+
+	-- upload thumbs, preview videos and original file
+	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
+	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
+	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
+	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
+	or not PSUploadAPI.uploadPictureFile(vid_LOW_Filename, srcDateTime, dstDir, dstFilename, 'MP4_LOW', 'video/mpeg', 'MIDDLE') 
+	or not PSUploadAPI.uploadPictureFile(srcVideoFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
+	then 
+		retcode = false
+	else 
+		retcode = true
+	end
+	
+
+else
 
 	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
 	if not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
@@ -614,6 +647,7 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	else 
 		retcode = true
 	end
+end
 	
 	LrFileUtils.delete(thmb_ORG_Filename)
 	LrFileUtils.delete(thmb_B_Filename)
@@ -673,6 +707,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		exportParams.password = ftpSettings.password
 	end
 
+--[[
 	local result, reason = PSUploadAPI.login(exportParams.username, exportParams.password)
 	if not result then
 		writeLogfile(1, "Login failed, reason:" .. reason .. "\n")
@@ -684,7 +719,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 	writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal", "Standard") .. " PhotoStation" .. 
 							iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. " OK\n")
-
+]]
 	writeLogfile(2, "--------------------------------------------------------------------\n")
 
 	-- Iterate through photo renditions.
