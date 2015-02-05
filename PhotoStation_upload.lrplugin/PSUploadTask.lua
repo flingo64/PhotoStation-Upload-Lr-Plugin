@@ -217,8 +217,14 @@ function ffmpegGetDateTimeOrg(srcVideoFilename)
 	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
 	local outfile =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
+	local cmdline
 	
-	local cmdline = '"' .. ffmpeg .. '" -i ' .. srcVideoFilename .. ' 2> ' .. outfile
+	if WIN_ENV then
+		-- LrTask.execute will call cmd.exe /c cmdline, so we need additional outer quotes
+		cmdline = '""' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> ' .. outfile ..'"'
+	else
+		cmdline = '"' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> ' .. outfile
+	end
 
 	writeLogfile(4, cmdline .. "\n")
 	LrTasks.execute(cmdline)
