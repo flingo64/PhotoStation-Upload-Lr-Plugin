@@ -1,7 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 2.2
-2015/02/01
+Version 2.3
+2015/02/05
 Copyright(c) 2015, Martin Messmer
 
 Description:
@@ -47,6 +47,9 @@ Requirements:
 	
 Features:
 =========
+
+Version 2.2 (initial public release):
+-------------------------------------
 - Generic upload features:
 	- support for http and https
 	- support for non-standard ports (specified by a ":portnumber" suffix in the servername setting)
@@ -70,6 +73,15 @@ Features:
 	- generation (via ffpmeg and ImageMagick convert) and upload of all required thumbs
 	- generation (via ffpmeg) and upload of a PhotoStation-playable low-res video
 	- support for "DateTimeOriginal" for videos on PhotoStation 
+
+Version 2.3:
+------------
+- Fixed various (!!) installation / initialization bugs
+- Fixed strange field validation behaviour in Export Dialog
+- Fixed mis-aligned input fields in Export Dialog
+- Added Loglevel configuration to Export Dialog section
+- Windows: modified thumbnail creation to the "Syno PS Uploader" way:
+	slightly slower but higher thumbnail quality (less sharp) (Hint von Uwe)
 
 Installation:
 =============
