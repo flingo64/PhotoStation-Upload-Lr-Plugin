@@ -707,7 +707,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		exportParams.password = ftpSettings.password
 	end
 
---[[
 	local result, reason = PSUploadAPI.login(exportParams.username, exportParams.password)
 	if not result then
 		writeLogfile(1, "Login failed, reason:" .. reason .. "\n")
@@ -719,7 +718,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 	writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal", "Standard") .. " PhotoStation" .. 
 							iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. " OK\n")
-]]
+
 	writeLogfile(2, "--------------------------------------------------------------------\n")
 
 	-- Iterate through photo renditions.

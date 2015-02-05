@@ -218,7 +218,7 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 	end
 
 	local respBody, respHeaders = LrHttp.post(serverUrl .. uploadPath, 
-								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', 30, 
+								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', 60, 
 								LrFileUtils.fileAttributes(srcFilename).fileSize)
 	
 	if not respBody then
