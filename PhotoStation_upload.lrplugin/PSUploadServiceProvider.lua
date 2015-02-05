@@ -53,21 +53,23 @@ return {
 --		{ key = 'exiftoolprog', default = nil },
 		{ key = 'PSUploaderPath', default = 		-- local path to Synology PhotoStation Uploader
 					iif(WIN_ENV, 
-						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader\\\ImageMagick\\\convert.EXE',
+						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
 						'/Applications/Synology Photo Station Uploader.app/Contents/MacOS') 
 		},											
 		{ key = 'proto', default = 'http' },		-- transport protocol for PhotoStation upload
-		{ key = 'servername', default = nil },		-- name/address of the PhotoStation, may include ':port' extension
-		{ key = 'serverUrl', default = nil },		-- proto + servername
-		{ key = 'psUrl', default = nil },			-- serverUrl + destination album (used for synopsis)
-		{ key = 'username', default = nil },		-- account for PhotoStation upload
-		{ key = 'password', default = nil },		-- guess what...
+		{ key = 'servername', default = '' },		-- name/address of the PhotoStation, may include ':port' extension
+		{ key = 'serverUrl', default = '' },		-- proto + servername
+		{ key = 'psUrl', default = '' },			-- serverUrl + destination album (used for synopsis)
+		{ key = 'username', default = '' },		-- account for PhotoStation upload
+		{ key = 'password', default = '' },		-- guess what...
 		{ key = 'copyTree', default = false },		-- upload method: flat copy or tree mirror
-		{ key = 'srcRoot', default = nil },			-- local path to root of picture folders (only used if copyTree)
-		{ key = 'dstRoot', default = nil },			-- destination Album on PhotoStation: no leading or trailing slash required
+		{ key = 'srcRoot', default = '' },			-- local path to root of picture folders (only used if copyTree)
+		{ key = 'dstRoot', default = '' },			-- destination Album on PhotoStation: no leading or trailing slash required
 		{ key = 'isPS6', default = false },			-- use upload optimization for PhotoStation 6 (not THUMB_L required)
 		{ key = 'usePersonalPS', default = false },	-- upload to Personal PhotoStation
-		{ key = 'personalPSOwner', default = nil },	-- owner of the Personal PhotoStation to upload to
+		{ key = 'personalPSOwner', default = '' },	-- owner of the Personal PhotoStation to upload to
+		{ key = 'logLevelStr', default = '2' },	-- owner of the Personal PhotoStation to upload to
+		{ key = 'logLevel', default = 2 },	-- owner of the Personal PhotoStation to upload to
 	},
 
 	startDialog = PSUploadExportDialogSections.startDialog,

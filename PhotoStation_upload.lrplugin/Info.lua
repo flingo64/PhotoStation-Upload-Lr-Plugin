@@ -46,8 +46,7 @@ return {
 	LrExportServiceProvider = {
 		title = "PhotoStation Upload",
 		file = 'PSUploadServiceProvider.lua',
-		builtInPresetsDir = "PhotoStation Presets", -- subfolder for presets
 	},
-	VERSION = { major=2, minor=2, revision=3, build=20150204, },
+	VERSION = { major=2, minor=3, revision=0, build=20150205, },
 
 }

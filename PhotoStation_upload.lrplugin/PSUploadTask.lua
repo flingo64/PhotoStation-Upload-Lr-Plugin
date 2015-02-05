@@ -67,7 +67,7 @@ local uploadPath
 	3 - tracing
 	4 - debug
 ]]	
-local loglevel = 2
+local loglevel
 
 ---------------------- useful helpers ----------------------------------------------------------
 
@@ -124,10 +124,11 @@ end
 local startTime
 
 -- openLogfile: clear the logfile, reopen and put in a start timestamp
-function openLogfile (filename)
+function openLogfile (filename, level)
 	logfilename = filename
 	local logfile = io.open(logfilename, "w")
 	
+	loglevel = level
 	startTime = LrDate.currentTime()
 	logfile:write("Starting export at: " .. LrDate.timeToUserFormat(startTime, "%Y-%m-%d %H:%M:%S", false) .. "\n")
 	io.close (logfile)
@@ -178,6 +179,7 @@ function initializeEnv (exportParams)
 		exiftool = exiftoolprog
 	end
 ]]
+	writeLogfile(4, "initializeEnv: \nconv: " .. conv .. "\nffmpeg: ".. ffmpeg .. "\nqt-faststart: " .. qtfstart)
 	return true
 end
 
@@ -313,6 +315,27 @@ function convertPic(srcFilename, size, quality, unsharp, dstFilename)
 	if LrTasks.execute(cmdline) > 0 then
 		writeLogfile(3,"... failed!\n")
 		writeLogfile(1, "convertPic: " .. srcFilename .. " to " .. dstFilename .. " failed!\n")
+		return false
+	end
+
+	return true
+end
+
+
+-- convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
+-- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
+function convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
+	local cmdline = '"' .. conv .. '" ' .. srcFilename .. ' ' ..
+			'( -clone 0 -define jpeg:size=' .. shellEscape(xlSize) .. ' -thumbnail '  .. shellEscape(xlSize) .. ' ' .. convParams .. ' -write ' .. xlFile .. ' ) -delete 0 ' ..
+			'( +clone   -define jpeg:size=' .. shellEscape( lSize) .. ' -thumbnail '  .. shellEscape( lSize) .. ' ' .. convParams .. ' -write ' ..  lFile .. ' +delete ) ' ..
+			'( +clone   -define jpeg:size=' .. shellEscape( bSize) .. ' -thumbnail '  .. shellEscape( bSize) .. ' ' .. convParams .. ' -write ' ..  bFile .. ' +delete ) ' ..
+			'( +clone   -define jpeg:size=' .. shellEscape( mSize) .. ' -thumbnail '  .. shellEscape( mSize) .. ' ' .. convParams .. ' -write ' ..  mFile .. ' +delete ) ' ..
+					   '-define jpeg:size=' .. shellEscape( sSize) .. ' -thumbnail '  .. shellEscape( sSize) .. ' ' .. convParams .. ' ' 		..	sFile
+					
+	writeLogfile(4, cmdline .. "\n")
+	if LrTasks.execute(cmdline) > 0 then
+		writeLogfile(3,"... failed!\n")
+		writeLogfile(1, "convertPicConcurrent: " .. srcFilename  .. " failed!\n")
 		return false
 	end
 
@@ -472,11 +495,23 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	local retcode
 	
 	-- generate thumbs
+
+	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
+--[[ 
 	if not convertPic(srcFilename, '1280x1280>', 90, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
 	or not convertPic(thmb_XL_Filename, '800x800>', 90, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
 	or not convertPic(thmb_L_Filename, '640x640>', 90, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
 	or not convertPic(thmb_L_Filename, '320x320>', 90, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
 	or not convertPic(thmb_M_Filename, '120x120>', 90, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
+]]
+
+	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
+	if not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'1280x1280>', thmb_XL_Filename,
+								'800x800>',    thmb_L_Filename,
+								'640x640>',    thmb_B_Filename,
+								'320x320>',    thmb_M_Filename,
+								'120x120>',    thmb_S_Filename) 
 
 	-- upload thumbnails and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
@@ -545,11 +580,23 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	LrFileUtils.delete(outfile)
 
 	-- generate all other thumb from first thumb
+
+	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
+--[[ 
 	if not convertPic(thmb_ORG_Filename, '1280x1280>', 70, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
 	or not convertPic(thmb_XL_Filename, '800x800>', 70, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
 	or not convertPic(thmb_L_Filename, '640x640>', 70, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
 	or not convertPic(thmb_L_Filename, '320x320>', 70, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
 	or not convertPic(thmb_M_Filename, '120x120>', 70, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
+]]
+
+	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
+	if not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'1280x1280>', thmb_XL_Filename,
+								'800x800>',    thmb_L_Filename,
+								'640x640>',    thmb_B_Filename,
+								'320x320>',    thmb_M_Filename,
+								'120x120>',    thmb_S_Filename) 
 
 	-- generate preview video
 	or not convertVideo(srcVideoFilename, "LOW", vid_LOW_Filename) 
@@ -592,7 +639,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	-- Start Debugging
 	local logfilename = LrPathUtils.child(tmpdir, "PhotoStationUpload.log")
-	openLogfile(logfilename)
+	openLogfile(logfilename, exportParams.logLevel)
 	
 	-- generate global environment settings
 	if not initializeEnv (exportParams) then
@@ -632,11 +679,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		closeLogfile()
 		LrDialogs.message( LOC "$$$/PSUpload/Upload/Errors/LoginError=Login to " .. 
 							iif(exportParams.usePersonalPS, "Personal", "Standard") .. " PhotoStation" .. 
-							iif(exportParams.usePersonalPS, " of ".. exportParams.personalPSOwner, "") .. " failed.", reason)
+							iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. " failed.", reason)
 		return false 
 	end
 	writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal", "Standard") .. " PhotoStation" .. 
-							iif(exportParams.usePersonalPS, " of ".. exportParams.personalPSOwner, "") .. " OK\n")
+							iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. " OK\n")
 
 	writeLogfile(2, "--------------------------------------------------------------------\n")
 
@@ -674,7 +721,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			-- check if tree structure should be preserved
 			if not exportParams.copyTree then
 				-- just put it into the configured destination folder
-				dstDir = exportParams.dstRoot
+				if not exportParams.dstRoot or exportParams.dstRoot == '' then
+					dstDir = '/'
+				else
+					dstDir = exportParams.dstRoot
+				end
 			else
 				dstDir = createTree( LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, dirsCreated) 
 			end

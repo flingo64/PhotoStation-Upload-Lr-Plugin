@@ -209,7 +209,14 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 		datetimeOption,
 	}
 
-	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. serverUrl .. uploadPath .. ",...)\n")
+	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. serverUrl .. uploadPath .. "\n")
+
+	local h
+	writeLogfile(4, "postHeaders:\n")
+	for h = 1, #postHeaders do
+		writeLogfile(4, 'Field: ' .. postHeaders[h].field .. ' Value: ' .. postHeaders[h].value .. '\n')
+	end
+
 	local respBody, respHeaders = LrHttp.post(serverUrl .. uploadPath, 
 								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', 30, 
 								LrFileUtils.fileAttributes(srcFilename).fileSize)

@@ -51,29 +51,20 @@ local function validateDirectory( view, path )
 	
 	if LrFileUtils.exists(path) ~= 'directory' then 
 		message = LOC "$$$/PSUpload/ExportDialog/Messages/SrcDirNoExist=Local path is not an existing directory."
-		retcode = false
-	else
-		retcode = true
+		return false, path
 	end
 	
-	return retcode, LrPathUtils.standardizePath(path), message
+	return true, LrPathUtils.standardizePath(path)
 end
 
 -- validateProgram: check if a given path points to a local program
 local function validateProgram( view, path )
-	local message = nil
-	
-	if LrFileUtils.exists(path) ~= 'file' then 
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/ProgramNoExist=Program file does not exist."
-		retcode = false
-	elseif progExt and string.lower(LrPathUtils.extension( path )) ~= progExt then
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/ProgramInvalid=Program file is not of type '.exe'"
-		retcode = false
-	else
-		retcode = true
+	if LrFileUtils.exists(path) ~= 'file'
+	or progExt and string.lower(LrPathUtils.extension( path )) ~= progExt then
+		return false, path
 	end
-	
-	return retcode, LrPathUtils.standardizePath(path), message
+
+	return true, LrPathUtils.standardizePath(path)	
 end
 
 -- validatePSUploadProgPath: 
@@ -84,8 +75,6 @@ end
 			- ffpmpeg/qt-faststart(.exe)
 ]]
 local function validatePSUploadProgPath( view, path )
-	local message = nil
-	
 	local convertprog = 'convert'
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
@@ -95,23 +84,14 @@ local function validatePSUploadProgPath( view, path )
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
 	end
 	
-	if LrFileUtils.exists(path) ~= 'directory' then 
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/PSUploadNoExist=PhotoStation Uploader path does not exist."
-		retcode = false
-	elseif not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ImageMagick'), convertprog)) then
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/PSUploadConvMiss=Could not find convert program in PhotoStation Uploader path."
-		retcode = false
-	elseif not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), ffmpegprog)) then
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/PSUploadConvMiss=Could not find ffmpeg program in PhotoStation Uploader path."
-		retcode = false
-	elseif not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), qtfstartprog)) then
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/PSUploadConvMiss=Could not find qt-faststart program in PhotoStation Uploader path."
-		retcode = false
-	else
-		retcode = true
+	if LrFileUtils.exists(path) ~= 'directory' 
+	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ImageMagick'), convertprog))
+	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), ffmpegprog)) 
+	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), qtfstartprog)) then
+		return false, path
 	end
-	
-	return retcode, LrPathUtils.standardizePath(path), message
+
+	return true, LrPathUtils.standardizePath(path)
 end
 
 -------------------------------------------------------------------------------
@@ -125,7 +105,7 @@ local function updateExportStatus( propertyTable )
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 		
-		if propertyTable.PSUploaderPath == "" or propertyTable.PSUploaderPath == nil  then
+		if not validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/PSUploadPathMissing=Enter the installation path (base) of the Synology PhotoStation Uploader or Synology Assistant"
 			break
 		end
@@ -145,7 +125,7 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
-		if propertyTable.copyTree and ( propertyTable.srcRoot == "" or propertyTable.srcRoot == nil ) then
+		if propertyTable.copyTree and not validateDirectory(nil, propertyTable.srcRoot) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterSubPath=Enter a source path"
 			break
 		end
@@ -154,7 +134,16 @@ local function updateExportStatus( propertyTable )
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterPersPSUser=Enter the owner of the Personal PhotoStation to upload to"
 			break
 		end
+
+		if tonumber(propertyTable.logLevelStr) < 0  or tonumber(propertyTable.logLevelStr) > 4 then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterSubPath=Enter a Loglevel: 0 - nothing, 1 - errors, 2 - normal, 3 - trace, 4 - debug"
+			break
+		else
+			propertyTable.logLevel = tonumber(propertyTable.logLevelStr)
+		end
 		
+
+		local message = nil
 		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
 							iif(propertyTable.usePersonalPS,"Personal", "Standard") .. " Album: " .. 
@@ -185,7 +174,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 		progExt = 'exe'
 	end
 	
-	propertyTable:addObserver( 'items', updateExportStatus )
+--	propertyTable:addObserver( 'items', updateExportStatus )
 	propertyTable:addObserver( 'PSUploaderPath', updateExportStatus )
 --	propertyTable:addObserver( 'exiftoolprog', updateExportStatus )
 	propertyTable:addObserver( 'proto', updateExportStatus )
@@ -196,6 +185,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'copyTree', updateExportStatus )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
+	propertyTable:addObserver( 'logLevelStr', updateExportStatus )
 
 	updateExportStatus( propertyTable )
 	
@@ -228,6 +218,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					truncation = 'middle',
 					validate = validatePSUploadProgPath,
 					immediate = true,
+					width = share 'labelWidth',
 					fill_horizontal = 1,
 				},
 			},
@@ -268,7 +259,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				f:edit_field {
 					value = bind 'servername',
 					truncation = 'middle',
-					width_in_chars = 24,
+					width = share 'labelWidth',
+--					width_in_chars = 24,
 					immediate = true,
 					fill_horizontal = 1,
 				},
@@ -286,14 +278,14 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					value = bind 'username',
 					truncation = 'middle',
 					immediate = true,
-					fill_horizontal = 1,
+--					fill_horizontal = 1,
 				},
+--			},
 
+--			f:row {
 				f:static_text {
 					title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
-					alignment = 'right',
---					width = share 'labelWidth',
-					width_in_chars = 10,
+					alignment = 'left',
 				},
 	
 				f:password_field {
@@ -312,7 +304,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 	
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to local base path:",
-					alignment = 'left',
+					alignment = 'right',
 					width = share 'labelWidth',
 --					width_in_chars = 4,
 					value = bind 'copyTree',
@@ -323,17 +315,19 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					enabled = bind 'copyTree',
 					visible = bind 'copyTree',
 					validate = validateDirectory,
-					width_in_chars = 24,
+--					width_in_chars = 24,
 					truncation = 'middle',
 					immediate = true,
 					fill_horizontal = 1,
 				},
+			},
 
+			f:row {
 				f:static_text {
 					title = LOC "$$$/PSUpload/ExportDialog/DstRoot=To Album:",
 					alignment = 'right',
---					width = share 'labelWidth',
-					width_in_chars = 6,
+					width = share 'labelWidth',
+--					width_in_chars = 6,
 				},
 	
 				f:edit_field {
@@ -347,10 +341,9 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 			f:row {
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Upload to Personal PhotoStation of user:",
---					enabled = false,
-					alignment = 'left',
+					alignment = 'right',
 					width = share 'labelWidth',
-					width_in_chars = 6,
+--					width_in_chars = 6,
 					value = bind 'usePersonalPS',
 				},
 
@@ -359,21 +352,39 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					enabled = bind 'usePersonalPS',
 					visible = bind 'usePersonalPS',
 --					width = share 'labelWidth',
-					width_in_chars = 24,
+--					width_in_chars = 24,
 					truncation = 'middle',
 					immediate = true,
-					fill_horizontal = 1,
+--					fill_horizontal = 1,
 				},
-	
+--			}, 
+			
+--			f:row {
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize upload for PhotoStation 6",
 					alignment = 'left',
 					width = share 'labelWidth',
-					width_in_chars = 6,
+--					width_in_chars = 6,
 					value = bind 'isPS6',
 				},
 			},
 
+			f:row {
+				f:static_text {
+					title = LOC "$$$/PSUpload/ExportDialog/LOGLEVEL=Loglevel:",
+					alignment = 'right',
+					width = share 'labelWidth'
+				},
+	
+				f:combo_box {
+					value = bind 'logLevel',
+					items = { 1, 2, 3, 4 },
+					truncation = 'middle',
+					immediate = true,
+					fill_horizontal = 0,
+				},
+			}, 
+			
 			f:column {
 				place = 'overlapping',
 				fill_horizontal = 1,
