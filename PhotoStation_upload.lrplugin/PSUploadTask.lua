@@ -109,11 +109,22 @@ function unblankFilename(str)
 	return str
 end 
 
+function cmdlineQuote()
+	if WIN_ENV then
+		return '"'
+	elseif MAC_ENV then
+		return ''
+	else
+		return ''
+	end
+end
+
 function shellEscape(str)
 	if WIN_ENV then
 		return(string.gsub(str, '>', '^>'))
 	elseif MAC_ENV then
-		return("'" .. str .. "'")
+--		return("'" .. str .. "'")
+		return(string.gsub(string.gsub(string.gsub(str, '>', '\\>'), '%(', '\\('), '%)', '\\)'))
 	else
 		return str
 	end
@@ -217,14 +228,8 @@ function ffmpegGetDateTimeOrg(srcVideoFilename)
 	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
 	local outfile =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
-	local cmdline
-	
-	if WIN_ENV then
-		-- LrTask.execute will call cmd.exe /c cmdline, so we need additional outer quotes
-		cmdline = '""' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> ' .. outfile ..'"'
-	else
-		cmdline = '"' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> ' .. outfile
-	end
+	-- LrTask.execute() will call cmd.exe /c cmdline, so we need additional outer quotes
+	local cmdline = cmdlineQuote() .. '"' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> ' .. outfile .. cmdlineQuote()
 
 	writeLogfile(4, cmdline .. "\n")
 	LrTasks.execute(cmdline)
@@ -315,7 +320,9 @@ end
 -- convertPic(srcFilename, size, quality, unsharp, dstFilename)
 -- converts a picture file using the ImageMagick convert tool
 function convertPic(srcFilename, size, quality, unsharp, dstFilename)
-	local cmdline = '"' .. conv .. '" ' .. srcFilename .. ' -resize ' .. shellEscape(size) .. ' -quality ' .. quality .. ' -unsharp ' .. unsharp .. ' ' .. dstFilename
+	local cmdline = cmdlineQuote() .. 
+				'"' .. conv .. '" ' .. srcFilename .. ' -resize ' .. shellEscape(size) .. ' -quality ' .. quality .. ' -unsharp ' .. unsharp .. ' ' .. dstFilename ..
+				cmdlineQuote()
 
 	writeLogfile(4,cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then
@@ -331,13 +338,22 @@ end
 -- convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 -- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
 function convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
+--[[
 	local cmdline = '"' .. conv .. '" ' .. srcFilename .. ' ' ..
 			'( -clone 0 -define jpeg:size=' .. shellEscape(xlSize) .. ' -thumbnail '  .. shellEscape(xlSize) .. ' ' .. convParams .. ' -write ' .. xlFile .. ' ) -delete 0 ' ..
 			'( +clone   -define jpeg:size=' .. shellEscape( lSize) .. ' -thumbnail '  .. shellEscape( lSize) .. ' ' .. convParams .. ' -write ' ..  lFile .. ' +delete ) ' ..
 			'( +clone   -define jpeg:size=' .. shellEscape( bSize) .. ' -thumbnail '  .. shellEscape( bSize) .. ' ' .. convParams .. ' -write ' ..  bFile .. ' +delete ) ' ..
 			'( +clone   -define jpeg:size=' .. shellEscape( mSize) .. ' -thumbnail '  .. shellEscape( mSize) .. ' ' .. convParams .. ' -write ' ..  mFile .. ' +delete ) ' ..
 					   '-define jpeg:size=' .. shellEscape( sSize) .. ' -thumbnail '  .. shellEscape( sSize) .. ' ' .. convParams .. ' ' 		..	sFile
-					
+]]					
+	local cmdline = cmdlineQuote() .. '"' .. conv .. '" "' .. srcFilename .. '" ' ..
+			shellEscape(
+				'( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write ' .. xlFile .. ' ) -delete 0 ' ..
+				'( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write ' ..  lFile .. ' +delete ) ' ..
+				'( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write ' ..  bFile .. ' +delete ) ' ..
+				'( +clone   -define jpeg:size=' ..  mSize .. ' -thumbnail '  ..  mSize .. ' ' .. convParams .. ' -write ' ..  mFile .. ' +delete ) ' ..
+						   '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' ' 		..	sFile
+			) .. cmdlineQuote()
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then
 		writeLogfile(3,"... failed!\n")
@@ -373,11 +389,13 @@ function convertVideo(srcVideoFilename, resolution, dstVideoFilename)
 	end
 	
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
-	local cmdline = 	'"' .. ffmpeg .. '" -i ' .. 
+	local cmdline =  cmdlineQuote() ..
+				'"' .. ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
-				" -y " .. encOpt .. 
+				'" -y ' .. encOpt .. 
 				" -ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4 -s 480x360 -aspect 480:360 " .. 
-				tmpVideoFilename .. ' 2> ' .. outfile
+				tmpVideoFilename .. ' 2> ' .. outfile ..
+				cmdlineQuote()
 				
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
@@ -503,7 +521,7 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	-- generate thumbs
 
 	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
-if MAC_ENV then
+if MACKER_ENV then
 	if not convertPic(srcFilename, '1280x1280>', 90, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
 	or not convertPic(thmb_XL_Filename, '800x800>', 90, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
 	or not convertPic(thmb_L_Filename, '640x640>', 90, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
@@ -525,8 +543,8 @@ if MAC_ENV then
 
 else
 
-	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
-	if not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
+	if not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
@@ -792,7 +810,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
 				else
-					writeLogfile(2,'Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
+					writeLogfile(2, LrDate.formatMediumTime(LrDate.currentTime()) .. 
+									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
 				end
 			end
 
