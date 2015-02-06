@@ -135,6 +135,12 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
+		-- sanity check for version 2.3.0 installations
+		if type(propertyTable.logLevelStr) == 'nil' then 
+			propertyTable.logLevelStr = '2' 
+		elseif type(propertyTable.logLevelStr) == 'number' then
+			propertyTable.logLevelStr = tostring(propertyTable.logLevelStr)
+		end 
 		if tonumber(propertyTable.logLevelStr) < 0  or tonumber(propertyTable.logLevelStr) > 4 then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterSubPath=Enter a Loglevel: 0 - nothing, 1 - errors, 2 - normal, 3 - trace, 4 - debug"
 			break
@@ -142,7 +148,6 @@ local function updateExportStatus( propertyTable )
 			propertyTable.logLevel = tonumber(propertyTable.logLevelStr)
 		end
 		
-
 		local message = nil
 		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
