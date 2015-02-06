@@ -39,6 +39,7 @@ local LrFileUtils = import 'LrFileUtils'
 local LrPathUtils = import 'LrPathUtils'
 local LrDate = import 'LrDate'
 local LrDialogs = import 'LrDialogs'
+local LrShell = import 'LrShell'
 local LrTasks = import 'LrTasks'
 
 require "PSUploadAPI"
@@ -352,7 +353,7 @@ function convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lF
 				'( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write ' ..  lFile .. ' +delete ) ' ..
 				'( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write ' ..  bFile .. ' +delete ) ' ..
 				'( +clone   -define jpeg:size=' ..  mSize .. ' -thumbnail '  ..  mSize .. ' ' .. convParams .. ' -write ' ..  mFile .. ' +delete ) ' ..
-						   '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' ' 		..	sFile
+						   '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' ' 		  ..  sFile
 			) .. cmdlineQuote()
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then
@@ -404,11 +405,13 @@ function convertVideo(srcVideoFilename, resolution, dstVideoFilename)
 		return false
 	end
 
-	cmdline = 	'"' .. ffmpeg .. '" -i ' .. 
+	cmdline =   cmdlineQuote() ..
+				'"' .. ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
-				" -y " .. encOpt .. 
+				'" -y ' .. encOpt .. 
 				" -ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4 -s 480x360 -aspect 480:360 " .. 
-				tmpVideoFilename .. ' 2> ' .. outfile
+				tmpVideoFilename .. ' 2> ' .. outfile ..
+				cmdlineQuote()
 
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
@@ -604,10 +607,13 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	-- get video infos: aspect ratio, resolution ,...
 
 	-- generate first thumb from video
-	cmdline = '"' .. ffmpeg .. 
-					'" -i ' .. srcVideoFilename .. 
-					' -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg -s 640x480 -aspect 640:480 ' .. 
-					thmb_ORG_Filename .. ' 2> ' .. outfile
+	cmdline = 	cmdlineQuote() ..
+					'"' .. ffmpeg .. 
+					'" -i "' .. srcVideoFilename .. 
+					'" -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg -s 640x480 -aspect 640:480 ' .. 
+					thmb_ORG_Filename .. ' 2> ' .. outfile ..
+				cmdlineQuote()
+
 
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(thmb_ORG_Filename) then
@@ -731,6 +737,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		exportParams.password = ftpSettings.password
 	end
 
+	local startTime = LrDate.currentTime()
+	local numPics = 0
+
 	local result, reason = PSUploadAPI.login(exportParams.username, exportParams.password)
 	if not result then
 		writeLogfile(1, "Login failed, reason:" .. reason .. "\n")
@@ -762,7 +771,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		
 		if success then
 			writeLogfile(3, "\nNext photo: " .. pathOrMessage .. "\n")
-
+			numPics = numPics + 1
+			
 			local srcPhoto = rendition.photo
 			local filename = LrPathUtils.leafName( pathOrMessage )
 			local tmpFilename = LrPathUtils.child(LrPathUtils.parent(pathOrMessage), unblankFilename(filename))
@@ -826,18 +836,24 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		writeLogfile(1,"Logout failed\n")
 	end
 	
+	local timeUsed = 	LrDate.currentTime() - startTime
+	local timePerPic = timeUsed / numPics
+	writeLogfile(2,string.format("Processed %d pics in %d seconds: %d seconds/pic\n", numPics, timeUsed, timePerPic))
 	closeLogfile()
 	
 	if #failures > 0 then
 		local message
 		if #failures == 1 then
-			message = LOC "$$$/PSUpload/Upload/Errors/OneFileFailed=1 file failed to upload correctly."
+			message = LOC ("$$$/PSUpload/Upload/Errors/OneFileFailed=1 file of ^1 files failed to upload correctly.", numPics)
 		else
-			message = LOC ( "$$$/PSUpload/Upload/Errors/SomeFileFailed=^1 files failed to upload correctly.", #failures )
+			message = LOC ( "$$$/PSUpload/Upload/Errors/SomeFileFailed=^1 of ^2 files failed to upload correctly.", #failures, numPics)
 		end
-		LrDialogs.message( message, table.concat( failures, "\n" ) .. "\nFor more infos see: " .. logfilename .. "\n")
---	else
---		message = LOC "$$$/PSUpload/Upload/Errors/UploadOK=All files uploaded successfully."
---		LrDialogs.message( message, "For more infos see: " .. logfilename .. "\n")
+		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ) .. "\nFor more infos see: " .. logfilename .. "\n", "Goto Logfile", "Never mind")
+		if action == "ok" then
+			LrShell.revealInShell(logfilename)
+		end
+	else
+		message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=PhotoStation Upload: All ^1 files uploaded successfully.", numPics)
+		LrDialogs.showBezel(message, 5)
 	end
 end

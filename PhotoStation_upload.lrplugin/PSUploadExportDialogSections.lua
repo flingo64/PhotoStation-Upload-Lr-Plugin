@@ -148,7 +148,6 @@ local function updateExportStatus( propertyTable )
 			propertyTable.logLevel = tonumber(propertyTable.logLevelStr)
 		end
 		
-		local message = nil
 		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
 							iif(propertyTable.usePersonalPS,"Personal", "Standard") .. " Album: " .. 
