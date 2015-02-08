@@ -264,7 +264,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					value = bind 'servername',
 					truncation = 'middle',
 					width = share 'labelWidth',
---					width_in_chars = 24,
 					immediate = true,
 					fill_horizontal = 1,
 				},
@@ -284,9 +283,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					immediate = true,
 --					fill_horizontal = 1,
 				},
---			},
 
---			f:row {
 				f:static_text {
 					title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
 					alignment = 'left',
@@ -319,7 +316,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					enabled = bind 'copyTree',
 					visible = bind 'copyTree',
 					validate = validateDirectory,
---					width_in_chars = 24,
 					truncation = 'middle',
 					immediate = true,
 					fill_horizontal = 1,
@@ -328,26 +324,31 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 
 			f:row {
 				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/DstRoot=To Album:",
+					title = LOC "$$$/PSUpload/ExportDialog/DstRoot=To Album (directory below the share '[/home]/photo'):",
 					alignment = 'right',
 					width = share 'labelWidth',
---					width_in_chars = 6,
 				},
 	
 				f:edit_field {
 					value = bind 'dstRoot',
 					truncation = 'middle',
 					immediate = true,
-					fill_horizontal = 1,
+--					fill_horizontal = 1,
+				},
+
+				f:checkbox {
+					title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
+					alignment = 'left',
+					width = share 'labelWidth',
+					value = bind 'createDstRoot',
 				},
 			},
 			
 			f:row {
 				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Upload to Personal PhotoStation of user:",
+					title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Upload to Personal PhotoStation of User:",
 					alignment = 'right',
 					width = share 'labelWidth',
---					width_in_chars = 6,
 					value = bind 'usePersonalPS',
 				},
 
@@ -355,20 +356,15 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					value = bind 'personalPSOwner',
 					enabled = bind 'usePersonalPS',
 					visible = bind 'usePersonalPS',
---					width = share 'labelWidth',
---					width_in_chars = 24,
 					truncation = 'middle',
 					immediate = true,
 --					fill_horizontal = 1,
 				},
---			}, 
 			
---			f:row {
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize upload for PhotoStation 6",
 					alignment = 'left',
 					width = share 'labelWidth',
---					width_in_chars = 6,
 					value = bind 'isPS6',
 				},
 			},

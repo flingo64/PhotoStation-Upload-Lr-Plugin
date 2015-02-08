@@ -456,7 +456,6 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated)
 	local subDirStartPos, subDirEndPos = string.find(string.lower(srcDir), string.lower(srcRoot))
 	if subDirStartPos ~= 1 then
 		writeLogfile(1, "  createTree: " .. srcDir .. " is not a subdir of " .. srcRoot .. "\n")
-		table.insert( failures, srcFilename )
 		return nil
 	end
 
@@ -785,6 +784,17 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				writeLogfile(3, " unblanked: " .. tmpFilename .. "\n")
 				LrFileUtils.move( pathOrMessage, tmpFilename )
 			end
+
+			-- sanitize dstRoot: remove leading and trailings slashes
+			if string.sub(exportParams.dstRoot,1,1) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 2) end
+			if string.sub(exportParams.dstRoot, string.len(exportParams.dstRoot)) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 1, -2) end
+			writeLogfile(3, "  sanitized dstRoot: " .. exportParams.dstRoot .. "\n")
+			
+			-- check if target Album (dstRoot) should be created 
+			if exportParams.createDstRoot and not createTree( './' .. exportParams.dstRoot,  ".", "", dirsCreated ) then
+				table.insert( failures, srcFilename )
+				break 
+			end
 			
 			-- check if tree structure should be preserved
 			if not exportParams.copyTree then
@@ -838,7 +848,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	
 	local timeUsed = 	LrDate.currentTime() - startTime
 	local timePerPic = timeUsed / numPics
-	writeLogfile(2,string.format("Processed %d pics in %d seconds: %d seconds/pic\n", numPics, timeUsed, timePerPic))
+	writeLogfile(2,string.format("Processed %d pics in %d seconds: %.1f seconds/pic\n", numPics, timeUsed, timePerPic))
 	closeLogfile()
 	
 	if #failures > 0 then
@@ -853,7 +863,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			LrShell.revealInShell(logfilename)
 		end
 	else
-		message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=PhotoStation Upload: All ^1 files uploaded successfully.", numPics)
+		message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=PhotoStation Upload: All ^1 files uploaded successfully (^2 secs/pic).", numPics, string.format("%.1f", timePerPic))
 		LrDialogs.showBezel(message, 5)
 	end
 end
