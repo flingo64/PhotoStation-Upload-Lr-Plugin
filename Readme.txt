@@ -1,7 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
 Version 2.3
-2015/02/05
+2015/02/08
 Copyright(c) 2015, Martin Messmer
 
 Description:
