@@ -858,7 +858,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		else
 			message = LOC ( "$$$/PSUpload/Upload/Errors/SomeFileFailed=^1 of ^2 files failed to upload correctly.", #failures, numPics)
 		end
-		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ) .. "\nFor more infos see: " .. logfilename .. "\n", "Goto Logfile", "Never mind")
+		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Goto Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(logfilename)
 		end

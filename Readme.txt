@@ -80,8 +80,11 @@ Version 2.3:
 - Fixed strange field validation behaviour in Export Dialog
 - Fixed mis-aligned input fields in Export Dialog
 - Added Loglevel configuration to Export Dialog section
-- Windows: modified thumbnail creation to the "Syno PS Uploader" way:
-	slightly slower but higher thumbnail quality (less sharp) (Hint von Uwe)
+- Added: "Goto Logfile" on failures
+- Modified thumbnail creation to the "Syno PS Uploader" way:
+	slightly slower but higher thumbnail quality (less sharp) (Hint from Uwe)
+- Added option "Create Album, if needed"
+- Added completion bezel
 
 Installation:
 =============
@@ -89,7 +92,7 @@ Installation:
 - move subdirectory "PhotoStation_upload.lrplugin" to machine where Lightroom is installed
 - In Lightroom:
 	File --> Plugin Manager --> Add: Enter the path to the directory 
-		"PhotoStation_upload.lrdevplugin" 
+		"PhotoStation_upload.lrplugin" 
 
 Open issues:
 ============
