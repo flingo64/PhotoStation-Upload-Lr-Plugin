@@ -421,6 +421,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 						tooltip = LOC "$$$/PSUpload/ExportDialog/LargeThumbsTT=Recommended for output to Full HD monitors",
 						alignment = 'left',
 						value = bind 'largeThumbs',
+						checked_value = true,
 						fill_horizontal = 1,
 					},
 
