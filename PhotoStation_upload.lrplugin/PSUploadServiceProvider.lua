@@ -66,11 +66,11 @@ return {
 		{ key = 'srcRoot', default = '' },			-- local path to root of picture folders (only used if copyTree)
 		{ key = 'dstRoot', default = '' },			-- destination Album on PhotoStation: no leading or trailing slash required
 		{ key = 'createDstRoot', default = false },	-- create Destination album (if not exist)
+		{ key = 'largeThumbs', default = true },	-- generate large thumbs or small thumbs
 		{ key = 'isPS6', default = false },			-- use upload optimization for PhotoStation 6 (not THUMB_L required)
 		{ key = 'usePersonalPS', default = false },	-- upload to Personal PhotoStation
 		{ key = 'personalPSOwner', default = '' },	-- owner of the Personal PhotoStation to upload to
-		{ key = 'logLevelStr', default = '2' },	-- owner of the Personal PhotoStation to upload to
-		{ key = 'logLevel', default = 2 },	-- owner of the Personal PhotoStation to upload to
+		{ key = 'logLevel', default = 2 },			-- loglevel 
 	},
 
 	startDialog = PSUploadExportDialogSections.startDialog,

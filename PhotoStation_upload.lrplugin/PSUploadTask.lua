@@ -122,7 +122,8 @@ end
 
 function shellEscape(str)
 	if WIN_ENV then
-		return(string.gsub(str, '>', '^>'))
+--		return(string.gsub(str, '>', '^>'))
+		return(string.gsub(string.gsub(str, '%^ ', '^^ '), '>', '^>'))
 	elseif MAC_ENV then
 --		return("'" .. str .. "'")
 		return(string.gsub(string.gsub(string.gsub(str, '>', '\\>'), '%(', '\\('), '%)', '\\)'))
@@ -293,9 +294,37 @@ function getDateTimeOriginal(srcFilename, srcPhoto)
 		elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
 			srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
 			writeLogfile(3, "  dateTimeDigitizedISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		elseif srcPhoto:getFormattedMetadata("dateCreated") then
+			local srcDateTimeStr = srcPhoto:getFormattedMetadata("dateCreated")
+			local year,month,day,hour,minute,second,tzone
+			writeLogfile(3, "dateCreated: " .. srcDateTimeStr .. "\n")
+			
+			-- iptcDateCreated: date is mandatory, time as whole, seconds and timezone may or may not be present
+			for year,month,day,hour,minute,second,tzone in string.gmatch(srcDateTimeStr, "(%d+)-(%d+)-(%d+)T*(%d*):*(%d*):*(%d*)Z*(%w*)") do
+				writeLogfile(4, string.format("dateCreated: %s Year: %s Month: %s Day: %s Hour: %s Minute: %s Second: %s Zone: %s\n",
+												srcDateTimeStr, year, month, day, ifnil(hour, "00"), ifnil(minute, "00"), ifnil(second, "00"), ifnil(tzone, "local")))
+				srcDateTime = LrDate.timeFromComponents(tonumber(year), tonumber(month), tonumber(day),
+														tonumber(ifnil(hour, "0")),
+														tonumber(ifnil(minute, "0")),
+														tonumber(ifnil(second, "0")),
+														iif(not tzone or tzone == "", "local", tzone))
+			end
+			writeLogfile(4, "  dateCreated: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+--[[
+		else
+			local custMetadata = srcPhoto:getRawMetadata("customMetadata")
+			local i 
+			writeLogfile(4, "customMetadata:\n")
+			for i = 1, #custMetadata do
+				writeLogfile(4, 'Id: ' .. custMetadata[i].id .. 
+								' Value: ' .. ifnil(custMetadata[i].value, '<Nil>') .. 
+								' sourcePlugin: ' .. ifnil(custMetadata[i].sourcePlugin, '<Nil>') .. '\n')
+			end
+]]
 		end
 	end
 	
+	-- if nothing helps: take the fileCreationDate
 	if not srcDateTime then
 		local fileAttr = LrFileUtils.fileAttributes( srcFilename )
 --		srcDateTime = exiftoolGetDateTimeOrg(srcFilename)
@@ -339,14 +368,6 @@ end
 -- convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 -- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
 function convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
---[[
-	local cmdline = '"' .. conv .. '" ' .. srcFilename .. ' ' ..
-			'( -clone 0 -define jpeg:size=' .. shellEscape(xlSize) .. ' -thumbnail '  .. shellEscape(xlSize) .. ' ' .. convParams .. ' -write ' .. xlFile .. ' ) -delete 0 ' ..
-			'( +clone   -define jpeg:size=' .. shellEscape( lSize) .. ' -thumbnail '  .. shellEscape( lSize) .. ' ' .. convParams .. ' -write ' ..  lFile .. ' +delete ) ' ..
-			'( +clone   -define jpeg:size=' .. shellEscape( bSize) .. ' -thumbnail '  .. shellEscape( bSize) .. ' ' .. convParams .. ' -write ' ..  bFile .. ' +delete ) ' ..
-			'( +clone   -define jpeg:size=' .. shellEscape( mSize) .. ' -thumbnail '  .. shellEscape( mSize) .. ' ' .. convParams .. ' -write ' ..  mFile .. ' +delete ) ' ..
-					   '-define jpeg:size=' .. shellEscape( sSize) .. ' -thumbnail '  .. shellEscape( sSize) .. ' ' .. convParams .. ' ' 		..	sFile
-]]					
 	local cmdline = cmdlineQuote() .. '"' .. conv .. '" "' .. srcFilename .. '" ' ..
 			shellEscape(
 				'( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write ' .. xlFile .. ' ) -delete 0 ' ..
@@ -503,13 +524,13 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated)
 end
 
 -----------------
--- uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6) 
+-- uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs) 
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6) 
+function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename))
 	local picExt = LrPathUtils.extension(srcFilename)
 	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
@@ -523,7 +544,7 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	-- generate thumbs
 
 	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
-if MACKER_ENV then
+--[[
 	if not convertPic(srcFilename, '1280x1280>', 90, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
 	or not convertPic(thmb_XL_Filename, '800x800>', 90, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
 	or not convertPic(thmb_L_Filename, '640x640>', 90, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
@@ -543,15 +564,20 @@ if MACKER_ENV then
 		retcode = true
 	end
 
-else
-
-	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
-	if not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+]]
+		
+	if ( not largeThumbs and not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
-								'120x120>',    thmb_S_Filename) 
+								'120x120>',    thmb_S_Filename) )
+	or ( largeThumbs and not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'1280x1280>^', thmb_XL_Filename,
+								'800x800>^',   thmb_L_Filename,
+								'640x640>',    thmb_B_Filename,
+								'320x320>^',   thmb_M_Filename,
+								'120x120>',    thmb_S_Filename) )
 	-- upload thumbnails and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
 	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
@@ -564,7 +590,6 @@ else
 	else
 		retcode = true
 	end
-end
 
 	LrFileUtils.delete(thmb_B_Filename)
 	LrFileUtils.delete(thmb_M_Filename)
@@ -583,7 +608,7 @@ end
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6) 
+function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs) 
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
 	local vidExt = LrPathUtils.extension(srcVideoFilename)
@@ -625,7 +650,7 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6)
 	-- generate all other thumb from first thumb
 
 	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
-if MAC_ENV then
+--[[
 	if not convertPic(thmb_ORG_Filename, '1280x1280>', 70, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
 	or not convertPic(thmb_XL_Filename, '800x800>', 70, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
 	or not convertPic(thmb_L_Filename, '640x640>', 70, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
@@ -648,17 +673,20 @@ if MAC_ENV then
 	else 
 		retcode = true
 	end
-	
+]]	
 
-else
-
-	-- conversion acc. to PS Uploader: -strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB 
-	if not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+	if ( not largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
-								'120x120>',    thmb_S_Filename) 
+								'120x120>',    thmb_S_Filename) )
+	or ( largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'1280x1280>^', thmb_XL_Filename,
+								'800x800>^',   thmb_L_Filename,
+								'640x640>',    thmb_B_Filename,
+								'320x320>^',   thmb_M_Filename,
+								'120x120>',    thmb_S_Filename) )
 
 	-- generate preview video
 	or not convertVideo(srcVideoFilename, "LOW", vid_LOW_Filename) 
@@ -676,7 +704,6 @@ else
 	else 
 		retcode = true
 	end
-end
 	
 	LrFileUtils.delete(thmb_ORG_Filename)
 	LrFileUtils.delete(thmb_B_Filename)
@@ -815,8 +842,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			if srcPhoto:getRawMetadata("isVideo") then
 				writeLogfile(4, pathOrMessage .. ": is video\n") 
-				if not uploadVideo(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6) then
---				if not uploadVideo(srcFilename, srcDateTime, dstDir, filename, exportParams.isPS6) then
+				if not uploadVideo(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs) then
+--				if not uploadVideo(srcFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
@@ -825,7 +852,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
 				end
 			else
-				if not uploadPicture(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6) then
+				if not uploadPicture(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )

@@ -1,7 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 2.3
-2015/02/08
+Version 2.4
+2015/02/10
 Copyright(c) 2015, Martin Messmer
 
 Description:
@@ -85,6 +85,11 @@ Version 2.3:
 	slightly slower but higher thumbnail quality (less sharp) (Hint from Uwe)
 - Added option "Create Album, if needed"
 - Added completion bezel
+
+Version 2.4:
+------------
+- Export Dialog re-design with lots of tooltips
+- Support for small (Synology old-style) and large thumbnails (Synology new-style)
 
 Installation:
 =============
