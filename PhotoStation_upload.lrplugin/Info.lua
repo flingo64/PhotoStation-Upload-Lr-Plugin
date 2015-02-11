@@ -48,5 +48,4 @@ return {
 		file = 'PSUploadServiceProvider.lua',
 	},
 	VERSION = { major=2, minor=4, revision=1, build=20150210, },
-
 }

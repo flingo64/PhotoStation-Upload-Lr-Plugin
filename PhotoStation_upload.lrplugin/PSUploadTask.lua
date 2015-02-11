@@ -578,6 +578,7 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, lar
 								'640x640>^',   thmb_B_Filename,
 								'320x320>^',   thmb_M_Filename,
 								'120x120>^',   thmb_S_Filename) )
+
 	-- upload thumbnails and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
 	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
