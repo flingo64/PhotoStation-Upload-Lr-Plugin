@@ -575,9 +575,9 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, lar
 	or ( largeThumbs and not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
-								'640x640>',    thmb_B_Filename,
+								'640x640>^',   thmb_B_Filename,
 								'320x320>^',   thmb_M_Filename,
-								'120x120>',    thmb_S_Filename) )
+								'120x120>^',   thmb_S_Filename) )
 	-- upload thumbnails and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
 	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
@@ -656,23 +656,6 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, 
 	or not convertPic(thmb_L_Filename, '640x640>', 70, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
 	or not convertPic(thmb_L_Filename, '320x320>', 70, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
 	or not convertPic(thmb_M_Filename, '120x120>', 70, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
-
-	-- generate preview video
-	or not convertVideo(srcVideoFilename, "LOW", vid_LOW_Filename) 
-
-	-- upload thumbs, preview videos and original file
-	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
-	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
-	or not PSUploadAPI.uploadPictureFile(vid_LOW_Filename, srcDateTime, dstDir, dstFilename, 'MP4_LOW', 'video/mpeg', 'MIDDLE') 
-	or not PSUploadAPI.uploadPictureFile(srcVideoFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
-	then 
-		retcode = false
-	else 
-		retcode = true
-	end
 ]]	
 
 	if ( not largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
