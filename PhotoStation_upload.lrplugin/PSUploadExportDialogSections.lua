@@ -135,21 +135,6 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
-		-- sanity check for version 2.3.0 installations
---[[
-		if type(propertyTable.logLevelStr) == 'nil' then 
-			propertyTable.logLevelStr = '2' 
-		elseif type(propertyTable.logLevelStr) == 'number' then
-			propertyTable.logLevelStr = tostring(propertyTable.logLevelStr)
-		end 
-		if tonumber(propertyTable.logLevelStr) < 0  or tonumber(propertyTable.logLevelStr) > 4 then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterSubPath=Enter a Loglevel: 0 - nothing, 1 - errors, 2 - normal, 3 - trace, 4 - debug"
-			break
-		else
-			propertyTable.logLevel = tonumber(propertyTable.logLevelStr)
-		end
-]]
-
 		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
 							iif(propertyTable.usePersonalPS,"Personal", "Standard") .. " Album: " .. 
@@ -187,7 +172,6 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'servername', updateExportStatus )
 	propertyTable:addObserver( 'username', updateExportStatus )
 	propertyTable:addObserver( 'srcRoot', updateExportStatus )
-	propertyTable:addObserver( 'dstRoot', updateExportStatus )
 	propertyTable:addObserver( 'copyTree', updateExportStatus )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
@@ -341,16 +325,28 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 			},
 			
 			f:row {
+--[[
 				f:static_text {
 					title = LOC "$$$/PSUpload/ExportDialog/DstRoot=Target Album:",
 					alignment = 'right',
 					width = share 'labelWidth',
 				},
-	
+]]
+				f:checkbox {
+					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/StoreDstRootTT=Enter Target Album here or you will be prompted for it when the upload starts.",
+					alignment = 'right',
+					width = share 'labelWidth',
+					value = bind 'storeDstRoot',
+					fill_horizontal = 1,
+				},
+
 				f:edit_field {
-					value = bind 'dstRoot',
 					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
+					value = bind 'dstRoot',
 					truncation = 'middle',
+					enabled = bind 'storeDstRoot',
+					visible = bind 'storeDstRoot',
 					immediate = true,
 					fill_horizontal = 1,
 				},
@@ -360,6 +356,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					alignment = 'left',
 					width = share 'labelWidth',
 					value = bind 'createDstRoot',
+					enabled = bind 'storeDstRoot',
+					visible = bind 'storeDstRoot',
 					fill_horizontal = 1,
 				},
 			},
@@ -406,23 +404,56 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				title = LOC "$$$/PSUpload/ExportDialog/Thumbnails=Thumbnail Options",
 
 				f:row {
-					f:radio_button {
-						title = LOC "$$$/PSUpload/ExportDialog/SmallThumbs=Generate small Thumbs",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/SmallThumbsTT=Recommended for output to small monitors",
-						alignment = 'right',
-						value = bind 'largeThumbs',
-						checked_value = false,
+					f:row {
 						width = share 'labelWidth',
---						fill_horizontal = 1,
-					},
-
-					f:radio_button {
-						title = LOC "$$$/PSUpload/ExportDialog/LargeThumbs=Generate large Thumbs",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/LargeThumbsTT=Recommended for output to Full HD monitors",
-						alignment = 'left',
-						value = bind 'largeThumbs',
-						checked_value = true,
 						fill_horizontal = 1,
+						f:radio_button {
+							title = LOC "$$$/PSUpload/ExportDialog/SmallThumbs=Small Thumbs",
+							tooltip = LOC "$$$/PSUpload/ExportDialog/SmallThumbsTT=Recommended for output on low-resolution monitors",
+							alignment = 'left',
+							value = bind 'largeThumbs',
+							checked_value = false,
+--							width = share 'labelWidth',
+--							fill_horizontal = 1,
+						},
+
+						f:radio_button {
+							title = LOC "$$$/PSUpload/ExportDialog/LargeThumbs=Large Thumbs",
+							tooltip = LOC "$$$/PSUpload/ExportDialog/LargeThumbsTT=Recommended for output on Full HD monitors",
+							alignment = 'left',
+							value = bind 'largeThumbs',
+							checked_value = true,
+							fill_horizontal = 1,
+						},
+					},
+					
+					f:row {
+						alignment = 'left',
+						fill_horizontal = 1,
+
+						f:static_text {
+							title = LOC "$$$/PSUpload/ExportDialog/ThumbQuality=Quality:",
+							alignment = 'right',
+						},
+
+						f:popup_menu {
+							tooltip = LOC "$$$/PSUpload/ExportDialog/QualityTT=Thumb conversion quality, recommended value: 80%",
+							value = bind 'thumbQuality',
+							alignment = 'left',
+							fill_horizontal = 0,
+							items = {
+								{ title	= '10%',	value 	= 10 },
+								{ title	= '20%',	value 	= 20 },
+								{ title	= '30%',	value 	= 30 },
+								{ title	= '40%',	value 	= 40 },
+								{ title	= '50%',	value 	= 50 },
+								{ title	= '60%',	value 	= 60 },
+								{ title	= '70%',	value 	= 70 },
+								{ title	= '80%',	value 	= 80 },
+								{ title	= '90%',	value 	= 90 },
+								{ title	= '100%',	value 	= 100 },
+							},
+						},
 					},
 
 					f:checkbox {

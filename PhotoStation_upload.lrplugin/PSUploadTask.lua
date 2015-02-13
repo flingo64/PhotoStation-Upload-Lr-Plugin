@@ -41,6 +41,7 @@ local LrDate = import 'LrDate'
 local LrDialogs = import 'LrDialogs'
 local LrShell = import 'LrShell'
 local LrTasks = import 'LrTasks'
+local LrView = import 'LrView'
 
 require "PSUploadAPI"
 
@@ -196,6 +197,100 @@ function initializeEnv (exportParams)
 	return true
 end
 
+---------------------- dialog functions ----------------------------------------------------------
+
+function promptForMissingSettings(exportParams)
+	local f = LrView.osFactory()
+	local bind = LrView.bind
+	local share = LrView.share
+	local conditionalItem = LrView.conditionalItem
+	local needPw = (ifnil(exportParams.password, "") == "")
+	local needDstRoot = not exportParams.storeDstRoot
+	
+	if not needPw and not needDstRoot then
+		return "ok"
+	end
+	
+	local passwdView = f:view {
+		f:row {
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/USERNAME=Login as:",
+				alignment = 'right',
+				width = share 'labelWidth',
+			},
+
+			f:edit_field {
+				value = bind 'username',
+				truncation = 'middle',
+				immediate = true,
+--				width = share 'labelWidth',
+				width_in_chars = 16,
+				fill_horizontal = 1,
+			},
+		},
+		
+		f:spacer {	height = 5, },
+
+		f:row {
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
+				alignment = 'right',
+				width = share 'labelWidth',
+			},
+
+			f:password_field {
+				value = bind 'password',
+				tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Leave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
+				truncation = 'middle',
+				immediate = true,
+				width = share 'labelWidth',
+				fill_horizontal = 1,
+			},
+		},
+	}
+
+	local dstRootView = f:view {
+		f:row {
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/DstRoot=Target Album:",
+				alignment = 'right',
+				width = share 'labelWidth',
+			},
+
+			f:edit_field {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
+				value = bind( "dstRoot" ),
+				width_in_chars = 16,
+				fill_horizontal = 1,
+			},
+		}, 
+		
+		f:spacer {	height = 5, },
+
+		f:row {
+			f:checkbox {
+				title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
+				alignment = 'left',
+				value = bind( "createDstRoot" ),
+			},
+		},
+	}
+
+	-- Create the contents for the dialog.
+	local c = f:view {
+		bind_to_object = exportParams,
+
+		conditionalItem(needPw, passwdView), 
+		f:spacer {	height = 10, },
+		conditionalItem(needDstRoot, dstRootView), 
+	}
+
+	return LrDialogs.presentModalDialog {
+			title = "Enter missing parameters",
+			contents = c
+		}
+end
+
 ---------------------- Exiftool functions ----------------------------------------------------------
 --[[
 function exiftoolGetDateTimeOrg(srcFilename)
@@ -225,7 +320,7 @@ end
 ---------------------- ffmpeg functions ----------------------------------------------------------
 
 -- ffmpegGetDateTimeOrg(srcVideoFilename)
--- get the exposure date of a video via ffmpeg. Lr won't give you the exposure date for videos
+-- get the capture date of a video via ffmpeg. Lr won't give you the capture date for videos
 function ffmpegGetDateTimeOrg(srcVideoFilename)
 	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
@@ -269,7 +364,7 @@ end
 ------------- getDateTimeOriginal -------------------------------------------------------------------
 
 -- getDateTimeOriginal(srcFilename, srcPhoto)
--- get the DateTimeOriginal (exposure date) of a photo/video or whatever comes close to it
+-- get the DateTimeOriginal (capture date) of a photo/video or whatever comes close to it
 -- tries various methods to get the info including Lr metadata, ffmpeg, exiftool (if enabled), file infos
 -- returns a unix timestamp 
 function getDateTimeOriginal(srcFilename, srcPhoto)
@@ -524,13 +619,13 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated)
 end
 
 -----------------
--- uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs) 
+-- uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs) 
+function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename))
 	local picExt = LrPathUtils.extension(srcFilename)
 	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
@@ -566,13 +661,15 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, lar
 
 ]]
 		
-	if ( not largeThumbs and not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+	if ( not largeThumbs and not convertPicConcurrent(srcFilename, 
+								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-	or ( largeThumbs and not convertPicConcurrent(srcFilename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+	or ( largeThumbs and not convertPicConcurrent(srcFilename, 
+								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
 								'640x640>^',   thmb_B_Filename,
@@ -602,14 +699,14 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, lar
 end
 
 -----------------
--- uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6) 
+-- uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs) 
+function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
 	local vidExt = LrPathUtils.extension(srcVideoFilename)
@@ -659,13 +756,15 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, 
 	or not convertPic(thmb_M_Filename, '120x120>', 70, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
 ]]	
 
-	if ( not largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+	if ( not largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, 
+								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-	or ( largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, '-strip -flatten -quality 80 -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+	or ( largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, 
+								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
@@ -733,23 +832,15 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 							   or LOC "$$$/PSUpload/Upload/Progress/One=Uploading one photo to PhotoStation",
 					}
 
-	-- Login to PhotoStation.
-	if ifnil(exportParams.password, "") == "" then
-		local LrFtp = import 'LrFtp'	-- just borrowed for queryForPasswordIfNeeded()
-		local ftpSettings = {}
-		ftpSettings.username = exportParams.username
-		ftpSettings.password = nil
-		
-		if not LrFtp.queryForPasswordIfNeeded( ftpSettings ) then
-			return
-		end
-		exportParams.username = ftpSettings.username
-		exportParams.password = ftpSettings.password
+	-- Get missing settings (password, and target directory), if not stored in preset.
+	if promptForMissingSettings(exportParams) == 'cancel' then
+		return
 	end
-
+	
 	local startTime = LrDate.currentTime()
 	local numPics = 0
 
+	-- Login to PhotoStation.
 	local result, reason = PSUploadAPI.login(exportParams.username, exportParams.password)
 	if not result then
 		writeLogfile(1, "Login failed, reason:" .. reason .. "\n")
@@ -826,8 +917,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			if srcPhoto:getRawMetadata("isVideo") then
 				writeLogfile(4, pathOrMessage .. ": is video\n") 
-				if not uploadVideo(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs) then
---				if not uploadVideo(srcFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs) then
+				if not uploadVideo(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
+--				if not uploadVideo(srcFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
@@ -836,7 +927,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
 				end
 			else
-				if not uploadPicture(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs) then
+				if not uploadPicture(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )

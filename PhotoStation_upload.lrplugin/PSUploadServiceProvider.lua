@@ -60,13 +60,15 @@ return {
 		{ key = 'servername', default = '' },		-- name/address of the PhotoStation, may include ':port' extension
 		{ key = 'serverUrl', default = '' },		-- proto + servername
 		{ key = 'psUrl', default = '' },			-- serverUrl + destination album (used for synopsis)
-		{ key = 'username', default = '' },		-- account for PhotoStation upload
-		{ key = 'password', default = '' },		-- guess what...
+		{ key = 'username', default = '' },			-- account for PhotoStation upload
+		{ key = 'password', default = '' },			-- guess what...
 		{ key = 'copyTree', default = false },		-- upload method: flat copy or tree mirror
 		{ key = 'srcRoot', default = '' },			-- local path to root of picture folders (only used if copyTree)
+		{ key = 'storeDstRoot', default = true },	-- enter destination Album in Export dialog or later
 		{ key = 'dstRoot', default = '' },			-- destination Album on PhotoStation: no leading or trailing slash required
 		{ key = 'createDstRoot', default = false },	-- create Destination album (if not exist)
 		{ key = 'largeThumbs', default = true },	-- generate large thumbs or small thumbs
+		{ key = 'thumbQuality', default = 80 },		-- conversion quality in percent
 		{ key = 'isPS6', default = false },			-- use upload optimization for PhotoStation 6 (not THUMB_L required)
 		{ key = 'usePersonalPS', default = false },	-- upload to Personal PhotoStation
 		{ key = 'personalPSOwner', default = '' },	-- owner of the Personal PhotoStation to upload to
