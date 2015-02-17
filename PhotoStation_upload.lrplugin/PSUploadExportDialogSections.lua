@@ -34,10 +34,12 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 
 -- Lightroom SDK
-local LrView = import 'LrView'
-local LrPathUtils = import 'LrPathUtils'
-local LrFileUtils = import 'LrFileUtils'
+local LrView 		= import 'LrView'
+local LrPathUtils 	= import 'LrPathUtils'
+local LrFileUtils	= import 'LrFileUtils'
+local LrShell 		= import 'LrShell'
 local progExt = nil			-- .exe for WIN_ENV
+
 
 --============================================================================--
 
@@ -325,13 +327,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 			},
 			
 			f:row {
---[[
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/DstRoot=Target Album:",
-					alignment = 'right',
-					width = share 'labelWidth',
-				},
-]]
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
 					tooltip = LOC "$$$/PSUpload/ExportDialog/StoreDstRootTT=Enter Target Album here or you will be prompted for it when the upload starts.",
@@ -457,12 +452,82 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					},
 
 					f:checkbox {
-							title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize upload for PhotoStation 6",
+							title = LOC "$$$/PSUpload/ExportDialog/isPS6=Upload to PhotoStation 6",
 							tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=Do not upload Thumb_L",
 							alignment = 'left',
 							width = share 'labelWidth',
 							value = bind 'isPS6',
 					},
+				},
+			},
+
+			f:group_box {
+				fill_horizontal = 1,
+				title = LOC "$$$/PSUpload/ExportDialog/Videos=Upload additional video resolutions for...",
+
+				f:row {
+					f:row {
+						width = share 'labelWidth',
+						fill_horizontal = 1,
+
+						f:static_text {
+							title = LOC "$$$/PSUpload/ExportDialog/VideoHigh=High-Res Videos:",
+							alignment = 'right',
+						},
+						f:popup_menu {
+							tooltip = LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
+							value = bind 'addVideoHigh',
+							alignment = 'left',
+							fill_horizontal = 0,
+							items = {
+								{ title	= 'None',			value 	= 'None' },
+								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
+								{ title	= 'Low (360p)',		value 	= 'LOW' },
+								{ title	= 'Medium (720p)',	value 	= 'MEDIUM' },
+							},
+						},
+					},					
+
+					f:row {
+						width = share 'labelWidth',
+						fill_horizontal = 1,
+
+						f:static_text {
+							title = LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium-Res Videos:",
+							alignment = 'right',
+						},
+						f:popup_menu {
+							tooltip = LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
+							value = bind 'addVideoMed',
+							alignment = 'left',
+							fill_horizontal = 0,
+							items = {
+								{ title	= 'None',			value 	= 'None' },
+								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
+								{ title	= 'Low (360p)',		value 	= 'LOW' },
+							},
+						},
+					},					
+
+					f:row {
+						width = share 'labelWidth',
+						fill_horizontal = 1,
+
+						f:static_text {
+							title = LOC "$$$/PSUpload/ExportDialog/VideoLow=Low-Res Videos:",
+							alignment = 'right',
+						},
+						f:popup_menu {
+							tooltip = LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
+							value = bind 'addVideoLow',
+							alignment = 'left',
+							fill_horizontal = 0,
+							items = {
+								{ title	= 'None',			value 	= 'None' },
+								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
+							},
+						},
+					},					
 				},
 			},
 
@@ -484,6 +549,18 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 						{ title	= 'Trace',	value 	= 3 },
 						{ title	= 'Debug',	value 	= 4 },
 					},
+				},
+				
+				f:spacer {
+					width = share 'labelWidth',
+				},
+				
+				f:push_button {
+					title = LOC "$$$/PSUpload/ExportDialog/Logfile=Goto Logfile of last Export",
+					alignment = 'right',
+					action = function()
+						LrShell.revealInShell(LrPathUtils.child(LrPathUtils.getStandardFilePath("temp"), "PhotoStationUpload.log"))
+					end,
 				},
 			}, 
 			

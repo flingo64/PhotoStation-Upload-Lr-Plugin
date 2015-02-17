@@ -72,6 +72,9 @@ return {
 		{ key = 'isPS6', default = false },			-- use upload optimization for PhotoStation 6 (not THUMB_L required)
 		{ key = 'usePersonalPS', default = false },	-- upload to Personal PhotoStation
 		{ key = 'personalPSOwner', default = '' },	-- owner of the Personal PhotoStation to upload to
+		{ key = 'addVideoHigh', default = 'None' },	-- additional video resolution for HIGH res videos
+		{ key = 'addVideoMed',default = 'None' }, 	-- additional video resolution for MEDIUEM res videos
+		{ key = 'addVideoLow', 	default = 'None' },	-- additional video resolution for LOW res videos	
 		{ key = 'logLevel', default = 2 },			-- loglevel 
 	},
 

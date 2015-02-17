@@ -40,9 +40,9 @@ local LrPathUtils = import 'LrPathUtils'
 local LrDate = import 'LrDate'
 local LrDialogs = import 'LrDialogs'
 local LrShell = import 'LrShell'
-local LrTasks = import 'LrTasks'
 local LrView = import 'LrView'
 
+require "PSConvert"
 require "PSUploadAPI"
 
 --============================================================================--
@@ -52,16 +52,9 @@ PSUploadTask = {}
 -- we can store some variables in 'global' local variables safely:
 -- each export task will get its own copy of these variables
 local tmpdir = LrPathUtils.getStandardFilePath("temp")
-local conv
-local ffmpeg
-local qtfstart
--- local exiftool
+
 local logfilename
-
-local serverUrl
-local loginPath
-local uploadPath
-
+local loglevel
 --[[loglevel:
 	0 -	nothing
 	1 - errors
@@ -69,7 +62,6 @@ local uploadPath
 	3 - tracing
 	4 - debug
 ]]	
-local loglevel
 
 ---------------------- useful helpers ----------------------------------------------------------
 
@@ -88,50 +80,6 @@ function iif(condition, thenExpr, elseExpr)
 		return elseExpr
 	end
 end 
-
----------------------- encoding routines ---------------------------------------------------------
-
-function trim(s)
-  return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
-end
-
-function urlencode(str)
-	if (str) then
-		str = string.gsub (str, "\n", "\r\n")
-		str = string.gsub (str, "([^%w ])",function (c) return string.format ("%%%02X", string.byte(c)) end)
-		str = string.gsub (str, " ", "%%20")
-	end
-	return str
-end 
-
-function unblankFilename(str)
-	if (str) then
-		str = string.gsub (str, " ", "-")
-	end
-	return str
-end 
-
-function cmdlineQuote()
-	if WIN_ENV then
-		return '"'
-	elseif MAC_ENV then
-		return ''
-	else
-		return ''
-	end
-end
-
-function shellEscape(str)
-	if WIN_ENV then
---		return(string.gsub(str, '>', '^>'))
-		return(string.gsub(string.gsub(str, '%^ ', '^^ '), '>', '^>'))
-	elseif MAC_ENV then
---		return("'" .. str .. "'")
-		return(string.gsub(string.gsub(string.gsub(str, '>', '\\>'), '%(', '\\('), '%)', '\\)'))
-	else
-		return str
-	end
-end
 
 ----------------------- logging ---------------------------------------------------------
 -- had some issues with LrLogger in cojunction with LrTasks, so we do our own file logging
@@ -168,33 +116,8 @@ end
 ---------------------- environment ----------------------------------------------------------
 function initializeEnv (exportParams)
 
-	PSUploadAPI.initialize(exportParams.serverUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil))
-
-	local convertprog = 'convert'
-	local ffmpegprog = 'ffmpeg'
-	local qtfstartprog = 'qt-faststart'
-
-	if WIN_ENV  then
-		local progExt = 'exe'
-		convertprog = LrPathUtils.addExtension(convertprog, progExt)
-		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
-		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
-	end
-	
-	conv = LrPathUtils.child(LrPathUtils.child(exportParams.PSUploaderPath, 'ImageMagick'), convertprog)
-	ffmpeg = LrPathUtils.child(LrPathUtils.child(exportParams.PSUploaderPath, 'ffmpeg'), ffmpegprog)
-	qtfstart = LrPathUtils.child(LrPathUtils.child(exportParams.PSUploaderPath, 'ffmpeg'), qtfstartprog)
-
---[[
-	-- exiftool is not required
-	if  LrFileUtils.exists(exiftoolprog)  ~= 'file' then
-		exiftool = nil 
-	else
-		exiftool = exiftoolprog
-	end
-]]
-	writeLogfile(4, "initializeEnv: \nconv: " .. conv .. "\nffmpeg: ".. ffmpeg .. "\nqt-faststart: " .. qtfstart)
-	return true
+	return (PSUploadAPI.initialize(exportParams.serverUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil)) and 
+			PSConvert.initialize(exportParams.PSUploaderPath))
 end
 
 ---------------------- dialog functions ----------------------------------------------------------
@@ -291,132 +214,54 @@ function promptForMissingSettings(exportParams)
 		}
 end
 
----------------------- Exiftool functions ----------------------------------------------------------
---[[
-function exiftoolGetDateTimeOrg(srcFilename)
-	-- returns DateTimeOriginal / creation_time retrieved via exiftool as Cocoa timestamp
-	local outfile = LrFileUtils.chooseUniqueFileName(LrPathUtils.child(tmpdir, "exifDateTime.txt"))
-	local cmdline 
-	
-	if exiftool then
-		cmdline = '"' .. exiftool .. '" -s3 -d %s -datetimeoriginal ' .. srcFilename .. ' > ' .. outfile
-	else
-		return nil
-	end
-	
-	writeLogfile(4,cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3,"... failed!\n")
-		return nil
-	end
-
-	local datetimeOrg = LrFileUtils.readFile( outfile )
-	LrFileUtils.delete(outfile)
-	
-	return LrDate.timeFromPosixDate(datetimeOrg)
-end
-]]
-
----------------------- ffmpeg functions ----------------------------------------------------------
-
--- ffmpegGetDateTimeOrg(srcVideoFilename)
--- get the capture date of a video via ffmpeg. Lr won't give you the capture date for videos
-function ffmpegGetDateTimeOrg(srcVideoFilename)
-	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
-	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
-	local outfile =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
-	-- LrTask.execute() will call cmd.exe /c cmdline, so we need additional outer quotes
-	local cmdline = cmdlineQuote() .. '"' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> ' .. outfile .. cmdlineQuote()
-
-	writeLogfile(4, cmdline .. "\n")
-	LrTasks.execute(cmdline)
-	-- ignore errorlevel of ffmpeg here (is 1) , just check the outfile
-	
-	if not LrFileUtils.exists(outfile) then
-		writeLogfile(3, "  error on: " .. cmdline .. "\n")
-		return nil
-	end
-
-	local ffmpegReport = LrFileUtils.readFile(outfile)
-	writeLogfile(4, "ffmpeg report:\n" .. ffmpegReport)
-	
-	-- search for avp: 'creation_time : date'
-	local v, dateTimeOrigString, dateTimeOrig
-	for v in string.gmatch(ffmpegReport, "creation_time%s+:%s+([%d%p]+%s[%d%p]+)") do
-		dateTimeOrigString = v
-		writeLogfile(4, "dateTimeOrigString: " .. dateTimeOrigString .. "\n")
-		-- translate from  yyyy-mm-dd HH:MM:ss to timestamp
-		dateTimeOrig = LrDate.timeFromComponents(string.sub(dateTimeOrigString,1,4),
-												string.sub(dateTimeOrigString,6,7),
-												string.sub(dateTimeOrigString,9,10),
-												string.sub(dateTimeOrigString,12,13),
-												string.sub(dateTimeOrigString,15,16),
-												string.sub(dateTimeOrigString,18,19),
-												'local')
-		writeLogfile(4, "  dateTimeOrig: " .. LrDate.timeToUserFormat(dateTimeOrig, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-     end
-
-	 LrFileUtils.delete(outfile)
-
-	 return dateTimeOrig
-end
-
 ------------- getDateTimeOriginal -------------------------------------------------------------------
 
 -- getDateTimeOriginal(srcFilename, srcPhoto)
--- get the DateTimeOriginal (capture date) of a photo/video or whatever comes close to it
--- tries various methods to get the info including Lr metadata, ffmpeg, exiftool (if enabled), file infos
+-- get the DateTimeOriginal (capture date) of a photo or whatever comes close to it
+-- tries various methods to get the info including Lr metadata, exiftool (if enabled), file infos
 -- returns a unix timestamp 
 function getDateTimeOriginal(srcFilename, srcPhoto)
 	local srcDateTime = nil
 	
-	if srcPhoto:getRawMetadata("isVideo") then
-		srcDateTime = ffmpegGetDateTimeOrg(srcFilename)
-		if srcDateTime then
-			writeLogfile(3, "  ffmpegDateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+	if srcPhoto:getRawMetadata("dateTimeOriginal") then
+		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginal")
+		writeLogfile(3, "  dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+	elseif srcPhoto:getRawMetadata("dateTimeOriginalISO8601") then
+		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
+		writeLogfile(3, "  dateTimeOriginalISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+	elseif srcPhoto:getRawMetadata("dateTimeDigitized") then
+		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitized")
+		writeLogfile(3, "  dateTimeDigitized: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+	elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
+		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
+		writeLogfile(3, "  dateTimeDigitizedISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+	elseif srcPhoto:getFormattedMetadata("dateCreated") then
+		local srcDateTimeStr = srcPhoto:getFormattedMetadata("dateCreated")
+		local year,month,day,hour,minute,second,tzone
+		writeLogfile(3, "dateCreated: " .. srcDateTimeStr .. "\n")
+		
+		-- iptcDateCreated: date is mandatory, time as whole, seconds and timezone may or may not be present
+		for year,month,day,hour,minute,second,tzone in string.gmatch(srcDateTimeStr, "(%d+)-(%d+)-(%d+)T*(%d*):*(%d*):*(%d*)Z*(%w*)") do
+			writeLogfile(4, string.format("dateCreated: %s Year: %s Month: %s Day: %s Hour: %s Minute: %s Second: %s Zone: %s\n",
+											srcDateTimeStr, year, month, day, ifnil(hour, "00"), ifnil(minute, "00"), ifnil(second, "00"), ifnil(tzone, "local")))
+			srcDateTime = LrDate.timeFromComponents(tonumber(year), tonumber(month), tonumber(day),
+													tonumber(ifnil(hour, "0")),
+													tonumber(ifnil(minute, "0")),
+													tonumber(ifnil(second, "0")),
+													iif(not tzone or tzone == "", "local", tzone))
 		end
-	else
-	-- is not a video
-		if srcPhoto:getRawMetadata("dateTimeOriginal") then
-			srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginal")
-			writeLogfile(3, "  dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		elseif srcPhoto:getRawMetadata("dateTimeOriginalISO8601") then
-			srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
-			writeLogfile(3, "  dateTimeOriginalISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		elseif srcPhoto:getRawMetadata("dateTimeDigitized") then
-			srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitized")
-			writeLogfile(3, "  dateTimeDigitized: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
-			srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
-			writeLogfile(3, "  dateTimeDigitizedISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		elseif srcPhoto:getFormattedMetadata("dateCreated") then
-			local srcDateTimeStr = srcPhoto:getFormattedMetadata("dateCreated")
-			local year,month,day,hour,minute,second,tzone
-			writeLogfile(3, "dateCreated: " .. srcDateTimeStr .. "\n")
-			
-			-- iptcDateCreated: date is mandatory, time as whole, seconds and timezone may or may not be present
-			for year,month,day,hour,minute,second,tzone in string.gmatch(srcDateTimeStr, "(%d+)-(%d+)-(%d+)T*(%d*):*(%d*):*(%d*)Z*(%w*)") do
-				writeLogfile(4, string.format("dateCreated: %s Year: %s Month: %s Day: %s Hour: %s Minute: %s Second: %s Zone: %s\n",
-												srcDateTimeStr, year, month, day, ifnil(hour, "00"), ifnil(minute, "00"), ifnil(second, "00"), ifnil(tzone, "local")))
-				srcDateTime = LrDate.timeFromComponents(tonumber(year), tonumber(month), tonumber(day),
-														tonumber(ifnil(hour, "0")),
-														tonumber(ifnil(minute, "0")),
-														tonumber(ifnil(second, "0")),
-														iif(not tzone or tzone == "", "local", tzone))
-			end
-			writeLogfile(4, "  dateCreated: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		writeLogfile(4, "  dateCreated: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 --[[
-		else
-			local custMetadata = srcPhoto:getRawMetadata("customMetadata")
-			local i 
-			writeLogfile(4, "customMetadata:\n")
-			for i = 1, #custMetadata do
-				writeLogfile(4, 'Id: ' .. custMetadata[i].id .. 
-								' Value: ' .. ifnil(custMetadata[i].value, '<Nil>') .. 
-								' sourcePlugin: ' .. ifnil(custMetadata[i].sourcePlugin, '<Nil>') .. '\n')
-			end
-]]
+	else
+		local custMetadata = srcPhoto:getRawMetadata("customMetadata")
+		local i 
+		writeLogfile(4, "customMetadata:\n")
+		for i = 1, #custMetadata do
+			writeLogfile(4, 'Id: ' .. custMetadata[i].id .. 
+							' Value: ' .. ifnil(custMetadata[i].value, '<Nil>') .. 
+							' sourcePlugin: ' .. ifnil(custMetadata[i].sourcePlugin, '<Nil>') .. '\n')
 		end
+]]
 	end
 	
 	-- if nothing helps: take the fileCreationDate
@@ -439,120 +284,6 @@ function getDateTimeOriginal(srcFilename, srcPhoto)
 	end
 	return LrDate.timeToPosixDate(srcDateTime)
 end
-
----------------------- convert functions ----------------------------------------------------------
-
--- convertPic(srcFilename, size, quality, unsharp, dstFilename)
--- converts a picture file using the ImageMagick convert tool
-function convertPic(srcFilename, size, quality, unsharp, dstFilename)
-	local cmdline = cmdlineQuote() .. 
-				'"' .. conv .. '" ' .. srcFilename .. ' -resize ' .. shellEscape(size) .. ' -quality ' .. quality .. ' -unsharp ' .. unsharp .. ' ' .. dstFilename ..
-				cmdlineQuote()
-
-	writeLogfile(4,cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3,"... failed!\n")
-		writeLogfile(1, "convertPic: " .. srcFilename .. " to " .. dstFilename .. " failed!\n")
-		return false
-	end
-
-	return true
-end
-
-
--- convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
--- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
-function convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
-	local cmdline = cmdlineQuote() .. '"' .. conv .. '" "' .. srcFilename .. '" ' ..
-			shellEscape(
-				'( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write ' .. xlFile .. ' ) -delete 0 ' ..
-				'( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write ' ..  lFile .. ' +delete ) ' ..
-				'( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write ' ..  bFile .. ' +delete ) ' ..
-				'( +clone   -define jpeg:size=' ..  mSize .. ' -thumbnail '  ..  mSize .. ' ' .. convParams .. ' -write ' ..  mFile .. ' +delete ) ' ..
-						   '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' ' 		  ..  sFile
-			) .. cmdlineQuote()
-	writeLogfile(4, cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3,"... failed!\n")
-		writeLogfile(1, "convertPicConcurrent: " .. srcFilename  .. " failed!\n")
-		return false
-	end
-
-	return true
-end
-
-------------------
-
--- convertVideo(srcVideoFilename, resolution, dstVideoFilename)
---[[ 
-	converts a video to an mp4 with a given resolution using the ffmpeg and qt-faststart tool
-	Supported resolutions:
-	MOB	(mobile)	320x180
-	LOW				480x360
-	MED				1280x720
-	HIGH			1920x1080
-	
-	Note: resolution is currently ignored: always use MED resolution !!!
-]]
-function convertVideo(srcVideoFilename, resolution, dstVideoFilename)
-	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
-	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
-
-	local encOpt
-	if WIN_ENV then
-		encOpt = '-acodec libvo_aacenc'
-	else
-		encOpt = '-strict experimental -acodec aac'
-	end
-	
---	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
-	local cmdline =  cmdlineQuote() ..
-				'"' .. ffmpeg .. '" -i "' .. 
-				srcVideoFilename .. 
-				'" -y ' .. encOpt .. 
-				" -ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4 -s 480x360 -aspect 480:360 " .. 
-				tmpVideoFilename .. ' 2> ' .. outfile ..
-				cmdlineQuote()
-				
-	writeLogfile(4, cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
-		writeLogfile(3, "  error on: " .. cmdline .. "\n")
-		LrFileUtils.delete(outfile)
-		return false
-	end
-
-	cmdline =   cmdlineQuote() ..
-				'"' .. ffmpeg .. '" -i "' .. 
-				srcVideoFilename .. 
-				'" -y ' .. encOpt .. 
-				" -ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4 -s 480x360 -aspect 480:360 " .. 
-				tmpVideoFilename .. ' 2> ' .. outfile ..
-				cmdlineQuote()
-
-	writeLogfile(4, cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
-		writeLogfile(3, "  error on: " .. cmdline .. "\n")
-		LrFileUtils.delete(outfile)
-		LrFileUtils.delete(tmpVideoFilename)
-		return false
-	end
-
---	LrFileUtils.copy(tmpVideoFilename, tmpVideoFilename ..".bak")
-	cmdline = 	'"' .. qtfstart .. '" ' ..  tmpVideoFilename .. ' ' .. dstVideoFilename .. ' 2> ' .. outfile
-
-	writeLogfile(4, cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3, "  error on: " .. cmdline .. "\n")
-		LrFileUtils.delete(outfile)
-		LrFileUtils.delete(tmpVideoFilename)
-		return false
-	end
-
-	LrFileUtils.delete(outfile)
-	LrFileUtils.delete(tmpVideoFilename)
-	return true
-end
-
 
 -----------------
 
@@ -619,13 +350,13 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated)
 end
 
 -----------------
--- uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
+-- uploadPicture(srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
+function uploadPicture(srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename))
 	local picExt = LrPathUtils.extension(srcFilename)
 	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
@@ -633,18 +364,18 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, lar
 	local thmb_M_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
-	local cmdline
+	local srcDateTime = getDateTimeOriginal(srcFilename, srcPhoto)
 	local retcode
 	
 	-- generate thumbs
 
 	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
 --[[
-	if not convertPic(srcFilename, '1280x1280>', 90, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
-	or not convertPic(thmb_XL_Filename, '800x800>', 90, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
-	or not convertPic(thmb_L_Filename, '640x640>', 90, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
-	or not convertPic(thmb_L_Filename, '320x320>', 90, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
-	or not convertPic(thmb_M_Filename, '120x120>', 90, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
+	if not PSConvert.convertPic(srcFilename, '1280x1280>', 90, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
+	or not PSConvert.convertPic(thmb_XL_Filename, '800x800>', 90, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
+	or not PSConvert.convertPic(thmb_L_Filename, '640x640>', 90, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
+	or not PSConvert.convertPic(thmb_L_Filename, '320x320>', 90, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
+	or not PSConvert.convertPic(thmb_M_Filename, '120x120>', 90, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
 
 	-- upload thumbnails and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
@@ -661,14 +392,14 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, lar
 
 ]]
 		
-	if ( not largeThumbs and not convertPicConcurrent(srcFilename, 
+	if ( not largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-	or ( largeThumbs and not convertPicConcurrent(srcFilename, 
+	or ( largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
@@ -699,17 +430,16 @@ function uploadPicture(srcFilename, srcDateTime, dstDir, dstFilename, isPS6, lar
 end
 
 -----------------
--- uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
+-- uploadVideo(srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
-	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
+function uploadVideo(srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
-	local vidExt = LrPathUtils.extension(srcVideoFilename)
+	local vidExtOrg = LrPathUtils.extension(srcVideoFilename)
 	local picPath = LrPathUtils.parent(srcVideoFilename)
 	local picExt = 'jpg'
 	local vidExt = 'mp4'
@@ -719,60 +449,86 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, 
 	local thmb_M_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_S', picExt))
---	local vid_MOB_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MOB', vidExt))
-	local vid_LOW_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt))
---	local vid_MED_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MED', vidExt))
---	local vid_HIGH_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))
-	local cmdline
+	local vid_MOB_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MOB', vidExt)) 	--  240p
+	local vid_LOW_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt))	--  360p
+	local vid_MED_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MED', vidExt))	--  720p
+	local vid_HIGH_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))	-- 1080p
+	local realDimension
 	local retcode
-
-	-- get video infos: aspect ratio, resolution ,...
-
-	-- generate first thumb from video
-	cmdline = 	cmdlineQuote() ..
-					'"' .. ffmpeg .. 
-					'" -i "' .. srcVideoFilename .. 
-					'" -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg -s 640x480 -aspect 640:480 ' .. 
-					thmb_ORG_Filename .. ' 2> ' .. outfile ..
-				cmdlineQuote()
-
-
-	writeLogfile(4, cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(thmb_ORG_Filename) then
-		writeLogfile(3, "  error on: " .. cmdline .. "\n")
-		LrFileUtils.delete(outfile)
+	local convKeyOrig, convKeyAdd, dummyIndex
+	local vid_Orig_Filename, vid_Add_Filename
+	
+	writeLogfile(3, string.format("uploadVideo: %s\n", srcVideoFilename)) 
+	local convParams = { 
+		HIGH =  	{ height = 1020,	filename = vid_HIGH_Filename },
+		MEDIUM = 	{ height = 720, 	filename = vid_MED_Filename },
+		LOW =		{ height = 360, 	filename = vid_LOW_Filename },
+		MOBILE =	{ height = 240,		filename = vid_MOB_Filename },
+	}
+	
+	-- get video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
+	local retcode, srcDateTime, duration, dimension, sampleAR, dispAR = PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
+	if not retcode then
 		return false
 	end
-	LrFileUtils.delete(outfile)
+	
+	if not srcDateTime then
+		srcDateTime = getDateTimeOriginal(srcFilename, srcPhoto)
+	end
+	
+	-- get the real dimension: may be different from dimension if dar is set
+	-- dimension: NNNxMMM
+	local srcHeight = tonumber(string.sub(dimension, string.find(dimension,'x') + 1, -1))
+	if (ifnil(dispAR, '') == '') or (ifnil(sampleAR,'') == '1:1') then
+		realDimension = dimension
+		-- aspectRatio: NNN:MMM
+		dispAR = string.gsub(dimension, 'x', ':')
+	else
+		local darWidth = tonumber(string.sub(dispAR, 1, string.find(dispAR,':') - 1))
+		local darHeight = tonumber(string.sub(dispAR, string.find(dispAR,':') + 1, -1))
+		local realSrcWidth = srcHeight * darWidth / darHeight
+		realDimension = tostring(realSrcWidth) .. 'x' .. srcHeight
+	end
+	
+	dummyIndex, convKeyOrig = PSConvert.getConvertKey(srcHeight)
+	vid_Orig_Filename = convParams[convKeyOrig].filename
+	convKeyAdd = addVideo[convKeyOrig]
+	if convKeyAdd ~= 'None' then
+		vid_Add_Filename = convParams[convKeyAdd].filename
+	end
+	
+	-- generate first thumb from video
+	if not PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thmb_ORG_Filename, realDimension)
 
 	-- generate all other thumb from first thumb
-
 	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
 --[[
-	if not convertPic(thmb_ORG_Filename, '1280x1280>', 70, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
-	or not convertPic(thmb_XL_Filename, '800x800>', 70, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
-	or not convertPic(thmb_L_Filename, '640x640>', 70, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
-	or not convertPic(thmb_L_Filename, '320x320>', 70, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
-	or not convertPic(thmb_M_Filename, '120x120>', 70, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
+	if not PSConvert.convertPic(thmb_ORG_Filename, '1280x1280>', 70, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
+	or not PSConvert.convertPic(thmb_XL_Filename, '800x800>', 70, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
+	or not PSConvert.convertPic(thmb_L_Filename, '640x640>', 70, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
+	or not PSConvert.convertPic(thmb_L_Filename, '320x320>', 70, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
+	or not PSConvert.convertPic(thmb_M_Filename, '120x120>', 70, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
 ]]	
-
-	if ( not largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, 
+	or ( not largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-	or ( largeThumbs and not convertPicConcurrent(thmb_ORG_Filename, 
+	or ( largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
-								'640x640>',    thmb_B_Filename,
+								'640x640>^',   thmb_B_Filename,
 								'320x320>^',   thmb_M_Filename,
-								'120x120>',    thmb_S_Filename) )
+								'120x120>^',   thmb_S_Filename) )
 
-	-- generate preview video
-	or not convertVideo(srcVideoFilename, "LOW", vid_LOW_Filename) 
+	-- generate mp4 in original size if srcVideo is not already mp4
+	or ((string.lower(vidExtOrg) ~= vidExt) and not PSConvert.convertVideo(srcVideoFilename, dispAR, srcHeight, vid_Orig_Filename))
+	
+	-- generate additional video, if requested
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(srcVideoFilename, dispAR, convParams[convKeyAdd].height, vid_Add_Filename))
 
 	-- upload thumbs, preview videos and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
@@ -780,7 +536,8 @@ function uploadVideo(srcVideoFilename, srcDateTime, dstDir, dstFilename, isPS6, 
 	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
 	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
 	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
-	or not PSUploadAPI.uploadPictureFile(vid_LOW_Filename, srcDateTime, dstDir, dstFilename, 'MP4_LOW', 'video/mpeg', 'MIDDLE') 
+	or ((string.lower(vidExtOrg) ~= vidExt) and not PSUploadAPI.uploadPictureFile(vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
+	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(vid_Add_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
 	or not PSUploadAPI.uploadPictureFile(srcVideoFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
 		retcode = false
@@ -837,6 +594,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		return
 	end
 	
+	-- Build addVideo table
+	local addVideo = {
+		HIGH = 		exportParams.addVideoHigh,
+		MEDIUM = 	exportParams.addVideoMed,
+		LOW = 		exportParams.addVideoLow,
+		MOBILE = 	'None',
+	}
+	
 	local startTime = LrDate.currentTime()
 	local numPics = 0
 
@@ -876,17 +641,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			local srcPhoto = rendition.photo
 			local filename = LrPathUtils.leafName( pathOrMessage )
-			local tmpFilename = LrPathUtils.child(LrPathUtils.parent(pathOrMessage), unblankFilename(filename))
 			local srcFilename = srcPhoto:getRawMetadata("path") 
-			local srcDateTime = getDateTimeOriginal(srcFilename, srcPhoto)
 			local dstDir
 			
-			if pathOrMessage ~= tmpFilename then
-				-- avoid problems caused by filenames with blanks in it
-				writeLogfile(3, " unblanked: " .. tmpFilename .. "\n")
-				LrFileUtils.move( pathOrMessage, tmpFilename )
-			end
-
 			-- sanitize dstRoot: remove leading and trailings slashes
 			if string.sub(exportParams.dstRoot,1,1) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 2) end
 			if string.sub(exportParams.dstRoot, string.len(exportParams.dstRoot)) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 1, -2) end
@@ -917,8 +674,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			if srcPhoto:getRawMetadata("isVideo") then
 				writeLogfile(4, pathOrMessage .. ": is video\n") 
-				if not uploadVideo(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
---				if not uploadVideo(srcFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
+				if not uploadVideo(pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, addVideo) then
+--				if not uploadVideo(srcFilename, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, addVideo) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
@@ -927,7 +684,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
 				end
 			else
-				if not uploadPicture(tmpFilename, srcDateTime, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
+				if not uploadPicture(pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
@@ -937,7 +694,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				end
 			end
 
-			LrFileUtils.delete( tmpFilename )
+			LrFileUtils.delete( pathOrMessage )
 					
 		end
 	end

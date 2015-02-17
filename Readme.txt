@@ -1,7 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 2.5
-2015/02/13
+Version 2.6
+2015/02/16
 Copyright(c) 2015, Martin Messmer
 
 Description:
@@ -94,7 +94,21 @@ Version 2.4:
 Version 2.5:
 ------------
 - Configurable thumbnail generation quality (in percent)
-- Target album not required in preset; prompt for it if missing
+- Target album not required in preset; prompt for it before upload starts, if missing 
+
+Version 2.6:
+------------
+- video upload completely reworked
+- support for DateTimeOriginal (capture date) in uploaded video
+- support for videos with differen aspect ratios (16:9, 4:3, 3:2, ...) 
+	- recognizes the video aspect ratio by mpeg dimension tag and by mpeg dar (display aspect ratio) tag
+	- generate thumbnails and videos in correct aspect ratio
+- support for uploading of original videos in various formats:
+	- if file is '*.mp4', no conversion required, otherwise the original video has to be converted to mp4
+- support for uploading of an additional mp4-video in a different (lower) resolution:
+	- additional video resolution is configurable separately different original video resolutions
+- note: make sure to select "Include Video" and Format "Original" in the Video settings section 
+	to avoid double transcoding and to preserve	the DateTimeOriginal (capture date) in the uploaded video
 
 Installation:
 =============
@@ -106,7 +120,10 @@ Installation:
 
 Open issues:
 ============
-- Videos couldn't be exported on Mac, got an error on ffmpeg phase 1 conversion
+- video conversion doesn't work on Mac (upload mp4-Video as original video works)
+- issue in PhotoStation: if video aspect ratio is different from video dimension 
+  (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
+  the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
 
 Copyright:
 ==========
