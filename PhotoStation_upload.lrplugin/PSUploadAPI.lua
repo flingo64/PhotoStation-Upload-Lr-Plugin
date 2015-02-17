@@ -224,7 +224,13 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 		datetimeOption,
 	}
 
-	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. serverUrl .. uploadPath .. "\n")
+	-- calculate max. upload time for LrHttp.post()
+	-- we expect a minimum of 32 MBit/s upload speed --> 4MByte/s
+	local fileSize = LrFileUtils.fileAttributes(srcFilename).fileSize
+	local timeout = fileSize / 4000000
+	if timeout < 30 then timeout = 30 end
+	
+	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. serverUrl .. uploadPath .. ", timeout: " .. timeout .. ", fileSize: " .. fileSize .. "\n")
 
 	local h
 	writeLogfile(4, "postHeaders:\n")
@@ -233,8 +239,7 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 	end
 
 	local respBody, respHeaders = LrHttp.post(serverUrl .. uploadPath, 
-								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', 60, 
-								LrFileUtils.fileAttributes(srcFilename).fileSize)
+								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
 	
 	if not respBody then
 		retcode = false

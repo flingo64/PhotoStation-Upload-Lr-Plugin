@@ -282,6 +282,9 @@ function PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thumbFilename, dim
 end
 
 
+-- ffmpeg enocder to use depends on OS
+local encoderOpt = iif(WIN_ENV, '-acodec libvo_aacenc',  '-strict experimental -acodec aac')
+
 -- videoConversion defines the conversion parameters based on the requested target dimension
 -- must be sorted from lowest to highest resolution
 local videoConversion = {
@@ -355,13 +358,6 @@ function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVid
 	local dstAspect = string.format("%d:%d", dstWidth, dstHeight)
 	writeLogfile(3, string.format("convertVideo: aspectRatio %d:%d, dstHeight: %d --> dstWidth: %d --> dim: %s ar: %s\n", arw, arh, dstHeight, dstWidth, dstDim, dstAspect))
 
-	local encOpt
-	if WIN_ENV then
-		encOpt = '-acodec libvo_aacenc'
-	else
-		encOpt = '-strict experimental -acodec aac'
-	end
-	
 	-- get the conversionParams
 	local convKey = PSConvert.getConvertKey(dstHeight)
 	writeLogfile(3, string.format("convertVideo: using conversion %d/%s (%dp)\n", convKey, videoConversion[convKey].id, videoConversion[convKey].upToHeight)) 
@@ -370,7 +366,7 @@ function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVid
 	local cmdline =  cmdlineQuote() ..
 				'"' .. ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
-				'" -y ' .. encOpt .. ' ' ..
+				'" -y ' .. encoderOpt .. ' ' ..
 				videoConversion[convKey].pass1Params .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect ..
 				' "' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
@@ -386,7 +382,7 @@ function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVid
 	cmdline =   cmdlineQuote() ..
 				'"' .. ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
-				'" -y ' .. encOpt .. ' ' ..
+				'" -y ' .. encoderOpt .. ' ' ..
 				videoConversion[convKey].pass2Params .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect ..
 				' "' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
