@@ -78,7 +78,7 @@ function unblankFilename(str)
 end 
 ]]
 
------------------------- initialie ---------------------------------------------------------------------------------
+------------------------ initialize ---------------------------------------------------------------------------------
 
 -- initialize: set serverUrl, loginPath and uploadPath
 function PSConvert.initialize(PSUploaderPath)
@@ -185,21 +185,40 @@ function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 	local ffmpegReport = LrFileUtils.readFile(outfile)
 	writeLogfile(4, "ffmpeg report:\n" .. ffmpegReport)
 	
-	-------------- DateTimeOriginal: search for avp: 'creation_time : date' -------------------------
-	local v, dateTimeOrigString, dateTimeOrig
-	for v in string.gmatch(ffmpegReport, "creation_time%s+:%s+([%d%p]+%s[%d%p]+)") do
-		dateTimeOrigString = v
-		writeLogfile(4, "dateTimeOrigString: " .. dateTimeOrigString .. "\n")
+	-------------- DateTimeOriginal search for avp: 'date            : 2014-07-14T21:35:04-0700'
+	local v, dateCaptureString, dateCapture
+	for v in string.gmatch(ffmpegReport, "date%s+:%s+([%d%p]+T[%d%p]+)") do
+		dateCaptureString = v
+		writeLogfile(4, "dateCaptureString: " .. dateCaptureString .. "\n")
 		-- translate from  yyyy-mm-dd HH:MM:ss to timestamp
-		dateTimeOrig = LrDate.timeFromComponents(string.sub(dateTimeOrigString,1,4),
-												string.sub(dateTimeOrigString,6,7),
-												string.sub(dateTimeOrigString,9,10),
-												string.sub(dateTimeOrigString,12,13),
-												string.sub(dateTimeOrigString,15,16),
-												string.sub(dateTimeOrigString,18,19),
+		dateCapture = LrDate.timeFromComponents(string.sub(dateCaptureString,1,4),
+												string.sub(dateCaptureString,6,7),
+												string.sub(dateCaptureString,9,10),
+												string.sub(dateCaptureString,12,13),
+												string.sub(dateCaptureString,15,16),
+												string.sub(dateCaptureString,18,19),
+												'local') -- ignore timezone 
+		writeLogfile(4, "  ffmpeg-dateCapture: " .. LrDate.timeToUserFormat(dateCapture, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		dateCapture = LrDate.timeToPosixDate(dateCapture)
+		break
+     end
+	
+	-------------- DateTimeOriginal: search for avp: 'creation_time : date' -------------------------
+	local creationTimeString, creationTime
+	for v in string.gmatch(ffmpegReport, "creation_time%s+:%s+([%d%p]+%s[%d%p]+)") do
+		creationTimeString = v
+		writeLogfile(4, "creationTimeString: " .. creationTimeString .. "\n")
+		-- translate from  yyyy-mm-dd HH:MM:ss to timestamp
+		creationTime = LrDate.timeFromComponents(string.sub(creationTimeString,1,4),
+												string.sub(creationTimeString,6,7),
+												string.sub(creationTimeString,9,10),
+												string.sub(creationTimeString,12,13),
+												string.sub(creationTimeString,15,16),
+												string.sub(creationTimeString,18,19),
 												'local')
-		writeLogfile(4, "  ffmpegDateTimeOrig: " .. LrDate.timeToUserFormat(dateTimeOrig, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		dateTimeOrig = LrDate.timeToPosixDate(dateTimeOrig)
+		writeLogfile(4, "  ffmpeg-creationTime: " .. LrDate.timeToUserFormat(creationTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		creationTime = LrDate.timeToPosixDate(creationTime)
+		break
      end
 
 	-------------- duration: search for avp: 'Duration: <HH:MM:ss.msec>,' -------------------------
@@ -224,11 +243,18 @@ function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 		sar = w
 		dar = x
 		writeLogfile(4, string.format("dimension: %s, sar: %s, dar: %s\n", dimension, ifnil(sar, '<Nil>'), ifnil(dar, '<Nil>')))
-     end
+    end
 	 
-	 LrFileUtils.delete(outfile)
+	LrFileUtils.delete(outfile)
 
-	 return true, dateTimeOrig, duration, dimension, sar, dar
+	local dateTimeOrig 
+	if dateCapture and dateCapture < creationTime then
+		dateTimeOrig = dateCapture
+	else
+		dateTimeOrig = creationTime
+	end
+	
+	return true, dateTimeOrig, duration, dimension, sar, dar
 end
 
 -- ffmpegGetThumbFromVideo(srcVideoFilename) ---------------------------------------------------------
