@@ -44,6 +44,9 @@ local ffmpeg
 local qtfstart
 -- local exiftool
 
+-- ffmpeg encoder to use depends on OS
+local encoderOpt
+
 ---------------------- shell encoding routines ---------------------------------------------------------
 
 function cmdlineQuote()
@@ -107,6 +110,8 @@ function PSConvert.initialize(PSUploaderPath)
 		exiftool = exiftoolprog
 	end
 ]]
+	encoderOpt = iif(WIN_ENV, '-acodec libvo_aacenc',  '-strict experimental -acodec aac')
+	
 	writeLogfile(4, "PSConvert.initialize:\nconv: " .. conv .. "\nffmpeg: ".. ffmpeg .. "\nqt-faststart: " .. qtfstart)
 	return true
 end
@@ -281,9 +286,6 @@ function PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thumbFilename, dim
 	return true
 end
 
-
--- ffmpeg enocder to use depends on OS
-local encoderOpt = iif(WIN_ENV, '-acodec libvo_aacenc',  '-strict experimental -acodec aac')
 
 -- videoConversion defines the conversion parameters based on the requested target dimension
 -- must be sorted from lowest to highest resolution
