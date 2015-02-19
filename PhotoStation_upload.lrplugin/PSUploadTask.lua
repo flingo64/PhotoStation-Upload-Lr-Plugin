@@ -235,10 +235,10 @@ function getDateTimeOriginal(srcFilename, srcPhoto)
 	elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
 		writeLogfile(3, "  dateTimeDigitizedISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-	elseif srcPhoto:getFormattedMetadata("dateCreated") then
+	elseif srcPhoto:getFormattedMetadata("dateCreated") and srcPhoto:getFormattedMetadata("dateCreated") ~= '' then
 		local srcDateTimeStr = srcPhoto:getFormattedMetadata("dateCreated")
 		local year,month,day,hour,minute,second,tzone
-		writeLogfile(3, "dateCreated: " .. srcDateTimeStr .. "\n")
+		local foundDate = false -- avoid empty dateCreated
 		
 		-- iptcDateCreated: date is mandatory, time as whole, seconds and timezone may or may not be present
 		for year,month,day,hour,minute,second,tzone in string.gmatch(srcDateTimeStr, "(%d+)-(%d+)-(%d+)T*(%d*):*(%d*):*(%d*)Z*(%w*)") do
@@ -249,22 +249,20 @@ function getDateTimeOriginal(srcFilename, srcPhoto)
 													tonumber(ifnil(minute, "0")),
 													tonumber(ifnil(second, "0")),
 													iif(not tzone or tzone == "", "local", tzone))
+			foundDate = true
 		end
-		writeLogfile(4, "  dateCreated: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
---[[
-	else
-		local custMetadata = srcPhoto:getRawMetadata("customMetadata")
-		local i 
-		writeLogfile(4, "customMetadata:\n")
-		for i = 1, #custMetadata do
-			writeLogfile(4, 'Id: ' .. custMetadata[i].id .. 
-							' Value: ' .. ifnil(custMetadata[i].value, '<Nil>') .. 
-							' sourcePlugin: ' .. ifnil(custMetadata[i].sourcePlugin, '<Nil>') .. '\n')
-		end
+		if foundDate then writeLogfile(3, "  dateCreated: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n") end
+	
+	-- dateTime is typically the date of the Lightroom import --> worst choice
+--[[ 
+	elseif srcPhoto:getRawMetadata("dateTime") then
+		srcDateTime = srcPhoto:getRawMetadata("dateTime")
+		writeLogfile(3, "  RawMetadate datetime\n")
+		writeLogfile(3, "  dateTime: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 ]]
 	end
 	
-	-- if nothing helps: take the fileCreationDate
+	-- if nothing found in srcPhoto: take the fileCreationDate
 	if not srcDateTime then
 		local fileAttr = LrFileUtils.fileAttributes( srcFilename )
 --		srcDateTime = exiftoolGetDateTimeOrg(srcFilename)
@@ -274,9 +272,8 @@ function getDateTimeOriginal(srcFilename, srcPhoto)
 		if fileAttr["fileCreationDate"] then
 			srcDateTime = fileAttr["fileCreationDate"]
 			writeLogfile(3, "  fileCreationDate: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		elseif srcPhoto:getRawMetadata("dateTime") then
-			srcDateTime = srcPhoto:getRawMetadata("dateTime")
-			writeLogfile(3, "  dateTime: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+--[[
+]]
 		else
 			srcDateTime = LrDate.currentTime()
 			writeLogfile(3, "  no date found, using current date: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
@@ -350,13 +347,13 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated)
 end
 
 -----------------
--- uploadPicture(srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
+-- uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadPicture(srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
+function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename))
 	local picExt = LrPathUtils.extension(srcFilename)
 	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
@@ -364,7 +361,7 @@ function uploadPicture(srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeT
 	local thmb_M_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
-	local srcDateTime = getDateTimeOriginal(srcFilename, srcPhoto)
+	local srcDateTime = getDateTimeOriginal(origFilename, srcPhoto)
 	local retcode
 	
 	-- generate thumbs
@@ -430,14 +427,14 @@ function uploadPicture(srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeT
 end
 
 -----------------
--- uploadVideo(srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
+-- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
+function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
 	local vidExtOrg = LrPathUtils.extension(srcVideoFilename)
 	local picPath = LrPathUtils.parent(srcVideoFilename)
@@ -473,7 +470,7 @@ function uploadVideo(srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, lar
 	end
 	
 	if not srcDateTime then
-		srcDateTime = getDateTimeOriginal(srcFilename, srcPhoto)
+		srcDateTime = getDateTimeOriginal(origVideoFilename, srcPhoto)
 	end
 	
 	-- get the real dimension: may be different from dimension if dar is set
@@ -551,7 +548,8 @@ function uploadVideo(srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, lar
 	LrFileUtils.delete(thmb_S_Filename)
 	LrFileUtils.delete(thmb_L_Filename)
 	LrFileUtils.delete(thmb_XL_Filename)
-	LrFileUtils.delete(vid_LOW_Filename)
+	LrFileUtils.delete(vid_Orig_Filename)
+	if vid_Add_Filename then LrFileUtils.delete(vid_Add_Filename) end
 
 	return retcode
 end
@@ -674,8 +672,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			if srcPhoto:getRawMetadata("isVideo") then
 				writeLogfile(4, pathOrMessage .. ": is video\n") 
-				if not uploadVideo(pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, addVideo) then
---				if not uploadVideo(srcFilename, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, addVideo) then
+				if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, addVideo) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
@@ -684,7 +681,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 									': Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
 				end
 			else
-				if not uploadPicture(pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
+				if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
 					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
 									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )

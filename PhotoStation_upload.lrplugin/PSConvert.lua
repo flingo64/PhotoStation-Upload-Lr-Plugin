@@ -351,6 +351,7 @@ end
 function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVideoFilename)
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
 	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
+	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
 
 	writeLogfile(3, string.format("convertVideo: srcVideo: %s aspectRatio %s, dstHeight: %d dstVideo: %s\n", srcVideoFilename, aspectRatio, dstHeight, dstVideoFilename))
 	local arw = tonumber(string.sub(aspectRatio, 1, string.find(aspectRatio,':') - 1))
@@ -370,7 +371,8 @@ function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVid
 				srcVideoFilename .. 
 				'" -y ' .. encoderOpt .. ' ' ..
 				videoConversion[convKey].pass1Params .. ' ' ..
-				'-s ' .. dstDim .. ' -aspect ' .. dstAspect ..
+				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
+				'-passlogfile "' .. passLogfile .. '"' .. 
 				' "' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
 				cmdlineQuote()
 				
@@ -378,6 +380,7 @@ function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVid
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
 		LrFileUtils.delete(outfile)
+		LrFileUtils.delete(tmpVideoFilename)
 		return false
 	end
 
@@ -386,7 +389,8 @@ function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVid
 				srcVideoFilename .. 
 				'" -y ' .. encoderOpt .. ' ' ..
 				videoConversion[convKey].pass2Params .. ' ' ..
-				'-s ' .. dstDim .. ' -aspect ' .. dstAspect ..
+				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
+				'-passlogfile "' .. passLogfile .. '"' .. 
 				' "' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
 				cmdlineQuote()
 
