@@ -1,6 +1,6 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 2.6
+Version 2.7
 2015/02/20
 Copyright(c) 2015, Martin Messmer
 
@@ -111,6 +111,10 @@ Version 2.6:
 - fixed mis-alignment of other export sections (2.6.5)
 - note: make sure to select "Include Video" and Format "Original" in the Video settings section 
 	to avoid double transcoding and to preserve	the DateTimeOriginal (capture date) in the uploaded video
+
+Version 2.7:
+------------
+- Bugfix for failed upload when  filename includes ( or ), important only for MacOS
 
 
 Installation:
