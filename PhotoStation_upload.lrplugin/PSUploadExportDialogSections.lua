@@ -185,9 +185,10 @@ end
 
 -------------------------------------------------------------------------------
 
-function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTable )
+-- function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTable )
+function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTable )
 
-	local f = LrView.osFactory()
+--	local f = LrView.osFactory()
 	local bind = LrView.bind
 	local share = LrView.share
 
@@ -200,18 +201,17 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 
 			f:row {
 				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Synology PhotoStation Uploader/Assistant:",
+					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Syno PhotoStation Uploader:",
 					alignment = 'right',
 					width = share 'labelWidth'
 				},
 	
 				f:edit_field {
 					value = bind 'PSUploaderPath',
-					tooltip = LOC "$$$/PSUpload/ExportDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader or the Synology Assistant",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader or the Snology Assistant",
 					truncation = 'middle',
 					validate = validatePSUploadProgPath,
 					immediate = true,
-					width = share 'labelWidth',
 					fill_horizontal = 1,
 				},
 			},
@@ -244,9 +244,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				f:popup_menu {
 					title = LOC "$$$/PSUpload/ExportDialog/PROTOCOL=Protocol:",
 					value = bind 'proto',
-					fill_horizontal = 0, 
 					items = {
-						{ title	= 'http',value 	= 'http' },
+						{ title	= 'http',   value 	= 'http' },
 						{ title	= 'https',	value 	= 'https' },
 					},
 				},
@@ -256,7 +255,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					value = bind 'servername',
 					truncation = 'middle',
 					width = share 'labelWidth',
-					immediate = true,
+--					immediate = true,
 					fill_horizontal = 1,
 				},
 
@@ -272,7 +271,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				f:edit_field {
 					value = bind 'username',
 					truncation = 'middle',
-					immediate = true,
+--					immediate = true,
 					fill_horizontal = 1,
 				},
 
@@ -285,7 +284,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					value = bind 'password',
 					tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Leave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
 					truncation = 'middle',
-					immediate = true,
+--					immediate = true,
 					fill_horizontal = 1,
 				},
 
@@ -298,20 +297,17 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				f:row {
 					f:radio_button {
 						title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Standard PhotoStation",
-						alignment = 'right',
+						alignment = 'left',
 						width = share 'labelWidth',
 						value = bind 'usePersonalPS',
 						checked_value = false,
---						fill_horizontal = 1,
 					},
 
 					f:radio_button {
 						title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Personal PhotoStation of User:",
-						alignment = 'right',
---						width = share 'labelWidth',
+						alignment = 'left',
 						value = bind 'usePersonalPS',
 						checked_value = true,
-						fill_horizontal = 1,
 					},
 
 					f:edit_field {
@@ -320,7 +316,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 						enabled = bind 'usePersonalPS',
 						visible = bind 'usePersonalPS',
 						truncation = 'middle',
-						immediate = true,
+--						immediate = true,
 						fill_horizontal = 1,
 					},
 				},
@@ -333,7 +329,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					alignment = 'right',
 					width = share 'labelWidth',
 					value = bind 'storeDstRoot',
-					fill_horizontal = 1,
 				},
 
 				f:edit_field {
@@ -342,7 +337,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					truncation = 'middle',
 					enabled = bind 'storeDstRoot',
 					visible = bind 'storeDstRoot',
-					immediate = true,
+--					immediate = true,
 					fill_horizontal = 1,
 				},
 
@@ -369,16 +364,14 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 						value = bind 'copyTree',
 						checked_value = false,
 						width = share 'labelWidth',
---						fill_horizontal = 1,
 					},
 
 					f:radio_button {
 						title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to Local Path:",
 						tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
-						alignment = 'right',
+						alignment = 'left',
 						value = bind 'copyTree',
 						checked_value = true,
-						fill_horizontal = 1,
 					},
 
 					f:edit_field {
@@ -399,31 +392,36 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				title = LOC "$$$/PSUpload/ExportDialog/Thumbnails=Thumbnail Options",
 
 				f:row {
+					f:checkbox {
+						fill_horizontal = 1,
+						title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize Upload for PhotoStation 6",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=Do not upload Thumb_L",
+						value = bind 'isPS6',
+					},
+
 					f:row {
-						width = share 'labelWidth',
 						fill_horizontal = 1,
 						f:radio_button {
 							title = LOC "$$$/PSUpload/ExportDialog/SmallThumbs=Small Thumbs",
 							tooltip = LOC "$$$/PSUpload/ExportDialog/SmallThumbsTT=Recommended for output on low-resolution monitors",
 							alignment = 'left',
+							fill_horizontal = 1,
 							value = bind 'largeThumbs',
 							checked_value = false,
---							width = share 'labelWidth',
---							fill_horizontal = 1,
 						},
 
 						f:radio_button {
 							title = LOC "$$$/PSUpload/ExportDialog/LargeThumbs=Large Thumbs",
 							tooltip = LOC "$$$/PSUpload/ExportDialog/LargeThumbsTT=Recommended for output on Full HD monitors",
-							alignment = 'left',
+							alignment = 'right',
+							fill_horizontal = 1,
 							value = bind 'largeThumbs',
 							checked_value = true,
-							fill_horizontal = 1,
 						},
 					},
 					
 					f:row {
-						alignment = 'left',
+						alignment = 'right',
 						fill_horizontal = 1,
 
 						f:static_text {
@@ -435,7 +433,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 							tooltip = LOC "$$$/PSUpload/ExportDialog/QualityTT=Thumb conversion quality, recommended value: 80%",
 							value = bind 'thumbQuality',
 							alignment = 'left',
-							fill_horizontal = 0,
+							fill_horizontal = 1,
 							items = {
 								{ title	= '10%',	value 	= 10 },
 								{ title	= '20%',	value 	= 20 },
@@ -451,13 +449,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 						},
 					},
 
-					f:checkbox {
-							title = LOC "$$$/PSUpload/ExportDialog/isPS6=Upload to PhotoStation 6",
-							tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=Do not upload Thumb_L",
-							alignment = 'left',
-							width = share 'labelWidth',
-							value = bind 'isPS6',
-					},
 				},
 			},
 
@@ -467,7 +458,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 
 				f:row {
 					f:row {
-						width = share 'labelWidth',
+						alignment = 'left',
 						fill_horizontal = 1,
 
 						f:static_text {
@@ -478,7 +469,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 							tooltip = LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
 							value = bind 'addVideoHigh',
 							alignment = 'left',
-							fill_horizontal = 0,
+							fill_horizontal = 1,
 							items = {
 								{ title	= 'None',			value 	= 'None' },
 								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
@@ -489,7 +480,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					},					
 
 					f:row {
-						width = share 'labelWidth',
+						alignment = 'right',
 						fill_horizontal = 1,
 
 						f:static_text {
@@ -500,7 +491,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 							tooltip = LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
 							value = bind 'addVideoMed',
 							alignment = 'left',
-							fill_horizontal = 0,
+							fill_horizontal = 1,
 							items = {
 								{ title	= 'None',			value 	= 'None' },
 								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
@@ -510,7 +501,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 					},					
 
 					f:row {
-						width = share 'labelWidth',
+						alignment = 'right',
 						fill_horizontal = 1,
 
 						f:static_text {
@@ -521,7 +512,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 							tooltip = LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
 							value = bind 'addVideoLow',
 							alignment = 'left',
-							fill_horizontal = 0,
+							fill_horizontal = 1,
 							items = {
 								{ title	= 'None',			value 	= 'None' },
 								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
@@ -552,7 +543,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTabl
 				},
 				
 				f:spacer {
-					width = share 'labelWidth',
+					fill_horizontal = 1
 				},
 				
 				f:push_button {

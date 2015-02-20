@@ -1,7 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
 Version 2.6
-2015/02/16
+2015/02/20
 Copyright(c) 2015, Martin Messmer
 
 Description:
@@ -34,8 +34,8 @@ Password entered in the export settings are not stored encrypted, so the might b
 Requirements:
 =============
 	- Windows OS or Mac, tested with:
-		- Windows 7 (fully compatible)
-		- Mac OS-X ? (problems with videos)
+		- Windows 7 
+		- MacOS 10.7.5
 	- Lightroom 5, tested with:
 		- tested with Lr 5.6(Mac) and Lr 5.7 (Win)
 	- Synology PhotoStation, tested with:
@@ -107,8 +107,11 @@ Version 2.6:
 	- if file is '*.mp4', no conversion required, otherwise the original video has to be converted to mp4
 - support for uploading of an additional mp4-video in a different (lower) resolution:
 	- additional video resolution is configurable separately different original video resolutions
+- fixed video conversion bug under MacOS (2.6.4)
+- fixed mis-alignment of other export sections (2.6.5)
 - note: make sure to select "Include Video" and Format "Original" in the Video settings section 
 	to avoid double transcoding and to preserve	the DateTimeOriginal (capture date) in the uploaded video
+
 
 Installation:
 =============
@@ -120,7 +123,6 @@ Installation:
 
 Open issues:
 ============
-- video conversion doesn't work on Mac (upload mp4-Video as original video works)
 - issue in PhotoStation: if video aspect ratio is different from video dimension 
   (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
   the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
