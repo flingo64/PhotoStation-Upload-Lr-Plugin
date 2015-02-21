@@ -255,7 +255,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					value = bind 'servername',
 					truncation = 'middle',
 					width = share 'labelWidth',
---					immediate = true,
+					immediate = true,
 					fill_horizontal = 1,
 				},
 
@@ -271,7 +271,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				f:edit_field {
 					value = bind 'username',
 					truncation = 'middle',
---					immediate = true,
+					immediate = true,
 					fill_horizontal = 1,
 				},
 
@@ -284,7 +284,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					value = bind 'password',
 					tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Leave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
 					truncation = 'middle',
---					immediate = true,
+					immediate = true,
 					fill_horizontal = 1,
 				},
 
@@ -316,7 +316,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						enabled = bind 'usePersonalPS',
 						visible = bind 'usePersonalPS',
 						truncation = 'middle',
---						immediate = true,
+						immediate = true,
 						fill_horizontal = 1,
 					},
 				},
@@ -337,7 +337,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					truncation = 'middle',
 					enabled = bind 'storeDstRoot',
 					visible = bind 'storeDstRoot',
---					immediate = true,
+					immediate = true,
 					fill_horizontal = 1,
 				},
 
