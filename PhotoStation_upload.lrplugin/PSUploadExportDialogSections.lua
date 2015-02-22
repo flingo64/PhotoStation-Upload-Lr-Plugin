@@ -394,8 +394,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				f:row {
 					f:checkbox {
 						fill_horizontal = 1,
-						title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize Upload for PhotoStation 6",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=Do not upload Thumb_L",
+						title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize for PhotoStation 6",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=Do not generate and upload Thumb_L",
 						value = bind 'isPS6',
 					},
 

@@ -118,35 +118,16 @@ end
 
 ---------------------- picture conversion functions ----------------------------------------------------------
 
--- convertPic(srcFilename, size, quality, unsharp, dstFilename)
--- converts a picture file using the ImageMagick convert tool
---[[
-function PSConvert.convertPic(srcFilename, size, quality, unsharp, dstFilename)
-	local cmdline = cmdlineQuote() .. 
-				'"' .. conv .. '" "' .. srcFilename .. '" -resize ' .. shellEscape(size) .. ' -quality ' .. quality .. ' -unsharp ' .. unsharp .. ' "' .. dstFilename .. '"' ..
-				cmdlineQuote()
-
-	writeLogfile(4,cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3,"... failed!\n")
-		writeLogfile(1, "convertPic: " .. srcFilename .. " to " .. dstFilename .. " failed!\n")
-		return false
-	end
-
-	return true
-end
-]]
-
 -- convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 -- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
 function PSConvert.convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 	local cmdline = cmdlineQuote() .. '"' .. conv .. '" "' .. srcFilename .. '" ' ..
 			shellEscape(
-				'( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write "' .. xlFile .. '" ) -delete 0 ' ..
-				'( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write "' ..  lFile .. '" +delete ) ' ..
-				'( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write "' ..  bFile .. '" +delete ) ' ..
-				'( +clone   -define jpeg:size=' ..  mSize .. ' -thumbnail '  ..  mSize .. ' ' .. convParams .. ' -write "' ..  mFile .. '" +delete ) ' ..
-						   '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' "' 	   ..  sFile .. '"'
+						 '( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write "' .. xlFile .. '" ) -delete 0 ' ..
+		iif(lFile ~= '', '( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write "' ..  lFile .. '" +delete ) ', '') ..
+						 '( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write "' ..  bFile .. '" +delete ) ' ..
+						 '( +clone   -define jpeg:size=' ..  mSize .. ' -thumbnail '  ..  mSize .. ' ' .. convParams .. ' -write "' ..  mFile .. '" +delete ) ' ..
+								   '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' "' 	   ..  sFile .. '"'
 			) .. cmdlineQuote()
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then

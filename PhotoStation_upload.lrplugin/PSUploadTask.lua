@@ -365,38 +365,14 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename))
 	local picExt = LrPathUtils.extension(srcFilename)
 	local thmb_XL_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt)))
-	local thmb_L_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)))
+	local thmb_L_Filename = iif(not isPS6, mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt))), '')
 	local thmb_M_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_M', picExt)))
 	local thmb_B_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_B', picExt)))
 	local thmb_S_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_S', picExt)))
 	local srcDateTime = getDateTimeOriginal(origFilename, srcPhoto)
 	local retcode
 	
-	-- generate thumbs
-
-	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
---[[
-	if not PSConvert.convertPic(srcFilename, '1280x1280>', 90, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
-	or not PSConvert.convertPic(thmb_XL_Filename, '800x800>', 90, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
-	or not PSConvert.convertPic(thmb_L_Filename, '640x640>', 90, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
-	or not PSConvert.convertPic(thmb_L_Filename, '320x320>', 90, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
-	or not PSConvert.convertPic(thmb_M_Filename, '120x120>', 90, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
-
-	-- upload thumbnails and original file
-	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
-	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
-	or not PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
-	then
-		retcode = false
-	else
-		retcode = true
-	end
-
-]]
-		
+	-- generate thumbs	
 	if ( not largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
@@ -428,7 +404,7 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 	LrFileUtils.delete(thmb_B_Filename)
 	LrFileUtils.delete(thmb_M_Filename)
 	LrFileUtils.delete(thmb_S_Filename)
-	LrFileUtils.delete(thmb_L_Filename)
+	if not isPS6 then LrFileUtils.delete(thmb_L_Filename) end
 	LrFileUtils.delete(thmb_XL_Filename)
 
 	return retcode
@@ -450,7 +426,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	local vidExt = 'mp4'
 	local thmb_ORG_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename, picExt)))
 	local thmb_XL_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_XL', picExt)))
-	local thmb_L_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_L', picExt)))
+	local thmb_L_Filename = iif(not isPS6, mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt))), '')
 	local thmb_M_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_M', picExt)))
 	local thmb_B_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_B', picExt)))
 	local thmb_S_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_S', picExt)))
@@ -506,14 +482,6 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	if not PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thmb_ORG_Filename, realDimension)
 
 	-- generate all other thumb from first thumb
-	-- conversion acc. to http://www.medin.name/blog/2012/04/22/thumbnail-1000s-of-photos-on-a-synology-nas-in-hours-not-months/
---[[
-	if not PSConvert.convertPic(thmb_ORG_Filename, '1280x1280>', 70, '0.5x0.5+1.25+0.0', thmb_XL_Filename) 
-	or not PSConvert.convertPic(thmb_XL_Filename, '800x800>', 70, '0.5x0.5+1.25+0.0', thmb_L_Filename) 
-	or not PSConvert.convertPic(thmb_L_Filename, '640x640>', 70, '0.5x0.5+1.25+0.0', thmb_B_Filename) 
-	or not PSConvert.convertPic(thmb_L_Filename, '320x320>', 70, '0.5x0.5+1.25+0.0', thmb_M_Filename) 
-	or not PSConvert.convertPic(thmb_M_Filename, '120x120>', 70, '0.5x0.5+1.25+0.0', thmb_S_Filename) 
-]]	
 	or ( not largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>', thmb_XL_Filename,
@@ -554,7 +522,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	LrFileUtils.delete(thmb_B_Filename)
 	LrFileUtils.delete(thmb_M_Filename)
 	LrFileUtils.delete(thmb_S_Filename)
-	LrFileUtils.delete(thmb_L_Filename)
+	if not isPS6 then LrFileUtils.delete(thmb_L_Filename) end
 	LrFileUtils.delete(thmb_XL_Filename)
 	LrFileUtils.delete(vid_Orig_Filename)
 	if vid_Add_Filename then LrFileUtils.delete(vid_Add_Filename) end
