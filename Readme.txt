@@ -15,7 +15,7 @@ PhotoStation Upload supports two different upload methods:
 	  The named Album must exist on the PhotoStation.
 	  The root Album is defined by an empty string. In general, Albums are specified by "<folder>{/<folder>}" (no leading or trailing slashes required)
 	- tree mirror upload: 
-	  preserves the directory path of each photo/video relative to a given local base path on the PhotoStation below a named (existing) target Album.
+	  preserves the directory path of each photo/video relative to a given local base path on the PhotoStation below a named target Album.
 	  All directories within the source path of the picture/video will be created recursively.
 	  The directory tree is mirrored relative to a given local base path. Example:
 	  Local base path:	C:\users\john\pictures
@@ -28,13 +28,14 @@ PhotoStation Upload can upload to the Standard PhotoStation or to a Personal Pho
 
 PhotoStation can optimize the upload for PhotoStation 6 by not uploading the THUMB_L thumbnail.
 
-Important notice:
+Important note:
+---------------
 Passwords entered in the export settings are not stored encrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
 
 Requirements:
 =============
 	- Windows OS or Mac, tested with:
-		- Windows 7  Windows 8 
+		- Windows 7  Windows 8.1
 		- MacOS 10.7.5
 		- MacOS 10.10
 	- Lightroom 5, tested with:
@@ -70,7 +71,7 @@ Version 2.2 (initial public release):
 	- generation (via ImageMagick convert) and upload of all required thumbs
 
 - Upload of Videos to PhotoStation:
-	- upload of Lr-rendered videos 
+	- upload of original or Lr-rendered videos 
 	- generation (via ffpmeg and ImageMagick convert) and upload of all required thumbs
 	- generation (via ffpmeg) and upload of a PhotoStation-playable low-res video
 	- support for "DateTimeOriginal" for videos on PhotoStation 
@@ -106,8 +107,8 @@ Version 2.6:
 	- generate thumbnails and videos in correct aspect ratio
 - support for uploading of original videos in various formats:
 	- if file is '*.mp4', no conversion required, otherwise the original video has to be converted to mp4
-- support for uploading of an additional mp4-video in a different (lower) resolution:
-	- additional video resolution is configurable separately different original video resolutions
+- support for uploading of one additional mp4-video in a different (lower) resolution:
+	- additional video resolution is configurable separately for different original video resolutions
 - fixed video conversion bug under MacOS (2.6.4)
 - fixed mis-alignment of other export sections (2.6.5)
 - note: make sure to select "Include Video" and Format "Original" in the Video settings section 
@@ -115,12 +116,12 @@ Version 2.6:
 
 Version 2.7:
 ------------
-- Bugfix for failed upload when filename includes ( or ), important only for MacOS
-- Quicker (15%) upload for PS6 by not generating the unneeded Thumb_L
+- Bugfix for failed upload when filename includes '( 'or ')', important only for MacOS
+- Quicker (15%) upload for PS6 by not generating the Thumb_L which is not uploaded anyway
 
 Version 2.8:
 ------------
-Added video rotation support 
+Added video rotation support: 
 - soft-rotated videos (w/ rotation tag in mpeg header) now get the right (rotated) thumbs
 - hard-rotation option for soft-rotated videos for better player compatibility:
   Soft-rotated videos are not rotated in most players, PhotoStation supports soft-rotated 
