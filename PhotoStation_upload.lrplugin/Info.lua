@@ -19,6 +19,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 
+PhotoStation Upload uses the following free software to do its job:
+	- convert.exe,			see: http://www.imagemagick.org/
+	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
+	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+
 This code is derived from the Lr SDK FTP Upload sample code. Copyright: see below
 --------------------------------------------------------------------------------
 
@@ -47,5 +52,5 @@ return {
 		title = "PhotoStation Upload",
 		file = 'PSUploadServiceProvider.lua',
 	},
-	VERSION = { major=2, minor=7, revision=2, build=20150223, },
+	VERSION = { major=2, minor=8, revision=0, build=20150227, },
 }

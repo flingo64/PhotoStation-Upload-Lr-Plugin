@@ -23,6 +23,12 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+
+PhotoStation Upload uses the following free software to do its job:
+	- convert.exe,			see: http://www.imagemagick.org/
+	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
+	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+
 ]]
 --------------------------------------------------------------------------------
 
@@ -230,6 +236,8 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 	local timeout = fileSize / 4000000
 	if timeout < 30 then timeout = 30 end
 	
+	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size %d --> timeout %d\n", 
+								srcFilename, dstDir, dstFilename, picType, position, fileSize, timeout))
 	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. serverUrl .. uploadPath .. ", timeout: " .. timeout .. ", fileSize: " .. fileSize .. "\n")
 
 	local h

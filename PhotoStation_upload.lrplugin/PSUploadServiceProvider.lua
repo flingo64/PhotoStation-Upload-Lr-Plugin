@@ -19,6 +19,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 
+PhotoStation Upload uses the following free software to do its job:
+	- convert.exe,			see: http://www.imagemagick.org/
+	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
+	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+
 This code is derived from the Lr SDK FTP Upload sample code. Copyright: see below
 --------------------------------------------------------------------------------
 
@@ -56,26 +61,27 @@ return {
 						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
 						'/Applications/Synology Photo Station Uploader.app/Contents/MacOS') 
 		},											
-		{ key = 'proto', default = 'http' },		-- transport protocol for PhotoStation upload
-		{ key = 'servername', default = '' },		-- name/address of the PhotoStation, may include ':port' extension
-		{ key = 'serverUrl', default = '' },		-- proto + servername
-		{ key = 'psUrl', default = '' },			-- serverUrl + destination album (used for synopsis)
-		{ key = 'username', default = '' },			-- account for PhotoStation upload
-		{ key = 'password', default = '' },			-- guess what...
-		{ key = 'copyTree', default = false },		-- upload method: flat copy or tree mirror
-		{ key = 'srcRoot', default = '' },			-- local path to root of picture folders (only used if copyTree)
-		{ key = 'storeDstRoot', default = true },	-- enter destination Album in Export dialog or later
-		{ key = 'dstRoot', default = '' },			-- destination Album on PhotoStation: no leading or trailing slash required
-		{ key = 'createDstRoot', default = false },	-- create Destination album (if not exist)
-		{ key = 'largeThumbs', default = true },	-- generate large thumbs or small thumbs
-		{ key = 'thumbQuality', default = 80 },		-- conversion quality in percent
-		{ key = 'isPS6', default = false },			-- use upload optimization for PhotoStation 6 (not THUMB_L required)
-		{ key = 'usePersonalPS', default = false },	-- upload to Personal PhotoStation
-		{ key = 'personalPSOwner', default = '' },	-- owner of the Personal PhotoStation to upload to
-		{ key = 'addVideoHigh', default = 'None' },	-- additional video resolution for HIGH res videos
-		{ key = 'addVideoMed',default = 'None' }, 	-- additional video resolution for MEDIUEM res videos
-		{ key = 'addVideoLow', 	default = 'None' },	-- additional video resolution for LOW res videos	
-		{ key = 'logLevel', default = 2 },			-- loglevel 
+		{ key = 'proto', 			default = 'http' },	-- transport protocol for PhotoStation upload
+		{ key = 'servername', 		default = '' },		-- name/address of the PhotoStation, may include ':port' extension
+		{ key = 'serverUrl', 		default = '' },		-- proto + servername
+		{ key = 'psUrl', 			default = '' },		-- serverUrl + destination album (used for synopsis)
+		{ key = 'username', 		default = '' },		-- account for PhotoStation upload
+		{ key = 'password', 		default = '' },		-- guess what...
+		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
+		{ key = 'srcRoot', 			default = '' },		-- local path to root of picture folders (only used if copyTree)
+		{ key = 'storeDstRoot', 	default = true },	-- enter destination Album in Export dialog or later
+		{ key = 'dstRoot', 			default = '' },		-- destination Album on PhotoStation: no leading or trailing slash required
+		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
+		{ key = 'largeThumbs', 		default = true },	-- generate large thumbs or small thumbs
+		{ key = 'thumbQuality', 	default = 80 },		-- conversion quality in percent
+		{ key = 'isPS6', 			default = false },	-- use upload optimization for PhotoStation 6 (not THUMB_L required)
+		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal PhotoStation
+		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal PhotoStation to upload to
+		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
+		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUEM res videos
+		{ key = 'addVideoLow', 		default = 'None' },	-- additional video resolution for LOW res videos	
+		{ key = 'hardRotate', 		default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos 
+		{ key = 'logLevel', 		default = 2 },		-- loglevel 
 	},
 
 	startDialog = PSUploadExportDialogSections.startDialog,

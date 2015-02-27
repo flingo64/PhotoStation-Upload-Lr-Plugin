@@ -20,6 +20,11 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+
+PhotoStation Upload uses the following free software to do its job:
+	- convert.exe,			see: http://www.imagemagick.org/
+	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
+	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 ]]
 --------------------------------------------------------------------------------
 
@@ -151,6 +156,7 @@ end
 		dimension		as pixel dimension 'NxM'
 		sar				as aspect ratio 'N:M' 
 		dar				as aspect ratio 'N:M'
+		rotation		as string '0', '90', '180', '270'
 ]]
 function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
@@ -158,7 +164,8 @@ function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 	local outfile =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
 	-- LrTask.execute() will call cmd.exe /c cmdline, so we need additional outer quotes
 	local cmdline = cmdlineQuote() .. '"' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> "' .. outfile .. '"' .. cmdlineQuote()
-
+	local v,w,x -- iteration variables for string.gmatch()
+	
 	writeLogfile(4, cmdline .. "\n")
 	LrTasks.execute(cmdline)
 	-- ignore errorlevel of ffmpeg here (is 1) , just check the outfile
@@ -172,7 +179,7 @@ function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 	writeLogfile(4, "ffmpeg report:\n" .. ffmpegReport)
 	
 	-------------- DateTimeOriginal search for avp: 'date            : 2014-07-14T21:35:04-0700'
-	local v, dateCaptureString, dateCapture
+	local dateCaptureString, dateCapture
 	for v in string.gmatch(ffmpegReport, "date%s+:%s+([%d%p]+T[%d%p]+)") do
 		dateCaptureString = v
 		writeLogfile(4, "dateCaptureString: " .. dateCaptureString .. "\n")
@@ -222,15 +229,31 @@ function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 	-------------- resolution: search for avp like:  -------------------------
 	-- Video: mjpeg (MJPG / 0x47504A4D), yuvj422p, 640x480, 30 tbr, 30 tbn, 30 tbc
 	-- Video: h264 (Main) (avc1 / 0x31637661), yuv420p, 1440x1080 [SAR 4:3 DAR 16:9], 12091 kb/s, 29.97 fps, 29.97 tbr, 30k tbn, 59.94 tbc
-	-- Video: h264 (Main) (avc1 / 0x31637661), yuv420p, 1920x1080 [SAR 1:1 DAR 16:9], 19497 kb/s, 28.70 fps, 30 tbr, 30k tbn, 60k tbc
-	local w, x, dimension, sar, dar
+	local dimension, sar, dar
 	for v, w, x in string.gmatch(ffmpegReport, "Video:[%s%w%(%)/]+,[%s%w]+,%s+([%dx]+)%s*%[*%w*%s*([%d:]*)%s*%w*%s*([%w:]*)%]*,") do
 		dimension = v
 		sar = w
 		dar = x
-		writeLogfile(4, string.format("dimension: %s, sar: %s, dar: %s\n", dimension, ifnil(sar, '<Nil>'), ifnil(dar, '<Nil>')))
+		writeLogfile(4, string.format("dimension: %s [SAR: %s DAR: %s]\n", dimension, ifnil(sar, '<Nil>'), ifnil(dar, '<Nil>')))
     end
 	 
+	-- Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080, 17474 kb/s, SAR 65536:65536 DAR 16:9, 28.66 fps, 29.67 tbr, 90k tbn, 180k tbc
+	if not sar or (sar == '') then
+		for w, x in string.gmatch(ffmpegReport, "Video:[%s%w%(%)/]+,[%s%w]+,[%s%w]+,[%s%w/]+,%s+SAR%s+([%d:]+)%s+DAR%s+([%d:]+)") do
+			sar = w
+			dar = x
+			writeLogfile(4, string.format("SAR: %s, DAR: %s\n", ifnil(sar, '<Nil>'), ifnil(dar, '<Nil>')))
+		end
+	end
+
+	-------------- rotation: search for avp like:  -------------------------
+	-- rotate          : 90
+	local rotation = '0'
+	for v in string.gmatch(ffmpegReport, "rotate%s+:%s+([%d]+)") do
+		rotation = v
+		writeLogfile(4, string.format("rotation: %s\n", rotation))
+	end
+	
 	LrFileUtils.delete(outfile)
 
 	local dateTimeOrig 
@@ -240,18 +263,68 @@ function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 		dateTimeOrig = creationTime
 	end
 	
-	return true, dateTimeOrig, duration, dimension, sar, dar
+	return true, dateTimeOrig, duration, dimension, sar, dar, rotation
 end
 
--- ffmpegGetThumbFromVideo(srcVideoFilename) ---------------------------------------------------------
-function PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thumbFilename, dimension)
+-- ffmpegGetRotateParams(hardRotate, rotation, dimension, aspectRatio) ---------------------------------------------------------
+-- returns resulting ffmpeg rotation options, dimension and aspectRatio
+function PSConvert.ffmpegGetRotateParams(hardRotate, rotation, dimension, aspectRatio)
+	local rotateOpt 		= ''
+	local newDimension		= dimension
+	local newAspectRatio	= aspectRatio
+	
+	if hardRotate then
+		-- hard-rotation: rotate video stream, calculate rotated dimension, remove rotation flag from metadata
+		if rotation == "90" then
+			rotateOpt = '-vf "transpose=1" -metadata:s:v:0 rotate=0'
+			newDimension = string.format("%sx%s", 
+										string.sub(dimension, string.find(dimension,'x') + 1, -1),
+										string.sub(dimension, 1, string.find(dimension,'x') - 1))
+			newAspectRatio = string.gsub(newDimension, 'x', ':')
+			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 90\n")
+		elseif rotation == "270" then
+			rotateOpt = '-vf "transpose=2" -metadata:s:v:0 rotate=0'
+			newDimension = string.format("%sx%s", 
+										string.sub(dimension, string.find(dimension,'x') + 1, -1),
+										string.sub(dimension, 1, string.find(dimension,'x') - 1))
+			newAspectRatio = string.gsub(newDimension, 'x', ':')
+			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 270\n")
+		elseif rotation == "180" then
+			rotateOpt = '-vf "hflip,vflip" -metadata:s:v:0 rotate=0'
+			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 180\n")
+		end
+	else
+		-- soft-rotation: add rotation flag to metadata
+		if rotation == "90" then
+			rotateOpt = '-metadata:s:v:0 rotate=90'
+			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 90\n")
+		elseif rotation == "180" then
+			rotateOpt = '-metadata:s:v:0 rotate=180'
+			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 180\n")
+		elseif rotation == "270" then
+			rotateOpt = '-metadata:s:v:0 rotate=270'
+			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 270\n")
+		end 
+	end
+	return rotateOpt, newDimension, newAspectRatio
+end
+
+-- ffmpegGetThumbFromVideo(srcVideoFilename, thumbFilename, dimension, rotation) ---------------------------------------------------------
+function PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thumbFilename, dimension, rotation)
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
+	local rotateOpt, nweDim, aspectRatio
+	
+	rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(true, rotation, dimension, string.gsub(dimension, 'x', ':'))
+	
+	writeLogfile(3, string.format("ffmpegGetThumbFromVideo: %s dim %s rotation %s --> newDim: %s aspectR: %s\n", 
+								srcVideoFilename, dimension, rotation, newDim, aspectRatio))
+	
 	-- generate first thumb from video
 	local cmdline = cmdlineQuote() ..
 						'"' .. ffmpeg .. 
 						'" -i "' .. srcVideoFilename .. 
-						'" -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg -s ' ..
-						dimension .. ' -aspect ' .. string.gsub(dimension, 'x', ':') .. 
+						'" -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg '.. rotateOpt .. ' ' ..
+						'-s ' .. newDim .. ' -aspect ' .. aspectRatio .. 
 						' "' .. thumbFilename .. '" 2> "' .. outfile .. '"' ..
 					cmdlineQuote()
 
@@ -321,7 +394,7 @@ function PSConvert.getConvertKey(height)
 
 end
 
--- convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVideoFilename) --------------------------
+-- convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
 --[[ 
 	converts a video to an mp4 with a given resolution using the ffmpeg and qt-faststart tool
 	srcVideoFilename	the src video file
@@ -329,28 +402,34 @@ end
 	dstHeight			target height in pixel
 	dstVideoFilename	the target video file
 ]]
-function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVideoFilename)
+function PSConvert.convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename)
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
 	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
 	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
-
-	writeLogfile(3, string.format("convertVideo: srcVideo: %s aspectRatio %s, dstHeight: %d dstVideo: %s\n", srcVideoFilename, aspectRatio, dstHeight, dstVideoFilename))
 	local arw = tonumber(string.sub(aspectRatio, 1, string.find(aspectRatio,':') - 1))
 	local arh = tonumber(string.sub(aspectRatio, string.find(aspectRatio,':') + 1, -1))
 	local dstWidth = dstHeight * arw / arh
 	local dstDim = string.format("%dx%d", dstWidth, dstHeight)
-	local dstAspect = string.format("%d:%d", dstWidth, dstHeight)
-	writeLogfile(3, string.format("convertVideo: aspectRatio %d:%d, dstHeight: %d --> dstWidth: %d --> dim: %s ar: %s\n", arw, arh, dstHeight, dstWidth, dstDim, dstAspect))
+	local dstAspect = string.gsub(dstDim, 'x', ':')
+	local convKey = PSConvert.getConvertKey(dstHeight) 		-- get the conversionParams
 
-	-- get the conversionParams
-	local convKey = PSConvert.getConvertKey(dstHeight)
-	writeLogfile(3, string.format("convertVideo: using conversion %d/%s (%dp)\n", convKey, videoConversion[convKey].id, videoConversion[convKey].upToHeight)) 
+	writeLogfile(3, string.format("convertVideo: %s aspectR %s, dstHeight: %d hardRotate %s rotation %s using conversion %d/%s (%dp)\n", 
+								srcVideoFilename, aspectRatio, dstHeight, tostring(hardRotate), rotation,
+								convKey, videoConversion[convKey].id, videoConversion[convKey].upToHeight))
+	
+	-- get rotation params based on rotate flag 
+	local rotateOpt
+	rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(hardRotate, rotation, dstDim, dstAspect)
+
+	-- add creation_time metadata to destination video
+	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(srcDateTime), '"%Y-%m-%d %H:%M:%S"', false)
 		
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
 	local cmdline =  cmdlineQuote() ..
 				'"' .. ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
 				'" -y ' .. encoderOpt .. ' ' ..
+				createTimeOpt .. ' ' .. rotateOpt .. ' ' ..
 				videoConversion[convKey].pass1Params .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
 				'-passlogfile "' .. passLogfile .. '"' .. 
@@ -369,6 +448,7 @@ function PSConvert.convertVideo(srcVideoFilename, aspectRatio, dstHeight, dstVid
 				'"' .. ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
 				'" -y ' .. encoderOpt .. ' ' ..
+				createTimeOpt .. ' ' .. rotateOpt .. ' ' ..
 				videoConversion[convKey].pass2Params .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
 				'-passlogfile "' .. passLogfile .. '"' .. 

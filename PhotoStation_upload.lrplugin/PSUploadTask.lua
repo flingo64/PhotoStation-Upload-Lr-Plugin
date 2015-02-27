@@ -19,6 +19,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 
+PhotoStation Upload uses the following free software to do its job:
+	- convert.exe,			see: http://www.imagemagick.org/
+	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
+	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+
 This code is derived from the Lr SDK FTP Upload sample code. Copyright: see below
 --------------------------------------------------------------------------------
 
@@ -100,7 +105,7 @@ function openLogfile (filename, level)
 	
 	loglevel = level
 	startTime = LrDate.currentTime()
-	logfile:write("Starting export at: " .. LrDate.timeToUserFormat(startTime, "%Y-%m-%d %H:%M:%S", false) .. "\n")
+--	logfile:write("Starting export at: " .. LrDate.timeToUserFormat(startTime, "%Y-%m-%d %H:%M:%S", false) .. "\n")
 	io.close (logfile)
 end
 
@@ -108,7 +113,7 @@ end
 function writeLogfile (level, msg)
 	if level <= loglevel then
 		local logfile = io.open(logfilename, "a")
-		logfile:write(msg)
+		logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ": " .. msg)
 		io.close (logfile)
 	end
 end
@@ -117,7 +122,7 @@ end
 function closeLogfile()
 	local logfile = io.open(logfilename, "a")
 	local now = LrDate.currentTime()
-	logfile:write("Finished export at: " .. LrDate.timeToUserFormat(now, "%Y-%m-%d %H:%M:%S", false) .. ", took " .. string.format("%d", now - startTime) .. " seconds\n")
+--	logfile:write("Finished export at: " .. LrDate.timeToUserFormat(now, "%Y-%m-%d %H:%M:%S", false) .. ", took " .. string.format("%d", now - startTime) .. " seconds\n")
 	io.close (logfile)
 end
 
@@ -411,14 +416,14 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 end
 
 -----------------
--- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
+-- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo, hardRotate) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo) 
+function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo, hardRotate) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
 	local vidExtOrg = LrPathUtils.extension(srcVideoFilename)
 	local picPath = LrPathUtils.parent(srcVideoFilename)
@@ -440,15 +445,16 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	local vid_Orig_Filename, vid_Add_Filename
 	
 	writeLogfile(3, string.format("uploadVideo: %s\n", srcVideoFilename)) 
+
 	local convParams = { 
-		HIGH =  	{ height = 1020,	filename = vid_HIGH_Filename },
+		HIGH =  	{ height = 1080,	filename = vid_HIGH_Filename },
 		MEDIUM = 	{ height = 720, 	filename = vid_MED_Filename },
 		LOW =		{ height = 360, 	filename = vid_LOW_Filename },
 		MOBILE =	{ height = 240,		filename = vid_MOB_Filename },
 	}
 	
 	-- get video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
-	local retcode, srcDateTime, duration, dimension, sampleAR, dispAR = PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
+	local retcode, srcDateTime, duration, dimension, sampleAR, dispAR, rotation = PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
 	if not retcode then
 		return false
 	end
@@ -471,16 +477,49 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 		realDimension = tostring(realSrcWidth) .. 'x' .. srcHeight
 	end
 	
+	-- get the right conversion settings (depending on Height)
 	dummyIndex, convKeyOrig = PSConvert.getConvertKey(srcHeight)
-	vid_Orig_Filename = convParams[convKeyOrig].filename
+	vid_Replace_Filename = convParams[convKeyOrig].filename
 	convKeyAdd = addVideo[convKeyOrig]
 	if convKeyAdd ~= 'None' then
 		vid_Add_Filename = convParams[convKeyAdd].filename
 	end
-	
-	-- generate first thumb from video
-	if not PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thmb_ORG_Filename, realDimension)
 
+	-- search for "Rotate-nn" in keywords, this will add/overwrite rotation infos from mpeg header
+	local addRotate = false
+	local keywords = srcPhoto:getRawMetadata("keywords")
+	for i = 1, #keywords do
+		if string.find(keywords[i]:getName(), 'Rotate-') then
+			local metaRotation = string.sub (keywords[i]:getName(), 8)
+			if metaRotation ~= rotation then
+				rotation = metaRotation
+				addRotate = true
+				break
+			end
+			writeLogfile(3, string.format("Keyword[%d]= %s, rotation= %s\n", i, keywords[i]:getName(), rotation))
+		end
+	end
+
+	-- video rotation only if requested by export param or by keyword (meta-rotation)
+	local videoRotation = '0'
+	if hardRotate or addRotate then
+		videoRotation = rotation
+	end
+	
+	-- replace original video if srcVideo is not already mp4 or if video is to be rotated
+	local replaceOrgVideo 
+	if (string.lower(vidExtOrg) ~= vidExt) or (videoRotation ~= '0') then
+		replaceOrgVideo = true
+		vid_Orig_Filename = vid_Replace_Filename
+	else
+		replaceOrgVideo = false
+		vid_Orig_Filename = srcVideoFilename
+	end
+	
+	-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
+	if not PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thmb_ORG_Filename, realDimension, rotation)
+
+	
 	-- generate all other thumb from first thumb
 	or ( not largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
@@ -489,6 +528,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
+	
 	or ( largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, 
 								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'1280x1280>^', thmb_XL_Filename,
@@ -497,11 +537,11 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 								'320x320>^',   thmb_M_Filename,
 								'120x120>^',   thmb_S_Filename) )
 
-	-- generate mp4 in original size if srcVideo is not already mp4
-	or ((string.lower(vidExtOrg) ~= vidExt) and not PSConvert.convertVideo(srcVideoFilename, dispAR, srcHeight, vid_Orig_Filename))
+	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
+	or (replaceOrgVideo and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, srcHeight, hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(srcVideoFilename, dispAR, convParams[convKeyAdd].height, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, convParams[convKeyAdd].height, hardRotate, videoRotation, vid_Add_Filename))
 
 	-- upload thumbs, preview videos and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
@@ -509,9 +549,8 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
 	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
 	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
-	or ((string.lower(vidExtOrg) ~= vidExt) and not PSUploadAPI.uploadPictureFile(vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
 	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(vid_Add_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
-	or not PSUploadAPI.uploadPictureFile(srcVideoFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
+	or not PSUploadAPI.uploadPictureFile(vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
 		retcode = false
 	else 
@@ -569,7 +608,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 	
 	-- Build addVideo table
-	local addVideo = {
+	local additionalVideos = {
 		HIGH = 		exportParams.addVideoHigh,
 		MEDIUM = 	exportParams.addVideoMed,
 		LOW = 		exportParams.addVideoLow,
@@ -621,7 +660,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			-- sanitize dstRoot: remove leading and trailings slashes
 			if string.sub(exportParams.dstRoot,1,1) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 2) end
 			if string.sub(exportParams.dstRoot, string.len(exportParams.dstRoot)) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 1, -2) end
-			writeLogfile(3, "  sanitized dstRoot: " .. exportParams.dstRoot .. "\n")
+			writeLogfile(4, "  sanitized dstRoot: " .. exportParams.dstRoot .. "\n")
 			
 			-- check if target Album (dstRoot) should be created 
 			if exportParams.createDstRoot and not createTree( './' .. exportParams.dstRoot,  ".", "", dirsCreated ) then
@@ -648,22 +687,19 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			if srcPhoto:getRawMetadata("isVideo") then
 				writeLogfile(4, pathOrMessage .. ": is video\n") 
-				if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, addVideo) then
-					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
-									': Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
+				if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, 
+									additionalVideos, exportParams.hardRotate) then
+					writeLogfile(1, 'Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
 				else
-					writeLogfile(2, LrDate.formatMediumTime(LrDate.currentTime()) .. 
-									': Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
+					writeLogfile(2, 'Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
 				end
 			else
 				if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
-					writeLogfile(1, LrDate.formatMediumTime(LrDate.currentTime()) .. 
-									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
+					writeLogfile(1, 'Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. filename )
 				else
-					writeLogfile(2, LrDate.formatMediumTime(LrDate.currentTime()) .. 
-									': Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
+					writeLogfile(2, 'Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
 				end
 			end
 

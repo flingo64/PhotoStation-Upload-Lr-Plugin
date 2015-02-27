@@ -29,18 +29,19 @@ PhotoStation Upload can upload to the Standard PhotoStation or to a Personal Pho
 PhotoStation can optimize the upload for PhotoStation 6 by not uploading the THUMB_L thumbnail.
 
 Important notice:
-Password entered in the export settings are not stored encrypted, so the might be accessible by other plugin or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
+Passwords entered in the export settings are not stored encrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
 
 Requirements:
 =============
 	- Windows OS or Mac, tested with:
-		- Windows 7 
+		- Windows 7  Windows 8 
 		- MacOS 10.7.5
+		- MacOS 10.10
 	- Lightroom 5, tested with:
-		- tested with Lr 5.6(Mac) and Lr 5.7 (Win)
+		- tested with Lr 5.6(Mac) and Lr 5.7 (Mac and Win)
 	- Synology PhotoStation, tested with:
 		PhotoStation 6
-	- Synology Assistant or Synology PhotoStation Uploader, required components:
+	- Synology PhotoStation Uploader, required components:
 		- ImageMagick/convert.exe
 		- ffmpeg/ffmpeg.exe
 		- ffmpeg/qt-faststart.exe
@@ -114,13 +115,33 @@ Version 2.6:
 
 Version 2.7:
 ------------
-- Bugfix for failed upload when  filename includes ( or ), important only for MacOS
+- Bugfix for failed upload when filename includes ( or ), important only for MacOS
+- Quicker (15%) upload for PS6 by not generating the unneeded Thumb_L
 
-
+Version 2.8:
+------------
+- Added video rotation support 
+	- soft-rotated videos (w/ rotation tag in mpeg header) now get the right (rotated) thumbs
+	- hard-rotation option for soft-rotated videos for better player compatibility:
+	  Soft-rotated videos are not rotated in most players, PhotoStation supports soft-rotated videos only by 
+	  generating an additional hard-rotated flash-video. This may be OK for small videos, but overloads the DiskStation CPU 
+	  for a period of time. Thus, it is more desirable to hard-rotate the videos on the PC before uploading.
+	  Hard-rotated videos with (then) potrait orientation work well in VLC, but not at all in MS Media Player. So, if you intend
+	  to use MS Media Player, you should stay with the soft-rotated video to see at least a mis-rotated video. In all other cases
+	  hard-rotation is probably more feasable for you.
+	- support for "meta-rotation":
+	  If you have older mis-rotated videos (like I have lots of from my children's video experiments), these videos typically don't have a rotation indication.
+	  So, the described hard-rotation support won't work for those videos. To circumvent this, the Uploader supports rotation indications by
+	  metadata maintained in Lr. To tag a desired rotation for a video, simply add one of the following keywords to the video in Lr:
+		Rotate-90	--> for videos that need 90 degree clockwise rotation
+		Rotate-180	--> for videos that need 180 degree rotation
+		Rotate-270	--> for videos that need 90 degree counterclockwise rotation
+	- support for soft-rotation and hard-rotation for "meta-rotated" (see above) videos 
+		
 Installation:
 =============
 - unzip the downloaded archive
-- move subdirectory "PhotoStation_upload.lrplugin" to machine where Lightroom is installed
+- copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
 - In Lightroom:
 	File --> Plugin Manager --> Add: Enter the path to the directory 
 		"PhotoStation_upload.lrplugin" 
@@ -148,3 +169,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 
+PhotoStation Upload uses the following free software to do its job:
+	- convert.exe,			see: http://www.imagemagick.org/
+	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
+	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/

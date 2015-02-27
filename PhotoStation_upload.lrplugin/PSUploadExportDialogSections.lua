@@ -19,6 +19,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 
+PhotoStation Upload uses the following free software to do its job:
+	- convert.exe,			see: http://www.imagemagick.org/
+	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
+	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+
 This code is derived from the Lr SDK FTP Upload sample code. Copyright: see below
 --------------------------------------------------------------------------------
 
@@ -493,9 +498,9 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 							alignment = 'left',
 							fill_horizontal = 1,
 							items = {
-								{ title	= 'None',			value 	= 'None' },
-								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
-								{ title	= 'Low (360p)',		value 	= 'LOW' },
+								{ title	= 'None',		value 	= 'None' },
+								{ title	= 'Mobile',		value 	= 'MOBILE' },
+								{ title	= 'Low',		value 	= 'LOW' },
 							},
 						},
 					},					
@@ -514,11 +519,19 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 							alignment = 'left',
 							fill_horizontal = 1,
 							items = {
-								{ title	= 'None',			value 	= 'None' },
-								{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
+								{ title	= 'None',		value 	= 'None' },
+								{ title	= 'Mobile',		value 	= 'MOBILE' },
 							},
 						},
 					},					
+					
+					f:checkbox {
+						title = LOC "$$$/PSUpload/ExportDialog/hardRotate=Use hard-rotation",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/hardRotateTT=Use hard-rotation for better player compatibility, \nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
+						alignment = 'left',
+						value = bind 'hardRotate',
+						fill_horizontal = 1,
+					},
 				},
 			},
 
