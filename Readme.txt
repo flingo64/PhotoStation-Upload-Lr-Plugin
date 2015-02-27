@@ -124,15 +124,18 @@ Added video rotation support
 - soft-rotated videos (w/ rotation tag in mpeg header) now get the right (rotated) thumbs
 - hard-rotation option for soft-rotated videos for better player compatibility:
   Soft-rotated videos are not rotated in most players, PhotoStation supports soft-rotated videos only by 
-  generating an additional hard-rotated flash-video. This may be OK for small videos, but overloads the DiskStation CPU 
-  for a period of time. Thus, it is more desirable to hard-rotate the videos on the PC before uploading.
-  Hard-rotated videos with (then) potrait orientation work well in VLC, but not at all in MS Media Player. So, if you intend
-  to use MS Media Player, you should stay with the soft-rotated video to see at least a mis-rotated video. In all other cases
-  hard-rotation is probably more feasable for you.
+  generating an additional hard-rotated flash-video. This may be OK for small videos, but overloads 
+  the DiskStation CPU for a period of time. 
+  Thus, it is more desirable to hard-rotate the videos on the PC before uploading.
+  Hard-rotated videos with (then) potrait orientation work well in VLC, but not at all in MS Media Player. 
+  So, if you intend to use MS Media Player, you should stay with the soft-rotated video to see 
+  at least a mis-rotated video. In all other cases hard-rotation is probably more feasable for you.
 - support for "meta-rotation":
-  If you have older mis-rotated videos (like I have lots of from my children's video experiments), these videos typically don't have a rotation indication.
-  So, the described hard-rotation support won't work for those videos. To circumvent this, the Uploader supports rotation indications by
-  metadata maintained in Lr. To tag a desired rotation for a video, simply add one of the following keywords to the video in Lr:
+  If you have older mis-rotated videos (like I have lots of from my children's video experiments), 
+  these videos typically don't have a rotation indication. So, the described hard-rotation support 
+  won't work for those videos. To circumvent this, the Uploader supports rotation indications by
+  metadata maintained in Lr. To tag a desired rotation for a video, simply add one of the following 
+  keywords to the video in Lr:
 	Rotate-90	--> for videos that need 90 degree clockwise rotation
 	Rotate-180	--> for videos that need 180 degree rotation
 	Rotate-270	--> for videos that need 90 degree counterclockwise rotation
