@@ -52,5 +52,5 @@ return {
 		title = "PhotoStation Upload",
 		file = 'PSUploadServiceProvider.lua',
 	},
-	VERSION = { major=2, minor=8, revision=0, build=20150227, },
+	VERSION = { major=2, minor=8, revision=1, build=20150312, },
 }

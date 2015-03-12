@@ -40,6 +40,7 @@ of it requires the prior written permission of Adobe.
 
 
 -- Lightroom API
+local LrApplication = import 'LrApplication'
 local LrFileUtils = import 'LrFileUtils'
 local LrPathUtils = import 'LrPathUtils'
 local LrDate = import 'LrDate'
@@ -105,7 +106,6 @@ function openLogfile (filename, level)
 	
 	loglevel = level
 	startTime = LrDate.currentTime()
---	logfile:write("Starting export at: " .. LrDate.timeToUserFormat(startTime, "%Y-%m-%d %H:%M:%S", false) .. "\n")
 	io.close (logfile)
 end
 
@@ -122,7 +122,6 @@ end
 function closeLogfile()
 	local logfile = io.open(logfilename, "a")
 	local now = LrDate.currentTime()
---	logfile:write("Finished export at: " .. LrDate.timeToUserFormat(now, "%Y-%m-%d %H:%M:%S", false) .. ", took " .. string.format("%d", now - startTime) .. " seconds\n")
 	io.close (logfile)
 end
 
@@ -232,15 +231,18 @@ end
 -- getDateTimeOriginal(srcFilename, srcPhoto)
 -- get the DateTimeOriginal (capture date) of a photo or whatever comes close to it
 -- tries various methods to get the info including Lr metadata, exiftool (if enabled), file infos
--- returns a unix timestamp 
+-- returns a unix timestamp and a boolean indicating if we found a real DateTimeOrig
 function getDateTimeOriginal(srcFilename, srcPhoto)
 	local srcDateTime = nil
+	local isOrigDateTime = false
 	
 	if srcPhoto:getRawMetadata("dateTimeOriginal") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginal")
+		isOrigDateTime = true
 		writeLogfile(3, "  dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeOriginalISO8601") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
+		isOrigDateTime = true
 		writeLogfile(3, "  dateTimeOriginalISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeDigitized") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitized")
@@ -292,7 +294,7 @@ function getDateTimeOriginal(srcFilename, srcPhoto)
 			writeLogfile(3, "  no date found, using current date: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 		end
 	end
-	return LrDate.timeToPosixDate(srcDateTime)
+	return LrDate.timeToPosixDate(srcDateTime), isOrigDateTime
 end
 
 -----------------
@@ -459,8 +461,11 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 		return false
 	end
 	
-	if not srcDateTime then
-		srcDateTime = getDateTimeOriginal(origVideoFilename, srcPhoto)
+	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
+	-- overwrite the ffmpeg DateTimeOrig 
+	local metaDateTime, isOrigDateTime = getDateTimeOriginal(origVideoFilename, srcPhoto)
+	if isOrigDateTime or not srcDateTime then
+		srcDateTime = metaDateTime
 	end
 	
 	-- get the real dimension: may be different from dimension if dar is set
@@ -732,6 +737,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		end
 	else
 		message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=PhotoStation Upload: All ^1 files uploaded successfully (^2 secs/pic).", numPics, string.format("%.1f", timePerPic))
-		LrDialogs.showBezel(message, 5)
+		local appVersion = LrApplication.versionTable()
+		if appVersion.major < 5 then 
+			LrDialogs.message("PhotoStation Upload done", message, "info")
+		else
+			LrDialogs.showBezel(message, 10)
+		end
 	end
 end

@@ -91,14 +91,12 @@ function PSUploadAPI.login(username, password)
 	local postHeaders = {
 		{ 
 			field = 'Content-Type', value = 'application/x-www-form-urlencoded' ,
---			field = 'Cookie', value = 'PHPSESSID=',  -- remove cookie: doesn't work
 		},
 	}
 	local postBody = 'action=login&username=' .. urlencode(username) .. '&passwd=' .. urlencode(password)
 
 	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. uploadPath .. ",...)\n")
 	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', 5, string.len(postBody))
---	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, nil, 'POST', 5, string.len(postBody)) -- get rid of the old cookie: doesn't work
 	
 	if not respBody then
 		if respHeaders then
@@ -231,9 +229,9 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 	}
 
 	-- calculate max. upload time for LrHttp.post()
-	-- we expect a minimum of 32 MBit/s upload speed --> 4MByte/s
+	-- we expect a minimum of 24 MBit/s upload speed --> 3MByte/s
 	local fileSize = LrFileUtils.fileAttributes(srcFilename).fileSize
-	local timeout = fileSize / 4000000
+	local timeout = fileSize / 3000000
 	if timeout < 30 then timeout = 30 end
 	
 	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size %d --> timeout %d\n", 
