@@ -45,6 +45,7 @@ PSUploadAPI = {}
 -- we can store some variables in 'global' local variables safely:
 -- each export task will get its own copy of these variables
 
+local stdHttpTimeout = 10
 local serverUrl
 local loginPath
 local uploadPath
@@ -96,7 +97,7 @@ function PSUploadAPI.login(username, password)
 	local postBody = 'action=login&username=' .. urlencode(username) .. '&passwd=' .. urlencode(password)
 
 	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. uploadPath .. ",...)\n")
-	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', 5, string.len(postBody))
+	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', stdHttpTimeout, string.len(postBody))
 	
 	if not respBody then
 		if respHeaders then
@@ -151,7 +152,7 @@ function PSUploadAPI.createFolder (parentDir, newDir)
 		{ field = 'X-IS-BATCH-LAST-FILE', 	value = '1' },
 	}
 	local postBody = ''
-	local respBody, respHeaders = LrHttp.post(serverUrl .. uploadPath, postBody, postHeaders, 'POST', 5, 0)
+	local respBody, respHeaders = LrHttp.post(serverUrl .. uploadPath, postBody, postHeaders, 'POST', stdHttpTimeout, 0)
 	
 	writeLogfile(4, "createFolder: LrHttp.post(" .. serverUrl .. uploadPath .. ",...)\n")
 	if not respBody then

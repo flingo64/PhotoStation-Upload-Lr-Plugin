@@ -459,7 +459,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 			f:group_box {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/Videos=Upload additional video resolutions for...",
+				title = LOC "$$$/PSUpload/ExportDialog/Videos=Upload additional video resolutions for ... videos",
 
 				f:row {
 					f:row {
@@ -467,7 +467,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						fill_horizontal = 1,
 
 						f:static_text {
-							title = LOC "$$$/PSUpload/ExportDialog/VideoHigh=High-Res Videos:",
+							title = LOC "$$$/PSUpload/ExportDialog/VideoHigh=High-Res:",
 							alignment = 'right',
 						},
 						f:popup_menu {
@@ -489,7 +489,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						fill_horizontal = 1,
 
 						f:static_text {
-							title = LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium-Res Videos:",
+							title = LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium-Res:",
 							alignment = 'right',
 						},
 						f:popup_menu {
@@ -510,7 +510,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						fill_horizontal = 1,
 
 						f:static_text {
-							title = LOC "$$$/PSUpload/ExportDialog/VideoLow=Low-Res Videos:",
+							title = LOC "$$$/PSUpload/ExportDialog/VideoLow=Low-Res:",
 							alignment = 'right',
 						},
 						f:popup_menu {
