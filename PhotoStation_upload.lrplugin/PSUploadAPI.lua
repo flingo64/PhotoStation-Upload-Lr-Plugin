@@ -38,6 +38,8 @@ local LrPathUtils = import 'LrPathUtils'
 local LrHttp = import 'LrHttp'
 local LrDate = import 'LrDate'
 
+require "PSUtilities"
+
 --============================================================================--
 
 PSUploadAPI = {}

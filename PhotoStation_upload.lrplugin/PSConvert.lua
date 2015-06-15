@@ -35,6 +35,10 @@ local LrFileUtils = import 'LrFileUtils'
 local LrPathUtils = import 'LrPathUtils'
 local LrTasks = import 'LrTasks'
 
+require "PSUtilities"
+
+local tmpdir = LrPathUtils.getStandardFilePath("temp")
+
 --============================================================================--
 
 PSConvert = {}
@@ -42,7 +46,7 @@ PSConvert = {}
 
 -- we can store some variables in 'global' local variables safely:
 -- each export task will get its own copy of these variables
-local tmpdir = LrPathUtils.getStandardFilePath("temp")
+-- local tmpdir = LrPathUtils.getStandardFilePath("temp")
 
 local conv
 local ffmpeg
@@ -117,7 +121,7 @@ function PSConvert.initialize(PSUploaderPath)
 ]]
 	encoderOpt = iif(WIN_ENV, '-acodec libvo_aacenc',  '-strict experimental -acodec aac')
 	
-	writeLogfile(4, "PSConvert.initialize:\nconv: " .. conv .. "\n\tffmpeg: ".. ffmpeg .. "\n\tqt-faststart: " .. qtfstart .. "\n")
+	writeLogfile(4, "PSConvert.initialize:conv: " .. conv .. "\n\tffmpeg: ".. ffmpeg .. "\n\tqt-faststart: " .. qtfstart .. "\n")
 	return true
 end
 

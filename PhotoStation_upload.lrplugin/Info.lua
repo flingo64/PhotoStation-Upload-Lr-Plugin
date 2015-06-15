@@ -24,7 +24,7 @@ PhotoStation Upload uses the following free software to do its job:
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 
-This code is derived from the Lr SDK FTP Upload sample code. Copyright: see below
+This code is derived from the Lr SDK FTP Export and Flickr sample code. Copyright: see below
 --------------------------------------------------------------------------------
 
 ADOBE SYSTEMS INCORPORATED
@@ -38,19 +38,29 @@ of it requires the prior written permission of Adobe.
 
 
 ------------------------------------------------------------------------------]]
-
+plugin_major = 3
+plugin_minor = 0
+plugin_rev = 0
+plugin_build = 20150616
+plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
 return {
 
 	LrSdkVersion = 5.0,
-	LrSdkMinimumVersion = 3.0, -- minimum SDK version required by this plug-in
+	LrSdkMinimumVersion = 4.0, -- minimum SDK version required by this plug-in
 
-	LrToolkitIdentifier = 'de.messmer-online.lightroom.export.photostation_upload',
+	LrToolkitIdentifier = plugin_TkId,
 
 	LrPluginName = LOC "$$$/PSUpload/PluginName=PhotoStation Upload",
 	
+	LrPluginInfoUrl = "https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin",
+	
+	LrPluginInfoProvider = 'PSPluginInfoProvider.lua',
+	
 	LrExportServiceProvider = {
 		title = "PhotoStation Upload",
-		file = 'PSUploadServiceProvider.lua',
+		file = 'PSExportServiceProvider.lua',
 	},
-	VERSION = { major=2, minor=8, revision=2, build=20150426, },
+	VERSION = { major=plugin_major, minor=plugin_minor, revision=plugin_rev, build=plugin_build, 
+				-- display = '3.0.0-20150524 (Somtehing)', 
+	},
 }

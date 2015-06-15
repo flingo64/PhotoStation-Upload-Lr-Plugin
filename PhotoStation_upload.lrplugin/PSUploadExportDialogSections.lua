@@ -39,6 +39,7 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 
 -- Lightroom SDK
+local LrBinding		= import 'LrBinding'
 local LrView 		= import 'LrView'
 local LrPathUtils 	= import 'LrPathUtils'
 local LrFileUtils	= import 'LrFileUtils'
@@ -52,8 +53,20 @@ PSUploadExportDialogSections = {}
 
 -------------------------------------------------------------------------------
 
+-- validatePort: check if a string is numeric
+local function validatePort( view, value )
+	local message = nil
+	
+	if string.match(value, '(%d+)') ~= value then 
+		message = LOC "$$$/PSUpload/ExportDialog/Messages/PortNotNumeric=Port must be numeric value."
+		return false, value
+	end
+	
+	return true, value
+end
+
 -- validateDirectory: check if a given path points to a local directory
-local function validateDirectory( view, path )
+function validateDirectory( view, path )
 	local message = nil
 	
 	if LrFileUtils.exists(path) ~= 'directory' then 
@@ -117,11 +130,6 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
-		if propertyTable.proto ~= "http" and propertyTable.proto ~= "https"  then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/ServenameMissing=Choose http or https"
-			break
-		end
-
 		if propertyTable.servername == "" or propertyTable.servername == nil  then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/ServernameMissing=Enter a servername"
 			break
@@ -141,6 +149,35 @@ local function updateExportStatus( propertyTable )
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterPersPSUser=Enter the owner of the Personal PhotoStation to upload to"
 			break
 		end
+
+		-- Publish Servic Provider start
+
+		if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenameNoSupp= File renaming option not supported in Publish mode!"
+			break
+		end
+
+		if string.match(propertyTable.portFileStation, '(%d+)') ~= propertyTable.portFileStation then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterNumericPort=Enter a numeric value for FileStation port"
+			break
+		end
+
+		if propertyTable.differentFSUser and ifnil(propertyTable.usernameFileStation, "") == ""  then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/UsernameFSMissing=Enter a username for FileStation access"
+			break
+		end
+
+		if propertyTable.useSecondAddress and ifnil(propertyTable.servername2, "") == "" then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/Servername2Missing=Enter a secondary servername"
+			break
+		end
+
+		if propertyTable.useSecondAddress and string.match(propertyTable.portFileStation2, '(%d+)') ~= propertyTable.portFileStation2 then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterNumericPort2=Enter a numeric value for secondary FileStation port"
+			break
+		end
+
+		-- Publish Servic Provider end
 
 		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
@@ -172,17 +209,22 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 		progExt = 'exe'
 	end
 	
---	propertyTable:addObserver( 'items', updateExportStatus )
 	propertyTable:addObserver( 'PSUploaderPath', updateExportStatus )
---	propertyTable:addObserver( 'exiftoolprog', updateExportStatus )
-	propertyTable:addObserver( 'proto', updateExportStatus )
 	propertyTable:addObserver( 'servername', updateExportStatus )
 	propertyTable:addObserver( 'username', updateExportStatus )
 	propertyTable:addObserver( 'srcRoot', updateExportStatus )
 	propertyTable:addObserver( 'copyTree', updateExportStatus )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
---	propertyTable:addObserver( 'logLevelStr', updateExportStatus )
+
+	propertyTable:addObserver( 'portFileStation', updateExportStatus )
+	propertyTable:addObserver( 'differentFSUser', updateExportStatus )
+	propertyTable:addObserver( 'usernameFileStation', updateExportStatus )
+	propertyTable:addObserver( 'useSecondAddress', updateExportStatus )
+	propertyTable:addObserver( 'servername2', updateExportStatus )
+	propertyTable:addObserver( 'portFileStation2', updateExportStatus )
+
+	propertyTable:addObserver( 'LR_renamingTokensOn', updateExportStatus )
 
 	updateExportStatus( propertyTable )
 	
@@ -196,137 +238,19 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 --	local f = LrView.osFactory()
 	local bind = LrView.bind
 	local share = LrView.share
+	local conditionalItem = LrView.conditionalItem
 
-	local result = {
+	if not propertyTable.LR_isExportForPublish then
+		propertyTable.useSecondAddress = false
+	end
 	
-		{
-			title = LOC "$$$/PSUpload/ExportDialog/PsSettings=PhotoStation Server",
-			
-			synopsis = bind { key = 'psUrl', object = propertyTable },
+	local dstPathView = f:view {
+		fill_horizontal = 1,
 
-			f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Syno PhotoStation Uploader:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-	
-				f:edit_field {
-					value = bind 'PSUploaderPath',
-					tooltip = LOC "$$$/PSUpload/ExportDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader or the Snology Assistant",
-					truncation = 'middle',
-					validate = validatePSUploadProgPath,
-					immediate = true,
-					fill_horizontal = 1,
-				},
-			},
+		f:group_box {
+			fill_horizontal = 1,
+			title = LOC "$$$/PSUpload/ExportDialog/TargetAlbum=Target Album and Upload Method",
 
---[[ this may become important in future version, since exiftool gives access to some metadata that Lr won't give
-		f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/EXIFTOOL=ExifTool program:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-	
-				f:edit_field {
-					value = bind 'exiftoolprog',
-					truncation = 'middle',
-					validate = validateProgram,
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-		},
-]]
-			f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME=Server:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-	
-				f:popup_menu {
-					title = LOC "$$$/PSUpload/ExportDialog/PROTOCOL=Protocol:",
-					value = bind 'proto',
-					items = {
-						{ title	= 'http',   value 	= 'http' },
-						{ title	= 'https',	value 	= 'https' },
-					},
-				},
-
-				f:edit_field {
-					tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAMETT=Enter the IP Address or Hostname of the PhotoStation.\nNon-standard ports may be appended as :port",
-					value = bind 'servername',
-					truncation = 'middle',
-					width = share 'labelWidth',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-			},
-
-			f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/USERNAME=Login as:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-	
-				f:edit_field {
-					value = bind 'username',
-					truncation = 'middle',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
-					alignment = 'right',
-				},
-	
-				f:password_field {
-					value = bind 'password',
-					tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Leave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
-					truncation = 'middle',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-			},
-
-			f:group_box {
-				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Target PhotoStation",
-
-				f:row {
-					f:radio_button {
-						title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Standard PhotoStation",
-						alignment = 'left',
-						width = share 'labelWidth',
-						value = bind 'usePersonalPS',
-						checked_value = false,
-					},
-
-					f:radio_button {
-						title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Personal PhotoStation of User:",
-						alignment = 'left',
-						value = bind 'usePersonalPS',
-						checked_value = true,
-					},
-
-					f:edit_field {
-						tooltip = LOC "$$$/PSUpload/ExportDialog/PersonalPSTT=Enter the name of the owner of the Personal PhotoStation you want to upload to.",
-						value = bind 'personalPSOwner',
-						enabled = bind 'usePersonalPS',
-						visible = bind 'usePersonalPS',
-						truncation = 'middle',
-						immediate = true,
-						fill_horizontal = 1,
-					},
-				},
-			},
-			
 			f:row {
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
@@ -356,41 +280,355 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					fill_horizontal = 1,
 				},
 			},
+		
+			f:row {
+
+				f:radio_button {
+					title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat copy to Target Album",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
+					alignment = 'right',
+					value = bind 'copyTree',
+					checked_value = false,
+					width = share 'labelWidth',
+				},
+
+				f:radio_button {
+					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to Local Path:",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
+					alignment = 'left',
+					value = bind 'copyTree',
+					checked_value = true,
+				},
+
+				f:edit_field {
+					value = bind 'srcRoot',
+					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=Enter the local path that is the root of the directory tree you want to mirror below the Target Album.",
+					enabled = bind 'copyTree',
+					visible = bind 'copyTree',
+					validate = validateDirectory,
+					truncation = 'middle',
+					immediate = true,
+					fill_horizontal = 1,
+				},
+			},
+		},
+	} 
+	
+	local secondServerView = f:view {
+		fill_horizontal = 1,
+
+		f:row {
+			f:checkbox {
+				title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=Use secondary Server Address:",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2TT=Use a secondary PhotoStation address, e.g. when accessing via Internet.",
+				alignment = 'right',
+				width = share 'labelWidth',
+				value = bind 'useSecondAddress',
+			},
+
+			f:popup_menu {
+				title = LOC "$$$/PSUpload/ExportDialog/PROTOCOL2=Protocol:",
+				value = bind 'proto2',
+--				visible = bind 'useSecondAddress',
+				enabled = bind 'useSecondAddress',
+				items = {
+					{ title	= 'http',   value 	= 'http' },
+					{ title	= 'https',	value 	= 'https' },
+				},
+			},
+
+			f:edit_field {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
+				value = bind 'servername2',
+				truncation = 'middle',
+				width = share 'labelWidth',
+--				visible = bind 'useSecondAddress',
+				enabled = bind 'useSecondAddress',
+				immediate = true,
+				fill_horizontal = 1,
+			},
+		},
+	} 
+	
+	local fileStationView = f:view {
+		fill_horizontal = 1,
+
+		f:row {
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/FSProtoPort=FileStation Protocol/Port:",
+				alignment = 'right',
+				width = share 'labelWidth',
+			},
+
+			f:popup_menu {
+				title = LOC "$$$/PSUpload/ExportDialog/FSProto=Protocol:",
+				value = bind 'protoFileStation',
+				enabled =  LrBinding.negativeOfKey('useSecondAddress'),
+				items = {
+					{ title	= 'http',   value 	= 'http' },
+					{ title	= 'https',	value 	= 'https' },
+				},
+			},
+
+			f:edit_field {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/FSPortTT=Enter the port of the FileStation.\nThis is typically the Admin Port of the DiskStation(e.g. 5000 for http, 5001 for https",
+				value = bind 'portFileStation',
+				enabled =  LrBinding.negativeOfKey('useSecondAddress'),
+				truncation = 'middle',
+				width = share 'labelWidth',
+				validate = validatePort,
+				immediate = true,
+				fill_horizontal = 0,
+			},
+		},
+	}
+
+	local fileStation2View = f:view {
+		fill_horizontal = 1,
+
+		f:row {
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/FSProtoPort2=FileStation Protocol/Port:",
+--				visible = bind 'useSecondAddress',
+				enabled = bind 'useSecondAddress',
+				alignment = 'right',
+				width = share 'labelWidth',
+			},
+
+			f:popup_menu {
+				title = LOC "$$$/PSUpload/ExportDialog/FSProto2=Protocol:",
+				value = bind 'protoFileStation2',
+--				visible = bind 'useSecondAddress',
+				enabled = bind 'useSecondAddress',
+				items = {
+					{ title	= 'http',   value 	= 'http' },
+					{ title	= 'https',	value 	= 'https' },
+				},
+			},
+
+			f:edit_field {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/FSPort2TT=Enter the port of the FileStation.\nThis is typically the Admin Port (e.g. 5000 for http, 5001 for https)",
+				value = bind 'portFileStation2',
+				truncation = 'middle',
+				width = share 'labelWidth',
+--				visible = bind 'useSecondAddress',
+				enabled = bind 'useSecondAddress',
+				validate = validatePort,
+				immediate = true,
+				fill_horizontal = 0,
+			},
+		},
+	}
+
+	local fileStationPWView = f:view {
+		fill_horizontal = 1,
+		f:row {
+			f:checkbox {
+				title = LOC "$$$/PSUpload/ExportDialog/DiffFSUser=Use different Login:",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/DiffFSUserTT=If your PhotoStation uses its own user management, then enter the DiskStation username/password here.",
+				alignment = 'right',
+				width = share 'labelWidth',
+				value = bind 'differentFSUser',
+			},
+
+			f:edit_field {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/FSUserTT=Enter the username for FileStation access.",
+				value = bind 'usernameFileStation',
+				truncation = 'middle',
+				enabled = bind 'differentFSUser',
+				visible = bind 'differentFSUser',
+				immediate = true,
+				fill_horizontal = 1,
+			},
+
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/FSPassword=Password:",
+				alignment = 'right',
+				enabled = bind 'differentFSUser',
+				visible = bind 'differentFSUser',
+			},
+
+			f:password_field {
+				value = bind 'passwordFileStation',
+				tooltip = LOC "$$$/PSUpload/ExportDialog/FSPasswordTT=Enter the password for FileStation access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
+				enabled = bind 'differentFSUser',
+				visible = bind 'differentFSUser',
+				truncation = 'middle',
+				immediate = true,
+				fill_horizontal = 1,
+			},
+		},
+	}
+
+	local publishView = f:view {
+		fill_horizontal = 1,
+
+		f:row {
+			alignment = 'left',
+--				fill_horizontal = 1,
+
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/PublishMode=Publish Mode:",
+				alignment = 'right',
+			},
+			f:popup_menu {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/PublishModeTT=How to publish",
+				value = bind 'publishMode',
+				alignment = 'left',
+				fill_horizontal = 1,
+				items = {
+					{ title	= 'Ask me later',								value 	= 'Ask' },
+					{ title	= 'Normal',										value 	= 'Publish' },
+					{ title	= 'CheckExisting: Set Unpublished to Published if existing in PhotoStation.',	value 	= 'CheckExisting' },
+					{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
+				},
+			},
+		},
+	}
+	
+	local result = {
+	
+		{
+			title = LOC "$$$/PSUpload/ExportDialog/PsSettings=PhotoStation Server",
 			
+			synopsis = bind { key = 'psUrl', object = propertyTable },
+
+			f:row {
+				f:static_text {
+					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Syno PhotoStation Uploader:",
+					alignment = 'right',
+					width = share 'labelWidth'
+				},
+	
+				f:edit_field {
+					value = bind 'PSUploaderPath',
+					tooltip = LOC "$$$/PSUpload/ExportDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader.",
+					truncation = 'middle',
+					validate = validatePSUploadProgPath,
+					immediate = true,
+					fill_horizontal = 1,
+				},
+			},
+
+--[[ this may become important in future version, since exiftool gives access to some metadata that Lr won't give
+		f:row {
+				f:static_text {
+					title = LOC "$$$/PSUpload/ExportDialog/EXIFTOOL=ExifTool program:",
+					alignment = 'right',
+					width = share 'labelWidth'
+				},
+	
+				f:edit_field {
+					value = bind 'exiftoolprog',
+					truncation = 'middle',
+					validate = validateProgram,
+					immediate = true,
+					fill_horizontal = 1,
+				},
+
+		},
+]]
 			f:group_box {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/UploadMethod=Upload Method",
+				title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Target PhotoStation",
+
+				f:row {
+					f:static_text {
+						title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME=Server Address:",
+						alignment = 'right',
+						width = share 'labelWidth'
+					},
+		
+					f:popup_menu {
+						title = LOC "$$$/PSUpload/ExportDialog/PROTOCOL=Protocol:",
+						value = bind 'proto',
+						enabled =  LrBinding.negativeOfKey('useSecondAddress'),
+						items = {
+							{ title	= 'http',   value 	= 'http' },
+							{ title	= 'https',	value 	= 'https' },
+						},
+					},
+
+					f:edit_field {
+						tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAMETT=Enter the IP address or hostname of the PhotoStation.\nNon-standard port may be appended as :port",
+						value = bind 'servername',
+						enabled =  LrBinding.negativeOfKey('useSecondAddress'),
+						truncation = 'middle',
+						width = share 'labelWidth',
+						immediate = true,
+						fill_horizontal = 1,
+					},
+
+				},
+
+				f:row {
+					f:static_text {
+						title = LOC "$$$/PSUpload/ExportDialog/USERNAME=PhotoStation Login:",
+						alignment = 'right',
+						width = share 'labelWidth'
+					},
+		
+					f:edit_field {
+						value = bind 'username',
+						tooltip = LOC "$$$/PSUpload/ExportDialog/USERNAMETT=Enter the username for PhotoStation access.",
+						truncation = 'middle',
+						immediate = true,
+						fill_horizontal = 1,
+					},
+
+					f:static_text {
+						title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
+						alignment = 'right',
+					},
+		
+					f:password_field {
+						value = bind 'password',
+						tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Enter the password for PhotoStation access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
+						truncation = 'middle',
+						immediate = true,
+						fill_horizontal = 1,
+					},
+
+				},
+
+				f:separator { fill_horizontal = 1 },
+
+				conditionalItem(propertyTable.LR_isExportForPublish, fileStationView),
+				conditionalItem(propertyTable.LR_isExportForPublish, fileStationPWView),
+				conditionalItem(propertyTable.LR_isExportForPublish, f:separator { fill_horizontal = 1 } ),
+				conditionalItem(propertyTable.LR_isExportForPublish, secondServerView),
+				conditionalItem(propertyTable.LR_isExportForPublish, fileStation2View),
+				conditionalItem(propertyTable.LR_isExportForPublish, f:separator { fill_horizontal = 1 } ),
 
 				f:row {
 					f:radio_button {
-						title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat copy to Target Album",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
-						alignment = 'right',
-						value = bind 'copyTree',
-						checked_value = false,
+						title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Standard PhotoStation",
+						alignment = 'left',
 						width = share 'labelWidth',
+						value = bind 'usePersonalPS',
+						checked_value = false,
 					},
 
 					f:radio_button {
-						title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to Local Path:",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
+						title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Personal PhotoStation of User:",
 						alignment = 'left',
-						value = bind 'copyTree',
+						value = bind 'usePersonalPS',
 						checked_value = true,
 					},
 
 					f:edit_field {
-						value = bind 'srcRoot',
-						tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=Enter the local Path that is the root of the directory tree you want to mirror below the Target Album.",
-						enabled = bind 'copyTree',
-						visible = bind 'copyTree',
-						validate = validateDirectory,
+						tooltip = LOC "$$$/PSUpload/ExportDialog/PersonalPSTT=Enter the name of the owner of the Personal PhotoStation you want to upload to.",
+						value = bind 'personalPSOwner',
+						enabled = bind 'usePersonalPS',
+						visible = bind 'usePersonalPS',
 						truncation = 'middle',
 						immediate = true,
 						fill_horizontal = 1,
 					},
 				},
 			},
+			
+			conditionalItem(not propertyTable.LR_isExportForPublish, dstPathView),
 			
 			f:group_box {
 				fill_horizontal = 1,
@@ -527,12 +765,18 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					
 					f:checkbox {
 						title = LOC "$$$/PSUpload/ExportDialog/hardRotate=Use hard-rotation",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/hardRotateTT=Use hard-rotation for better player compatibility, \nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/hardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
 						alignment = 'left',
 						value = bind 'hardRotate',
 						fill_horizontal = 1,
 					},
 				},
+			},
+
+--			conditionalItem(propertyTable.LR_isExportForPublish, publishView),
+			
+			f:separator {
+				fill_horizontal = 1,
 			},
 
 			f:row {
@@ -544,14 +788,16 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 	
 				f:popup_menu {
 					title = LOC "$$$/PSUpload/ExportDialog/LOGLEVEL=Loglevel:",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/LOGLEVELTT=The level of log details",
 					value = bind 'logLevel',
 					fill_horizontal = 0, 
 					items = {
-						{ title	= 'Nothing',value 	= 0 },
-						{ title	= 'Errors',	value 	= 1 },
-						{ title	= 'Normal',	value 	= 2 },
-						{ title	= 'Trace',	value 	= 3 },
-						{ title	= 'Debug',	value 	= 4 },
+						{ title	= 'Ask me later',	value 	= 9999 },
+						{ title	= 'Nothing',		value 	= 0 },
+						{ title	= 'Errors',			value 	= 1 },
+						{ title	= 'Normal',			value 	= 2 },
+						{ title	= 'Trace',			value 	= 3 },
+						{ title	= 'Debug',			value 	= 4 },
 					},
 				},
 				
@@ -561,25 +807,13 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				
 				f:push_button {
 					title = LOC "$$$/PSUpload/ExportDialog/Logfile=Goto Logfile of last Export",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/Logfile=Open PhotoStationUpload Logfile in Explore/Finder.",
 					alignment = 'right',
 					action = function()
 						LrShell.revealInShell(LrPathUtils.child(LrPathUtils.getStandardFilePath("temp"), "PhotoStationUpload.log"))
 					end,
 				},
 			}, 
-			
-			f:column {
-				place = 'overlapping',
-				fill_horizontal = 1,
-				
-				f:row {
-					f:static_text {
-						fill_horizontal = 1,
-						title = bind 'message',
-						visible = bind 'hasError',
-					},
-				},
-			},
 		},
 	}
 	

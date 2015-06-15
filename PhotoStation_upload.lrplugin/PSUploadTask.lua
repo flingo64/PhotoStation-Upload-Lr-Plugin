@@ -45,186 +45,23 @@ local LrFileUtils = import 'LrFileUtils'
 local LrPathUtils = import 'LrPathUtils'
 local LrDate = import 'LrDate'
 local LrDialogs = import 'LrDialogs'
+-- local LrProgressScope = import 'LrProgressScope'
 local LrShell = import 'LrShell'
+local LrPrefs = import 'LrPrefs'
+local LrTasks = import 'LrTasks'
 local LrView = import 'LrView'
 
+require "PSUtilities"
 require "PSConvert"
+require "PSUpdate"
 require "PSUploadAPI"
+require "PSFileStationAPI"		-- publish only
+
+local tmpdir = LrPathUtils.getStandardFilePath("temp")
 
 --============================================================================--
 
 PSUploadTask = {}
-
--- we can store some variables in 'global' local variables safely:
--- each export task will get its own copy of these variables
-local tmpdir = LrPathUtils.getStandardFilePath("temp")
-
-local logfilename
-local loglevel
---[[loglevel:
-	0 -	nothing
-	1 - errors
-	2 - info
-	3 - tracing
-	4 - debug
-]]	
-
----------------------- useful helpers ----------------------------------------------------------
-
-function ifnil(str, subst)
-	if str == nil then
-		return subst
-	else
-		return str
-	end
-end 
-
-function iif(condition, thenExpr, elseExpr)
-	if condition then
-		return thenExpr
-	else
-		return elseExpr
-	end
-end 
-
----------------------- filename encoding routines ---------------------------------------------------------
-function mkSaveFilename(str)
-	if (str) then
-		str = string.gsub (str, "[%s%(%)]", "-") 
-	end
-	return str
-end 
-
------------------------ logging ---------------------------------------------------------
--- had some issues with LrLogger in cojunction with LrTasks, so we do our own file logging
-local startTime
-
--- openLogfile: clear the logfile, reopen and put in a start timestamp
-function openLogfile (filename, level)
-	logfilename = filename
-	local logfile = io.open(logfilename, "w")
-	
-	loglevel = level
-	startTime = LrDate.currentTime()
-	io.close (logfile)
-end
-
--- writeLogfile: always open, write, close, otherwise output will get lost in case of unexpected errors
-function writeLogfile (level, msg)
-	if level <= loglevel then
-		local logfile = io.open(logfilename, "a")
-		logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ": " .. msg)
-		io.close (logfile)
-	end
-end
-
--- closeLogfile: write the end timestamp and time consumed
-function closeLogfile()
-	local logfile = io.open(logfilename, "a")
-	local now = LrDate.currentTime()
-	io.close (logfile)
-end
-
----------------------- environment ----------------------------------------------------------
-function initializeEnv (exportParams)
-
-	return (PSUploadAPI.initialize(exportParams.serverUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil)) and 
-			PSConvert.initialize(exportParams.PSUploaderPath))
-end
-
----------------------- dialog functions ----------------------------------------------------------
-
-function promptForMissingSettings(exportParams)
-	local f = LrView.osFactory()
-	local bind = LrView.bind
-	local share = LrView.share
-	local conditionalItem = LrView.conditionalItem
-	local needPw = (ifnil(exportParams.password, "") == "")
-	local needDstRoot = not exportParams.storeDstRoot
-	
-	if not needPw and not needDstRoot then
-		return "ok"
-	end
-	
-	local passwdView = f:view {
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/USERNAME=Login as:",
-				alignment = 'right',
-				width = share 'labelWidth',
-			},
-
-			f:edit_field {
-				value = bind 'username',
-				truncation = 'middle',
-				immediate = true,
---				width = share 'labelWidth',
-				width_in_chars = 16,
-				fill_horizontal = 1,
-			},
-		},
-		
-		f:spacer {	height = 5, },
-
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
-				alignment = 'right',
-				width = share 'labelWidth',
-			},
-
-			f:password_field {
-				value = bind 'password',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Leave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
-				truncation = 'middle',
-				immediate = true,
-				width = share 'labelWidth',
-				fill_horizontal = 1,
-			},
-		},
-	}
-
-	local dstRootView = f:view {
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/DstRoot=Target Album:",
-				alignment = 'right',
-				width = share 'labelWidth',
-			},
-
-			f:edit_field {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
-				value = bind( "dstRoot" ),
-				width_in_chars = 16,
-				fill_horizontal = 1,
-			},
-		}, 
-		
-		f:spacer {	height = 5, },
-
-		f:row {
-			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
-				alignment = 'left',
-				value = bind( "createDstRoot" ),
-			},
-		},
-	}
-
-	-- Create the contents for the dialog.
-	local c = f:view {
-		bind_to_object = exportParams,
-
-		conditionalItem(needPw, passwdView), 
-		f:spacer {	height = 10, },
-		conditionalItem(needDstRoot, dstRootView), 
-	}
-
-	return LrDialogs.presentModalDialog {
-			title = "Enter missing parameters",
-			contents = c
-		}
-end
 
 ------------- getDateTimeOriginal -------------------------------------------------------------------
 
@@ -299,12 +136,48 @@ end
 
 -----------------
 
--- function createTree(srcDir, srcRoot, dstRoot, dirsCreated) 
+-- function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams) 
+-- 	return relative local path of the srcPhoto and destination path of the rendered photo: remotePath = dstRoot + (localpath - srcRoot), 
+--	returns:
+-- 		localPath - relative local path as unix-path
+-- 		remotePath - absolute remote path as unix-path
+function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams) 
+	local localRenderedPath
+	local localPath
+	local remotePath
+	
+	-- if is virtual copy: add last three characters of photoId as suffix to filename
+	if srcPhoto:getRawMetadata('isVirtualCopy') then
+		srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '-' .. string.sub(srcPhoto:getRawMetadata('uuid'), -3), 
+												LrPathUtils.extension(srcPhotoPath))
+		writeLogfile(3, 'isVirtualCopy: new srcPhotoPath is: ' .. srcPhotoPath .. '"\n')				
+	end
+	localRenderedPath = srcPhotoPath
+			
+	-- extension for published photo may differ from orgPhoto (e.g. RAW, DNG)
+	-- use extension of renderedPhotoPath instead, if available
+	if renderedPhotoPath ~= nil then
+		localRenderedPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath), LrPathUtils.extension(renderedPhotoPath))
+	end
+
+	if exportParams.copyTree then
+		localPath = string.gsub(LrPathUtils.makeRelative(srcPhotoPath, exportParams.srcRoot), "\\", "/")
+		localRenderedPath = string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
+	else
+		localPath = LrPathUtils.leafName(srcPhotoPath)
+		localRenderedPath = LrPathUtils.leafName(localRenderedPath)
+	end
+	remotePath = iif(exportParams.dstRoot ~= '', exportParams.dstRoot .. '/' .. localRenderedPath, localRenderedPath)
+	return localPath, remotePath
+end
+-----------------
+
+-- function createTree(srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
 -- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir), 
 --	create each folder recursively if not already created
 -- 	store created directories in dirsCreated
 -- 	return created dstDir or nil on error
-function createTree(srcDir, srcRoot, dstRoot, dirsCreated) 
+function createTree(srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
 	writeLogfile(4, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
 
 	-- sanitize srcRoot: avoid trailing slash and backslash
@@ -341,7 +214,7 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated)
 			
 			local paramParentDir
 			if parentDir == "" then paramParentDir = "/" else paramParentDir = parentDir  end  
-			if not PSUploadAPI.createFolder (paramParentDir, newDir) then
+			if not readOnly and not PSUploadAPI.createFolder (paramParentDir, newDir) then
 				writeLogfile(1,"Create dir - parent: " .. paramParentDir .. " newDir: " .. newDir .. " failed!\n")
 				return nil
 			end
@@ -370,6 +243,7 @@ end
 ]]
 function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename))
+--	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(origFilename))
 	local picExt = LrPathUtils.extension(srcFilename)
 	local thmb_XL_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt)))
 	local thmb_L_Filename = iif(not isPS6, mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt))), '')
@@ -576,43 +450,101 @@ end
 
 --------------------------------------------------------------------------------
 
+-- checkMoved(publishedCollection, exportContext)
+-- check all photos in a collection if locally moved
+-- all moved photos get status "to be re-published"
+-- return:
+-- 		nPhotos		- # of photos in collection
+--		nProcessed 	- # of photos checked
+--		nMoved		- # of photos found to be moved
+function checkMoved(publishedCollection, exportContext)
+	local exportParams = exportContext.propertyTable
+	local publishedPhotos = publishedCollection:getPublishedPhotos() 
+	local nPhotos = #publishedPhotos
+	local nProcessed = 0
+	local nMoved = 0 
+
+	-- Set progress title.
+	local progressScope = exportContext:configureProgress {
+						title = nPhotos > 1
+							and LOC( "$$$/PSUpload/Upload/Progress=Checking ^1 photos for movement", nPhotos )
+							or LOC "$$$/PSUpload/Upload/Progress/One=Checking one photo for movement",
+						renderPortion = 1 / nPhotos,
+					}
+					
+	for i = 1, nPhotos do
+		if progressScope:isCanceled() then break end
+		
+		local pubPhoto = publishedPhotos[i]
+		local srcPhoto = pubPhoto:getPhoto()
+		local srcPhotoPath = srcPhoto:getRawMetadata('path')
+		local publishedPath = ifnil(pubPhoto:getRemoteId(), '<Nil>')
+		local edited = pubPhoto:getEditedFlag()
+		
+		local localPath, remotePath = getPublishPath(srcPhotoPath, srcPhoto, nil, exportParams)
+		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
+		-- ignore extension: might be different 
+		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
+			writeLogfile(2, "CheckMoved(" .. localPath .. " must be moved at target from " .. publishedPath .. 
+							" to " .. remotePath .. ", edited= " .. tostring(edited) .. ")\n")
+			catalog:withWriteAccessDo( 
+				'SetEdited',
+				function(context)
+					pubPhoto:setEditedFlag(true)
+				end,
+				{timeout=5}
+			)
+			nMoved = nMoved + 1
+		else
+			writeLogfile(2, "CheckMoved(" .. localPath .. ") not moved.\n")
+		end
+		nProcessed = i
+		progressScope:setPortionComplete(nProcessed, nPhotos)
+	end 
+	progressScope:done()
+	
+	return nPhotos, nProcessed, nMoved
+end			
+
+--------------------------------------------------------------------------------
+
+-- PSUploadTask.updateExportSettings(exportSettings)
+-- This plug-in defined callback function is called at the beginning
+-- of each export and publish session before the rendition objects are generated.
+function PSUploadTask.updateExportSettings(exportSettings)
+-- do some initialization stuff
+	local prefs = LrPrefs.prefsForPlugin()
+
+	-- Start Debugging
+	openLogfile(exportSettings.logLevel)
+	
+	-- check for updates once a day
+	LrTasks.startAsyncTaskWithoutErrorHandler(PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
+
+	writeLogfile(3, "updateExportSettings: done\n" )
+end
+
+--------------------------------------------------------------------------------
+
 -- PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 -- The export callback called from Lr when the export starts
 function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
-
 	-- Make a local reference to the export parameters.
-	
 	local exportSession = exportContext.exportSession
 	local exportParams = exportContext.propertyTable
 
-	-- Start Debugging
-	local logfilename = LrPathUtils.child(tmpdir, "PhotoStationUpload.log")
-	openLogfile(logfilename, exportParams.logLevel)
-	
-	-- generate global environment settings
-	if not initializeEnv (exportParams) then
-		writeLogfile(1, "ProcessRenderedPhotos: cannot initialize environment!\n" )
-		return
-	end
+	local catalog = LrApplication.activeCatalog()
+	local message
+	local nPhotos
+	local nProcessed = 0
+	local nNotCopied = 0 	-- Publish / CheckExisting: num of pics not copied
+	local nNeedCopy = 0 	-- Publish / CheckExisting: num of pics that need to be copied
+	local timeUsed
+	local timePerPic
+	local readOnly = false
+	local publishMode
 
-
-	writeLogfile(2, "ProcessRenderedPhotos starting\n" )
-	
-	-- Set progress title.
-	local nPhotos = exportSession:countRenditions()
-
-	local progressScope = exportContext:configureProgress {
-						title = nPhotos > 1
-							   and LOC( "$$$/PSUpload/Upload/Progress=Uploading ^1 photos to PhotoStation", nPhotos )
-							   or LOC "$$$/PSUpload/Upload/Progress/One=Uploading one photo to PhotoStation",
-					}
-
-	-- Get missing settings (password, and target directory), if not stored in preset.
-	if promptForMissingSettings(exportParams) == 'cancel' then
-		return
-	end
-	
-	-- Build addVideo table
+	-- additionalVideo table: user selected additional video resolutions
 	local additionalVideos = {
 		HIGH = 		exportParams.addVideoHigh,
 		MEDIUM = 	exportParams.addVideoMed,
@@ -620,31 +552,76 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		MOBILE = 	'None',
 	}
 	
-	local startTime = LrDate.currentTime()
-	local numPics = 0
-
-	-- Login to PhotoStation.
-	local result, reason = PSUploadAPI.login(exportParams.username, exportParams.password)
-	if not result then
-		writeLogfile(1, "Login failed, reason:" .. reason .. "\n")
-		closeLogfile()
-		LrDialogs.message( LOC "$$$/PSUpload/Upload/Errors/LoginError=Login to " .. 
-							iif(exportParams.usePersonalPS, "Personal", "Standard") .. " PhotoStation" .. 
-							iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. " failed.", reason)
-		return false 
+	writeLogfile(2, "processRenderedPhotos starting\n" )
+	
+	-- check if this rendition process is an export or a publish
+	local publishedCollection = exportContext.publishedCollection
+	if publishedCollection then
+		-- copy collectionSettings to exportParams
+		copyCollectionSettingsToExportParams(publishedCollection:getCollectionInfoSummary().collectionSettings, exportParams)
+		publishMode = exportParams.publishMode
+	else
+		publishMode = 'Export'
 	end
-	writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal", "Standard") .. " PhotoStation" .. 
-							iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. " OK\n")
+		
+	-- open session: initialize environment, get missing params and login
+	if not openSession(exportParams, publishMode) then
+		writeLogfile(1, "processRenderedPhotos: cannot open session!\n" )
+		return
+	end
+
+	-- publishMode may have changed from 'Ask' to something different
+	publishMode = exportParams.publishMode
+	writeLogfile(2, "processRenderedPhotos(mode: " .. publishMode .. ").\n")
+
+	local startTime = LrDate.currentTime()
+
+	if publishMode == "CheckMoved" then
+		-- Publish mode CheckMoved: makes no sense if not mirror tree mode
+		local nMoved
+		if not exportParams.copyTree then
+			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=PhotoStation Upload (Check Moved): No mirror tree copy, no need to check for moved pics.\n")
+		else
+			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext)
+			timeUsed = 	LrDate.currentTime() - startTime
+			timePerPic = nProcessed / timeUsed 			-- pic per sec makes more sense her
+			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
+							string.format("PhotoStation Upload (Check Moved): Checked %d of %d pics in %d seconds (%.1f pic/sec). Found %d moved pics.\n", 
+							nProcessed, nPhotos, timeUsed + 0.5, timePerPic, nMoved))
+		end
+		showFinalMessage("PhotoStation CheckMoved done", message, "info")
+		closeLogfile()
+		closeSession(exportParams, publishMode)
+		return
+	end
+
+	-- Set progress title.
+	nPhotos = exportSession:countRenditions()
+
+	local progressScope = exportContext:configureProgress {
+						title = nPhotos > 1
+							   and LOC( "$$$/PSUpload/Upload/Progress=Uploading ^1 photos to PhotoStation", nPhotos )
+							   or LOC "$$$/PSUpload/Upload/Progress/One=Uploading one photo to PhotoStation",
+					}
 
 	writeLogfile(2, "--------------------------------------------------------------------\n")
+	
 
+	-- if is Publish process and publish mode is 'CheckExisting' ...
+	if publishMode == 'CheckExisting' then
+		-- remove all photos from rendering process to speed up the process
+		readOnly = true
+		for i, rendition in exportSession:renditions() do
+			rendition:skipRender()
+		end 
+	end
 	-- Iterate through photo renditions.
-
 	local failures = {}
 	local dirsCreated = {}
 	
 	for _, rendition in exportContext:renditions{ stopIfCanceled = true } do
-	
+		local publishedPhotoId = rendition.publishedPhotoId		-- only required for publishing
+		local newPublishedPhotoId = nil
 		-- Wait for next photo to render.
 
 		local success, pathOrMessage = rendition:waitForRender()
@@ -655,93 +632,129 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		
 		if success then
 			writeLogfile(3, "\nNext photo: " .. pathOrMessage .. "\n")
-			numPics = numPics + 1
 			
 			local srcPhoto = rendition.photo
-			local filename = LrPathUtils.leafName( pathOrMessage )
+			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
 			local srcFilename = srcPhoto:getRawMetadata("path") 
 			local dstDir
+		
+			nProcessed = nProcessed + 1
 			
 			-- sanitize dstRoot: remove leading and trailings slashes
 			if string.sub(exportParams.dstRoot,1,1) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 2) end
 			if string.sub(exportParams.dstRoot, string.len(exportParams.dstRoot)) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 1, -2) end
 			writeLogfile(4, "  sanitized dstRoot: " .. exportParams.dstRoot .. "\n")
 			
-			-- check if target Album (dstRoot) should be created 
-			if exportParams.createDstRoot and not createTree( './' .. exportParams.dstRoot,  ".", "", dirsCreated ) then
-				table.insert( failures, srcFilename )
-				break 
+			local localPath, newPublishedPhotoId
+			
+			if publishMode ~= 'Export' then
+				-- publish process: generated a unique remote id for later modifications or deletions
+				-- use the relative destination pathname, so we are able to identify moved pictures
+				localPath, newPublishedPhotoId = getPublishPath(srcFilename, srcPhoto, renderedFilename, exportParams)
+				
+				writeLogfile(3, 'Old publishedPhotoId:' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId:  ' .. newPublishedPhotoId .. '"\n')
+				-- if photo was moved ... 
+				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
+					-- remove photo at old location
+					if publishMode == 'Publish' then 
+						writeLogfile(2, 'Deleting remote photo at old path: ' .. publishedPhotoId .. '"\n')
+						PSFileStationAPI.deletePic(publishedPhotoId) 
+					end
+				end
+				publishedPhotoId = newPublishedPhotoId
+				renderedFilename = LrPathUtils.leafName(publishedPhotoId)
 			end
 			
-			-- check if tree structure should be preserved
-			if not exportParams.copyTree then
-				-- just put it into the configured destination folder
-				if not exportParams.dstRoot or exportParams.dstRoot == '' then
-					dstDir = '/'
-				else
-					dstDir = exportParams.dstRoot
+			if publishMode == 'CheckExisting' then
+				-- check if photo already in PhotoStation
+				local foundPhoto = PSFileStationAPI.existsPic(publishedPhotoId)
+				if foundPhoto == 'yes' then
+					rendition:recordPublishedPhotoId(publishedPhotoId)
+					nNotCopied = nNotCopied + 1
+					writeLogfile(2, 'Upload of "' .. LrPathUtils.leafName(localPath) .. '" to "' .. publishedPhotoId .. '" not needed, already there (mode: CheckExisting)\n')
+				elseif foundPhoto == 'no' then
+					-- do not acknowledge, so it will be left as "need copy"
+					nNeedCopy = nNeedCopy + 1
+					writeLogfile(2, 'Upload of "' .. LrPathUtils.leafName(localPath) .. '" to "' .. ifnil(LrPathUtils.parent(publishedPhotoId), "/") .. '" needed, but suppressed (mode: CheckExisting)!\n')
+				else -- error
+					table.insert( failures, srcFilename )
+					break 
+				end	
+			elseif publishMode == 'Export' or publishMode == 'Publish' then
+				-- normal publish or export process 
+				-- check if target Album (dstRoot) should be created 
+				if exportParams.createDstRoot and not createTree( './' .. exportParams.dstRoot,  ".", "", dirsCreated, readOnly) then
+					table.insert( failures, srcFilename )
+					break 
 				end
-			else
-				dstDir = createTree( LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, dirsCreated) 
-			end
 			
-			if not dstDir then 	
-				table.insert( failures, srcFilename )
-				break 
-			end
-			
-			if srcPhoto:getRawMetadata("isVideo") then
-				writeLogfile(4, pathOrMessage .. ": is video\n") 
-				if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, 
-									additionalVideos, exportParams.hardRotate) then
-					writeLogfile(1, 'Upload of "' .. filename .. '" to "' .. dstDir .. '" failed!!!\n')
-					table.insert( failures, dstDir .. "/" .. filename )
+				-- check if tree structure should be preserved
+				if not exportParams.copyTree then
+					-- just put it into the configured destination folder
+					if not exportParams.dstRoot or exportParams.dstRoot == '' then
+						dstDir = '/'
+					else
+						dstDir = exportParams.dstRoot
+					end
 				else
-					writeLogfile(2, 'Upload of "' .. filename .. '" to "' .. dstDir .. '" done\n')
+					dstDir = createTree( LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, dirsCreated, readOnly) 
 				end
-			else
-				if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, filename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
-					writeLogfile(1, 'Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
-					table.insert( failures, dstDir .. "/" .. filename )
-				else
-					writeLogfile(2, 'Upload of "' .. filename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
+				
+				if not dstDir then 	
+					table.insert( failures, srcFilename )
+					break 
 				end
-			end
 
+				if srcPhoto:getRawMetadata("isVideo") then
+					writeLogfile(4, pathOrMessage .. ": is video\n") 
+					if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, 
+										additionalVideos, exportParams.hardRotate) then
+						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
+						table.insert( failures, dstDir .. "/" .. renderedFilename )
+					else
+						if publishedCollection then rendition:recordPublishedPhotoId(publishedPhotoId) end
+						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
+					end
+				else
+					if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
+						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
+						table.insert( failures, dstDir .. "/" .. renderedFilename )
+					else
+						if publishedCollection then rendition:recordPublishedPhotoId(publishedPhotoId) end
+						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
+					end
+				end
+			end
+			
 			LrFileUtils.delete( pathOrMessage )
-					
 		end
 	end
 
 	writeLogfile(2,"--------------------------------------------------------------------\n")
-	writeLogfile(2,"Logout from PhotoStation\n")
-	if not PSUploadAPI.logout () then
-		writeLogfile(1,"Logout failed\n")
-	end
+	closeSession(exportParams, publishMode)
 	
-	local timeUsed = 	LrDate.currentTime() - startTime
-	local timePerPic = timeUsed / numPics
-	writeLogfile(2,string.format("Processed %d pics in %d seconds: %.1f seconds/pic\n", numPics, timeUsed, timePerPic))
-	closeLogfile()
+	timeUsed = 	LrDate.currentTime() - startTime
+	timePerPic = timeUsed / nProcessed
 	
 	if #failures > 0 then
-		local message
-		if #failures == 1 then
-			message = LOC ("$$$/PSUpload/Upload/Errors/OneFileFailed=1 file of ^1 files failed to upload correctly.", numPics)
-		else
-			message = LOC ( "$$$/PSUpload/Upload/Errors/SomeFileFailed=^1 of ^2 files failed to upload correctly.", #failures, numPics)
-		end
+		message = LOC ("$$$/PSUpload/Upload/Errors/SomeFileFailed=" .. 
+						string.format("PhotoStation Upload: Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
+						nProcessed, nPhotos, timeUsed, timePerPic, #failures))
 		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Goto Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(logfilename)
 		end
 	else
-		message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=PhotoStation Upload: All ^1 files uploaded successfully (^2 secs/pic).", numPics, string.format("%.1f", timePerPic))
-		local appVersion = LrApplication.versionTable()
-		if appVersion.major < 5 then 
-			LrDialogs.message("PhotoStation Upload done", message, "info")
+		if readOnly then
+			message = LOC ("$$$/PSUpload/Upload/Errors/CheckExistOK=" .. 
+							 string.format("PhotoStation Upload (Check Existing): Checked %d of %d files in %d seconds (%.1f secs/pic). %d already there, %d need export.", 
+											nProcessed, nPhotos, timeUsed + 0.5, timePerPic, nNotCopied, nNeedCopy))
 		else
-			LrDialogs.showBezel(message, 10)
+			message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=" ..
+							 string.format("PhotoStation Upload: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
+											nProcessed, nPhotos, timeUsed + 0.5, timePerPic))
 		end
+		showFinalMessage("PhotoStation Upload done", message, "info")
+		closeLogfile()
 	end
 end

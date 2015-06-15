@@ -1,15 +1,75 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 2.8
-2015/02/27
+Version 3.0
+2015/06/16
 Copyright(c) 2015, Martin Messmer
 
-Description:
-=============
-PhotoStation Upload is a Lightroom ExportServiceProvider Plugin. It adds a new Export target "PhotoStation Upload" to the "Export" dialog that enables the export of pictures and videos from Lightroom directly to a Synology PhotoStation. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.
-This plugin uses the same converters and the same upload API as the official "Synology PhotoStation Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target PhotoStation by protocol (http/https) and servename (IP@, hostname, FQDN).
+Overview:
+=========
+PhotoStation Upload is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "PhotoStation Upload" and a new Export target also called "PhotoStation Upload" to the "Export" dialog. Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology PhotoStation. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.
+This plugin uses the same converters and the same upload API as the official "Synology PhotoStation Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target PhotoStation by protocol (http/https) and servename (IP@, hostname, FQDN). For some of the publish functions the plugin also needs access to the FileStation Web-API, which is also http(s)-based but uses a different port (the admin port) and probably a different account.
 
-PhotoStation Upload supports two different upload methods:
+Requirements:
+=============
+	- Windows OS or Mac, tested with:
+		- Windows 7  Windows 8.1
+		- MacOS 10.7.5
+		- MacOS 10.10
+	- Lightroom 5, tested with:
+		- Lr 5.6(Mac) and Lr 5.7 (Mac and Win)
+	- Synology PhotoStation, tested with:
+		PhotoStation 6
+	- For Publish mode: Synology FileStation WebAPI (reachable via admin port)
+	- Synology PhotoStation Uploader, required components:
+		- ImageMagick/convert.exe
+		- ffmpeg/ffmpeg.exe
+		- ffmpeg/qt-faststart.exe
+	
+Installation:
+=============
+- unzip the downloaded archive
+- copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
+- In Lightroom:
+	File --> Plugin Manager --> Add: Enter the path to the directory 
+		"PhotoStation_upload.lrplugin" 
+
+Description:
+============
+
+Export vs. Publish Service - general remarks:
+---------------------------------------------
+Exporting in Lightroom is a simple one-time processe: you define the photos to export by selecting the photos or folders to export in library view and then choose "Export". Lightroom does not keep track on exports, thus if you want to re-export changed or added photos or remove deleted photos form the traget (e.g. a PhotoStation album) later, you will have to keep track yourself for those changes, addtions or deletions.
+
+Publishing in Lightroom on the other hand is meant for a synchonizing local photo collections with a remote target (e.g. a PhotoStation album). To publish a photo collection you have to do two things:
+- define the settings for the Publish Service
+- define the Published Collection and the settings for that Published Collection
+As soon as you've done this, Lightroom will keep track of which photo from the collection has to be published, re-published (when it was modified locally) or deleted. Besides that basic functions, some publish services can also re-import certain infos such as tags, comments or ratings back from the publish target.
+
+Export vs. Publish Service - PhotoStation Upload:
+-------------------------------------------------
+The main functionality of PhotoStation Upload is basicly the same in Export and in Publish mode: uploading pictures/videos to a Synology PhotoStation. On top of this the Publish mode also implements the basic publishing function, so that Lr can keep track of added, modified and deleted photos/videos. 
+Due to the different handling of exporting and publishing in Lightroom the Export and the Publish dialog of PhotoStation Upload have some but not all of their settings in common. 
+The Export dialog includes settings for:
+	a) the installation path of the Synology 
+	b) the target PhotoStation (server, login, Standard/Personal PhotoStation)
+	c) -- no --
+	d) target Album within the target PhotoStation and Upload method 
+	e) quality parameters for thumbs and additional videos
+
+The Publish dialog on the other hand includes settings for:
+	a) the installation path of the Synology 
+	b) the target PhotoStation (server, login, Standard/Personal PhotoStation)
+	c) the FileStation API parameters: (protocol, port, login)
+	d) -- no --
+	e) quality parameters for thumbs and additional videos
+
+The Album settings ( d) ) are not stored within the Publish settings but within the Published Collections settings. Therefore, you don't need to define a different Publish Service for each Published Collection you want to publish. In most cases you will only have one Publish Service definition and a bunch of Published Collections below it. An additional Publish Service definition is only required, if you want to upload to a different PhotoStation or if you want to use different upload quality settings.
+
+Export Funtionality:
+--------------------
+- upload to the Standard PhotoStation or to a Personal PhotoStation (make sure the Personal PhotoStation feature is enabled for the given Personal Station owner)
+
+- two different upload methods:
 	- flat upload: 
 	  upload all selected pictures/videos to a named Album on the PhotoStation
 	  The named Album must exist on the PhotoStation.
@@ -24,30 +84,53 @@ PhotoStation Upload supports two different upload methods:
 	  --> upload to:	Test/2010/10/img1.jpg
 	  In other words:	<local-base-path>\<relative-path>\file -- upload to --> <Target Album>/<relative-path>/file
 
-PhotoStation Upload can upload to the Standard PhotoStation or to a Personal PhotoStation. Make sure the Personal PhotoStation feature is enabled for the given Personal Station owner.
+- optimize the upload for PhotoStation 6 by not uploading the THUMB_L thumbnail.
 
-PhotoStation can optimize the upload for PhotoStation 6 by not uploading the THUMB_L thumbnail.
+- upload of videos and accompanying videos with a lower resolution.
+
+- hard-rotation od uploaded videos that are soft-rotated or meta-rotated (see Version 2.8 changes).
+
+Publish Funtionality:
+--------------------
+- all export functions are supported in Publish mode
+
+- definition of a secondary server (Publish dialog):
+  You may want to publish to your PhotoStation from at home or via the Internet. 
+  Therefore, the Publish Service dialog allows you to define to sets of server address settings. 
+  Switching between the two address settings can be done in the Publish dialog
+  
+- support for Published Collections and Published Smart Collections 
+  No support for Published Collection Sets.
+ 
+- different Publish options (Published Collection dialog):
+	- Normal:
+	  publish unpublished photos to target Album in target PhotoStation 
+	 - CheckExisting:
+	   Unpublished photos will not be published, but will be checked whether already existing in the target Album and if so, set them to 'Published'. 
+	   This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the 
+	   defined target but not through the newly defined Published Collection (e.g. via Export).
+	   CheckExisting is 15 to 30 times faster than a Normal Publish, since no thumbnail creation and upload is required.
+	   Note, that CheckExisting can not determine, whether to photo in the target Album is the latest version.
+	- CheckMoved:
+	  Check if any photo within a Published Collection have moved locally and if so, mark them to 're-publish'
+	  If your Published Collection is to be tree-mirrored to the target Album it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
+	  Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature.
+	  To use it, you have to set at least one photo 're-publish', otherwise you won't be able to push the "Publish" button.
+	  CheckMoved is very fast (>100 photos/sec) since it only check locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
+
+- deletion of published photos, when deleted locally (from Collection or Library)
+
+- deletion of complete Published Collections
+
+- no support for re-import of comments or ratings
+
+- no support for custom-defined sort order
 
 Important note:
 ---------------
 Passwords entered in the export settings are not stored encrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
 
-Requirements:
-=============
-	- Windows OS or Mac, tested with:
-		- Windows 7  Windows 8.1
-		- MacOS 10.7.5
-		- MacOS 10.10
-	- Lightroom 5, tested with:
-		- tested with Lr 5.6(Mac) and Lr 5.7 (Mac and Win)
-	- Synology PhotoStation, tested with:
-		PhotoStation 6
-	- Synology PhotoStation Uploader, required components:
-		- ImageMagick/convert.exe
-		- ffmpeg/ffmpeg.exe
-		- ffmpeg/qt-faststart.exe
-	
-Features:
+History:
 =========
 
 Version 2.2 (initial public release):
@@ -144,20 +227,19 @@ Added video rotation support:
 	Rotate-270	--> for videos that need 90 degree counterclockwise rotation
 - support for soft-rotation and hard-rotation for "meta-rotated" (see above) videos 
 		
-Installation:
-=============
-- unzip the downloaded archive
-- copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
-- In Lightroom:
-	File --> Plugin Manager --> Add: Enter the path to the directory 
-		"PhotoStation_upload.lrplugin" 
+Version 3.0:
+------------
+Added Publish mode
 
 Open issues:
 ============
 - issue in PhotoStation: if video aspect ratio is different from video dimension 
   (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
   the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
-
+- publishing requires access to FileStation WebAPI, which is cumbersome, since it requires access to the admin port.
+  This may be change sometime in the future, if the PhotoStation WebAPI will be published by Synology
+- "Show in PhotoStation" always opens the root of the target PhotoStation, not the root of target Album nor the selecte photo in the target Album
+  
 Copyright:
 ==========
 Copyright(c) 2015, Martin Messmer
