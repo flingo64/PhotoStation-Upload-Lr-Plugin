@@ -149,6 +149,9 @@ function PSUpdate.checkForUpdate()
 	local sec = string.match(response, '%g*sec=([%a%d]*);')
 	local latestVersion = string.match(response, '%g*latestversion=([%a%d%.]*);')
 	local downloadUrl = string.match(response, '%g*downloadurl=([%a%d%:%/%_%.%-%?]*);')
+	if uid == '0' then
+		uid = newUid
+	end
 	local checksum = LrMD5.digest(uid .. plugin_TkId)
 	
 	writeLogfile(4, "  got back: uid= " .. ifnil(newUid, '<Nil>') .. 
