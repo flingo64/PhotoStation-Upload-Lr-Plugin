@@ -562,6 +562,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		publishMode = exportParams.publishMode
 	else
 		publishMode = 'Export'
+		exportParams.publishMode = 'Export'
 	end
 		
 	-- open session: initialize environment, get missing params and login
