@@ -12,11 +12,14 @@ This plugin uses the same converters and the same upload API as the official "Sy
 Requirements:
 =============
 	- Windows OS or Mac, tested with:
-		- Windows 7  Windows 8.1
+		- Windows 7,  Windows 8.1
 		- MacOS 10.7.5
 		- MacOS 10.10
-	- Lightroom 5, tested with:
-		- Lr 5.6(Mac) and Lr 5.7 (Mac and Win)
+	- Lightroom, 
+	  tested with:
+		- Lr 5.7 and 5.7.1 (Mac and Win)
+	  reportedly works with:
+		- Lr 4.4, 6.0, 6.0.1, 6.1
 	- Synology PhotoStation, tested with:
 		PhotoStation 6
 	- For Publish mode: Synology FileStation WebAPI (reachable via admin port)
@@ -38,9 +41,9 @@ Description:
 
 Export vs. Publish Service - general remarks:
 ---------------------------------------------
-Exporting in Lightroom is a simple one-time processe: you define the photos to export by selecting the photos or folders to export in library view and then choose "Export". Lightroom does not keep track on exports, thus if you want to re-export changed or added photos or remove deleted photos form the traget (e.g. a PhotoStation album) later, you will have to keep track yourself for those changes, addtions or deletions.
+Exporting in Lightroom is a simple one-time processe: you define the photos to export by selecting the photos or folders to export in library view and then choose "Export". Lightroom does not keep track of exports, thus if you want to re-export changed or added photos or remove deleted photos form the target (e.g. a PhotoStation album) later, you will have to keep track yourself for those changes, addtions or deletions.
 
-Publishing in Lightroom on the other hand is meant for a synchonizing local photo collections with a remote target (e.g. a PhotoStation album). To publish a photo collection you have to do two things:
+Publishing in Lightroom on the other hand is meant for synchonizing local photo collections with a remote target (e.g. a PhotoStation album). To publish a photo collection you have to do two things:
 - define the settings for the Publish Service
 - define the Published Collection and the settings for that Published Collection
 As soon as you've done this, Lightroom will keep track of which photo from the collection has to be published, re-published (when it was modified locally) or deleted. Besides that basic functions, some publish services can also re-import certain infos such as tags, comments or ratings back from the publish target.
@@ -71,8 +74,8 @@ Export Funtionality:
 
 - two different upload methods:
 	- flat upload: 
-	  upload all selected pictures/videos to a named Album on the PhotoStation
-	  The named Album must exist on the PhotoStation.
+	  upload all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
+	  The named Album may exist on the PhotoStation or may be created during export
 	  The root Album is defined by an empty string. In general, Albums are specified by "<folder>{/<folder>}" (no leading or trailing slashes required)
 	- tree mirror upload: 
 	  preserves the directory path of each photo/video relative to a given local base path on the PhotoStation below a named target Album.
@@ -96,7 +99,7 @@ Publish Funtionality:
 
 - definition of a secondary server (Publish dialog):
   You may want to publish to your PhotoStation from at home or via the Internet. 
-  Therefore, the Publish Service dialog allows you to define to sets of server address settings. 
+  Therefore, the Publish Service dialog allows you to define two sets of server address settings. 
   Switching between the two address settings can be done in the Publish dialog
   
 - support for Published Collections and Published Smart Collections 
@@ -105,18 +108,18 @@ Publish Funtionality:
 - different Publish options (Published Collection dialog):
 	- Normal:
 	  publish unpublished photos to target Album in target PhotoStation 
-	 - CheckExisting:
-	   Unpublished photos will not be published, but will be checked whether already existing in the target Album and if so, set them to 'Published'. 
-	   This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the 
-	   defined target but not through the newly defined Published Collection (e.g. via Export).
-	   CheckExisting is 15 to 30 times faster than a Normal Publish, since no thumbnail creation and upload is required.
-	   Note, that CheckExisting can not determine, whether to photo in the target Album is the latest version.
+	- CheckExisting:
+	  Unpublished photos will not be published, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
+	  This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the 
+	  defined target but not through the newly defined Published Collection (e.g. via Export).
+	  CheckExisting is 15 to 30 times faster than a Normal Publish, since no thumbnail creation and upload is required.
+	  Note, that CheckExisting can not determine, whether the photo in the target Album is the latest version.
 	- CheckMoved:
-	  Check if any photo within a Published Collection have moved locally and if so, mark them to 're-publish'
-	  If your Published Collection is to be tree-mirrored to the target Album it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
+	  Check if any photo within a Published Collection has moved locally and if so, mark them to 're-publish'
+	  If your Published Collection is to be tree-mirrored to the target Album, it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
 	  Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature.
-	  To use it, you have to set at least one photo 're-publish', otherwise you won't be able to push the "Publish" button.
-	  CheckMoved is very fast (>100 photos/sec) since it only check locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
+	  To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
+	  CheckMoved is very fast (>100 photos/sec) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
 
 - deletion of published photos, when deleted locally (from Collection or Library)
 
@@ -125,6 +128,18 @@ Publish Funtionality:
 - no support for re-import of comments or ratings
 
 - no support for custom-defined sort order
+
+Additional Funtionality:
+------------------------
+- checks for updates in background when Exporting, Publishing or opening the Plugin section in the Plugin Manager no more than once per day.
+  If a new version is available, you'll get an info message after the Export/Publish and also a note in the Plugin Manager section.
+  The update check will send the following information to the update server:
+	- PhotoStation Upload plugin version
+	- Operating system version
+	- Lightroom version
+	- Lightroom language setting
+	- a random unique identifier chosen by the update service
+  This helps me keep track of the different environments/combinations the plugin is running in.
 
 Important note:
 ---------------
