@@ -1,14 +1,14 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.0
-2015/06/16
-Copyright(c) 2015, Martin Messmer
+Version 3.0<br>
+2015\/06\/16<br>
+Copyright(c) 2015, Martin Messmer<br>
 
 Overview
 =========
-PhotoStation Upload is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "PhotoStation Upload" and a new Export target also called "PhotoStation Upload" to the "Export" dialog. Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology PhotoStation. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.
+PhotoStation Upload is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "PhotoStation Upload" and a new Export target also called "PhotoStation Upload" to the "Export" dialog. Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology PhotoStation. It will not only upload the selected photos\/videos but also create and upload all required thumbnails and accompanying additional video files.
 
-This plugin uses the same converters and the same upload API as the official "Synology PhotoStation Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target PhotoStation by protocol (http/https) and servename (IP@, hostname, FQDN). For some of the publish functions the plugin also needs access to the FileStation Web-API, which is also http(s)-based but uses a different port (the admin port) and probably a different account.
+This plugin uses the same converters and the same upload API as the official "Synology PhotoStation Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target PhotoStation by protocol (http\/https) and servename (IP@, hostname, FQDN). For some of the publish functions the plugin also needs access to the FileStation Web-API, which is also http(s)-based but uses a different port (the admin port) and probably a different account.
 
 Requirements
 =============
@@ -26,16 +26,16 @@ Requirements
 	PhotoStation 6
 * For Publish mode: Synology FileStation WebAPI (reachable via admin port)
 * Synology PhotoStation Uploader, required components:
-	- ImageMagick/convert.exe
-	- ffmpeg/ffmpeg.exe
-	- ffmpeg/qt-faststart.exe
+	- ImageMagick\/convert.exe
+	- ffmpeg\/ffmpeg.exe
+	- ffmpeg\/qt-faststart.exe
 
 Installation
 =============
 - unzip the downloaded archive
 - copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
 - In Lightroom:
-	*File* --> *Plugin Manager* --> *Add*: Enter the path to the directory 
+	*File* --\> *Plugin Manager* --\> *Add*: Enter the path to the directory 
 		"PhotoStation_upload.lrplugin" 
 
 Description
@@ -54,14 +54,14 @@ As soon as you've done this, Lightroom will keep track of which photo from the c
 
 Export vs. Publish Service - PhotoStation Upload
 -------------------------------------------------
-The main functionality of PhotoStation Upload is basicly the same in Export and in Publish mode: uploading pictures/videos to a Synology PhotoStation. On top of this the Publish mode also implements the basic publishing function, so that Lr can keep track of added, modified and deleted photos/videos. 
+The main functionality of PhotoStation Upload is basicly the same in Export and in Publish mode: uploading pictures\/videos to a Synology PhotoStation. On top of this the Publish mode also implements the basic publishing function, so that Lr can keep track of added, modified and deleted photos\/videos. 
 
 Due to the different handling of exporting and publishing in Lightroom the Export and the Publish dialog of PhotoStation Upload have some but not all of their settings in common. 
 
 The Export dialog includes settings for:
 
 a) the installation path of the Synology<br>
-b) the target PhotoStation (server, login, Standard/Personal PhotoStation)<br>
+b) the target PhotoStation (server, login, Standard\/Personal PhotoStation)<br>
 c) -- no --<br>
 d) target Album within the target PhotoStation and Upload method<br>
 e) quality parameters for thumbs and additional videos<br>
@@ -69,7 +69,7 @@ e) quality parameters for thumbs and additional videos<br>
 The Publish dialog on the other hand includes settings for:
 
 a) the installation path of the Synology<br>
-b) the target PhotoStation (server, login, Standard/Personal PhotoStation)<br>
+b) the target PhotoStation (server, login, Standard\/Personal PhotoStation)<br>
 c) the FileStation API parameters: (protocol, port, login)<br>
 d) -- no --<br>
 e) quality parameters for thumbs and additional videos<br>
@@ -82,18 +82,18 @@ Export Funtionality
 
 - two different upload methods:
 	- flat upload: 
-	  upload all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
+	  upload all selected pictures\/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
 	  The named Album may exist on the PhotoStation or may be created during export
-	  The root Album is defined by an empty string. In general, Albums are specified by "<folder>{/<folder>}" (no leading or trailing slashes required)
+	  The root Album is defined by an empty string. In general, Albums are specified by "\<folder\>{\/\<folder\>}" (no leading or trailing slashes required)
 	- tree mirror upload: 
-	  preserves the directory path of each photo/video relative to a given local base path on the PhotoStation below a named target Album.
-	  All directories within the source path of the picture/video will be created recursively.
+	  preserves the directory path of each photo\/video relative to a given local base path on the PhotoStation below a named target Album.
+	  All directories within the source path of the picture\/video will be created recursively.
 	  The directory tree is mirrored relative to a given local base path. Example:<br>
 	  Local base path:	C:\users\john\pictures<br>
 	  To Album:			Test<br>
 	  Photo to export:	C:\users\john\pictures\2010\10\img1.jpg<br>
-	  --> upload to:	Test/2010/10/img1.jpg<br>
-	  In other words:	<local-base-path>\<relative-path>\file -- upload to --> <Target Album>/<relative-path>/file<br>
+	  --\> upload to:	Test\/2010\/10\/img1.jpg<br>
+	  In other words:	\<local-base-path\>\\<relative-path\>\file -- upload to --\> \<Target Album\>\/\<relative-path\>\/file<br>
 
 - optimize the upload for PhotoStation 6 by not uploading the THUMB_L thumbnail.
 
@@ -131,7 +131,7 @@ No support for Published Collection Sets.
   If your Published Collection is to be tree-mirrored to the target Album, it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
   Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature.
   To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
-  CheckMoved is very fast (>100 photos/sec) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
+  CheckMoved is very fast (\>100 photos\/sec) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
 - deletion of published photos, when deleted locally (from Collection or Library)
 - deletion of complete Published Collections
 - no support for re-import of comments or ratings
@@ -140,18 +140,18 @@ No support for Published Collection Sets.
 Additional Funtionality
 ------------------------
 - checks for updates in background when Exporting, Publishing or opening the Plugin section in the Plugin Manager no more than once per day.
-  If a new version is available, you'll get an info message after the Export/Publish and also a note in the Plugin Manager section.
+  If a new version is available, you'll get an info message after the Export\/Publish and also a note in the Plugin Manager section.
   The update check will send the following information to the update server:
 	- PhotoStation Upload plugin version
 	- Operating system version
 	- Lightroom version
 	- Lightroom language setting
 	- a random unique identifier chosen by the update service
-  This helps me keep track of the different environments/combinations the plugin is running in.
+  This helps me keep track of the different environments\/combinations the plugin is running in.
 
 Important note
 ---------------
-Passwords entered in the export settings are not stored encrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
+Passwords entered in the export settings are not stored encrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username\/password when the export starts.
 
 History
 =========
@@ -184,7 +184,7 @@ Version 2.2 (initial public release)
 
 Version 2.3
 ------------
-- Fixed various (!!) installation / initialization bugs
+- Fixed various (!!) installation \/ initialization bugs
 - Fixed strange field validation behaviour in Export Dialog
 - Fixed mis-aligned input fields in Export Dialog
 - Added Loglevel configuration to Export Dialog section
@@ -212,7 +212,7 @@ Version 2.6
 	- recognizes the video aspect ratio by mpeg dimension tag and by mpeg dar (display aspect ratio) tag
 	- generate thumbnails and videos in correct aspect ratio
 - support for uploading of original videos in various formats:
-	- if file is '*.mp4', no conversion required, otherwise the original video has to be converted to mp4
+	- if file is '\*.mp4', no conversion required, otherwise the original video has to be converted to mp4
 - support for uploading of one additional mp4-video in a different (lower) resolution:
 	- additional video resolution is configurable separately for different original video resolutions
 - fixed video conversion bug under MacOS (2.6.4)
@@ -228,7 +228,7 @@ Version 2.7
 Version 2.8
 ------------
 Added video rotation support: 
-- soft-rotated videos (w/ rotation tag in mpeg header) now get the right (rotated) thumbs
+- soft-rotated videos (w\/ rotation tag in mpeg header) now get the right (rotated) thumbs
 - hard-rotation option for soft-rotated videos for better player compatibility:
   Soft-rotated videos are not rotated in most players, PhotoStation supports soft-rotated 
   videos only by generating an additional hard-rotated flash-video. 
@@ -245,9 +245,9 @@ Added video rotation support:
   the Uploader supports rotation indications by metadata maintained in Lr. 
   To tag a desired rotation for a video, simply add one of the following 
   keywords to the video in Lr:
-  - Rotate-90	--> for videos that need 90 degree clockwise rotation
-  - Rotate-180	--> for videos that need 180 degree rotation
-  - Rotate-270	--> for videos that need 90 degree counterclockwise rotation
+  - Rotate-90	--\> for videos that need 90 degree clockwise rotation
+  - Rotate-180	--\> for videos that need 180 degree rotation
+  - Rotate-270	--\> for videos that need 90 degree counterclockwise rotation
 - support for soft-rotation and hard-rotation for "meta-rotated" (see above) videos 
 		
 Version 3.0
@@ -267,7 +267,7 @@ Copyright
 ==========
 Copyright(c) 2015, Martin Messmer
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+PhotoStation Upload is free software: you can redistribute it and\/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -278,10 +278,10 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with PhotoStation Upload.  If not, see <http:\/\/www.gnu.org\/licenses\/>.
 
 PhotoStation Upload uses the following free software to do its job:
 
-- convert.exe,			see: http://www.imagemagick.org/
-- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+- convert.exe,			see: http:\/\/www.imagemagick.org\/
+- ffmpeg.exe, 			see: https:\/\/www.ffmpeg.org\/
+- qt-faststart.exe, 	see: http:\/\/multimedia.cx\/eggs\/improving-qt-faststart\/
