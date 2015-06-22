@@ -106,12 +106,15 @@ function openLogfile (level)
 	-- may be called twice (DeletePhotoFromCollection() and ProcessRenderedPhotos())
 	-- so make sure, the file will not be truncated
 
+	-- openLogfile may be called more than once w/ different loglevel, so change loglevel first
+	loglevel = level
+
 	if logfilename then return end
 	
+	-- if logfilename not yet set: truncate any existing previous logfile
 	logfilename = LrPathUtils.child(tmpdir, "PhotoStationUpload.log")
 	local logfile = io.open(logfilename, "w")
 	
-	loglevel = level
 	io.close (logfile)
 end
 

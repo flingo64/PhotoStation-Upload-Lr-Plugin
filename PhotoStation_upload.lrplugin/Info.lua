@@ -40,8 +40,8 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 plugin_major = 3
 plugin_minor = 0
-plugin_rev = 3
-plugin_build = 20150617
+plugin_rev = 4
+plugin_build = 20150623
 plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
 return {
 
