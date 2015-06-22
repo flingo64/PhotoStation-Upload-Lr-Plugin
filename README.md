@@ -83,6 +83,7 @@ Export Funtionality
 - two different upload methods:
 	- flat upload: 
 	  upload all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
+	  upload all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
 	  The named Album may exist on the PhotoStation or may be created during export
 	  The root Album is defined by an empty string. In general, Albums are specified by "\<folder\>{/\<folder\>}" (no leading or trailing slashes required)
 	- tree mirror upload: 
@@ -93,7 +94,7 @@ Export Funtionality
 	  To Album:			Test<br>
 	  Photo to export:	C:\users\john\pictures\2010\10\img1.jpg<br>
 	  --\> upload to:	Test/2010/10/img1.jpg<br>
-	  In other words:	\<local-base-path\>\\<relative-path\>\file -- upload to --\> \<Target Album\>/\<relative-path\>/file<br>
+	  In other words:	\<local-base-path\>\\\<relative-path\>\\file -- upload to --\> \<Target Album\>/\<relative-path\>/file<br>
 
 - optimize the upload for PhotoStation 6 by not uploading the THUMB_L thumbnail.
 
