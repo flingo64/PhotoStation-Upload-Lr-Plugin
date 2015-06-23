@@ -80,16 +80,6 @@ function shellEscape(str)
 	end
 end
 
----------------------- filename encoding routines ---------------------------------------------------------
---[[
-function unblankFilename(str)
-	if (str) then
-		str = string.gsub (str, " ", "-")
-	end
-	return str
-end 
-]]
-
 ------------------------ initialize ---------------------------------------------------------------------------------
 
 -- initialize: set serverUrl, loginPath and uploadPath

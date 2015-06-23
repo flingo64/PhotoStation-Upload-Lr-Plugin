@@ -137,10 +137,12 @@ end
 ---------------------- filename encoding routines ---------------------------------------------------------
 
 function mkSaveFilename(str)
+--[[
 	if (str) then
 		-- substitute blanks, '(' and ')' by '-'
 		str = string.gsub (str, "[%s%(%)]", "-") 
 	end
+]]
 	return str
 end 
 
