@@ -806,8 +806,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				},
 				
 				f:push_button {
-					title = LOC "$$$/PSUpload/ExportDialog/Logfile=Goto Logfile of last Export",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/Logfile=Open PhotoStationUpload Logfile in Explore/Finder.",
+					title = LOC "$$$/PSUpload/ExportDialog/Logfile=Go to Logfile of last Export",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/Logfile=Open PhotoStation Upload Logfile in Explore/Finder.",
 					alignment = 'right',
 					action = function()
 						LrShell.revealInShell(LrPathUtils.child(LrPathUtils.getStandardFilePath("temp"), "PhotoStationUpload.log"))

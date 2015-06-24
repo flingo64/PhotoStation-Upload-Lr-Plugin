@@ -37,8 +37,6 @@ local LrTasks = import 'LrTasks'
 
 require "PSUtilities"
 
-local tmpdir = LrPathUtils.getStandardFilePath("temp")
-
 --============================================================================--
 
 PSConvert = {}

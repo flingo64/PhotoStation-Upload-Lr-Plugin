@@ -59,7 +59,7 @@ local LrView 			= import 'LrView'
 
 --============================================================================--
 
-local tmpdir = LrPathUtils.getStandardFilePath("temp")
+tmpdir = LrPathUtils.getStandardFilePath("temp")
 
 ---------------------- useful helpers ----------------------------------------------------------
 
@@ -84,7 +84,6 @@ end
 
 -- we can store some variables in 'global' local variables safely:
 -- each export task will get its own copy of these variables
-local tmpdir = LrPathUtils.getStandardFilePath("temp")
 
 local logfilename
 local loglevel
@@ -137,12 +136,10 @@ end
 ---------------------- filename encoding routines ---------------------------------------------------------
 
 function mkSaveFilename(str)
---[[
 	if (str) then
 		-- substitute blanks, '(' and ')' by '-'
 		str = string.gsub (str, "[%s%(%)]", "-") 
 	end
-]]
 	return str
 end 
 

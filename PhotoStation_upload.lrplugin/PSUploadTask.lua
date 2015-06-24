@@ -57,8 +57,6 @@ require "PSUpdate"
 require "PSUploadAPI"
 require "PSFileStationAPI"		-- publish only
 
-local tmpdir = LrPathUtils.getStandardFilePath("temp")
-
 --============================================================================--
 
 PSUploadTask = {}
@@ -242,14 +240,13 @@ end
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
 function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality) 
-	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename))
---	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(origFilename))
+	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename)))
 	local picExt = LrPathUtils.extension(srcFilename)
-	local thmb_XL_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt)))
-	local thmb_L_Filename = iif(not isPS6, mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt))), '')
-	local thmb_M_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_M', picExt)))
-	local thmb_B_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_B', picExt)))
-	local thmb_S_Filename = mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_S', picExt)))
+	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
+	local thmb_L_Filename = iif(not isPS6, LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
+	local thmb_M_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
+	local thmb_B_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
+	local thmb_S_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
 	local srcDateTime = getDateTimeOriginal(origFilename, srcPhoto)
 	local retcode
 	
@@ -300,21 +297,21 @@ end
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
 function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, addVideo, hardRotate) 
-	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
+	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename)))
 	local vidExtOrg = LrPathUtils.extension(srcVideoFilename)
 	local picPath = LrPathUtils.parent(srcVideoFilename)
 	local picExt = 'jpg'
 	local vidExt = 'mp4'
-	local thmb_ORG_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename, picExt)))
-	local thmb_XL_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_XL', picExt)))
-	local thmb_L_Filename = iif(not isPS6, mkSaveFilename(LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt))), '')
-	local thmb_M_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_M', picExt)))
-	local thmb_B_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_B', picExt)))
-	local thmb_S_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_S', picExt)))
-	local vid_MOB_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MOB', vidExt))) 	--  240p
-	local vid_LOW_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt)))	--  360p
-	local vid_MED_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MED', vidExt)))	--  720p
-	local vid_HIGH_Filename = mkSaveFilename(LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt)))	-- 1080p
+	local thmb_ORG_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename, picExt))
+	local thmb_XL_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
+	local thmb_L_Filename = iif(not isPS6, LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
+	local thmb_M_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_M', picExt))
+	local thmb_B_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_B', picExt))
+	local thmb_S_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_S', picExt))
+	local vid_MOB_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MOB', vidExt)) 	--  240p
+	local vid_LOW_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt))	--  360p
+	local vid_MED_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_MED', vidExt))	--  720p
+	local vid_HIGH_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))	-- 1080p
 	local realDimension
 	local retcode
 	local convKeyOrig, convKeyAdd, dummyIndex
