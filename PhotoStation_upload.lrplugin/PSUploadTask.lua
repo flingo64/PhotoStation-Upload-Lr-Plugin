@@ -715,11 +715,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					end
 				else
 					if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality) then
-						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. exportParams.serverUrl .. "-->" ..  dstDir .. '" failed!!!\n')
+						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' ..  dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
 						if publishedCollection then rendition:recordPublishedPhotoId(publishedPhotoId) end
-						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. exportParams.serverUrl .. "-->" .. dstDir .. '" done\n')
+						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 					end
 				end
 			end
