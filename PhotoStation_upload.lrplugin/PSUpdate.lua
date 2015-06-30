@@ -67,6 +67,11 @@ function PSUpdate.checkForUpdate()
 		prefs.uid = '0'
 	end
 
+	-- semaphore to prevent race conditions
+	if prefs.activeCheck == nil then
+		prefs.activeCheck = LrDate.timeFromComponents( 2015, 06, 01, 00, 00, 00, "local" )
+	end
+	
 	if prefs.lastCheck == nil then
 		prefs.lastCheck = LrDate.timeFromComponents( 2015, 06, 01, 00, 00, 00, "local" )
 	end
@@ -79,6 +84,13 @@ function PSUpdate.checkForUpdate()
 		prefs.downloadUrl = ""
 	end
 	
+	-- TestAndSet semaphore
+	if (prefs.activeCheck > LrDate.currentTime() - 60)  then
+		writeLogfile(4, "CheckForUpdate stopped because of parallel check at: " .. LrDate.timeToUserFormat(prefs.activeCheck, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		return true
+	end
+	prefs.activeCheck = LrDate.currentTime()
+	
 	-- Only check once per day
 --	if LrDate.currentTime() < (tonumber(prefs.lastCheck) + 10) then
 	if LrDate.currentTime() < (tonumber(prefs.lastCheck) + 86400) then
@@ -86,7 +98,7 @@ function PSUpdate.checkForUpdate()
 						" last= " .. LrDate.timeToUserFormat(prefs.lastCheck, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 		return true
 	end
-
+	
 	local lrVersion = LrApplication.versionString()
 	local osVersion = LrSystemInfo.osVersion()
 	local lang = LrLocalization.currentLanguage()
