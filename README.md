@@ -14,7 +14,8 @@ Requirements
 =============
 
 * Windows OS or Mac, tested with:
-	- Windows 7,  Windows 8.0, Windows 8.1
+	- Windows 7
+	- Windows 8.0, Windows 8.1
 	- MacOS 10.7.5
 	- MacOS 10.10.3, 10.10.4
 * Lightroom, 
