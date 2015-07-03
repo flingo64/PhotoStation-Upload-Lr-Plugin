@@ -12,19 +12,16 @@ This plugin uses the same converters and the same upload API as the official "Sy
 
 Requirements
 =============
-
-* Windows OS or Mac, tested with:
-	- Windows 7
-	- Windows 8.0, Windows 8.1
-	- MacOS 10.7.5
-	- MacOS 10.10.3, 10.10.4
-* Lightroom, 
-  tested with:
-	- Lr 5.7 and 5.7.1 (Mac and Win)
-  reportedly works with:
-	- Lr 4.4, 5.6, 5.7, 5.7.1, 6.0, 6.0.1, 6.1
-* Synology PhotoStation, tested with:
-	PhotoStation 6
+* Windows OS or Mac:
+	- Windows 7 (tested)
+	- Windows 8.0, Windows 8.1 (reportedly)
+	- MacOS 10.7.5 (tested)
+	- MacOS 10.10.3, 10.10.4 (reportedly)
+* Lightroom: 
+	- Lr 5.7 and 5.7.1 (tested)
+  	- Lr 4.4, 5.6, 5.7, 5.7.1, 6.0, 6.0.1, 6.1 (reportedly)
+* Synology PhotoStation:
+	PhotoStation 6 (tested)
 * For Publish mode: Synology FileStation WebAPI (reachable via admin port)
 * Synology PhotoStation Uploader, required components:
 	- ImageMagick/convert.exe
