@@ -40,8 +40,8 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 plugin_major = 3
 plugin_minor = 0
-plugin_rev = 5
-plugin_build = 20150624
+plugin_rev = 6
+plugin_build = 20150713
 plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
 return {
 
@@ -61,6 +61,6 @@ return {
 		file = 'PSExportServiceProvider.lua',
 	},
 	VERSION = { major=plugin_major, minor=plugin_minor, revision=plugin_rev, build=plugin_build, 
-				-- display = '3.0.0-20150524 (Somtehing)', 
+				-- display = '3.0.0-20150524 (Something)', 
 	},
 }

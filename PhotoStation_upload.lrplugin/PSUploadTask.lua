@@ -182,10 +182,14 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated, readOnly)
 	local lastchar = string.sub(srcRoot, string.len(srcRoot))
 	if lastchar == "/" or lastchar == "\\" then srcRoot = string.sub(srcRoot, 1, string.len(srcRoot) - 1) end
 
+	if srcDir == srcRoot then
+		return dstRoot
+	end
+	
 	-- check if picture source path is below the specified local root directory
-	local subDirStartPos, subDirEndPos = string.find(string.lower(srcDir), string.lower(srcRoot))
+	local subDirStartPos, subDirEndPos = string.find(string.lower(srcDir), string.lower(srcRoot), 1, true)
 	if subDirStartPos ~= 1 then
-		writeLogfile(1, "  createTree: " .. srcDir .. " is not a subdir of " .. srcRoot .. "\n")
+		writeLogfile(1, "  createTree: " .. srcDir .. " is not a subdir of " .. srcRoot .. " (startpos is " .. tostring(ifnil(subDirStartPos, '<Nil>')) .. ")\n")
 		return nil
 	end
 
@@ -203,7 +207,7 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated, readOnly)
 	local restDir = dstDirRel
 	
 	while restDir do
-		local slashPos = ifnil(string.find(restDir,"/"), 0)
+		local slashPos = ifnil(string.find(restDir,"/", 1, true), 0)
 		local newDir = string.sub(restDir,1, slashPos-1)
 		local newPath = parentDir .. "/" .. newDir
 
@@ -365,7 +369,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	local addRotate = false
 	local keywords = srcPhoto:getRawMetadata("keywords")
 	for i = 1, #keywords do
-		if string.find(keywords[i]:getName(), 'Rotate-') then
+		if string.find(keywords[i]:getName(), 'Rotate-', 1, true) then
 			local metaRotation = string.sub (keywords[i]:getName(), 8)
 			if metaRotation ~= rotation then
 				rotation = metaRotation
@@ -629,7 +633,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		if progressScope:isCanceled() then break end
 		
 		if success then
-			writeLogfile(3, "\nNext photo: " .. pathOrMessage .. "\n")
+			writeLogfile(3, "Next photo: " .. pathOrMessage .. "\n")
 			
 			local srcPhoto = rendition.photo
 			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
@@ -695,7 +699,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						dstDir = exportParams.dstRoot
 					end
 				else
-					dstDir = createTree( LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, dirsCreated, readOnly) 
+					dstDir = createTree(LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, dirsCreated, readOnly) 
 				end
 				
 				if not dstDir then 	

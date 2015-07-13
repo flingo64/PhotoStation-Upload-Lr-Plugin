@@ -52,8 +52,13 @@ local serverUrl='http://messmer-online.de/LrPSUploadCheckForUpdate.php'
 function PSUpdate.checkForUpdate()
 	local prefs = LrPrefs.prefsForPlugin()
 	local pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' .. plugin_rev .. '.' .. plugin_build
+	local lrVersion = LrApplication.versionString()
+	local osVersion = LrSystemInfo.osVersion()
+	local lang = LrLocalization.currentLanguage()
+	local uid = prefs.uid
+	
 		
-	writeLogfile(4, "CheckForUpdate starting...\n")
+	writeLogfile(2, string.format("Environment: plugin: %s Lr: %s OS: %s Lang: %s\n", pluginVersion, lrVersion, osVersion, lang))
 	
 	-- reset update status, if current version matches last available update version
 	if pluginVersion == prefs.updateAvailable then
@@ -86,7 +91,6 @@ function PSUpdate.checkForUpdate()
 	
 	-- TestAndSet semaphore
 	if (prefs.activeCheck > LrDate.currentTime() - 60)  then
-		writeLogfile(4, "CheckForUpdate stopped because of parallel check at: " .. LrDate.timeToUserFormat(prefs.activeCheck, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 		return true
 	end
 	prefs.activeCheck = LrDate.currentTime()
@@ -94,15 +98,8 @@ function PSUpdate.checkForUpdate()
 	-- Only check once per day
 --	if LrDate.currentTime() < (tonumber(prefs.lastCheck) + 10) then
 	if LrDate.currentTime() < (tonumber(prefs.lastCheck) + 86400) then
-		writeLogfile(4, "CheckForUpdate not needed: now= " .. LrDate.timeToUserFormat(LrDate.currentTime(), "%Y-%m-%d %H:%M:%S", false ).. 
-						" last= " .. LrDate.timeToUserFormat(prefs.lastCheck, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 		return true
 	end
-	
-	local lrVersion = LrApplication.versionString()
-	local osVersion = LrSystemInfo.osVersion()
-	local lang = LrLocalization.currentLanguage()
-	local uid = prefs.uid
 	
 	local checkUpdateRequest = 'pluginversion=' .. urlencode(pluginVersion) .. 
 					'&osversion=' .. urlencode(osVersion) .. 
@@ -166,8 +163,6 @@ function PSUpdate.checkForUpdate()
 		prefs.downloadUrl = ''
 	end
 
-	writeLogfile(4, "  done!\n")
-	
 	return true
 end
 
