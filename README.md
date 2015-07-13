@@ -16,10 +16,10 @@ Requirements
 	- Windows 7 (tested)
 	- Windows 8.0, Windows 8.1 (reportedly)
 	- MacOS 10.7.5 (tested)
-	- MacOS 10.10.3, 10.10.4 (reportedly)
+	- MacOS 10.9.5, 10.10.3, 10.10.4 (reportedly)
 * Lightroom: 
 	- Lr 5.7 and 5.7.1 (tested)
-  	- Lr 4.4, 5.6, 5.7, 5.7.1, 6.0, 6.0.1, 6.1 (reportedly)
+  	- Lr 4.2, 4.4, 5.6, 5.7, 5.7.1, 6.0, 6.0.1, 6.1 (reportedly)
 * Synology PhotoStation:
 	PhotoStation 6 (tested)
 * For Publish mode: Synology FileStation WebAPI (reachable via admin port)
