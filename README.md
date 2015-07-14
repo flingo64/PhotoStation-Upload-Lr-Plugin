@@ -259,8 +259,8 @@ Open issues
   (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
   the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
 - publishing requires access to FileStation WebAPI, which is cumbersome, since it requires access to the admin port.
-  This may be change sometime in the future, if the PhotoStation WebAPI will be published by Synology
-- "Show in PhotoStation" always opens the root of the target PhotoStation, not the root of target Album nor the selecte photo in the target Album
+  This may change sometime in the future, if the PhotoStation WebAPI will be published by Synology
+- "Show in PhotoStation" always opens the root of the target PhotoStation, not the root of the target Album nor the selected photo in the target Album
   
 Copyright
 ==========
