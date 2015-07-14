@@ -46,6 +46,7 @@ local LrFileUtils	= import 'LrFileUtils'
 local LrShell 		= import 'LrShell'
 local progExt = nil			-- .exe for WIN_ENV
 
+require "PSUtilities"
 
 --============================================================================--
 
@@ -810,7 +811,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					tooltip = LOC "$$$/PSUpload/ExportDialog/Logfile=Open PhotoStation Upload Logfile in Explore/Finder.",
 					alignment = 'right',
 					action = function()
-						LrShell.revealInShell(LrPathUtils.child(LrPathUtils.getStandardFilePath("temp"), "PhotoStationUpload.log"))
+						LrShell.revealInShell(getLogFilename())
 					end,
 				},
 			}, 

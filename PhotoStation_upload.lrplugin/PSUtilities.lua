@@ -94,8 +94,8 @@ local loglevel
 ]]	
 
 -- getLogFilename: return the filename of the logfile
-function getLogFilename ()
-	return logfilename
+function getLogFilename()
+	return LrPathUtils.child(tmpdir, "PhotoStationUpload.log")
 end
 
 -- changeLoglevel: change the loglevel (after promptForMissingSettings)
@@ -114,7 +114,7 @@ function openLogfile (level)
 	if logfilename then return end
 	
 	-- if logfilename not yet set: truncate any existing previous logfile
-	logfilename = LrPathUtils.child(tmpdir, "PhotoStationUpload.log")
+	logfilename = getLogFilename()
 	local logfile = io.open(logfilename, "w")
 	
 	io.close (logfile)
