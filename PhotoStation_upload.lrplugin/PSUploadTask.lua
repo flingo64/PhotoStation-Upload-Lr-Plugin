@@ -742,9 +742,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		message = LOC ("$$$/PSUpload/Upload/Errors/SomeFileFailed=" .. 
 						string.format("PhotoStation Upload: Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
 						nProcessed, nPhotos, timeUsed, timePerPic, #failures))
-		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Goto Logfile", "Never mind")
+		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Go to Logfile", "Never mind")
 		if action == "ok" then
-			LrShell.revealInShell(logfilename)
+			LrShell.revealInShell(getLogFilename())
 		end
 	else
 		if readOnly then

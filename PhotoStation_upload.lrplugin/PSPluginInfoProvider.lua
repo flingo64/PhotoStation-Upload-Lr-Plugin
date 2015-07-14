@@ -196,7 +196,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 			},
 
 			f:push_button {
-				title = LOC "$$$/PSUpload/PluginDialog/GetUpdate=Goto Update URL",
+				title = LOC "$$$/PSUpload/PluginDialog/GetUpdate=Go to Update URL",
 				tooltip = LOC "$$$/PSUpload/PluginDialog/Logfile=Open Update URL in browser",
 				alignment = 'right',
 				action = function()

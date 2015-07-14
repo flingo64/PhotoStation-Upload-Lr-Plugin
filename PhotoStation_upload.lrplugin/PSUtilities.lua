@@ -80,8 +80,6 @@ function iif(condition, thenExpr, elseExpr)
 end 
 
 ----------------------- logging ---------------------------------------------------------
--- had some issues with LrLogger in cojunction with LrTasks, so we do our own file logging
-
 -- we can store some variables in 'global' local variables safely:
 -- each export task will get its own copy of these variables
 
@@ -94,6 +92,11 @@ local loglevel
 	3 - tracing
 	4 - debug
 ]]	
+
+-- getLogFilename: return the filename of the logfile
+function getLogFilename ()
+	return logfilename
+end
 
 -- changeLoglevel: change the loglevel (after promptForMissingSettings)
 function changeLoglevel (level)
