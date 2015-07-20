@@ -685,7 +685,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			elseif publishMode == 'Export' or publishMode == 'Publish' then
 				-- normal publish or export process 
 				-- check if target Album (dstRoot) should be created 
-				if exportParams.createDstRoot and not createTree( './' .. exportParams.dstRoot,  ".", "", dirsCreated, readOnly) then
+				if exportParams.createDstRoot and exportParams.dstRoot ~= '' and not createTree( './' .. exportParams.dstRoot,  ".", "", dirsCreated, readOnly) then
 					table.insert( failures, srcFilename )
 					break 
 				end
