@@ -92,13 +92,12 @@ end
 -- does, what it says
 function PSUploadAPI.login(username, password)
 	local postHeaders = {
-		{ 
-			field = 'Content-Type', value = 'application/x-www-form-urlencoded' ,
-		},
+		{ field = 'Content-Type', value = 'application/x-www-form-urlencoded' },
+--		{ field = 'Cookie', value = ''  }, -- clearing Cookie: doesn't work
 	}
 	local postBody = 'action=login&username=' .. urlencode(username) .. '&passwd=' .. urlencode(password)
 
-	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. uploadPath .. ",...)\n")
+	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. loginPath .. ",...)\n")
 	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', stdHttpTimeout, string.len(postBody))
 	
 	if not respBody then

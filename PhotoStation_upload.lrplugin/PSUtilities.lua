@@ -49,12 +49,13 @@ PhotoStation Upload uses the following free software to do its job:
 local LrApplication 	= import 'LrApplication'
 local LrDate 			= import 'LrDate'
 local LrDialogs 		= import 'LrDialogs'
--- local LrFileUtils 	= import 'LrFileUtils'
+local LrFileUtils 		= import 'LrFileUtils'
 local LrHttp	 		= import 'LrHttp'
 local LrPathUtils 		= import 'LrPathUtils'
 -- local LrProgressScope = import 'LrProgressScope'
 -- local LrShell 		= import 'LrShell'
 local LrPrefs	 		= import 'LrPrefs'
+local LrTasks 			= import 'LrTasks'
 local LrView 			= import 'LrView'
 
 --============================================================================--
@@ -116,6 +117,7 @@ function openLogfile (level)
 	-- if logfilename not yet set: truncate any existing previous logfile
 	logfilename = getLogFilename()
 	local logfile = io.open(logfilename, "w")
+--	local logfile = io.open(logfilename, "a")
 	
 	io.close (logfile)
 end
@@ -134,6 +136,34 @@ function closeLogfile()
 	local logfile = io.open(logfilename, "a")
 	local now = LrDate.currentTime()
 	io.close (logfile)
+end
+
+---------------------- semaphore operations -----------------------------------------
+
+function waitSemaphore(semaName, info)
+	local semaphoreFn = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(semaName, 'sema'))
+
+	while LrFileUtils.exists(semaphoreFn) do
+		writeLogfile(3, info .. ": waiting for semaphore " .. semaName .. "\n")
+		-- make sure we are not waiting forever for an orphaned semaphore file
+		local fileAttr = LrFileUtils.fileAttributes(semaphoreFn)
+		if fileAttr.fileCreationDate < LrDate.currentTime() - 300 then
+			return false
+		end
+		
+		LrTasks.sleep(1)
+	end
+
+	local semaphoreFile = io.open(semaphoreFn, "w")
+	semaphoreFile:write(LrDate.formatMediumTime(LrDate.currentTime()))
+	io.close (semaphoreFile)
+	return true
+end
+
+function signalSemaphore(semaName)
+	local semaphoreFn = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(semaName, 'sema'))
+
+	LrFileUtils.delete(semaphoreFn)
 end
 
 ---------------------- filename encoding routines ---------------------------------------------------------
@@ -160,6 +190,44 @@ function urlencode(str)
 	end
 	return str
 end 
+
+---------------------- table copy operations ----------------------------------------------------------
+
+-- tableShallowCopy (origTable)
+-- make a shallow copy of a table
+--[[
+function tableShallowCopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in pairs(orig) do
+            copy[orig_key] = orig_value
+			writeLogfile(2, string.format("tableCopy: copying orig_key %s, orig_value %s\n", orig_key, tostring(orig_value)))
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+-- tableDeepCopy (origTable)
+-- make a deep copy of a table
+function tableDeepCopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[tableDeepCopy(orig_key)] = tableDeepCopy(orig_value)
+        end
+        setmetatable(copy, tableDeepCopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+]]
 
 ---------------------- session environment ----------------------------------------------------------
 

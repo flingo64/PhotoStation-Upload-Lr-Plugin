@@ -58,7 +58,7 @@ require "PSUploadAPI"
 require "PSFileStationAPI"		-- publish only
 
 --============================================================================--
-
+		
 PSUploadTask = {}
 
 ------------- getDateTimeOriginal -------------------------------------------------------------------
@@ -270,6 +270,8 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 								'320x320>^',   thmb_M_Filename,
 								'120x120>^',   thmb_S_Filename) )
 
+	-- wait for PhotoStation semaphore
+	or not waitSemaphore("PhotoStation", dstFilename)
 	-- upload thumbnails and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
 	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
@@ -278,8 +280,10 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
 	or not PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
 	then
+		signalSemaphore("PhotoStation")
 		retcode = false
 	else
+		signalSemaphore("PhotoStation")
 		retcode = true
 	end
 
@@ -423,6 +427,8 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	-- generate additional video, if requested
 	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, convParams[convKeyAdd].height, hardRotate, videoRotation, vid_Add_Filename))
 
+	-- wait for PhotoStation semaphore
+	or not waitSemaphore("PhotoStation", dstFilename)
 	-- upload thumbs, preview videos and original file
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
 	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
@@ -432,8 +438,10 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(vid_Add_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
 	or not PSUploadAPI.uploadPictureFile(vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
+		signalSemaphore("PhotoStation")
 		retcode = false
 	else 
+		signalSemaphore("PhotoStation")
 		retcode = true
 	end
 	
@@ -451,15 +459,15 @@ end
 
 --------------------------------------------------------------------------------
 
--- checkMoved(publishedCollection, exportContext)
+-- checkMoved(publishedCollection, exportContext, exportParams)
 -- check all photos in a collection if locally moved
 -- all moved photos get status "to be re-published"
 -- return:
 -- 		nPhotos		- # of photos in collection
 --		nProcessed 	- # of photos checked
 --		nMoved		- # of photos found to be moved
-function checkMoved(publishedCollection, exportContext)
-	local exportParams = exportContext.propertyTable
+function checkMoved(publishedCollection, exportContext, exportParams)
+--	local exportParams = exportContext.propertyTable
 	local publishedPhotos = publishedCollection:getPublishedPhotos() 
 	local nPhotos = #publishedPhotos
 	local nProcessed = 0
@@ -509,15 +517,15 @@ end
 
 --------------------------------------------------------------------------------
 
--- PSUploadTask.updateExportSettings(exportSettings)
+-- PSUploadTask.updateExportSettings(exportParams)
 -- This plug-in defined callback function is called at the beginning
 -- of each export and publish session before the rendition objects are generated.
-function PSUploadTask.updateExportSettings(exportSettings)
+function PSUploadTask.updateExportSettings(exportParams)
 -- do some initialization stuff
 	local prefs = LrPrefs.prefsForPlugin()
 
 	-- Start Debugging
-	openLogfile(exportSettings.logLevel)
+	openLogfile(exportParams.logLevel)
 	
 	-- check for updates once a day
 	LrTasks.startAsyncTaskWithoutErrorHandler(PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
@@ -533,7 +541,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	-- Make a local reference to the export parameters.
 	local exportSession = exportContext.exportSession
 	local exportParams = exportContext.propertyTable
-
+	-- Make a local copy of the export parameters.
+--	local origExportParams = exportContext.propertyTable
+--	local exportParams = tableShallowCopy(origExportParams["< contents >"])
+	
 	local catalog = LrApplication.activeCatalog()
 	local message
 	local nPhotos
@@ -584,7 +595,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		if not exportParams.copyTree then
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=PhotoStation Upload (Check Moved): No mirror tree copy, no need to check for moved pics.\n")
 		else
-			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext)
+			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime
 			timePerPic = nProcessed / timeUsed 			-- pic per sec makes more sense her
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
