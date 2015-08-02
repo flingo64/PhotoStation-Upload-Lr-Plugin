@@ -1,6 +1,6 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.0.x<br>
+Version 3.1.x<br>
 Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
 Copyright(c) 2015, Martin Messmer<br>
 
@@ -252,6 +252,10 @@ Added video rotation support:
 Version 3.0
 ------------
 Added Publish mode
+
+Version 3.1
+------------
+Support for photos w/ different colorspaces.
 
 Open issues
 ============
