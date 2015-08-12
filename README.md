@@ -1,6 +1,6 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.1.x<br>
+Version 3.2.x<br>
 Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
 Copyright(c) 2015, Martin Messmer<br>
 
@@ -13,13 +13,16 @@ This plugin uses the same converters and the same upload API as the official "Sy
 Requirements
 =============
 * Windows OS or Mac:
-	- Windows 7 (tested)
-	- Windows 8.0, Windows 8.1 (reportedly)
-	- MacOS 10.7.5 (tested)
-	- MacOS 10.9.5, 10.10.3, 10.10.4, 10.10.5, 10.11.0 (reportedly)
+	- Windows 7
+	- Windows 8.0, 8.1
+	- MacOS 10.7.5
+	- MacOS 10.9.5	
+	- MacOS 10.10.3, 10.10.4, 10.10.5 
+	- MacOS 10.11.0
 * Lightroom: 
-	- Lr 5.7 and 5.7.1 (tested)
-  	- Lr 4.2, 4.4, 5.3, 5.5, 5.6, 5.7, 5.7.1, 6.0, 6.0.1, 6.1 (reportedly)
+  	- Lr 4.2, 4.3, 4.4, 4.4.1
+	- Lr 5.3, 5.5, 5.6, 5.7, 5.7.1 
+	- Lr 6.0, 6.0.1, 6.1, 6.1.1
 * Synology PhotoStation:
 	PhotoStation 6 (tested)
 * For Publish mode: Synology FileStation WebAPI (reachable via admin port)
@@ -255,7 +258,12 @@ Added Publish mode
 
 Version 3.1
 ------------
-Support for photos w/ different colorspaces.
+- Support for photos w/ different colorspaces (see issue #4)
+
+Version 3.2
+------------
+- Configurable thumbnail sharpening (see issue #3)
+Note: thumbnail sharpening is independent of photo sharpening which may be configured seperately in the appropriate Lr Export/Publish dialog section.
 
 Open issues
 ============

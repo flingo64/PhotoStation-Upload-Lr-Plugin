@@ -693,6 +693,27 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						},
 					},
 
+					f:row {
+						alignment = 'right',
+						fill_horizontal = 1,
+
+						f:static_text {
+							title = LOC "$$$/PSUpload/ExportDialog/ThumbSharpness=Sharpening:",
+							alignment = 'right',
+						},
+
+						f:popup_menu {
+							tooltip = LOC "$$$/PSUpload/ExportDialog/ThumbSharpnessTT=Thumbnail sharpening, recommended value: Medium",
+							value = bind 'thumbSharpness',
+							alignment = 'left',
+							fill_horizontal = 1,
+							items = {
+								{ title	= 'Low',	value 	= 'LOW' },
+								{ title	= 'Medium',	value 	= 'MED' },
+								{ title	= 'High',	value 	= 'HIGH' },
+							},
+						},
+					},
 				},
 			},
 

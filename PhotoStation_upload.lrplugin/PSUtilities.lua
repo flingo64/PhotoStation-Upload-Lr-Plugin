@@ -112,14 +112,22 @@ function openLogfile (level)
 	-- openLogfile may be called more than once w/ different loglevel, so change loglevel first
 	loglevel = level
 
+	-- if logfilename already set: nothing to do, logfile was already opened (and truncated)
 	if logfilename then return end
 	
-	-- if logfilename not yet set: truncate any existing previous logfile
 	logfilename = getLogFilename()
-	local logfile = io.open(logfilename, "w")
---	local logfile = io.open(logfilename, "a")
 	
+	-- if logfile does not exist: nothing to do, logfile will be created on first writeLogfile()
+	if not LrFileUtils.exists(logfilename) then return end
+
+	-- if logfile exists and is younger than 60 secs: do not truncate, it may be in use by a parallel export/publish process
+	local logfileAttrs = LrFileUtils.fileAttributes(logfilename)
+	if logfileAttrs and logfileAttrs.fileModificationDate > (LrDate.currentTime() - 60) then return end
+	
+	-- else: truncate existing logfile
+	local logfile = io.open(logfilename, "w")
 	io.close (logfile)
+	
 end
 
 -- writeLogfile: always open, write, close, otherwise output will get lost in case of unexpected errors

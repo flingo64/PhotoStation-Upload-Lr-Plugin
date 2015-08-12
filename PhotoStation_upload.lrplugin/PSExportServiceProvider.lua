@@ -90,11 +90,12 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
 		{ key = 'largeThumbs', 		default = true },	-- generate large thumbs or small thumbs
 		{ key = 'thumbQuality', 	default = 80 },		-- conversion quality in percent
+		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
 		{ key = 'isPS6', 			default = false },	-- use upload optimization for PhotoStation 6 (not THUMB_L required)
 		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal PhotoStation
 		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal PhotoStation to upload to
 		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
-		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUEM res videos
+		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUM res videos
 		{ key = 'addVideoLow', 		default = 'None' },	-- additional video resolution for LOW res videos	
 		{ key = 'hardRotate', 		default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos 
 		{ key = 'logLevel', 		default = 2 },		-- loglevel 
