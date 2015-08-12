@@ -262,7 +262,7 @@ Version 3.1
 
 Version 3.2
 ------------
-- Configurable thumbnail sharpening (see issue #3)
+- Configurable thumbnail sharpening (see issue #3)<br>
 Note: thumbnail sharpening is independent of photo sharpening which may be configured seperately in the appropriate Lr Export/Publish dialog section.
 
 Open issues
