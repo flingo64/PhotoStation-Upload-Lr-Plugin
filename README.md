@@ -1,6 +1,6 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.2.x<br>
+Version 3.3.x<br>
 Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
 Copyright(c) 2015, Martin Messmer<br>
 
@@ -28,6 +28,7 @@ Requirements
 * For Publish mode: Synology FileStation WebAPI (reachable via admin port)
 * Synology PhotoStation Uploader, required components:
 	- ImageMagick/convert.exe
+	- ImageMagick/dcraw.exe
 	- ffmpeg/ffmpeg.exe
 	- ffmpeg/qt-faststart.exe
 
@@ -265,6 +266,10 @@ Version 3.2
 - Configurable thumbnail sharpening (see issue #3)<br>
 Note: thumbnail sharpening is independent of photo sharpening which may be configured seperately in the appropriate Lr Export/Publish dialog section.
 
+Version 3.3
+------------
+- Support for upload of TIFF and DNG file format to PhotoStation
+
 Open issues
 ============
 - issue in PhotoStation: if video aspect ratio is different from video dimension 
@@ -294,5 +299,6 @@ along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 PhotoStation Upload uses the following free software to do its job:
 
 - convert.exe,			see: http://www.imagemagick.org/
+- dcraw.exe,			see: https://www.cybercom.net/~dcoffin/dcraw/
 - ffmpeg.exe, 			see: https://www.ffmpeg.org/
 - qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
