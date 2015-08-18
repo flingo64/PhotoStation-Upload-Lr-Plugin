@@ -708,6 +708,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 							alignment = 'left',
 							fill_horizontal = 1,
 							items = {
+								{ title	= 'None',	value 	= 'None' },
 								{ title	= 'Low',	value 	= 'LOW' },
 								{ title	= 'Medium',	value 	= 'MED' },
 								{ title	= 'High',	value 	= 'HIGH' },

@@ -239,9 +239,10 @@ end
 ----------------- thumbnail conversion presets 
 
 local thumbSharpening = {
-	LOW = 		'-unsharp 0.5x0.5+0.5+0.008',
-	MED = 		'-unsharp 0.5x0.5+1.25+0.0',
-	HIGH = 		'-unsharp 0.5x0.5+2.0+0.0',
+	None 	= 	'',
+	LOW 	= 	'-unsharp 0.5x0.5+0.5+0.008',
+	MED 	= 	'-unsharp 0.5x0.5+1.25+0.0',
+	HIGH 	= 	'-unsharp 0.5x0.5+2.0+0.0',
 }
 
 -----------------
