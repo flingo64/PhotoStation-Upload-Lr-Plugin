@@ -253,7 +253,7 @@ local thumbSharpening = {
 ]]
 function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, thumbSharpness) 
 	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename)))
-	local picExt = LrPathUtils.extension(srcFilename)
+	local picExt = 'jpg'
 	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
 	local thmb_L_Filename = iif(not isPS6, LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
 	local thmb_M_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_M', picExt))

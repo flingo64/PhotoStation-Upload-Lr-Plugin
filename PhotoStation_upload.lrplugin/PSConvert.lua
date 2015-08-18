@@ -47,6 +47,7 @@ PSConvert = {}
 -- local tmpdir = LrPathUtils.getStandardFilePath("temp")
 
 local conv
+local dcraw
 local ffmpeg
 local qtfstart
 -- local exiftool
@@ -85,17 +86,20 @@ function PSConvert.initialize(PSUploaderPath)
 	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")
 
 	local convertprog = 'convert'
+	local dcrawprog = 'dcraw'
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
 
 	if WIN_ENV  then
 		local progExt = 'exe'
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
+		dcrawprog = LrPathUtils.addExtension(dcrawprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
 	end
 	
 	conv = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
+	dcraw = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog)
 	ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
 	qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
 
@@ -118,7 +122,24 @@ end
 -- convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 -- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
 function PSConvert.convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
-	local cmdline = cmdlineQuote() .. '"' .. conv .. '" "' .. srcFilename .. '" ' ..
+	-- if image is in DNG format extract the embedded jpg
+	local srcJpgFilename
+	if string.lower(LrPathUtils.extension(srcFilename)) == 'dng' then
+		srcJpgFilename = (LrPathUtils.replaceExtension(srcFilename, 'jpg'))
+
+		local cmdline = cmdlineQuote() .. '"' .. dcraw .. '" -e -w -c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' .. cmdlineQuote()
+		writeLogfile(4, cmdline .. "\n")
+		
+		if LrTasks.execute(cmdline) > 0 then
+			writeLogfile(3,"... failed!\n")
+			writeLogfile(1, "convertPicConcurrent: " .. srcFilename  .. " failed!\n")
+			return false
+		end
+	else
+		srcJpgFilename = srcFilename
+	end
+	
+	local cmdline = cmdlineQuote() .. '"' .. conv .. '" "' .. srcJpgFilename .. '" ' ..
 			shellEscape(
 						 '( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write "' .. xlFile .. '" ) -delete 0 ' ..
 		iif(lFile ~= '', '( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write "' ..  lFile .. '" +delete ) ', '') ..
