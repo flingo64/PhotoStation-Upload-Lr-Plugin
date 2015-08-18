@@ -151,6 +151,12 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
+		-- Check file format: PSD not supported by PhotoStation, DNG only supported w/ embedded full-size jpg preview
+		if (propertyTable.LR_format == 'PSD') or  (propertyTable.LR_format == 'DNG' and ifnil(propertyTable.LR_DNG_previewSize, '') ~= 'large') then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/FileFormatNoSupp=File format not supported! Select: [JPEG], [TIFF], [DNG w/ full-size JPEG preview] or [Original]."
+			break
+		end
+
 		-- Publish Servic Provider start
 
 		if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
@@ -226,6 +232,9 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'portFileStation2', updateExportStatus )
 
 	propertyTable:addObserver( 'LR_renamingTokensOn', updateExportStatus )
+	
+	propertyTable:addObserver( 'LR_format', updateExportStatus )
+	propertyTable:addObserver( 'LR_DNG_previewSize', updateExportStatus )
 
 	updateExportStatus( propertyTable )
 	
