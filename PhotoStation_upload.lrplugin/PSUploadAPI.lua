@@ -76,10 +76,18 @@ function PSUploadAPI.initialize( server, personalPSOwner)
 	serverUrl = server
 
 	if personalPSOwner then -- connect to Personal PhotoStation
-		loginPath = '/~' .. personalPSOwner .. '/blog/login.php'
+		-- login via Blog: might be disabled
+		-- loginPath = '/~' .. personalPSOwner .. '/blog/login.php'
+		
+		-- login via PhotoStation: should always work
+		loginPath = '/~' .. personalPSOwner .. '/photo/webapi/auth.php'
 		uploadPath = '/~' .. personalPSOwner .. '/photo/include/asst_file_upload.php'
 	else
-		loginPath = '/blog/login.php'
+		-- login via Blog: might be disabled
+		-- loginPath = '/blog/login.php'
+		
+		-- login via PhotoStation: should always work
+		loginPath = '/photo/webapi/auth.php'
 		uploadPath = '/photo/include/asst_file_upload.php'
 	end
 
@@ -95,7 +103,11 @@ function PSUploadAPI.login(username, password)
 		{ field = 'Content-Type', value = 'application/x-www-form-urlencoded' },
 --		{ field = 'Cookie', value = ''  }, -- clearing Cookie: doesn't work
 	}
+	-- login via Blog: might be disabled
 	local postBody = 'action=login&username=' .. urlencode(username) .. '&passwd=' .. urlencode(password)
+		
+	-- login via PhotoStation: should always work
+	local postBody = 'api=SYNO.PhotoStation.Auth&method=login&version=1&username=' .. urlencode(username) .. '&password=' .. urlencode(password)
 
 	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. loginPath .. ",...)\n")
 	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', stdHttpTimeout, string.len(postBody))
