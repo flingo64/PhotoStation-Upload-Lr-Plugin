@@ -118,8 +118,12 @@ function PSConvert.initialize(PSUploaderPath)
 end
 
 ---------------------- picture conversion functions ----------------------------------------------------------
--- getRawParams(picExt)
--- returns optimal dcraw conversion params depending on file format or nil if is not a raw format 
+-- getRawParams(picExt, srcPhoto, exportFormat)
+-- 	picExt			- filename extension of the photo
+--	srcPhoto		- Lr data structure including Metadate such as camera make and model
+--  exportFormat	- Lr export file format setting: JPEG, PSD, TIFF, DNG, PSD or ORIGINAL	
+--
+--	returns optimal dcraw conversion params depending on file format or nil if is not a supported raw format 
 function getRawConvParams(picExt, srcPhoto, exportFormat)
 	if 	   picExt == 'jpg' then
 		return nil
