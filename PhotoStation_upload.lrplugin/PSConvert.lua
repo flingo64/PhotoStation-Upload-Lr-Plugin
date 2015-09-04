@@ -138,7 +138,7 @@ function getRawConvParams(picExt, srcPhoto, exportFormat)
 		or (picExt == 'dng'	and cMake == 'PENTAX')		-- digital negative: Pentax
 		or picExt == 'dcr'								-- Kodak
 		or picExt == 'mef'								-- Mamiya
---		or picExt == 'mos'								-- Aptus --> supported by Lr
+--		or picExt == 'mos'								-- Aptus --> not supported by Lr
 		or picExt == 'nef'								-- Nikon
 		or picExt == 'orf'								-- Olympus
 		or picExt == 'pef'								-- Pentax
