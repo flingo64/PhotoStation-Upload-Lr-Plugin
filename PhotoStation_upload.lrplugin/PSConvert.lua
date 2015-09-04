@@ -118,20 +118,66 @@ function PSConvert.initialize(PSUploaderPath)
 end
 
 ---------------------- picture conversion functions ----------------------------------------------------------
+-- getRawParams(picExt)
+-- returns optimal dcraw conversion params depending on file format or nil if is not a raw format 
+function getRawConvParams(picExt, srcPhoto, exportFormat)
+	if 	   picExt == 'jpg' then
+		return nil
+	end
+	
+	-- get camera vendor
+	local cMake = string.upper(srcPhoto:getFormattedMetadata('cameraMake'))
+	
+	if 	   picExt == 'arw'								-- Sony
+		or picExt == 'cr2'								-- Canon
+		or (picExt == 'dng' and exportFormat == 'DNG')	-- digital negative: Lr developed photo
+		or (picExt == 'dng'	and cMake == 'PENTAX')		-- digital negative: Pentax
+		or picExt == 'dcr'								-- Kodak
+		or picExt == 'mef'								-- Mamiya
+--		or picExt == 'mos'								-- Aptus --> supported by Lr
+		or picExt == 'nef'								-- Nikon
+		or picExt == 'orf'								-- Olympus
+		or picExt == 'pef'								-- Pentax
+		or picExt == 'raf'								-- Fuji
+		or (picExt == 'raw' and cMake == 'PANASONIC')	-- Panasonic 
+		or picExt == 'rw2'								-- Panasonic
+--		or picExt == 'srw'								-- Samsung --> not supported by PhotoStation
+		or picExt == 'x3f'								-- Polaroid, Sigma
+	then 
+		writeLogfile(3, string.format("getRawConvParams: %s %s %s --> %s\n", picExt, cMake, exportFormat, '-e -w'));
+		return '-e -w '			-- use embedded preview w/ white balance adjustment
+	elseif picExt == '3fr'								-- Hasselblad
+		or picExt == 'dng'								-- digital negative: Leica, Ricoh, Nokia
+		or picExt == 'erf'								-- Epson
+		or picExt == 'mef'								-- Mamiya
+		or picExt == 'mrw'								-- Minolta
+		or picExt == 'raw'								-- Leica
+		or picExt == 'sr2'								-- Sony
+	then 
+		writeLogfile(3, string.format("getRawConvParams: %s %s %s --> %s\n", picExt, cMake, exportFormat, '-w'));
+		return '-w '			-- use raw image w/ white balance adjustment
+	else 
+		return nil
+	end
+end
 
--- convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
+-- convertPicConcurrent(srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 -- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
-function PSConvert.convertPicConcurrent(srcFilename, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
+function PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 	-- if image is in DNG format extract the embedded jpg
 	local srcJpgFilename
-	if string.lower(LrPathUtils.extension(srcFilename)) == 'dng' then
+	local orgExt = string.lower(LrPathUtils.extension(srcFilename))
+
+	-- if RAW image format, get the correct dcraw conversion params
+	local rawConvParams = getRawConvParams(orgExt, srcPhoto, exportFormat)
+	if rawConvParams then
 		srcJpgFilename = (LrPathUtils.replaceExtension(srcFilename, 'jpg'))
 
-		local cmdline = cmdlineQuote() .. '"' .. dcraw .. '" -e -w -c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' .. cmdlineQuote()
+		local cmdline = cmdlineQuote() .. '"' .. dcraw .. '" ' .. rawConvParams .. '-c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' .. cmdlineQuote()
 		writeLogfile(4, cmdline .. "\n")
 		
 		if LrTasks.execute(cmdline) > 0 then
-			writeLogfile(3,"... failed!\n")
+			writeLogfile(3,cmdline .. "... failed!\n")
 			writeLogfile(1, "convertPicConcurrent: " .. srcFilename  .. " failed!\n")
 			return false
 		end
@@ -149,7 +195,7 @@ function PSConvert.convertPicConcurrent(srcFilename, convParams, xlSize, xlFile,
 			) .. cmdlineQuote()
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3,"... failed!\n")
+		writeLogfile(3,cmdline .. "... failed!\n")
 		writeLogfile(1, "convertPicConcurrent: " .. srcFilename  .. " failed!\n")
 		return false
 	end

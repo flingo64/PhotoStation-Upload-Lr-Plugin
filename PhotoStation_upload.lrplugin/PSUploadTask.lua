@@ -246,13 +246,13 @@ local thumbSharpening = {
 }
 
 -----------------
--- uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, thumbSharpness) 
+-- uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness) 
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, thumbSharpness) 
+function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness) 
 	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename)))
 	local picExt = 'jpg'
 	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
@@ -264,7 +264,7 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 	local retcode
 	
 	-- generate thumbs	
-	if ( not largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, 
+	if ( not largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat,
 --								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
 								'1280x1280>', thmb_XL_Filename,
@@ -272,7 +272,7 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-	or ( largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, 
+	or ( largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat,
 --								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
 								'1280x1280>^', thmb_XL_Filename,
@@ -308,14 +308,14 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 end
 
 -----------------
--- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, thumbSharpness, addVideo, hardRotate) 
+-- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness, addVideo, hardRotate) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, isPS6, largeThumbs, thumbQuality, thumbSharpness, addVideo, hardRotate) 
+function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness, addVideo, hardRotate) 
 	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename)))
 	local vidExtOrg = LrPathUtils.extension(srcVideoFilename)
 	local picPath = LrPathUtils.parent(srcVideoFilename)
@@ -416,7 +416,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 
 	
 	-- generate all other thumb from first thumb
-	or ( not largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, 
+	or ( not largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportFormat,
 --								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
 								'1280x1280>', thmb_XL_Filename,
@@ -425,7 +425,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
 	
-	or ( largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, 
+	or ( largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportFormat,
 --								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
 								'1280x1280>^', thmb_XL_Filename,
@@ -734,7 +734,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				if srcPhoto:getRawMetadata("isVideo") then
 					writeLogfile(4, pathOrMessage .. ": is video\n") 
 					if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, 
-										exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness, 
+										exportParams.LR_format, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness, 
 										additionalVideos, exportParams.hardRotate) then
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
@@ -744,7 +744,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					end
 				else
 					if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, 
-										exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness) then
+										exportParams.LR_format, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness) then
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' ..  dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
