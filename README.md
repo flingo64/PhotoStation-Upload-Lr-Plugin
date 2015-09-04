@@ -270,7 +270,7 @@ Note: thumbnail sharpening is independent of photo sharpening which may be confi
 Version 3.3
 ------------
 - Support for upload of TIFF and DNG file format to PhotoStation
-- 3.3.2: Support for upload of varous RAW file formats (when uploading original photos):
+- 3.3.2: Support for upload of varous RAW file formats (when uploading original photos):<br>
   3FR, ARW, CR2, DCR, DNG, ERF, MEF, MRW, NEF, ORF, PEF, RAF, RAW, RW2, SR2, X3F
 	
 
