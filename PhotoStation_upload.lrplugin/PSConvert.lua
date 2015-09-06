@@ -130,7 +130,7 @@ function getRawConvParams(picExt, srcPhoto, exportFormat)
 	end
 	
 	-- get camera vendor
-	local cMake = string.upper(srcPhoto:getFormattedMetadata('cameraMake'))
+	local cMake = string.upper(ifnil(srcPhoto:getFormattedMetadata('cameraMake'), ''))
 	
 	if 	   picExt == 'arw'								-- Sony
 		or picExt == 'cr2'								-- Canon
