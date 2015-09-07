@@ -717,7 +717,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 
 	-- open session: initialize environment, get missing params and login
 	if not openSession(publishSettings, 'Delete') then
-		writeLogfile(1, "deletePhotosFromPublishedCollection: cannot open session!\n" )
+		writeLogfile(1, "deletePublishedCollection: cannot open session!\n" )
 		return
 	end
 
