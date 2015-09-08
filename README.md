@@ -26,7 +26,10 @@ Requirements
 	- Lr 6.0, 6.0.1, 6.1, 6.1.1
 * Synology PhotoStation:
 	PhotoStation 6 (tested)
-* For Publish mode: Synology FileStation WebAPI (reachable via admin port)
+* For Publish mode: 
+	- Access to Synology FileStation WebAPI (reachable via admin port)
+	- For option 'CheckExisting' (see below): user account w/ read access to /photo
+	- For full publish support (incl. photo deletion): user account w/ write access to /photo
 * Synology PhotoStation Uploader, required components:
 	- ImageMagick/convert.exe
 	- ImageMagick/dcraw.exe
