@@ -162,7 +162,7 @@ function PSFileStationAPI.existsPic(dstFilename)
 	}
 	local apiPath = fileStationPath .. '/file_share.cgi'
 	local fullPicPath = photoPathPrefix .. dstFilename
-	local postBody = 'api=SYNO.FileStation.List&version=1&method=getinfo&additional=' .. urlencode('real_path,size,time') .. '&path=' .. FSAPIescape(fullPicPath)
+	local postBody = 'api=SYNO.FileStation.List&version=1&method=getinfo&additional=' .. urlencode('real_path,size,time') .. '&path=' .. urlencode(FSAPIescape(fullPicPath))
 	
 	local respBody, respHeaders = LrHttp.post(serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
 	
@@ -211,7 +211,7 @@ function PSFileStationAPI.deletePic (dstFilename)
 	}
 	local apiPath = fileStationPath .. '/file_delete.cgi'
 	local fullPicPath = photoPathPrefix .. dstFilename
-	local postBody = 'api=SYNO.FileStation.Delete&version=1&method=delete&path=' .. FSAPIescape(fullPicPath)
+	local postBody = 'api=SYNO.FileStation.Delete&version=1&method=delete&path=' .. urlencode(FSAPIescape(fullPicPath))
 	
 	local respBody, respHeaders = LrHttp.post(serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
 	
