@@ -52,22 +52,8 @@ local loginPath
 local fileStationPath
 local photoPathPrefix
 
----------------------- http encoding routines ---------------------------------------------------------
-
-function trim(s)
-  return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
-end
-
-function urlencode(str)
-	if (str) then
-		str = string.gsub (str, "\n", "\r\n")
-		str = string.gsub (str, "([^%w ])",function (c) return string.format ("%%%02X", string.byte(c)) end)
-		str = string.gsub (str, " ", "%%20")
-	end
-	return str
-end 
-
-function FSAPIescape(str)
+---------------------- FileStation API specific encoding routines ---------------------------------------------------------
+local function FSAPIescape(str)
 	if (str) then
 --		writeLogfile(4, "FSAPIescape(" .. str ..")\n")
 		str = string.gsub (str, ",", "\\\,")

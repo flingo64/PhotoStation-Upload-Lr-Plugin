@@ -52,21 +52,6 @@ local serverUrl
 local loginPath
 local uploadPath
 
----------------------- http encoding routines ---------------------------------------------------------
-
-function trim(s)
-  return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
-end
-
-function urlencode(str)
-	if (str) then
-		str = string.gsub (str, "\n", "\r\n")
-		str = string.gsub (str, "([^%w ])",function (c) return string.format ("%%%02X", string.byte(c)) end)
-		str = string.gsub (str, " ", "%%20")
-	end
-	return str
-end 
-
 ---------------------------------------------------------------------------------------------------------
 
 -- initialize: set serverUrl, loginPath and uploadPath
