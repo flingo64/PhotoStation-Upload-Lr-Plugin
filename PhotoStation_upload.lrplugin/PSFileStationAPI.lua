@@ -52,6 +52,34 @@ local loginPath
 local fileStationPath
 local photoPathPrefix
 
+---------------------- FileStation API error codes ---------------------------------------------------------
+local FSAPIerrorCode = {
+	[0]   = 'No error',
+	[400] = 'Invalid parameter',
+	[401] = 'Unknown error of file operation',
+	[402] = 'System is too busy',
+	[403] = 'Invalid user does this file operation',
+	[404] = 'Invalid group does this file operation',
+	[405] = 'Invalid user and group does this file operation',
+	[406] = 'Can’t get user/group information from the account server',
+	[407] = 'Operation not permitted',
+	[408] = 'No such file or directory',
+	[409] = 'Non-supported file system',
+	[410] = 'Failed to connect internet-based file system (ex: CIFS)',
+	[411] = 'Read-only file system',
+	[412] = 'Filename too long in the non-encrypted file system',
+	[413] = 'Filename too long in the encrypted file system',
+	[414] = 'File already exists',
+	[415] = 'Disk quota exceeded',
+	[416] = 'No space left on device',
+	[417] = 'Input/output error',
+	[418] = 'Illegal name or path',
+	[419] = 'Illegal file name',
+	[420] = 'Illegal file name on FAT filesystem',
+	[421] = 'Device or resource busy',
+	[599] = 'No such task No such task of the file operation',
+}
+
 ---------------------- FileStation API specific encoding routines ---------------------------------------------------------
 local function FSAPIescape(str)
 	if (str) then
@@ -87,7 +115,6 @@ function PSFileStationAPI.initialize(server, personalPSOwner, loginUser)
 end
 		
 ---------------------------------------------------------------------------------------------------------
-
 -- login(username, passowrd)
 -- does, what it says
 function PSFileStationAPI.login(username, password)
@@ -103,33 +130,21 @@ function PSFileStationAPI.login(username, password)
 	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', 5, string.len(postBody))
 	
 	if not respBody then
+		writeTableLogfile(3, 'respHeaders', respHeaders)
 		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) .. 
-										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
-										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
 			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
 					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
 		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
 			return false, 'Unknown error on http request"'
 		end
 	end
 	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
 	
---[[
-	if respHeaders then
-		local h
-		writeLogfile(4, "Got Headers:\n")
-		for h = 1, #respHeaders do
-			writeLogfile(4, 'Field: ' .. respHeaders[h].field .. ' Value: ' .. respHeaders[h].value .. '\n')
-		end
-	else
-		writeLogfile(4, "Got no Headers\n")
-	end
-]]
-
-	return string.find(respBody, '\"success\":true', 1, true), 'Username or password incorrect'
-
+	local respArray = JSON:decode(respBody)
+	local errorCode = 0 
+	if respArray.error then errorCode = tonumber(respArray.error.code) end
+	
+	return respArray.success, string.format('Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode)
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -148,44 +163,39 @@ function PSFileStationAPI.existsPic(dstFilename)
 	}
 	local apiPath = fileStationPath .. '/file_share.cgi'
 	local fullPicPath = photoPathPrefix .. dstFilename
-	local postBody = 'api=SYNO.FileStation.List&version=1&method=getinfo&additional=' .. urlencode('real_path,size,time') .. '&path=' .. urlencode(FSAPIescape(fullPicPath))
+--	local postBody = 'api=SYNO.FileStation.List&version=1&method=getinfo&additional=' .. urlencode('real_path,size,time') .. '&path=' .. urlencode(FSAPIescape(fullPicPath))
+	local postBody = 'api=SYNO.FileStation.List&version=1&method=getinfo&path=' .. urlencode(FSAPIescape(fullPicPath))
 	
 	local respBody, respHeaders = LrHttp.post(serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
 	
 	writeLogfile(4, "picExists: LrHttp.post(" .. serverUrl .. apiPath .. ", " .. postBody .. ")\n")
 	if not respBody then
+		writeTableLogfile(3, 'respHeaders', respHeaders)
 		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) .. 
-										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
-										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
 			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
 					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
 		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
 			return false, 'Unknown error on http request"'
 		end
 	end
 	writeLogfile(4, "Got Body:\n" .. respBody .."\n")
 
---[[	
-	if respHeaders then
-		local h
-		writeLogfile(4, "Got Headers:\n")
-		for h = 1, #respHeaders do
-			writeLogfile(4, 'Field: ' .. respHeaders[h].field .. ' Value: ' .. respHeaders[h].value .. '\n')
+	local respArray = JSON:decode(respBody)
+	local errorCode = 0 
+	if respArray.error then errorCode = respArray.error.code end
+	
+	if respArray.success and respArray.data and respArray.data.files then
+		if respArray.data.files[1].name then
+			return 'yes'
+		elseif ifnil(respArray.data.files[1].code, 0) == 408 then
+			return 'no'
+		else
+			errorCode = ifnil(respArray.data.files[1].code, 999)
 		end
-	else
-		writeLogfile(4, "Got no Headers\n")
 	end
-]]
+	writeLogfile(3, string.format('existsPic: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
 
-	if string.find(respBody, '\"success\":true', 1, true) and string.find(respBody, 'additional', 1, true) then
-		return 'yes'
-	elseif string.find(respBody, '\"success\":true', 1, true) and string.find(respBody, '408', 1, true) then
-		return 'no'
-	else
-		return 'error'
-	end
+	return 'error'
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -203,31 +213,23 @@ function PSFileStationAPI.deletePic (dstFilename)
 	
 	writeLogfile(4, "deletePic: LrHttp.post(" .. serverUrl .. apiPath .. ", " .. postBody .. ")\n")
 	if not respBody then
+		writeTableLogfile(3, 'respHeaders', respHeaders)
 		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) .. 
-										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
-										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
 			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
 					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
 		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
 			return false, 'Unknown error on http request"'
 		end
 	end
 	writeLogfile(4, "Got Body:\n" .. respBody .."\n")
 
---[[	
-	if respHeaders then
-		local h
-		writeLogfile(4, "Got Headers:\n")
-		for h = 1, #respHeaders do
-			writeLogfile(4, 'Field: ' .. respHeaders[h].field .. ' Value: ' .. respHeaders[h].value .. '\n')
-		end
-	else
-		writeLogfile(4, "Got no Headers\n")
+	local respArray = JSON:decode(respBody)
+	
+	if respArray.error then 
+		local errorCode = respArray.error.errors[1].code 
+		writeLogfile(3, string.format('deletePic: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
 	end
-]]
 
-	return string.find(respBody, '\"success\":true', 1, true)
+	return respArray.success
 end
 

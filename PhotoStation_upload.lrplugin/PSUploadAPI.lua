@@ -61,17 +61,9 @@ function PSUploadAPI.initialize( server, personalPSOwner)
 	serverUrl = server
 
 	if personalPSOwner then -- connect to Personal PhotoStation
-		-- login via Blog: might be disabled
-		-- loginPath = '/~' .. personalPSOwner .. '/blog/login.php'
-		
-		-- login via PhotoStation: should always work
 		loginPath = '/~' .. personalPSOwner .. '/photo/webapi/auth.php'
 		uploadPath = '/~' .. personalPSOwner .. '/photo/include/asst_file_upload.php'
 	else
-		-- login via Blog: might be disabled
-		-- loginPath = '/blog/login.php'
-		
-		-- login via PhotoStation: should always work
 		loginPath = '/photo/webapi/auth.php'
 		uploadPath = '/photo/include/asst_file_upload.php'
 	end
@@ -98,33 +90,21 @@ function PSUploadAPI.login(username, password)
 	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', stdHttpTimeout, string.len(postBody))
 	
 	if not respBody then
-		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) .. 
-										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
-										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
-			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
-					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
-		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
-			return false, 'Unknown error on http request"'
-		end
+    writeTableLogfile(3, 'respHeaders', respHeaders)
+    if respHeaders then
+      return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
+          trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
+    else
+      return false, 'Unknown error on http request"'
+    end
 	end
 	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
 	
---[[
-	if respHeaders then
-		local h
-		writeLogfile(4, "Got Headers:\n")
-		for h = 1, #respHeaders do
-			writeLogfile(4, 'Field: ' .. respHeaders[h].field .. ' Value: ' .. respHeaders[h].value .. '\n')
-		end
-	else
-		writeLogfile(4, "Got no Headers\n")
-	end
-]]
-
-	return string.find(respBody, '\"success\":true', 1, true), 'Username or password incorrect'
-
+  local respArray = JSON:decode(respBody)
+  local errorCode = 0 
+  if respArray.error then errorCode = tonumber(respArray.error.code) end
+  
+  return respArray.success, string.format('Error: %d\n', errorCode)
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -154,33 +134,23 @@ function PSUploadAPI.createFolder (parentDir, newDir)
 	
 	writeLogfile(4, "createFolder: LrHttp.post(" .. serverUrl .. uploadPath .. ",...)\n")
 	if not respBody then
-		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) .. 
-										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
-										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
-			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
-					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
-		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
-			return false, 'Unknown error on http request"'
-		end
+    writeTableLogfile(3, 'respHeaders', respHeaders)
+    if respHeaders then
+      return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
+          trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
+    else
+      return false, 'Unknown error on http request"'
+    end
 	end
 	writeLogfile(4, "Got Body:\n" .. respBody .."\n")
 
---[[	
-	if respHeaders then
-		local h
-		writeLogfile(4, "Got Headers:\n")
-		for h = 1, #respHeaders do
-			writeLogfile(4, 'Field: ' .. respHeaders[h].field .. ' Value: ' .. respHeaders[h].value .. '\n')
-		end
-	else
-		writeLogfile(4, "Got no Headers\n")
-	end
-]]
+  local respArray = JSON:decode(respBody)
+  
+  if not respArray.success then
+    writeLogfile(3,"createFolder: " .. parentDir .. " / " .. newDir .. " failed: " .. respArray.err_msg .. "!\n")
+  end
 
-	return string.find(respBody, '\"success\":true', 1, true)
-
+  return respArray.success, respArray.err_msg
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -247,38 +217,21 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
 	
 	if not respBody then
-		retcode = false
-		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) .. 
-										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
-										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
-			reason = 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
-					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
-		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
-			reason = 'Unknown error on http request"'
-		end
-	else
-		writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
-		
---[[
-		if respHeaders then
-			local h
-			writeLogfile(4, "Got Headers:\n")
-			for h = 1, #respHeaders do
-				writeLogfile(4, 'Field: ' .. respHeaders[h].field .. ' Value: ' .. respHeaders[h].value .. '\n')
-			end
-		else
-			writeLogfile(4, "Got no Headers\n")
-		end
-]]
+    writeTableLogfile(3, 'respHeaders', respHeaders)
+    if respHeaders then
+      return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
+          trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
+    else
+      return false, 'Unknown error on http request"'
+    end
+	end
+	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")	
 
-		retcode = string.find(respBody, '\"success\":true', 1, true)
-		if not retcode then reason = 'Got negative response from PhotoStation' end
-	end
-	
-	if not retcode then
-		writeLogfile(1,"uploadPictureFile: " .. srcFilename .. " to " .. dstDir .. "/" .. dstFilename .. " failed!\n")
-	end
-	return retcode, reason
+  local respArray = JSON:decode(respBody)
+  
+  if not respArray.success then
+    writeLogfile(3,"uploadPictureFile: " .. srcFilename .. " to " .. dstDir .. "/" .. dstFilename .. " failed: " .. respArray.err_msg .. "!\n")
+  end
+
+  return respArray.success, respArray.err_msg
 end

@@ -58,6 +58,8 @@ local LrPrefs	 		= import 'LrPrefs'
 local LrTasks 			= import 'LrTasks'
 local LrView 			= import 'LrView'
 
+JSON = assert(loadfile (LrPathUtils.child(_PLUGIN.path, 'JSON.lua')))()
+
 --============================================================================--
 
 tmpdir = LrPathUtils.getStandardFilePath("temp")
@@ -139,6 +141,29 @@ function writeLogfile (level, msg)
 	end
 end
 
+-- writeTableLogfile (level, tableName, printTable)
+-- output a table to logfile, max one level of nested tables
+function writeTableLogfile(level, tableName, printTable)
+	if type(printTable) ~= 'table' then
+		writeLogfile(level, tableName ' is not a table, but ' .. type(printTable) .. '\n')
+		return
+	end
+	
+	writeLogfile(level, '"' .. tableName .. '":{\n')
+	for key, value in pairs( printTable ) do
+		if type(value) == 'table' then
+			writeLogfile(level, '	"' .. key .. '":{\n')
+			for key2, value2 in pairs( value ) do
+				writeLogfile(level, '		"' .. key2 ..'":"' .. tostring(ifnil(value2, '<Nil>')) ..'"\n')
+			end
+			writeLogfile(level, '	}\n')
+		else
+			writeLogfile(level, '	"' .. key ..'":"' .. tostring(ifnil(value, '<Nil>')) ..'"\n')
+		end
+	end
+	writeLogfile(level, '}\n')
+end
+
 -- closeLogfile: write the end timestamp and time consumed
 function closeLogfile()
 	local logfile = io.open(logfilename, "a")
@@ -199,7 +224,14 @@ function urlencode(str)
 	return str
 end 
 
----------------------- table copy operations ----------------------------------------------------------
+----------------------- JSON helper --------------------------------------------------------------
+function JSON:onDecodeError(message, text, location, etc)
+	writeLogfile(4, string.format("JSON-DecodeError: msg=%s, txt=%s, loc=%s, etc=%s\n", 
+									ifnil(message, '<Nil>'), ifnil(text, '<Nil>'),
+									ifnil(location, '<Nil>'),ifnil(etc, '<Nil>')))
+end
+
+---------------------- table operations ----------------------------------------------------------
 
 -- tableShallowCopy (origTable)
 -- make a shallow copy of a table
