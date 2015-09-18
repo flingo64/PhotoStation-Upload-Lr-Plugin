@@ -6,7 +6,7 @@ FAQs: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki<br>
 Forum threads: 
 - http://forum.synology.com/enu/viewtopic.php?f=17&t=96477 (English)
 - http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload (German)
-<p>
+
 Copyright(c) 2015, Martin Messmer<br>
 
 Overview
