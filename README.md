@@ -2,6 +2,10 @@ PhotoStation Upload (Lightroom plugin)
 ======================================
 Version 3.3.x<br>
 Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
+FAQs: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki<br>
+Forum threads: 
+- http://forum.synology.com/enu/viewtopic.php?f=17&t=96477 (English)
+- http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload (German)
 Copyright(c) 2015, Martin Messmer<br>
 
 Overview
@@ -303,9 +307,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+PhotoStation Upload uses the following phantastic free software to do its job:
 
 - convert.exe,			see: http://www.imagemagick.org/
 - dcraw.exe,			see: https://www.cybercom.net/~dcoffin/dcraw/
 - ffmpeg.exe, 			see: https://www.ffmpeg.org/
 - qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+- JSON.lua				see: http://regex.info/blog/lua/json
+
+Thanks to all you folks providing these real valuable software gems. This plugin would be nothing without it!

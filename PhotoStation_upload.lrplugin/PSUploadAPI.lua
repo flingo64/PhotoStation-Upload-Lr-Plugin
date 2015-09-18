@@ -80,10 +80,8 @@ function PSUploadAPI.login(username, password)
 		{ field = 'Content-Type', value = 'application/x-www-form-urlencoded' },
 --		{ field = 'Cookie', value = ''  }, -- clearing Cookie: doesn't work
 	}
-	-- login via Blog: might be disabled
-	local postBody = 'action=login&username=' .. urlencode(username) .. '&passwd=' .. urlencode(password)
-		
-	-- login via PhotoStation: should always work
+
+	-- login via PhotoStation WebAPI
 	local postBody = 'api=SYNO.PhotoStation.Auth&method=login&version=1&username=' .. urlencode(username) .. '&password=' .. urlencode(password)
 
 	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. loginPath .. ",...)\n")
