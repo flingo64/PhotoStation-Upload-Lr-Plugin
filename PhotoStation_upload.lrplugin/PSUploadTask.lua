@@ -592,7 +592,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		
 	-- open session: initialize environment, get missing params and login
 	if not openSession(exportParams, publishMode) then
-		writeLogfile(1, "processRenderedPhotos: cannot open session!\n" )
+		showFinalMessage("PhotoStation Upload: processRenderedPhotos failed!", "Cannot open session, check logfile for additional info.", "critical")
+		closeLogfile()
 		return
 	end
 
