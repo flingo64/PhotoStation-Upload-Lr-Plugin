@@ -142,7 +142,7 @@ publishServiceProvider.titleForPublishedSmartCollection_standalone = LOC "$$$/PS
 -- and should simply return true or false to indicate whether any deletion of photos from the service 
 -- should take place before any publishing of new images and updating of previously published images.
 function publishServiceProvider.deleteFirstOnPublish()
-	return true
+	return false
 end
 
 --------------------------------------------------------------------------------
@@ -295,7 +295,8 @@ function publishServiceProvider.deletePhotosFromPublishedCollection( publishSett
 
 	-- open session: initialize environment, get missing params and login
 	if not openSession(publishSettings, 'Delete') then
-		writeLogfile(1, "deletePhotosFromPublishedCollection: cannot open session!\n" )
+		showFinalMessage("PhotoStation Upload: deletePhotosFromPublishedCollection failed!", "Cannot open session, check logfile for additional info.", "critical")
+		closeLogfile()
 		return
 	end
 
@@ -718,6 +719,8 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	-- open session: initialize environment, get missing params and login
 	if not openSession(publishSettings, 'Delete') then
 		writeLogfile(1, "deletePublishedCollection: cannot open session!\n" )
+		showFinalMessage("PhotoStation Upload: deletePublishedCollection failed!", "Cannot open session, check logfile for additional info.", "critical")
+		closeLogfile()
 		return
 	end
 
