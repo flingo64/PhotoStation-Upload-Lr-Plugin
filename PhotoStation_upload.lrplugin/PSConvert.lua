@@ -113,7 +113,7 @@ function PSConvert.initialize(PSUploaderPath)
 ]]
 	encoderOpt = iif(WIN_ENV, '-acodec libvo_aacenc',  '-strict experimental -acodec aac')
 	
-	writeLogfile(4, "PSConvert.initialize:conv: " .. conv .. "\n\tffmpeg: ".. ffmpeg .. "\n\tqt-faststart: " .. qtfstart .. "\n")
+	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. conv .. "\n\t\t\tdcraw: " .. dcraw .. "\n\t\t\tffmpeg: " .. ffmpeg .. "\n\t\t\tqt-faststart: " .. qtfstart .. "\n")
 	return true
 end
 
