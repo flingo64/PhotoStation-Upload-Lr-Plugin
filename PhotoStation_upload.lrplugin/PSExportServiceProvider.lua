@@ -101,6 +101,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'logLevel', 		default = 2 },		-- loglevel 
 
 		-- Publish Service Provider presets
+		{ key = 'useFileStation',   	default = true },		-- use FileStation API for extended features via prim. server
 		{ key = 'protoFileStation',		default = 'http' },		-- transport protocol for FileStation WEBAPI
 		{ key = 'portFileStation',		default = '5000' },		-- port of the FileStation WEBAPI
 		{ key = 'differentFSUser', 		default = false },		-- use a different user/password for FileStation WEBAPI
@@ -110,6 +111,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'useSecondAddress',		default = false },		-- specify a secondoray (external) server address
 		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary PhotoStation upload
 		{ key = 'servername2', 			default = '' },			-- name/address of the secondary PhotoStation, may include ':port' extension
+		{ key = 'useFileStation2',   	default = false },		-- use FileStation API for extended features via second. server
 		{ key = 'protoFileStation2',	default = 'https' },	-- transport protocol for secondary FileStation WEBAPI
 		{ key = 'portFileStation2',		default = '' },			-- port of the secondary FileStation WEBAPI
 
