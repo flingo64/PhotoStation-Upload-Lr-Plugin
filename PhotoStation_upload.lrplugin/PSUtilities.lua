@@ -278,8 +278,9 @@ function initializeEnv (exportParams)
 	local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
 
 	return (PSUploadAPI.initialize(exportParams.serverUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil)) and 
-			PSFileStationAPI.initialize(FileStationUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
-										iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username)) and 
+			(not exportParams.useFileStation or 
+				PSFileStationAPI.initialize(FileStationUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
+										iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username))) and 
 			PSConvert.initialize(exportParams.PSUploaderPath))
 end
 
@@ -298,17 +299,20 @@ end
 -- login to PhotoStation and FileStation, if required
 function openSession(exportParams, publishMode)
 	-- if "use secondary server was choosen, temporarily overwrite primary address
+	writeLogfile(4, "openSession: publishMode = " .. publishMode .."\n")
 	if exportParams.useSecondAddress then
+		writeLogfile(4, "openSession: copy second server parameters\n")
 		exportParams.proto = exportParams.proto2
 		exportParams.servername = exportParams.servername2
 		exportParams.serverUrl = exportParams.proto .. "://" .. exportParams.servername
+		exportParams.useFileStation = exportParams.useFileStation2
 		exportParams.protoFileStation = exportParams.protoFileStation2
 		exportParams.portFileStation = exportParams.portFileStation2
 	end
 	
 	-- generate global environment settings
 	if not initializeEnv (exportParams) then
-		writeLogfile(2, "openSession: cannot initialize environment!\n" )
+		writeLogfile(1, "openSession: cannot initialize environment!\n" )
 		return false
 	end
 
@@ -316,10 +320,14 @@ function openSession(exportParams, publishMode)
 	if promptForMissingSettings(exportParams, publishMode) == 'cancel' then
 		return false
 	end
-	publishMode = exportParams.publishMode
+	publishMode = iif(publishMode == 'Delete', 'Delete', exportParams.publishMode)
 	
-	-- Publish or Delete: Login to FileStation
-	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Delete' then
+	-- CheckExisting or Delete: Login to FileStation required
+	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
+		if not exportParams.useFileStation then
+			writeLogfile(1, "Publish (" .. publishMode .. "): Login to FileStation required, but not configured!\n")
+			return false
+		end
 		local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
 		local usernameFS = iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username)
 		local passwordFS = iif(exportParams.differentFSUser, exportParams.passwordFileStation, exportParams.password)
@@ -359,8 +367,8 @@ end
 function closeSession(exportParams, publishMode)
 	writeLogfile(3,"closeSession(" .. publishMode .. "):...\n")
 
-	-- Publish or Delete: Logout from FileStation
-	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Delete' then
+	-- CheckExisting or Delete: Logout from FileStation
+	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
 		if not PSFileStationAPI.logout() then
 			writeLogfile(1,"FileStation Logout failed\n")
 			return false
@@ -608,9 +616,9 @@ function showFinalMessage (title, message, msgType)
 		updateAvail = true
 	end
 	
-	writeLogfile(2,message .. '\n')
+	writeLogfile(2, message .. '\n')
 
-	if appVersion.major < 5 then 
+	if appVersion.major < 5 or msgType == 'critical' then 
 		LrDialogs.message(title, message, msgType)
 	else
 		LrDialogs.showBezel(message, 10)
