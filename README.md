@@ -287,12 +287,13 @@ Version 3.4
 - Second server address configurable also for Export
 - FileStation API access optional for Publish:<br>
 Until v3.3 FileStation API access was required for any Publish operation mode. So, if you wanted to use the Publish functionality via Internet, the FileStation had to be accessible via Internet.
-Since most of us don't feel comfortable with the idea of opening the admin port of the diskstation to the Internet, publishing via Internet wasn't really an option. Now, you may use choose to disable FileStation API use for the Internet access.
-Publish mode 'Check Existing', photo deletion and photo movement will not be possible via Internet then, but you will be able at least to upload photos using the Publish service. Hey, that's better than nothing, or!
+Since most of us don't feel comfortable with the idea of opening the admin port of the diskstation to the Internet, publishing via Internet wasn't really an option. 
+Now, you may use choose to __disable FileStation API use for the Internet access__ case.
+Publish mode 'Check Existing', photo deletion and photo movement will not be possible via Internet then, but you will be able at least to __upload photos using the Publish service via Internet__. Hey, that's better than nothing, or!
 - Publish: Delete after Upload<br>
 The order or Publish tasks was rearranged, so that you may use the Publish function via Internet w/o being stopped by photos that need to be deleted, but cannot be deleted due to disabled FileStation access (see above).
 - 'Check Existing' is 4 times faster than before:<br>
-A directory read cache speeds up the check for photos in PhotoStation. The actual speed advantage is depending on how your photo collections are organized in your PhotoStation<. any kind of chronological directory structure will work fine, since Lr is processing photos in chronological order. 
+A directory read cache speeds up the check for photos in PhotoStation. The actual speed advantage is depending on how your photo collections are organized in your PhotoStation. any kind of chronological directory structure will work fine, since Lr is processing photos in chronological order. 
 
 Open issues
 ============
