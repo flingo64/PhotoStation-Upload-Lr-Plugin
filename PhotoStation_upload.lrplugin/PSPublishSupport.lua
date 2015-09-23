@@ -294,21 +294,37 @@ function publishServiceProvider.deletePhotosFromPublishedCollection( publishSett
 	openLogfile(publishSettings.logLevel)
 
 	-- open session: initialize environment, get missing params and login
-	if not openSession(publishSettings, 'Delete') then
-		showFinalMessage("PhotoStation Upload: deletePhotosFromPublishedCollection failed!", "Cannot open session, check logfile for additional info.", "critical")
+	local sessionSuccess, reason = openSession(publishSettings, 'Delete')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: deletePhotosFromPublishedCollection failed!", reason, "critical")
+		end
 		closeLogfile()
 		return
 	end
 
+	local startTime = LrDate.currentTime()
+	local nPhotos = #arrayOfPhotoIds
+	local nProcessed = 0 
+
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
 		writeLogfile(2, 'deletePhotosFromPublishedCollection:  "' .. photoId .. '"\n')
 		if PSFileStationAPI.deletePic (photoId) then
+			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
 		else
 			writeLogfile(1, 'deletePhotosFromPublishedCollection:  "' .. photoId .. '" failed!\n')
 		end
 	end
 
+	local timeUsed 	= LrDate.currentTime() - startTime
+	local picPerSec = nProcessed / timeUsed
+	local message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
+					string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n", 
+					nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+
+	showFinalMessage("PhotoStation Upload: DeletePhotosFromPublishedCollection done", message, "info")
+	closeLogfile()
 	closeSession(publishSettings, 'Delete');
 
 end
@@ -717,18 +733,17 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	openLogfile(publishSettings.logLevel)
 
 	-- open session: initialize environment, get missing params and login
-	if not openSession(publishSettings, 'Delete') then
-		writeLogfile(1, "deletePublishedCollection: cannot open session!\n" )
-		showFinalMessage("PhotoStation Upload: deletePublishedCollection failed!", "Cannot open session, check logfile for additional info.", "critical")
+	local sessionSuccess, reason = openSession(publishSettings, 'Delete')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: deletePublishedCollection failed!", reason, "critical")
+		end
 		closeLogfile()
 		return
 	end
 
 	writeLogfile(3, "deletePublishedCollection: starting\n ")
-	local message
 	local startTime = LrDate.currentTime()
-	local timeUsed
-	local timePerPic	
 	local publishedPhotos = info.publishedCollection:getPublishedPhotos() 
 	local nPhotos = #publishedPhotos
 	local nProcessed = 0 
@@ -754,13 +769,13 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		end 
 		progressScope:done()
 		
-		timeUsed = 	LrDate.currentTime() - startTime
-		timePerPic = nProcessed / timeUsed 			-- pic per sec makes more sense here
-		message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
-						string.format("PhotoStation Upload - DeletePublishedCollection: Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n", 
-						nProcessed, nPhotos, timeUsed + 0.5, timePerPic))
+		local timeUsed 	= LrDate.currentTime() - startTime
+		local picPerSec = nProcessed / timeUsed
+		local message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
+						string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n", 
+						nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 
-		showFinalMessage("PhotoStation DeletePublishedCollection done", message, "info")
+		showFinalMessage("PhotoStation Upload: DeletePublishedCollection done", message, "info")
 		closeLogfile()
 	end )
 	
