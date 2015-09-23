@@ -215,7 +215,8 @@ end
 -- existsPic(dstFilename) - check if a photo exists in PhotoStation
 -- 	- if directory of photo is not in cache, reloads cache w/ directory via listFiles()
 -- 	- searches for filename in a local directory cache (findInCache())
--- 	returns true, if filename 	function PSFileStationAPI.existsPic(dstFilename)
+-- 	returns true, if filename 	
+function PSFileStationAPI.existsPic(dstFilename)
 --	local dstDir = LrPathUtils.parent(dstFilename) -- won't work on Windows, since dstFilename has forward slashes
 	local _, _, dstDir = string.find(dstFilename, '(.*)\/', 1, false)
 	
