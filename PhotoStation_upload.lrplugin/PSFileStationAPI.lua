@@ -5,6 +5,7 @@ PhotoStation FileStation primitives:
 	- initialize
 	- login
 	- logout
+	- listFiles
 	- existsPic
 	- deletePic
 Copyright(c) 2015, Martin Messmer
@@ -156,19 +157,22 @@ function PSFileStationAPI.logout ()
 end
 
 ---------------------------------------------------------------------------------------------------------
--- existsPic(dstFilename)
-function PSFileStationAPI.existsPic(dstFilename)
+-- listFiles: returns all files in a given directory
+-- returns
+--		success: 		true, false 
+--		errorcode:		errorcode not success
+--		files:			array of files if success
+function PSFileStationAPI.listFiles(dstDir)
 	local postHeaders = {
 		{ field = 'Content-Type',			value = 'application/x-www-form-urlencoded' },
 	}
 	local apiPath = fileStationPath .. '/file_share.cgi'
-	local fullPicPath = photoPathPrefix .. dstFilename
---	local postBody = 'api=SYNO.FileStation.List&version=1&method=getinfo&additional=' .. urlencode('real_path,size,time') .. '&path=' .. urlencode(FSAPIescape(fullPicPath))
-	local postBody = 'api=SYNO.FileStation.List&version=1&method=getinfo&path=' .. urlencode(FSAPIescape(fullPicPath))
+	local fullDirPath = photoPathPrefix .. dstDir
+	local postBody = 'api=SYNO.FileStation.List&version=1&method=list&filetype=file&folder_path=' .. urlencode(FSAPIescape(fullDirPath))
 	
 	local respBody, respHeaders = LrHttp.post(serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
 	
-	writeLogfile(4, "picExists: LrHttp.post(" .. serverUrl .. apiPath .. ", " .. postBody .. ")\n")
+	writeLogfile(4, "listFiles: LrHttp.post(" .. serverUrl .. apiPath .. ", " .. postBody .. ")\n")
 	if not respBody then
 		writeTableLogfile(3, 'respHeaders', respHeaders)
 		if respHeaders then
@@ -182,20 +186,53 @@ function PSFileStationAPI.existsPic(dstFilename)
 
 	local respArray = JSON:decode(respBody)
 	local errorCode = 0 
-	if respArray.error then errorCode = respArray.error.code end
-	
-	if respArray.success and respArray.data and respArray.data.files then
-		if respArray.data.files[1].name then
-			return 'yes'
-		elseif ifnil(respArray.data.files[1].code, 0) == 408 then
-			return 'no'
-		else
-			errorCode = ifnil(respArray.data.files[1].code, 999)
-		end
+	if respArray.error then 
+		errorCode = respArray.error.code
+		writeLogfile(1, string.format('listFiles: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+		return false, errorCode, nil
 	end
-	writeLogfile(3, string.format('existsPic: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+	
+	return true, 0, respArray.data.files
+end
 
-	return 'error'
+---------------------------------------------------------------------------------------------------------
+-- directory cache for existsPic()
+-- one directory will be cached at any time
+
+local psDirInCache = nil 	-- pathname of directory in cache
+local psDirCache = nil		-- the directory cache
+
+local function findInCache(filename)
+	if psDirCache == nil then return false end
+	
+	for i = 1, #psDirCache do
+		if psDirCache[i].name == filename then return true end
+	end
+	return false
+end
+
+---------------------------------------------------------------------------------------------------------
+-- existsPic(dstFilename) - check if a photo exists in PhotoStation
+-- 	- if directory of photo is not in cache, reloads cache w/ directory via listFiles()
+-- 	- searches for filename in a local directory cache (findInCache())
+-- 	returns true, if filename 	function PSFileStationAPI.existsPic(dstFilename)
+--	local dstDir = LrPathUtils.parent(dstFilename) -- won't work on Windows, since dstFilename has forward slashes
+	local _, _, dstDir = string.find(dstFilename, '(.*)\/', 1, false)
+	
+	-- check if folder of current photo is in cache
+	if dstDir ~= psDirInCache then
+		-- if not: refresh cach w/ folder of current photo
+		local success, errorCode
+		
+		success, errorCode, psDirCache = PSFileStationAPI.listFiles(dstDir)
+		if not success and errorCode ~= 408 then -- 408: no such file or dir
+			writeLogfile(3, string.format('existsPic2: Error on listFiles: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+		   	return 'error'
+		end
+		psDirInCache = dstDir
+	end 
+	
+	return iif(findInCache(LrPathUtils.leafName(dstFilename)), 'yes', 'no')
 end
 
 ---------------------------------------------------------------------------------------------------------
