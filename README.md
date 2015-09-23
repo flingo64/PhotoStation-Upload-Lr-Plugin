@@ -1,6 +1,6 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.3.x<br>
+Version 3.4.x<br>
 Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
 FAQs: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki<br>
 Forum threads: 
@@ -32,9 +32,9 @@ Requirements
 * Synology PhotoStation:
 	PhotoStation 6 (tested)
 * For Publish mode: 
-	- Access to Synology FileStation WebAPI (reachable via admin port)
-	- For option 'CheckExisting' (see below): user account w/ read access to /photo
-	- For full publish support (incl. photo deletion): user account w/ write access to /photo
+	- Access to Synology FileStation WebAPI (reachable via admin port) is required for mode "Check Existing" and photo deletion
+	- For option 'Check Existing' (see below): user account w/ read access to /photo
+	- For full publish support (incl. photo deletion / photo movement): user account w/ write access to /photo
 * Synology PhotoStation Uploader, required components:
 	- ImageMagick/convert.exe
 	- ImageMagick/dcraw.exe
@@ -89,15 +89,19 @@ The Album settings ( d) ) are not stored within the Publish settings but within 
 
 Export Funtionality
 --------------------
-- upload to the Standard PhotoStation or to a Personal PhotoStation (make sure the Personal PhotoStation feature is enabled for the given Personal Station owner)
+- Upload to the __Standard PhotoStation__ or to a __Personal PhotoStation__<br>
+(make sure the Personal PhotoStation feature is enabled for the given Personal Station owner)
+- Definition of a __secondary server address__
+You may want to publish to your PhotoStation from at home or via the Internet. 
+Therefore, the Export/Publish Service dialog lets you define two server addresses, with one of them being active. 
+This eases the consistent definition of the Export/Publish settings for both access paths.  
 
-- two different upload methods:
-	- flat upload: 
-	  upload all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
+- __Two different upload methods__:
+	- __Flat upload__: 
 	  upload all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
 	  The named Album may exist on the PhotoStation or may be created during export
 	  The root Album is defined by an empty string. In general, Albums are specified by "\<folder\>{/\<folder\>}" (no leading or trailing slashes required)
-	- tree mirror upload: 
+	- __Tree mirror upload__: 
 	  preserves the directory path of each photo/video relative to a given local base path on the PhotoStation below a named target Album.
 	  All directories within the source path of the picture/video will be created recursively.
 	  The directory tree is mirrored relative to a given local base path. Example:<br>
@@ -107,51 +111,48 @@ Export Funtionality
 	  --\> upload to:	Test/2010/10/img1.jpg<br>
 	  In other words:	\<local-base-path\>\\\<relative-path\>\\file -- upload to --\> \<Target Album\>/\<relative-path\>/file<br>
 
-- optimize the upload for PhotoStation 6 by not uploading the THUMB_L thumbnail.
+- __Optimize the upload for PhotoStation 6__ by not uploading the THUMB_L thumbnail.
 
-- upload of videos and accompanying videos with a lower resolution.
+- __Upload of videos and accompanying videos with a lower resolution__
 
-- hard-rotation od uploaded videos that are soft-rotated or meta-rotated (see Version 2.8 changes).
+- __Hard-rotation of uploaded videos that are soft-rotated or meta-rotated__<br>
+(see Version 2.8 changes).
 
-Publish Funtionality:
---------------------
+Publish Functionality:
+---------------------
 
-### All Export Functions are Supported in Publish mode
+- All Export Functions are Supported in Publish mode
 
-### Definition of a secondary server (Publish dialog)
+- __Support for Published Collections and Published Smart Collections__ 
 
-You may want to publish to your PhotoStation from at home or via the Internet. 
-Therefore, the Publish Service dialog allows you to define two sets of server address settings. 
-Switching between the two address settings can be done in the Publish dialog
-  
-### Support for Published Collections and Published Smart Collections 
-
-No support for Published Collection Sets.
+- No support for Published Collection Sets.
  
-### Different Publish options (Published Collection dialog)
+- __Different Publish options__ (Published Collection dialog):
 
-- Normal:
+	- __Normal__:
   publish unpublished photos to target Album in target PhotoStation 
-- CheckExisting:
+	- __Check Existing__:
   Unpublished photos will not be published, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the 
   defined target but not through the newly defined Published Collection (e.g. via Export).
-  CheckExisting is 15 to 30 times faster than a Normal Publish, since no thumbnail creation and upload is required.
+  Check Existing is approx. 50 times faster (~ 10 photos/sec) than a Normal Publish, since no thumbnail creation and upload is required.
   Note, that CheckExisting can not determine, whether the photo in the target Album is the latest version.
-- CheckMoved:
+	- __Check Moved__:
   Check if any photo within a Published Collection has moved locally and if so, mark them to 're-publish'
   If your Published Collection is to be tree-mirrored to the target Album, it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
   Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature.
   To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
-  CheckMoved is very fast (\>100 photos/sec) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
-- deletion of published photos, when deleted locally (from Collection or Library)
-- deletion of complete Published Collections
-- no support for re-import of comments or ratings
-- no support for custom-defined sort order
+  Check Moved is very fast (\>100 photos/sec) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
+  
+- __Deletion of published photos__, when deleted locally (from Collection or Library)
+
+- __Deletion of complete Published Collections__
+- No support for re-import of comments or ratings
+- No support for custom-defined sort order
 
 Additional Funtionality
 ------------------------
-- checks for updates in background when Exporting, Publishing or opening the Plugin section in the Plugin Manager no more than once per day.
+- __Checks for updates__ in background when Exporting, Publishing or opening the Plugin section in the Plugin Manager no more than once per day.
   If a new version is available, you'll get an info message after the Export/Publish and also a note in the Plugin Manager section.
   The update check will send the following information to the update server:
 	- PhotoStation Upload plugin version
@@ -162,11 +163,11 @@ Additional Funtionality
   This helps me keep track of the different environments/combinations the plugin is running in.
 
 Important note
----------------
+--------------
 Passwords entered in the export settings are not stored encrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
 
 History
-=========
+=======
 
 Version 2.2 (initial public release)
 -------------------------------------
@@ -281,6 +282,17 @@ Version 3.3
 - 3.3.2: Support for upload of varous RAW file formats (when uploading original photos):<br>
   3FR, ARW, CR2, DCR, DNG, ERF, MEF, MRW, NEF, ORF, PEF, RAF, RAW, RW2, SR2, X3F
 	
+Version 3.4
+------------
+- Second server address configurable also for Export
+- FileStation API access optional for Publish:
+Until v3.3 FileStation API access was required for any Publish operation mode. So, if you wanted to use the Publish functionality via Internet, the FileStation had to be accessible via Internet.
+Since most of us don't feel comfortable with the idea of opening the admin port of the diskstation to the Internet, publishing via Internet wasn't really an option. Now, you may use choose to disable FileStation API use for the Internet access.
+Publish mode 'Check Existing', photo deletion and photo movement will not be possible via Internet then, but you will be able at least to upload photos using the Publish service. Hey, that's better than nothing, or!
+- Publish: Delete after Upload
+The order or Publish tasks was rearranged, so that you may use the Publish function via Internet w/o being stopped by photos that need to be deleted, but cannot be deleted due to disabled FileStation access (see above).
+- 'Check Existing' is 4 times faster than before:
+A directory read cache speeds up the check for photos in PhotoStation. The actual speed advantage is depending on how your photo collections are organized in your PhotoStation<. any kind of chronological directory structure will work fine, since Lr is processing photos in chronological order. 
 
 Open issues
 ============
