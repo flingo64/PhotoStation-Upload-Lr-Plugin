@@ -374,7 +374,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 		f:row {
 			f:checkbox {
 				title = LOC "$$$/PSUpload/ExportDialog/UseFileStation=Use FileStation API:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/UseFileStationTT=Use FileStation API: required for Publish mode 'Find Existing' and file deletion",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/UseFileStationTT=Use of FileStation API is required for Publish mode 'Find Existing' and file deletion",
 				alignment = 'right',
 				width = share 'labelWidth',
 				value = bind 'useFileStation',
@@ -413,7 +413,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 		f:row {
 			f:checkbox {
 				title = LOC "$$$/PSUpload/ExportDialog/UseFileStation2=Use FileStation API:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/UseFileStationTT=Use FileStation API via secondary server: required for Publish mode 'Find Existing' and file deletion",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/UseFileStationTT=Use of FileStation API via secondary server: required for Publish mode 'Find Existing' and file deletion",
 				value = bind 'useFileStation2',
 				enabled = bind 'useSecondAddress',
 				alignment = 'right',
@@ -452,7 +452,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 		fill_horizontal = 1,
 		f:row {
 			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/DiffFSUser=Use different FileStation API Login:",
+				title = LOC "$$$/PSUpload/ExportDialog/DiffFSUser=Use different FileStation Login:",
 				tooltip = LOC "$$$/PSUpload/ExportDialog/DiffFSUserTT=If your PhotoStation uses its own user management, then enter the DiskStation username/password here.",
 				alignment = 'right',
 				width = share 'labelWidth',
