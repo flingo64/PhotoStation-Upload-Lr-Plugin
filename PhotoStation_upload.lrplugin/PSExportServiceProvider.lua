@@ -115,7 +115,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'protoFileStation2',	default = 'https' },	-- transport protocol for secondary FileStation WEBAPI
 		{ key = 'portFileStation2',		default = '' },			-- port of the secondary FileStation WEBAPI
 
-		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, FindMissing, ...
+		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, CheckExisting, ...
 }
 
 exportServiceProvider.startDialog = PSUploadExportDialogSections.startDialog
