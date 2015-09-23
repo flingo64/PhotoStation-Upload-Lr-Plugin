@@ -481,6 +481,7 @@ end
 --		nMoved		- # of photos found to be moved
 function checkMoved(publishedCollection, exportContext, exportParams)
 --	local exportParams = exportContext.propertyTable
+	local catalog = LrApplication.activeCatalog()
 	local publishedPhotos = publishedCollection:getPublishedPhotos() 
 	local nPhotos = #publishedPhotos
 	local nProcessed = 0
@@ -558,14 +559,13 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 --	local origExportParams = exportContext.propertyTable
 --	local exportParams = tableShallowCopy(origExportParams["< contents >"])
 	
-	local catalog = LrApplication.activeCatalog()
 	local message
 	local nPhotos
 	local nProcessed = 0
 	local nNotCopied = 0 	-- Publish / CheckExisting: num of pics not copied
 	local nNeedCopy = 0 	-- Publish / CheckExisting: num of pics that need to be copied
 	local timeUsed
-	local timePerPic
+	local timePerPic, picPerSec
 	local readOnly = false
 	local publishMode
 
@@ -591,8 +591,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 		
 	-- open session: initialize environment, get missing params and login
-	if not openSession(exportParams, publishMode) then
-		showFinalMessage("PhotoStation Upload: processRenderedPhotos failed!", "Cannot open session, check logfile for additional info.", "critical")
+	local sessionSuccess, reason = openSession(exportParams, publishMode)
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: processRenderedPhotos failed!", reason, "critical")
+		end
 		closeLogfile()
 		return
 	end
@@ -611,10 +614,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		else
 			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime
-			timePerPic = nProcessed / timeUsed 			-- pic per sec makes more sense her
+			picPerSec = nProcessed / timeUsed
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
 							string.format("PhotoStation Upload (Check Moved): Checked %d of %d pics in %d seconds (%.1f pic/sec). Found %d moved pics.\n", 
-							nProcessed, nPhotos, timeUsed + 0.5, timePerPic, nMoved))
+							nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
 		end
 		showFinalMessage("PhotoStation CheckMoved done", message, "info")
 		closeLogfile()
@@ -645,10 +648,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	-- Iterate through photo renditions.
 	local failures = {}
 	local dirsCreated = {}
+	local skipPhoto = false 	-- continue flag
 	
 	for _, rendition in exportContext:renditions{ stopIfCanceled = true } do
 		local publishedPhotoId = rendition.publishedPhotoId		-- only required for publishing
 		local newPublishedPhotoId = nil
+		
 		-- Wait for next photo to render.
 
 		local success, pathOrMessage = rendition:waitForRender()
@@ -675,7 +680,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			local localPath, newPublishedPhotoId
 			
 			if publishMode ~= 'Export' then
-				-- publish process: generated a unique remote id for later modifications or deletions
+				-- publish process: generate a unique remote id for later modifications or deletions
 				-- use the relative destination pathname, so we are able to identify moved pictures
 				localPath, newPublishedPhotoId = getPublishPath(srcFilename, srcPhoto, renderedFilename, exportParams)
 				
@@ -684,15 +689,24 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
 					if publishMode == 'Publish' then 
-						writeLogfile(2, 'Deleting remote photo at old path: ' .. publishedPhotoId .. '"\n')
-						PSFileStationAPI.deletePic(publishedPhotoId) 
+						if exportParams.useFileStation then
+							writeLogfile(2, 'Deleting remote photo at old path: ' .. publishedPhotoId .. '\n')
+							PSFileStationAPI.deletePic(publishedPhotoId)
+						else
+							writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ' due to missing FileStation API access!\n')
+    						table.insert( failures, srcFilename )
+							skipPhoto = true 					
+						end 
 					end
 				end
 				publishedPhotoId = newPublishedPhotoId
 				renderedFilename = LrPathUtils.leafName(publishedPhotoId)
 			end
 			
-			if publishMode == 'CheckExisting' then
+			if skipPhoto then
+				-- continue w/ next photo
+				skipPhoto = false
+			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in PhotoStation
 				local foundPhoto = PSFileStationAPI.existsPic(publishedPhotoId)
 				if foundPhoto == 'yes' then
@@ -764,6 +778,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	
 	timeUsed = 	LrDate.currentTime() - startTime
 	timePerPic = timeUsed / nProcessed
+	picPerSec = nProcessed / timeUsed
 	
 	if #failures > 0 then
 		message = LOC ("$$$/PSUpload/Upload/Errors/SomeFileFailed=" .. 
@@ -774,10 +789,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			LrShell.revealInShell(getLogFilename())
 		end
 	else
-		if readOnly then
+		if publishMode == 'CheckExisting' then
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckExistOK=" .. 
-							 string.format("PhotoStation Upload (Check Existing): Checked %d of %d files in %d seconds (%.1f secs/pic). %d already there, %d need export.", 
-											nProcessed, nPhotos, timeUsed + 0.5, timePerPic, nNotCopied, nNeedCopy))
+							 string.format("PhotoStation Upload (Check Existing): Checked %d of %d files in %d seconds (%.1f pics/sec). %d already there, %d need export.", 
+											nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nNotCopied, nNeedCopy))
 		else
 			message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=" ..
 							 string.format("PhotoStation Upload: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
