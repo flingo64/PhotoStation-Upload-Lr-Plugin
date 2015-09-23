@@ -91,17 +91,17 @@ Export Funtionality
 --------------------
 - Upload to the __Standard PhotoStation__ or to a __Personal PhotoStation__<br>
 (make sure the Personal PhotoStation feature is enabled for the given Personal Station owner)
-- Definition of a __secondary server address__
+- Definition of a __secondary server address__<br>
 You may want to publish to your PhotoStation from at home or via the Internet. 
 Therefore, the Export/Publish Service dialog lets you define two server addresses, with one of them being active. 
 This eases the consistent definition of the Export/Publish settings for both access paths.  
 
 - __Two different upload methods__:
-	- __Flat upload__: 
+	- __Flat upload__:<br> 
 	  upload all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
 	  The named Album may exist on the PhotoStation or may be created during export
 	  The root Album is defined by an empty string. In general, Albums are specified by "\<folder\>{/\<folder\>}" (no leading or trailing slashes required)
-	- __Tree mirror upload__: 
+	- __Tree mirror upload__:<br> 
 	  preserves the directory path of each photo/video relative to a given local base path on the PhotoStation below a named target Album.
 	  All directories within the source path of the picture/video will be created recursively.
 	  The directory tree is mirrored relative to a given local base path. Example:<br>
@@ -285,13 +285,13 @@ Version 3.3
 Version 3.4
 ------------
 - Second server address configurable also for Export
-- FileStation API access optional for Publish:
+- FileStation API access optional for Publish:<br>
 Until v3.3 FileStation API access was required for any Publish operation mode. So, if you wanted to use the Publish functionality via Internet, the FileStation had to be accessible via Internet.
 Since most of us don't feel comfortable with the idea of opening the admin port of the diskstation to the Internet, publishing via Internet wasn't really an option. Now, you may use choose to disable FileStation API use for the Internet access.
 Publish mode 'Check Existing', photo deletion and photo movement will not be possible via Internet then, but you will be able at least to upload photos using the Publish service. Hey, that's better than nothing, or!
-- Publish: Delete after Upload
+- Publish: Delete after Upload<br>
 The order or Publish tasks was rearranged, so that you may use the Publish function via Internet w/o being stopped by photos that need to be deleted, but cannot be deleted due to disabled FileStation access (see above).
-- 'Check Existing' is 4 times faster than before:
+- 'Check Existing' is 4 times faster than before:<br>
 A directory read cache speeds up the check for photos in PhotoStation. The actual speed advantage is depending on how your photo collections are organized in your PhotoStation<. any kind of chronological directory structure will work fine, since Lr is processing photos in chronological order. 
 
 Open issues
