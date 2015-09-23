@@ -313,20 +313,21 @@ function openSession(exportParams, publishMode)
 	-- generate global environment settings
 	if not initializeEnv (exportParams) then
 		writeLogfile(1, "openSession: cannot initialize environment!\n" )
-		return false
+		return false, 'Initialize environment failed!\nSet Loglevel to Debug and open Logfile to get more details...'
 	end
 
 	-- Get missing settings, if not stored in preset.
 	if promptForMissingSettings(exportParams, publishMode) == 'cancel' then
-		return false
+		return false, 'cancel'
 	end
 	publishMode = iif(publishMode == 'Delete', 'Delete', exportParams.publishMode)
 	
 	-- CheckExisting or Delete: Login to FileStation required
 	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
 		if not exportParams.useFileStation then
-			writeLogfile(1, "Publish (" .. publishMode .. "): Login to FileStation required, but not configured!\n")
-			return false
+			local errorMsg = string.format("Publish(%s): Login to FileStation required, but not configured!\n", publishMode)
+			writeLogfile(1, errorMsg)
+			return false, errorMsg
 		end
 		local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
 		local usernameFS = iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username)
@@ -335,10 +336,9 @@ function openSession(exportParams, publishMode)
 		writeLogfile(3, "Login to FileStation(user: "  .. usernameFS .. ").\n")
 		local result, reason = PSFileStationAPI.login(usernameFS, passwordFS)
 		if not result then
-			writeLogfile(1, "FileStation Login (" .. FileStationUrl .. ") failed, reason:" .. reason .. "\n")
-			closeLogfile()
-			LrDialogs.message( LOC "$$$/PSUpload/Upload/Errors/FSLoginError= FileStation Login failed", reason)
-			return false
+			local errorMsg = string.format('FileStation Login failed!\nReason: %s\n', reason)
+			writeLogfile(1, errorMsg)
+			return false, errorMsg
 		end
 		writeLogfile(2, "FileStation Login(" .. FileStationUrl .. ") OK.\n")
 	end
@@ -347,12 +347,12 @@ function openSession(exportParams, publishMode)
 	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' then
 		local result, reason = PSUploadAPI.login(exportParams.username, exportParams.password)
 		if not result then
-			writeLogfile(1, "PhotoStation Login (" .. exportParams.serverUrl .. ") failed, reason:" .. reason .. "\n")
-			closeLogfile()
-			LrDialogs.message( LOC "$$$/PSUpload/Upload/Errors/LoginError=Login to " .. 
-								iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation") .. 
-								iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. " failed.", reason)
-			return false 
+			local errorMsg = string.format("Login to %s %s failed!\nReason: %s\n",
+									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
+									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), reason)
+			writeLogfile(1, errorMsg)
+			return 	false, errorMsg
+					
 		end
 		writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation") .. 
 								iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. 
