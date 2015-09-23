@@ -135,14 +135,14 @@ Publish Functionality:
   Unpublished photos will not be published, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the 
   defined target but not through the newly defined Published Collection (e.g. via Export).
-  Check Existing is approx. 50 times faster (~ 10 photos/sec) than a Normal Publish, since no thumbnail creation and upload is required.
+  Check Existing is approx. 50 times faster (__~ 10 photos/sec__) than a Normal Publish, since no thumbnail creation and upload is required.
   Note, that CheckExisting can not determine, whether the photo in the target Album is the latest version.
 	- __Check Moved__:
   Check if any photo within a Published Collection has moved locally and if so, mark them to 're-publish'
   If your Published Collection is to be tree-mirrored to the target Album, it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
   Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature.
   To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
-  Check Moved is very fast (\>100 photos/sec) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
+  Check Moved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
   
 - __Deletion of published photos__, when deleted locally (from Collection or Library)
 
@@ -289,7 +289,7 @@ Version 3.4
 Until v3.3 FileStation API access was required for any Publish operation mode. So, if you wanted to use the Publish functionality via Internet, the FileStation had to be accessible via Internet.
 Since most of us don't feel comfortable with the idea of opening the admin port of the diskstation to the Internet, publishing via Internet wasn't really an option. 
 Now, you may use choose to __disable FileStation API use for the Internet access__ case.
-Publish mode 'Check Existing', photo deletion and photo movement will not be possible via Internet then, but you will be able at least to __upload photos using the Publish service via Internet__. Hey, that's better than nothing, or!
+Publish mode 'Check Existing', photo deletion and photo movement will not be possible via Internet then, but you will be able at least to __upload photos using the Publish service via Internet__. Hey, that's better than nothing, isn't it?
 - Publish: Delete after Upload<br>
 The order or Publish tasks was rearranged, so that you may use the Publish function via Internet w/o being stopped by photos that need to be deleted, but cannot be deleted due to disabled FileStation access (see above).
 - 'Check Existing' is 4 times faster than before:<br>
