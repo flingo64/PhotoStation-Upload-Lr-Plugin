@@ -481,6 +481,7 @@ end
 --		nMoved		- # of photos found to be moved
 function checkMoved(publishedCollection, exportContext, exportParams)
 --	local exportParams = exportContext.propertyTable
+	local catalog = LrApplication.activeCatalog()
 	local publishedPhotos = publishedCollection:getPublishedPhotos() 
 	local nPhotos = #publishedPhotos
 	local nProcessed = 0
@@ -558,7 +559,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 --	local origExportParams = exportContext.propertyTable
 --	local exportParams = tableShallowCopy(origExportParams["< contents >"])
 	
-	local catalog = LrApplication.activeCatalog()
 	local message
 	local nPhotos
 	local nProcessed = 0
