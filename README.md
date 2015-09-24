@@ -115,8 +115,19 @@ This eases the consistent definition of the Export/Publish settings for both acc
 
 - __Upload of videos and accompanying videos with a lower resolution__
 
-- __Hard-rotation of uploaded videos that are soft-rotated or meta-rotated__<br>
-(see Version 2.8 changes).
+- __Different video rotation options:__<br>
+	- __Hard-rotation for soft-rotated videos__ for better player compatibility:<br>
+	  Soft-rotated videos (portrait videos) are typically stored as as landscape video marked w/ a rotation flag in the mpeg header. Most player do not support this kind of rotation, so you will see the video unrotated / landscape. 	  PhotoStation supports soft-rotated videos only by generating an additional hard-rotated flash-video.  This may be OK for small videos, but overloads the DiskStation CPU for a period of time.  Thus, it is more desirable to hard-rotate the videos on the PC before uploading.<br>
+	  Hard-rotated videos with (then) potrait orientation work well in VLC, but not at all in MS Media Player. So, if you intend to use MS Media Player, you should stay with the soft-rotated video to see at least a mis-rotated video. 	In all other cases hard-rotation is probably more feasable for you.
+	- __Soft-rotation or Hard-rotation for "meta-rotated" videos__:<br>
+	  If you have older (e.g. .mov or .avi) __mis-rotated videos__ (like I have lots of from my children's first video experiments), these videos typically have __no rotation indication in the video header__. Thus, the described hard-rotation support won't work for those videos.<br> 
+	  To overcome this, the Uploader supports rotation indication via metadata maintained in Lr. 
+	  To inidicate the desired rotation for a video, simply add one of the following __keywords__ to the video in __Lr__:
+		- __Rotate-90__		--\> for videos that need 90 degree clockwise rotation
+  		- __Rotate-180__	--\> for videos that need 180 degree rotation
+		- __Rotate-270__	--\> for videos that need 90 degree counterclockwise rotation
+
+	  Meta-rotated videos may be soft-rotated (by adding the rotation flag in the uploaded mp4-video) or hard-rotated. 
 
 Publish Functionality:
 ---------------------
@@ -240,25 +251,8 @@ Version 2.8
 ------------
 Added video rotation support: 
 - soft-rotated videos (w/ rotation tag in mpeg header) now get the right (rotated) thumbs
-- hard-rotation option for soft-rotated videos for better player compatibility:
-  Soft-rotated videos are not rotated in most players, PhotoStation supports soft-rotated 
-  videos only by generating an additional hard-rotated flash-video. 
-  This may be OK for small videos, but overloads the DiskStation CPU for a period of time. 
-  Thus, it is more desirable to hard-rotate the videos on the PC before uploading.
-  Hard-rotated videos with (then) potrait orientation work well in VLC, but not at all in 
-  MS Media Player. So, if you intend to use MS Media Player, you should stay with the 
-  soft-rotated video to see at least a mis-rotated video. 
-  In all other cases hard-rotation is probably more feasable for you.
-- support for "meta-rotation":
-  If you have older mis-rotated videos (like I have lots of from my children's 
-  video experiments), these videos typically don't have a rotation indication. 
-  So, the described hard-rotation support won't work for those videos. To circumvent this, 
-  the Uploader supports rotation indications by metadata maintained in Lr. 
-  To tag a desired rotation for a video, simply add one of the following 
-  keywords to the video in Lr:
-  - Rotate-90	--\> for videos that need 90 degree clockwise rotation
-  - Rotate-180	--\> for videos that need 180 degree rotation
-  - Rotate-270	--\> for videos that need 90 degree counterclockwise rotation
+- hard-rotation option for soft-rotated videos for better player compatibility
+- support for "meta-rotation"
 - support for soft-rotation and hard-rotation for "meta-rotated" (see above) videos 
 		
 Version 3.0
