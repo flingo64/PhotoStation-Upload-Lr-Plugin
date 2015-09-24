@@ -129,20 +129,22 @@ Publish Functionality:
  
 - __Different Publish options__ (Published Collection dialog):
 
-	- __Normal__:
-  publish unpublished photos to target Album in target PhotoStation 
-	- __Check Existing__:
+	- __Normal__:<br>
+  publish unpublished photos to target Album in target PhotoStation
+
+	- __Check Existing__:<br>
   Unpublished photos will not be published, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the 
   defined target but not through the newly defined Published Collection (e.g. via Export).
   Check Existing is approx. 50 times faster (__~ 10 photos/sec__) than a Normal Publish, since no thumbnail creation and upload is required.
   Note, that CheckExisting can not determine, whether the photo in the target Album is the latest version.
-	- __Check Moved__:
+
+	- __Check Moved__:<br>
   Check if any photo within a Published Collection has moved locally and if so, mark them to 're-publish'
   If your Published Collection is to be tree-mirrored to the target Album, it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
   Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature.
   To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
-  Check Moved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.
+  Check Moved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.<br>
   
 - __Deletion of published photos__, when deleted locally (from Collection or Library)
 
