@@ -328,17 +328,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 		fill_horizontal = 1,
 
 		f:row {
---[[
-			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=Use secondary Server Address:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2TT=Use a secondary PhotoStation address, e.g. when accessing via Internet.",
-				alignment = 'right',
-				width = share 'labelWidth',
-				value = bind 'useSecondAddress',
-			},
-]]
 			f:radio_button {
-				title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=Use secondary Server Address:",
+				title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=Second Server Address:",
 				alignment = 'right',
 				width = share 'labelWidth',
 				value = bind 'useSecondAddress',
