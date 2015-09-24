@@ -531,8 +531,6 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 				},
 			},
 
-			f:separator { fill_horizontal = 1 },
-
 			f:row {
 				alignment = 'left',
 

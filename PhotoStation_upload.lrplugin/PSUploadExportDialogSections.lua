@@ -282,7 +282,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
 					alignment = 'left',
-					width = share 'labelWidth',
 					value = bind 'createDstRoot',
 					enabled = bind 'storeDstRoot',
 					visible = bind 'storeDstRoot',
@@ -293,7 +292,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			f:row {
 
 				f:radio_button {
-					title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat copy to Target Album",
+					title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat Copy to Target",
 					tooltip = LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
 					alignment = 'right',
 					value = bind 'copyTree',
@@ -302,7 +301,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				},
 
 				f:radio_button {
-					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to Local Path:",
+					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror Tree relative to local Path:",
 					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
 					alignment = 'left',
 					value = bind 'copyTree',
@@ -350,7 +349,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
 				value = bind 'servername2',
 				truncation = 'middle',
-				width = share 'labelWidth',
 				enabled = bind 'useSecondAddress',
 				immediate = true,
 				fill_horizontal = 1,
@@ -389,10 +387,9 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				visible =  bind 'useFileStation',
 				enabled =  LrBinding.negativeOfKey('useSecondAddress'),
 				truncation = 'middle',
-				width = share 'labelWidth',
 				validate = validatePort,
 				immediate = true,
-				fill_horizontal = 0,
+				fill_horizontal = 1,
 			},
 		},
 	}
@@ -430,10 +427,9 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				enabled = bind 'useSecondAddress',
 --				enabled = LrBinding.andAllKeys('useSecondAddress', 'useFileStation2'), -- won't work (see Lr forum)
 				truncation = 'middle',
-				width = share 'labelWidth',
 				validate = validatePort,
 				immediate = true,
-				fill_horizontal = 0,
+				fill_horizontal = 1,
 			},
 		},
 	}
@@ -443,8 +439,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 		fill_horizontal = 1,
 		f:row {
 			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/DiffFSUser=Use different FileStation Login:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/DiffFSUserTT=If your PhotoStation uses its own user management, then enter the DiskStation username/password here.",
+				title = LOC "$$$/PSUpload/ExportDialog/DiffFSUser=Use FileStation Login:",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/DiffFSUserTT=If your PhotoStation uses its own user management, then enter the diskstation username/password for FileStation access here.",
 				alignment = 'right',
 				width = share 'labelWidth',
 				value = bind 'differentFSUser',
@@ -478,33 +474,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			},
 		},
 	}
-
-	-- config section for Publish mode: only in Publish dialog
-	local publishView = f:view {
-		fill_horizontal = 1,
-
-		f:row {
-			alignment = 'left',
---				fill_horizontal = 1,
-
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/PublishMode=Publish Mode:",
-				alignment = 'right',
-			},
-			f:popup_menu {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PublishModeTT=How to publish",
-				value = bind 'publishMode',
-				alignment = 'left',
-				fill_horizontal = 1,
-				items = {
-					{ title	= 'Ask me later',								value 	= 'Ask' },
-					{ title	= 'Normal',										value 	= 'Publish' },
-					{ title	= 'CheckExisting: Set Unpublished to Published if existing in PhotoStation.',	value 	= 'CheckExisting' },
-					{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
-				},
-			},
-		},
-	}
 	
 	-- config section for Export or Publish dialog
 	local result = {
@@ -516,7 +485,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 			f:row {
 				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Syno PhotoStation Uploader:",
+					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Synology PS Uploader:",
 					alignment = 'right',
 					width = share 'labelWidth'
 				},
@@ -554,13 +523,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Target PhotoStation",
 
 				f:row {
---[[
-					f:static_text {
-						title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME=Server Address:",
-						alignment = 'right',
-						width = share 'labelWidth'
-					},
-]]		
         			f:radio_button {
         				title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME=Server Address:",
         				alignment = 'right',
@@ -584,7 +546,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						value = bind 'servername',
 						enabled =  LrBinding.negativeOfKey('useSecondAddress'),
 						truncation = 'middle',
-						width = share 'labelWidth',
 						immediate = true,
 						fill_horizontal = 1,
 					},
@@ -602,7 +563,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 				f:row {
 					f:radio_button {
-						title = LOC "$$$/PSUpload/ExportDialog/PersonalPS=Standard PhotoStation",
+						title = LOC "$$$/PSUpload/ExportDialog/StandardPS=Standard PhotoStation",
 						alignment = 'left',
 						width = share 'labelWidth',
 						value = bind 'usePersonalPS',
@@ -671,7 +632,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				f:row {
 					f:checkbox {
 						fill_horizontal = 1,
-						title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize for PhotoStation 6",
+						title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize for PS 6",
 						tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=Do not generate and upload Thumb_L",
 						value = bind 'isPS6',
 					},
@@ -679,7 +640,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					f:row {
 						fill_horizontal = 1,
 						f:radio_button {
-							title = LOC "$$$/PSUpload/ExportDialog/SmallThumbs=Small Thumbs",
+							title = LOC "$$$/PSUpload/ExportDialog/SmallThumbs=Small",
 							tooltip = LOC "$$$/PSUpload/ExportDialog/SmallThumbsTT=Recommended for output on low-resolution monitors",
 							alignment = 'left',
 							fill_horizontal = 1,
@@ -688,7 +649,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						},
 
 						f:radio_button {
-							title = LOC "$$$/PSUpload/ExportDialog/LargeThumbs=Large Thumbs",
+							title = LOC "$$$/PSUpload/ExportDialog/LargeThumbs=Large",
 							tooltip = LOC "$$$/PSUpload/ExportDialog/LargeThumbsTT=Recommended for output on Full HD monitors",
 							alignment = 'right',
 							fill_horizontal = 1,
@@ -753,7 +714,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 			f:group_box {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/Videos=Upload additional video resolutions for ... videos",
+				title = LOC "$$$/PSUpload/ExportDialog/Videos=Upload additional video resolutions for ...-Res Videos",
 
 				f:row {
 					f:row {
@@ -761,7 +722,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						fill_horizontal = 1,
 
 						f:static_text {
-							title = LOC "$$$/PSUpload/ExportDialog/VideoHigh=High-Res:",
+							title = LOC "$$$/PSUpload/ExportDialog/VideoHigh=High:",
 							alignment = 'right',
 						},
 						f:popup_menu {
@@ -783,7 +744,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						fill_horizontal = 1,
 
 						f:static_text {
-							title = LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium-Res:",
+							title = LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium:",
 							alignment = 'right',
 						},
 						f:popup_menu {
@@ -804,7 +765,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						fill_horizontal = 1,
 
 						f:static_text {
-							title = LOC "$$$/PSUpload/ExportDialog/VideoLow=Low-Res:",
+							title = LOC "$$$/PSUpload/ExportDialog/VideoLow=Low:",
 							alignment = 'right',
 						},
 						f:popup_menu {
@@ -829,17 +790,11 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				},
 			},
 
---			conditionalItem(propertyTable.LR_isExportForPublish, publishView),
-			
-			f:separator {
-				fill_horizontal = 1,
-			},
-
 			f:row {
 				f:static_text {
 					title = LOC "$$$/PSUpload/ExportDialog/LOGLEVEL=Loglevel:",
 					alignment = 'right',
-					width = share 'labelWidth'
+--					width = share 'labelWidth'
 				},
 	
 				f:popup_menu {
@@ -858,13 +813,14 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				},
 				
 				f:spacer {
-					fill_horizontal = 1
+					fill_horizontal = 1,
 				},
 				
 				f:push_button {
 					title = LOC "$$$/PSUpload/ExportDialog/Logfile=Go to Logfile of last Export",
 					tooltip = LOC "$$$/PSUpload/ExportDialog/Logfile=Open PhotoStation Upload Logfile in Explore/Finder.",
 					alignment = 'right',
+					fill_horizontal = 1,
 					action = function()
 						LrShell.revealInShell(getLogFilename())
 					end,
