@@ -688,15 +688,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- if photo was moved ... 
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
-					if publishMode == 'Publish' then 
-						if exportParams.useFileStation then
-							writeLogfile(2, 'Deleting remote photo at old path: ' .. publishedPhotoId .. '\n')
-							PSFileStationAPI.deletePic(publishedPhotoId)
-						else
-							writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ' due to missing FileStation API access!\n')
-    						table.insert( failures, srcFilename )
-							skipPhoto = true 					
-						end 
+					if publishMode == 'Publish' and (not exportParams.useFileStation or not PSFileStationAPI.deletePic(publishedPhotoId)) then
+						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check FileStation API access!\n')
+    					table.insert( failures, srcFilename )
+						skipPhoto = true 					
+					else
+						writeLogfile(2, 'Deleting remote photo at old path: ' .. publishedPhotoId .. '\n')							
 					end
 				end
 				publishedPhotoId = newPublishedPhotoId

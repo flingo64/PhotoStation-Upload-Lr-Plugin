@@ -56,6 +56,14 @@ local photoPathPrefix
 ---------------------- FileStation API error codes ---------------------------------------------------------
 local FSAPIerrorCode = {
 	[0]   = 'No error',
+	[100] = 'Unknown error ',
+    [101] = 'No parameter of API, method or version',
+    [102] = 'The requested API does not exist',
+    [103] = 'The requested method does not exist',
+    [104] = 'The requested version does not support the functionality',
+    [105] = 'The logged in session does not have permission',
+    [106] = 'Session timeout',
+    [107] = 'Session interrupted by duplicate login',
 	[400] = 'Invalid parameter',
 	[401] = 'Unknown error of file operation',
 	[402] = 'System is too busy',
@@ -264,7 +272,7 @@ function PSFileStationAPI.deletePic (dstFilename)
 	local respArray = JSON:decode(respBody)
 	
 	if respArray.error then 
-		local errorCode = respArray.error.errors[1].code 
+		local errorCode = respArray.error.code 
 		writeLogfile(3, string.format('deletePic: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
 	end
 
