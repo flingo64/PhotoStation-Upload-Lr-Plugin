@@ -323,12 +323,14 @@ function openSession(exportParams, publishMode)
 	publishMode = iif(publishMode == 'Delete', 'Delete', exportParams.publishMode)
 	
 	-- CheckExisting or Delete: Login to FileStation required
-	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
-		if not exportParams.useFileStation then
-			local errorMsg = string.format("Publish(%s): Login to FileStation required, but not configured!\n", publishMode)
-			writeLogfile(1, errorMsg)
-			return false, errorMsg
-		end
+	if (publishMode == 'CheckExisting' or publishMode == 'Delete') and not exportParams.useFileStation then
+		local errorMsg = string.format("Publish(%s): Login to FileStation required, but not configured!\n", publishMode)
+		writeLogfile(1, errorMsg)
+		return false, errorMsg
+	end
+
+	-- FileStation access is also required for publishing photos that have been moved
+	if publishMode ~= Export and exportParams.useFileStation then
 		local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
 		local usernameFS = iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username)
 		local passwordFS = iif(exportParams.differentFSUser, exportParams.passwordFileStation, exportParams.password)
