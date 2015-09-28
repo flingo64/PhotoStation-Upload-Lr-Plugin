@@ -278,7 +278,7 @@ function initializeEnv (exportParams)
 	local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
 
 	return (PSUploadAPI.initialize(exportParams.serverUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil)) and 
-			(not exportParams.useFileStation or 
+			(exportParams.publishMode == 'Export' or not exportParams.useFileStation or 
 				PSFileStationAPI.initialize(FileStationUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
 										iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username))) and 
 			PSConvert.initialize(exportParams.PSUploaderPath))
@@ -330,7 +330,7 @@ function openSession(exportParams, publishMode)
 	end
 
 	-- FileStation access is also required for publishing photos that have been moved
-	if publishMode ~= Export and exportParams.useFileStation then
+	if publishMode ~= 'Export' and exportParams.useFileStation then
 		local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
 		local usernameFS = iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username)
 		local passwordFS = iif(exportParams.differentFSUser, exportParams.passwordFileStation, exportParams.password)
