@@ -20,11 +20,12 @@ Requirements
 * Windows OS or Mac:
 	- Windows 7
 	- Windows 8.0, 8.1
+	- Windows 10
 	- MacOS 10.7.5
 	- MacOS 10.8.5
 	- MacOS 10.9.5	
 	- MacOS 10.10.3, 10.10.4, 10.10.5 
-	- MacOS 10.11.0
+	- MacOS 10.11.0, 10.11.1
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
