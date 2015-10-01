@@ -56,6 +56,7 @@ require "PSConvert"
 require "PSUpdate"
 require "PSUploadAPI"
 require "PSFileStationAPI"		-- publish only
+require "PSExiftoolAPI"
 
 --============================================================================--
 		
@@ -246,17 +247,17 @@ local thumbSharpening = {
 }
 
 -----------------
--- uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness) 
+-- uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportParams) 
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness) 
+function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportParams) 
 	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename)))
 	local picExt = 'jpg'
 	local thmb_XL_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
-	local thmb_L_Filename = iif(not isPS6, LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
+	local thmb_L_Filename = iif(not exportParams.isPS6, LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
 	local thmb_M_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
@@ -264,17 +265,17 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 	local retcode
 	
 	-- generate thumbs	
-	if ( not largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat,
---								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
-								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
+	if ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportParams.LR_format,
+--								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-	or ( largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat,
---								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
-								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
+	or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportParams.LR_format,
+--								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
 								'640x640>^',   thmb_B_Filename,
@@ -287,7 +288,7 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
 	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
 	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
+	or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
 	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
 	or not PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
 	then
@@ -301,21 +302,21 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 	LrFileUtils.delete(thmb_B_Filename)
 	LrFileUtils.delete(thmb_M_Filename)
 	LrFileUtils.delete(thmb_S_Filename)
-	if not isPS6 then LrFileUtils.delete(thmb_L_Filename) end
+	if not exportParams.isPS6 then LrFileUtils.delete(thmb_L_Filename) end
 	LrFileUtils.delete(thmb_XL_Filename)
 
 	return retcode
 end
 
 -----------------
--- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness, addVideo, hardRotate) 
+-- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportFormat, isPS6, largeThumbs, thumbQuality, thumbSharpness, addVideo, hardRotate) 
+function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
 	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename)))
 	local vidExtOrg = LrPathUtils.extension(srcVideoFilename)
 	local picPath = LrPathUtils.parent(srcVideoFilename)
@@ -323,7 +324,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	local vidExt = 'mp4'
 	local thmb_ORG_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename, picExt))
 	local thmb_XL_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
-	local thmb_L_Filename = iif(not isPS6, LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
+	local thmb_L_Filename = iif(not exportParams.isPS6, LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
 	local thmb_M_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(picPath, LrPathUtils.addExtension(picBasename .. '_S', picExt))
@@ -397,7 +398,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 
 	-- video rotation only if requested by export param or by keyword (meta-rotation)
 	local videoRotation = '0'
-	if hardRotate or addRotate then
+	if exportParams.hardRotate or addRotate then
 		videoRotation = rotation
 	end
 	
@@ -416,18 +417,18 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 
 	
 	-- generate all other thumb from first thumb
-	or ( not largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportFormat,
---								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
-								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
+	or ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
+--								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
 	
-	or ( largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportFormat,
---								'-strip -flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
-								'-flatten -quality '.. tostring(thumbQuality) .. ' -auto-orient '.. thumbSharpening[thumbSharpness], 
+	or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
+--								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
+								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
 								'640x640>^',   thmb_B_Filename,
@@ -435,10 +436,10 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 								'120x120>^',   thmb_S_Filename) )
 
 	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
-	or (replaceOrgVideo and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, srcHeight, hardRotate, videoRotation, vid_Replace_Filename))
+	or (replaceOrgVideo and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, convParams[convKeyAdd].height, hardRotate, videoRotation, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
@@ -446,7 +447,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	or not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
 	or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
 	or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-	or (not isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
+	or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
 	or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE') 
 	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(vid_Add_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
 	or not PSUploadAPI.uploadPictureFile(vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
@@ -462,7 +463,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	LrFileUtils.delete(thmb_B_Filename)
 	LrFileUtils.delete(thmb_M_Filename)
 	LrFileUtils.delete(thmb_S_Filename)
-	if not isPS6 then LrFileUtils.delete(thmb_L_Filename) end
+	if not exportParams.isPS6 then LrFileUtils.delete(thmb_L_Filename) end
 	LrFileUtils.delete(thmb_XL_Filename)
 	LrFileUtils.delete(vid_Orig_Filename)
 	if vid_Add_Filename then LrFileUtils.delete(vid_Add_Filename) end
@@ -745,9 +746,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 				if srcPhoto:getRawMetadata("isVideo") then
 					writeLogfile(4, pathOrMessage .. ": is video\n") 
-					if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, 
-										exportParams.LR_format, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness, 
-										additionalVideos, exportParams.hardRotate) then
+					if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos) then
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
@@ -755,8 +754,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 					end
 				else
-					if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, 
-										exportParams.LR_format, exportParams.isPS6, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness) then
+					if not uploadPicture(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams) then
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' ..  dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
