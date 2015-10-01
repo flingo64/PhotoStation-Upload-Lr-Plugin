@@ -1,6 +1,6 @@
 --[[----------------------------------------------------------------------------
 
-PSUtiliites.lua
+PSUtilities.lua
 Utilities for Lightroom PhotoStation Upload
 Copyright(c) 2015, Martin Messmer
 
@@ -81,6 +81,19 @@ function iif(condition, thenExpr, elseExpr)
 		return elseExpr
 	end
 end 
+
+function split(inputstr, sep)
+	if not inputstr then return nil end
+	 
+    if sep == nil then sep = "%s" end
+
+    local t={} ; i=1
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+            t[i] = str
+            i = i + 1
+    end
+    return t
+end
 
 ----------------------- logging ---------------------------------------------------------
 -- we can store some variables in 'global' local variables safely:
@@ -361,6 +374,7 @@ function openSession(exportParams, publishMode)
 								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
+	PSExiftoolAPI.open()
 	return true
 end
 
@@ -369,6 +383,8 @@ end
 function closeSession(exportParams, publishMode)
 	writeLogfile(3,"closeSession(" .. publishMode .. "):...\n")
 
+	PSExiftoolAPI.close()
+	
 	-- CheckExisting or Delete: Logout from FileStation
 	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
 		if not PSFileStationAPI.logout() then
