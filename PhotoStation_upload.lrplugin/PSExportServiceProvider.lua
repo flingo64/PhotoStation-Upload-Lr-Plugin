@@ -94,8 +94,8 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
 
 		-- exif translation parameters
-		{ key = 'exiftoolPath',		 	default = 			-- path to exiftool
-			iif(WIN_ENV, 'C:\\\Windows', '/usr/bin') 
+		{ key = 'exiftoolprog',		 	default = 			-- path to exiftool
+			iif(WIN_ENV, 'C:\\\Windows\\\exiftool.exe', '/usr/bin/exiftool') 
 		},											
 		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
 		{ key = 'exifXlatFaceRegions',	default = true },	-- translate Lr/Picasa face regions to PS face regions

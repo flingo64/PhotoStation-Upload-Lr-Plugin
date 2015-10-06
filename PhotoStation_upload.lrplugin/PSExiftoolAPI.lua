@@ -232,10 +232,7 @@ end
 -- Start exiftool listener in background: one for each export/publish thread
 function PSExiftoolAPI.open(exportParams)
 
-	if WIN_ENV  then
-		exiftool = LrPathUtils.addExtension('exiftool', 'exe')
-	end
-	exiftool = LrPathUtils.child(exportParams.exiftoolPath, exiftool)
+	exiftool = exportParams.exiftoolprog
 	if not LrFileUtils.exists(exiftool) then 
 		writeLogfile(1, "PSExiftoolAPI.open: Cannot start exifTool Listener: " .. exiftool .. " not found!\n")
 		return false 

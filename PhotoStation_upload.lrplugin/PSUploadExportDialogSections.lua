@@ -184,7 +184,16 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
-		-- Publish Servic Provider end
+		-- Publish Service Provider end
+
+		-- Exif translation start
+		propertyTable.exifTranslate = propertyTable.exifXlatFaceRegions or propertyTable.exifXlatRating 
+
+		if propertyTable.exifTranslate and not validateProgram( _, propertyTable.exiftoolprog ) then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Enter path to exiftool"
+			break
+		end
+		-- Exif translation end
 
 		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
@@ -223,6 +232,10 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'copyTree', updateExportStatus )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
+
+	propertyTable:addObserver( 'exiftoolprog', updateExportStatus )
+	propertyTable:addObserver( 'exifXlatFaceRegions', updateExportStatus )
+	propertyTable:addObserver( 'exifXlatRating', updateExportStatus )
 
 	propertyTable:addObserver( 'useFileStation', updateExportStatus )
 	propertyTable:addObserver( 'portFileStation', updateExportStatus )
@@ -500,24 +513,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				},
 			},
 
---[[ this may become important in future version, since exiftool gives access to some metadata that Lr won't give
-		f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/EXIFTOOL=ExifTool program:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-	
-				f:edit_field {
-					value = bind 'exiftoolprog',
-					truncation = 'middle',
-					validate = validateProgram,
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-		},
-]]
 			f:group_box {
 				fill_horizontal = 1,
 				title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Target PhotoStation",
@@ -625,6 +620,47 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			
 			conditionalItem(not propertyTable.LR_isExportForPublish, dstPathView),
 			
+			f:group_box {
+				fill_horizontal = 1,
+				title = LOC "$$$/PSUpload/ExportDialog/ExifOpt=Exif Translations",
+
+        		f:row {
+        				f:static_text {
+        					title = LOC "$$$/PSUpload/ExportDialog/exiftoolprog=ExifTool program:",
+        					alignment = 'right',
+							visible = bind 'exifTranslate',
+        					width = share 'labelWidth'
+        				},
+        	
+        				f:edit_field {
+        					value = bind 'exiftoolprog',
+        					truncation = 'middle',
+        					validate = validateProgram,
+							visible = bind 'exifTranslate',
+        					immediate = true,
+        					fill_horizontal = 1,
+        				},
+        
+        		},
+
+				f:row {
+					f:checkbox {
+--						fill_horizontal = 1,
+						title = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegions=Lr/Picasa Faces -> PS Faces",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lightroom or Picasa Face Regions to PhotoStation Person Tags",
+						value = bind 'exifXlatFaceRegions',
+					},
+				
+					f:checkbox {
+--						fill_horizontal = 1,
+						title = LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating -> PS '***' Tags",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lightroom (XMP) ratings (*stars*) to PhotoStation General *** Tags",
+						value = bind 'exifXlatRating',
+					},
+				},
+
+			},
+
 			f:group_box {
 				fill_horizontal = 1,
 				title = LOC "$$$/PSUpload/ExportDialog/Thumbnails=Thumbnail Options",
