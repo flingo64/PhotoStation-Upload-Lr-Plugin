@@ -71,7 +71,6 @@ exportServiceProvider.allowColorSpaces = nil -- nil equates to all color spaces
 exportServiceProvider.canExportVideo = true	-- yes, we can
 	
 exportServiceProvider.exportPresetFields = {
---		{ key = 'exiftoolprog', default = nil },
 		{ key = 'PSUploaderPath', default = 		-- local path to Synology PhotoStation Uploader
 					iif(WIN_ENV, 
 						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
@@ -93,6 +92,14 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'storeDstRoot', 	default = true },	-- enter destination Album in Export dialog or later
 		{ key = 'dstRoot', 			default = '' },		-- destination Album on PhotoStation: no leading or trailing slash required
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
+
+		-- exif translation parameters
+		{ key = 'exiftoolPath',		 	default = 			-- path to exiftool
+			iif(WIN_ENV, 'C:\\\Windows', '/usr/bin') 
+		},											
+		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
+		{ key = 'exifXlatFaceRegions',	default = true },	-- translate Lr/Picasa face regions to PS face regions
+		{ key = 'exifXlatRating', 		default = true },	-- translate Lr star rating (XMP:rating) to PS keywords
 
 		-- thumbnail parameters
 		{ key = 'largeThumbs', 		default = true },	-- generate large thumbs or small thumbs

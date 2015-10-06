@@ -158,7 +158,7 @@ end
 -- output a table to logfile, max one level of nested tables
 function writeTableLogfile(level, tableName, printTable)
 	if type(printTable) ~= 'table' then
-		writeLogfile(level, tableName ' is not a table, but ' .. type(printTable) .. '\n')
+		writeLogfile(level, tableName .. ' is not a table, but ' .. type(printTable) .. '\n')
 		return
 	end
 	
@@ -374,7 +374,10 @@ function openSession(exportParams, publishMode)
 								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
-	PSExiftoolAPI.open()
+	if publishMode ~= 'Delete' and exportParams.exifTranslate then 
+		return PSExiftoolAPI.open(exportParams) 
+	end
+	
 	return true
 end
 
@@ -383,7 +386,9 @@ end
 function closeSession(exportParams, publishMode)
 	writeLogfile(3,"closeSession(" .. publishMode .. "):...\n")
 
-	PSExiftoolAPI.close()
+	if  publishMode ~= 'Delete' and exportParams.exifTranslate then 
+		PSExiftoolAPI.close() 
+	end
 	
 	-- CheckExisting or Delete: Logout from FileStation
 	if publishMode == 'CheckExisting' or publishMode == 'Delete' then

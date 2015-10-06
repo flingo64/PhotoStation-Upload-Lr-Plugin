@@ -282,6 +282,9 @@ function uploadPicture(origFilename, srcFilename, srcPhoto, dstDir, dstFilename,
 								'320x320>^',   thmb_M_Filename,
 								'120x120>^',   thmb_S_Filename) )
 
+	-- exif translations	
+	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(srcFilename, exportParams))
+
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	-- upload thumbnails and original file
@@ -591,6 +594,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		exportParams.publishMode = 'Export'
 	end
 		
+--	exportParams.exifTranslate = false
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(exportParams, publishMode)
 	if not sessionSuccess then
