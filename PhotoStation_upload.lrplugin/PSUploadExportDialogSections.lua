@@ -668,19 +668,31 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				f:row {
 					f:checkbox {
 						fill_horizontal = 1,
-						title = LOC "$$$/PSUpload/ExportDialog/isPS6=Optimize for PS 6",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=Do not generate and upload Thumb_L",
+						title = LOC "$$$/PSUpload/ExportDialog/thumbGenerate=Do thumbs:",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/thumbGenerateTT=Generate thumbs:\nUnselect only, if you want the diskstation to generate the thumbs\n" .. 
+										"or if you export to an unindexed folder and you don't need thumbs.\n" .. 
+										"This will speed up export.",
+						value = bind 'thumbGenerate',
+					},
+
+					f:checkbox {
+						fill_horizontal = 1,
+						title = LOC "$$$/PSUpload/ExportDialog/isPS6=For PS 6",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/isPS6TT=PhotoStation 6: Do not generate and upload Thumb_L",
 						value = bind 'isPS6',
+						visible = bind 'thumbGenerate',
 					},
 
 					f:row {
 						fill_horizontal = 1,
+
 						f:radio_button {
 							title = LOC "$$$/PSUpload/ExportDialog/SmallThumbs=Small",
 							tooltip = LOC "$$$/PSUpload/ExportDialog/SmallThumbsTT=Recommended for output on low-resolution monitors",
 							alignment = 'left',
 							fill_horizontal = 1,
 							value = bind 'largeThumbs',
+							visible = bind 'thumbGenerate',
 							checked_value = false,
 						},
 
@@ -690,6 +702,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 							alignment = 'right',
 							fill_horizontal = 1,
 							value = bind 'largeThumbs',
+							visible = bind 'thumbGenerate',
 							checked_value = true,
 						},
 					},
@@ -701,6 +714,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						f:static_text {
 							title = LOC "$$$/PSUpload/ExportDialog/ThumbQuality=Quality:",
 							alignment = 'right',
+							visible = bind 'thumbGenerate',
 						},
 
 						f:popup_menu {
@@ -708,6 +722,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 							value = bind 'thumbQuality',
 							alignment = 'left',
 							fill_horizontal = 1,
+							visible = bind 'thumbGenerate',
 							items = {
 								{ title	= '10%',	value 	= 10 },
 								{ title	= '20%',	value 	= 20 },
@@ -730,6 +745,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						f:static_text {
 							title = LOC "$$$/PSUpload/ExportDialog/ThumbSharpness=Sharpening:",
 							alignment = 'right',
+							visible = bind 'thumbGenerate',
 						},
 
 						f:popup_menu {
@@ -737,6 +753,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 							value = bind 'thumbSharpness',
 							alignment = 'left',
 							fill_horizontal = 1,
+							visible = bind 'thumbGenerate',
 							items = {
 								{ title	= 'None',	value 	= 'None' },
 								{ title	= 'Low',	value 	= 'LOW' },

@@ -102,6 +102,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'exifXlatRating', 		default = true },	-- translate Lr star rating (XMP:rating) to PS keywords
 
 		-- thumbnail parameters
+		{ key = 'thumbGenerate',	default = true },	-- generate thumbs: yes or nos
 		{ key = 'largeThumbs', 		default = true },	-- generate large thumbs or small thumbs
 		{ key = 'thumbQuality', 	default = 80 },		-- conversion quality in percent
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
