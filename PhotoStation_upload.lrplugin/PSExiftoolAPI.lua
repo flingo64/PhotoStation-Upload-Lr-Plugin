@@ -286,10 +286,10 @@ function PSExiftoolAPI.doExifTranslations(photoFilename, exportParams)
 		writeLogfile(3, "PSExiftoolAPI.doExifTranslations: execute query data failed\n")
 		return false
 	end
+	
 	-- ------------- do all requested conversions -----------------
 	
-	
-	-- Face Region translations
+	-- Face Region translations ---------
 	local foundFaceRegions = false
 	local listName = {}
 	local listRectangle = {}
@@ -302,9 +302,9 @@ function PSExiftoolAPI.doExifTranslations(photoFilename, exportParams)
 		local listAreaType	= parseResponse(queryResults, 'Region Type', sep)
 		local listAreaName	= parseResponse(queryResults, 'Region Name', sep)		
 
-		if listAreaH and listAreaW and listAreaX and listAreaY and listAreaType then
+		if listAreaH and listAreaW and listAreaX and listAreaY then
 			for i = 1, #listAreaH do
-				if listAreaType[i] == 'Face' then
+				if not listAreaType or ifnil(listAreaType[i], 'Face') == 'Face' then
 					foundFaceRegions = true 
 					listRectangle[i] = string.format("%f, %f, %f, %f", 
 													listAreaX[i] - (listAreaW[i] / 2),
@@ -320,7 +320,7 @@ function PSExiftoolAPI.doExifTranslations(photoFilename, exportParams)
 		end
 	end
 	
-	-- Rating translation
+	-- Rating translation ---------------
 	local foundRating = false
 	local ratingSubject = ''
 	
@@ -335,7 +335,7 @@ function PSExiftoolAPI.doExifTranslations(photoFilename, exportParams)
 			end
 		end
 	end
-	-- ------------- insert all requested conversions -----------------
+	
 	if not foundFaceRegions
 	and not foundRating
 	then 
@@ -343,6 +343,8 @@ function PSExiftoolAPI.doExifTranslations(photoFilename, exportParams)
 		return true
 	end
 	
+	-- ------------- write back all requested conversions -----------------
+
 	if not setSeperator(sep)
 	or not setOverwrite()
 	or (foundFaceRegions and not insertFaceRegions(listName, listRectangle, sep))

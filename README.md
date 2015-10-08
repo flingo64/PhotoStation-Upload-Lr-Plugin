@@ -117,8 +117,10 @@ This eases the consistent definition of the Export/Publish settings for both acc
 
 - __Photo-plus-Thumbnail Upload__ (default) for faster PhotoStation fill-up and to minimize load on diskstation  
 
-- __Photo-Only Upload__ (optional) for faster a faster Uppload:<br>
-	This upload option makes sense, when you have a fast diskstation and you want the diskstation to do the thumbnail generation. It also makes sense to upload the photo-only when you don't need the thumbnails on the diskstation (e.g. for backup purpose) and you upload to an unindexed folder. 
+- __Photo-only Upload__ (optional) for a faster Upload:<br>
+	This upload option makes sense, when you have a fast diskstation and you want the diskstation to do the thumbnail generation. 
+	It also makes sense to upload w/ Photo-only option when you don't need the thumbnails on the diskstation (e.g. upload photos for backup purpose) and you upload to an un-indexed folder, so that no thumb conversion will be done on the diskstation. 
+	Note: It is not possible to keep already uploaded thumbs and just upload the photo itself. When you use the photo-only option, any belonging, already existing thumb on the diskstation will be removed! (Sorry, I wish I could do better)  
 
 - __Optimize the upload for PhotoStation 6__ by not uploading the THUMB_L thumbnail.
 
