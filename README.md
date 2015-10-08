@@ -308,8 +308,8 @@ Version 3.5
 ------------
 - Support for Lr and Picasa face detection/recognition:<br>
 Translation of the Lr/Picasa face regions to PhotoStatio Face regions / Person tags
-- Support for star ratings ('*' to '*****'):<br>
-Translation of the XMP-rating tag to PhotoStation General tags '*' to '*****'
+- Support for star ratings ('*' to '*****'): <br>
+Translation of the XMP-rating tag to PhotoStation General '*' tags
 - Support for Photo-only Upload
 
 Open issues
