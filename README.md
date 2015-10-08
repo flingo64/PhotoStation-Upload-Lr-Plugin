@@ -24,11 +24,11 @@ Requirements
 	- MacOS 10.8.5
 	- MacOS 10.9.5	
 	- MacOS 10.10.3, 10.10.4, 10.10.5 
-	- MacOS 10.11.0
+	- MacOS 10.11.0, 10.11.1
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
-	- Lr 6.0, 6.0.1, 6.1, 6.1.1
+	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2
 * Synology PhotoStation:
 	PhotoStation 6 (tested)
 * For Publish mode: 
@@ -40,9 +40,13 @@ Requirements
 	- ImageMagick/dcraw.exe
 	- ffmpeg/ffmpeg.exe
 	- ffmpeg/qt-faststart.exe
-
+* For Exif Data Translation (e.g Lr/Picasa Faces, Star Rating):
+	- exiftool
+	
 Installation
 =============
+- install Synology PhotoStation Uploader, if not already done
+- install exiftool (see credits below), if not already done
 - unzip the downloaded archive
 - copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
 - In Lightroom:
@@ -316,10 +320,11 @@ along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 Credits
 =======
 PhotoStation Upload uses the following phantastic free software to do its job:
-- convert.exe,			see: http://www.imagemagick.org/
-- dcraw.exe,			see: https://www.cybercom.net/~dcoffin/dcraw/ (David J. Coffin)
-- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
-- JSON.lua				see: http://regex.info/blog/lua/json (Jeffrey Friedl)
+- convert(.exe),		see: http://www.imagemagick.org/
+- dcraw(.exe),			see: https://www.cybercom.net/~dcoffin/dcraw/ (by David J. Coffin)
+- ffmpeg(.exe), 		see: https://www.ffmpeg.org/
+- qt-faststart(.exe), 	see: http://multimedia.cx/eggs/improving-qt-faststart/
+- JSON.lua				see: http://regex.info/blog/lua/json (by Jeffrey Friedl)
+- exiftool(.exe)		see: http://www.sno.phy.queensu.ca/~phil/exiftool/ (by Phil Harvey)
 
 Thanks to all you folks providing these real valuable software gems. This plugin would be nothing without it!
