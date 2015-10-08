@@ -20,6 +20,7 @@ Requirements
 * Windows OS or Mac:
 	- Windows 7
 	- Windows 8.0, 8.1
+	- Windows 10
 	- MacOS 10.7.5
 	- MacOS 10.8.5
 	- MacOS 10.9.5	
