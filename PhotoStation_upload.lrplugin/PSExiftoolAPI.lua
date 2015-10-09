@@ -50,6 +50,8 @@ require "PSUtilities"
 
 PSExiftoolAPI = {}
 
+local noWhitespaceConversion = true	-- do not convert whitespaces to \n 
+
 local exiftool						-- exiftool pathname
 local etCommandFile					-- exiftool command file
 local etLogFile						-- exiftool log output
@@ -204,7 +206,7 @@ local function insertFaceRegions(listNames, listRectangles, sep)
 		if i > 1 then optionLine = optionLine .. sep end
 		optionLine = optionLine .. listRectangles[i]
 	end
-	return sendCmd(optionLine, true)
+	return sendCmd(optionLine, noWhitespaceConversion)
 end
 
 ---------------------- queryRating ---------------------------------------------------------------
@@ -258,7 +260,7 @@ end
 -- Stop exiftool listener by sending a terminate command to its commandFile
 function PSExiftoolAPI.close()
 	writeLogfile(4, "PSExiftoolAPI.close: terminating exiftool.\n")
-	sendCmd("-stay_open False ")
+	sendCmd("-stay_open False")
 end
 
 
@@ -274,7 +276,7 @@ function PSExiftoolAPI.doExifTranslations(photoFilename, exportParams)
 	if not setSeperator(sep)
 	or (exportParams.exifXlatFaceRegions and not queryFaceRegionList())
 	or (exportParams.exifXlatRating and not queryRating())
-	or not sendCmd(photoFilename)
+	or not sendCmd(photoFilename, noWhitespaceConversion)
 	then
 		writeLogfile(3, "PSExiftoolAPI.doExifTranslations: send query data failed\n")
 		return false
@@ -349,7 +351,7 @@ function PSExiftoolAPI.doExifTranslations(photoFilename, exportParams)
 	or not setOverwrite()
 	or (foundFaceRegions and not insertFaceRegions(listName, listRectangle, sep))
 	or (foundRating and not addSubject(ratingSubject))
-	or not sendCmd(photoFilename)
+	or not sendCmd(photoFilename, noWhitespaceConversion)
 	or not executeCmds() 
 	then
 		return false
