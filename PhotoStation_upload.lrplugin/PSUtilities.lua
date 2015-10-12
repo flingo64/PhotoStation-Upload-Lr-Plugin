@@ -193,7 +193,7 @@ function waitSemaphore(semaName, info)
 		writeLogfile(3, info .. ": waiting for semaphore " .. semaName .. "\n")
 		-- make sure we are not waiting forever for an orphaned semaphore file
 		local fileAttr = LrFileUtils.fileAttributes(semaphoreFn)
-		if fileAttr.fileCreationDate < LrDate.currentTime() - 300 then
+		if fileAttr and (fileAttr.fileCreationDate < LrDate.currentTime() - 300) then
 			return false
 		end
 		
