@@ -56,6 +56,8 @@ local exiftool						-- exiftool pathname
 local etCommandFile					-- exiftool command file
 local etLogFile						-- exiftool log output
 
+local cmdNumber			 			-- sequence number of last pending command
+
 ---------------------- startExiftoolListener ---------------------------------------------------------
 
 -- function startExiftoolListener()
@@ -71,6 +73,8 @@ local function startExiftoolListener()
 	local retcode
 	
 	writeLogfile(4, "startExiftoolListener: Starting task " .. cmdline .. ".\n")
+	
+	cmdNumber = 0
 	local exitStatus = LrTasks.execute(cmdline)
 	if exitStatus > 0 then
 		writeLogfile(1, "exiftool Listener: terminated with error ".. tostring(exitStatus) .. "!\n")
@@ -123,7 +127,6 @@ local function setSeperator(sep)
 end
 
 ---------------------- executeCmds ----------------------------------------------------------------------
-local cmdNumber 	= 0 -- sequence number of last pending command
 
 -- function executeCmds()
 -- send a execute command to exiftool listener by appending the command to the commandFile
