@@ -375,7 +375,8 @@ function openSession(exportParams, publishMode)
 	end
 
 	if publishMode ~= 'Delete' and exportParams.exifTranslate then 
-		return PSExiftoolAPI.open(exportParams) 
+		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
+		return iif(exportParams.eHandle, true, false) 
 	end
 	
 	return true
@@ -387,7 +388,7 @@ function closeSession(exportParams, publishMode)
 	writeLogfile(3,"closeSession(" .. publishMode .. "):...\n")
 
 	if  publishMode ~= 'Delete' and exportParams.exifTranslate then 
-		PSExiftoolAPI.close() 
+		PSExiftoolAPI.close(exportParams.eHandle) 
 	end
 	
 	-- CheckExisting or Delete: Logout from FileStation

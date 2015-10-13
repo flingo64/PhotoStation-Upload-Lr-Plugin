@@ -284,7 +284,7 @@ function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, e
 	)
 	
 	-- exif translations	
-	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(srcFilename, exportParams))
+	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, srcFilename, exportParams))
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
