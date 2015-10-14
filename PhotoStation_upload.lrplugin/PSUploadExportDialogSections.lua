@@ -126,7 +126,7 @@ local function updateExportStatus( propertyTable )
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 		
-		if not validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
+		if propertyTable.thumbGenerate and not validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/PSUploadPathMissing=Enter the installation path (base) of the Synology PhotoStation Uploader or Synology Assistant"
 			break
 		end
@@ -225,7 +225,9 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 		progExt = 'exe'
 	end
 	
+	propertyTable:addObserver( 'thumbGenerate', updateExportStatus )
 	propertyTable:addObserver( 'PSUploaderPath', updateExportStatus )
+
 	propertyTable:addObserver( 'servername', updateExportStatus )
 	propertyTable:addObserver( 'username', updateExportStatus )
 	propertyTable:addObserver( 'srcRoot', updateExportStatus )
@@ -496,23 +498,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			
 			synopsis = bind { key = 'psUrl', object = propertyTable },
 
-			f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Synology PS Uploader:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-	
-				f:edit_field {
-					value = bind 'PSUploaderPath',
-					tooltip = LOC "$$$/PSUpload/ExportDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader.",
-					truncation = 'middle',
-					validate = validatePSUploadProgPath,
-					immediate = true,
-					fill_horizontal = 1,
-				},
-			},
-
 			f:group_box {
 				fill_horizontal = 1,
 				title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Target PhotoStation",
@@ -624,6 +609,22 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				fill_horizontal = 1,
 				title = LOC "$$$/PSUpload/ExportDialog/ExifOpt=Exif Translations",
 
+				f:row {
+					f:checkbox {
+--						fill_horizontal = 1,
+						title = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegions=Lr/Picasa Faces -> PS Faces",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lightroom or Picasa Face Regions to PhotoStation Person Tags",
+						value = bind 'exifXlatFaceRegions',
+					},
+				
+					f:checkbox {
+--						fill_horizontal = 1,
+						title = LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating -> PS '***' Tags",
+						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lightroom (XMP) ratings (*stars*) to PhotoStation General *** Tags",
+						value = bind 'exifXlatRating',
+					},
+				},
+
         		f:row {
         				f:static_text {
         					title = LOC "$$$/PSUpload/ExportDialog/exiftoolprog=ExifTool program:",
@@ -642,22 +643,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
         				},
         
         		},
-
-				f:row {
-					f:checkbox {
---						fill_horizontal = 1,
-						title = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegions=Lr/Picasa Faces -> PS Faces",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lightroom or Picasa Face Regions to PhotoStation Person Tags",
-						value = bind 'exifXlatFaceRegions',
-					},
-				
-					f:checkbox {
---						fill_horizontal = 1,
-						title = LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating -> PS '***' Tags",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lightroom (XMP) ratings (*stars*) to PhotoStation General *** Tags",
-						value = bind 'exifXlatRating',
-					},
-				},
 
 			},
 
@@ -763,6 +748,26 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						},
 					},
 				},
+
+    			f:row {
+    				f:static_text {
+    					title = LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Synology PS Uploader:",
+    					alignment = 'right',
+						visible = bind 'thumbGenerate',
+    					width = share 'labelWidth'
+    				},
+    	
+    				f:edit_field {
+    					value = bind 'PSUploaderPath',
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader.",
+    					truncation = 'middle',
+						visible = bind 'thumbGenerate',
+    					validate = validatePSUploadProgPath,
+    					immediate = true,
+    					fill_horizontal = 1,
+    				},
+    			},
+
 			},
 
 			f:group_box {
