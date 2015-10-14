@@ -36,7 +36,7 @@ Requirements
 	- Access to Synology FileStation WebAPI (reachable via admin port) is required for mode "Check Existing" and photo deletion
 	- For option 'Check Existing' (see below): user account w/ read access to /photo
 	- For full publish support (incl. photo deletion / photo movement): user account w/ write access to /photo
-* Synology PhotoStation Uploader, required components:
+* For local Thumbnail generation: Synology PhotoStation Uploader, required components:
 	- ImageMagick/convert.exe
 	- ImageMagick/dcraw.exe
 	- ffmpeg/ffmpeg.exe
