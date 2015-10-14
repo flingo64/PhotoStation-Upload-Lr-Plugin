@@ -309,7 +309,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection( publishSett
 
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
 		writeLogfile(2, 'deletePhotosFromPublishedCollection:  "' .. photoId .. '"\n')
-		if PSFileStationAPI.deletePic (photoId) then
+		if PSFileStationAPI.deletePic (publishSettings.fHandle, photoId) then
 			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
 		else
@@ -761,7 +761,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 			local pubPhoto = publishedPhotos[i]
 			local publishedPath = pubPhoto:getRemoteId()
 			
-			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishedPath) end
+			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
 			nProcessed = i
 			progressScope:setPortionComplete(nProcessed, nPhotos)
 		end 

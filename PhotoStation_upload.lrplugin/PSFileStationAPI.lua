@@ -45,13 +45,14 @@ require "PSUtilities"
 
 PSFileStationAPI = {}
 
--- we can store some variables in 'global' local variables safely:
--- each export task will get its own copy of these variables
-
+-- !!! don't use local variable for settings that may differ for export sessions!
+-- only w/ "reload plug-in on each export", each export task will get its own copy of these variables
+--[[
 local serverUrl
 local loginPath
 local fileStationPath
 local photoPathPrefix
+]]
 
 ---------------------- FileStation API error codes ---------------------------------------------------------
 local FSAPIerrorCode = {
@@ -103,11 +104,13 @@ end
 
 -- initialize: set serverUrl, loginPath and fileStationPath
 function PSFileStationAPI.initialize(server, personalPSOwner, loginUser)
+	local h = {} -- the handle
+
 	writeLogfile(4, "PSFileStationAPI.initialize(serverUrl=" .. server .. ")\n")
 
-	serverUrl = 	server
-	loginPath = 		'/webapi/auth.cgi'
-	fileStationPath = '/webapi/FileStation'
+	h.serverUrl = 	server
+	h.loginPath = 		'/webapi/auth.cgi'
+	h.fileStationPath = '/webapi/FileStation'
 
 	if personalPSOwner then -- connect to Personal PhotoStation
 		-- if published by owner: use share /home/photo
@@ -120,13 +123,13 @@ function PSFileStationAPI.initialize(server, personalPSOwner, loginUser)
 		photoPathPrefix = "/photo/"
 	end
 		
-	return true
+	return h
 end
 		
 ---------------------------------------------------------------------------------------------------------
--- login(username, passowrd)
+-- login(h, username, passowrd)
 -- does, what it says
-function PSFileStationAPI.login(username, password)
+function PSFileStationAPI.login(h, username, password)
 	local postHeaders = {
 		{ 
 			field = 'Content-Type', value = 'application/x-www-form-urlencoded' ,
@@ -135,8 +138,8 @@ function PSFileStationAPI.login(username, password)
 	local postBody = 'api=SYNO.API.Auth&version=3&method=login&account=' .. 
 					urlencode(username) .. '&passwd=' .. urlencode(password) .. '&session=FileStation&format=cookie' 
 
-	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. ",...)\n")
-	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', 5, string.len(postBody))
+	writeLogfile(4, "login: LrHttp.post(" .. h.serverUrl .. ",...)\n")
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.loginPath, postBody, postHeaders, 'POST', 5, string.len(postBody))
 	
 	if not respBody then
 		writeTableLogfile(3, 'respHeaders', respHeaders)
@@ -158,9 +161,9 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 
--- logout()
+-- logout(h)
 -- nothing to do here, invalidating the cookie would be perfect here
-function PSFileStationAPI.logout ()
+function PSFileStationAPI.logout (h)
 	return true
 end
 
@@ -170,17 +173,17 @@ end
 --		success: 		true, false 
 --		errorcode:		errorcode not success
 --		files:			array of files if success
-function PSFileStationAPI.listFiles(dstDir)
+function PSFileStationAPI.listFiles(h, dstDir)
 	local postHeaders = {
 		{ field = 'Content-Type',			value = 'application/x-www-form-urlencoded' },
 	}
-	local apiPath = fileStationPath .. '/file_share.cgi'
+	local apiPath = h.fileStationPath .. '/file_share.cgi'
 	local fullDirPath = photoPathPrefix .. dstDir
 	local postBody = 'api=SYNO.FileStation.List&version=1&method=list&filetype=file&folder_path=' .. urlencode(FSAPIescape(fullDirPath))
 	
-	local respBody, respHeaders = LrHttp.post(serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
 	
-	writeLogfile(4, "listFiles: LrHttp.post(" .. serverUrl .. apiPath .. ", " .. postBody .. ")\n")
+	writeLogfile(4, "listFiles: LrHttp.post(" .. h.serverUrl .. apiPath .. ", " .. postBody .. ")\n")
 	if not respBody then
 		writeTableLogfile(3, 'respHeaders', respHeaders)
 		if respHeaders then
@@ -224,18 +227,19 @@ end
 -- 	- if directory of photo is not in cache, reloads cache w/ directory via listFiles()
 -- 	- searches for filename in a local directory cache (findInCache())
 -- 	returns true, if filename 	
-function PSFileStationAPI.existsPic(dstFilename)
+function PSFileStationAPI.existsPic(h, dstFilename)
 --	local dstDir = LrPathUtils.parent(dstFilename) -- won't work on Windows, since dstFilename has forward slashes
 	local _, _, dstDir = string.find(dstFilename, '(.*)\/', 1, false)
+	writeLogfile(4, string.format('existsPic: dstFilename %s --> dstDir %s\n', dstFilename, dstDir))
 	
 	-- check if folder of current photo is in cache
 	if dstDir ~= psDirInCache then
 		-- if not: refresh cach w/ folder of current photo
 		local success, errorCode
 		
-		success, errorCode, psDirCache = PSFileStationAPI.listFiles(dstDir)
+		success, errorCode, psDirCache = PSFileStationAPI.listFiles(h, dstDir)
 		if not success and errorCode ~= 408 then -- 408: no such file or dir
-			writeLogfile(3, string.format('existsPic2: Error on listFiles: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+			writeLogfile(3, string.format('existsPic: Error on listFiles: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
 		   	return 'error'
 		end
 		psDirInCache = dstDir
@@ -246,18 +250,18 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 
--- deletePic (dstFilename) 
-function PSFileStationAPI.deletePic (dstFilename) 
+-- deletePic (h, dstFilename) 
+function PSFileStationAPI.deletePic (h, dstFilename) 
 	local postHeaders = {
 		{ field = 'Content-Type',			value = 'application/x-www-form-urlencoded' },
 	}
-	local apiPath = fileStationPath .. '/file_delete.cgi'
+	local apiPath = h.fileStationPath .. '/file_delete.cgi'
 	local fullPicPath = photoPathPrefix .. dstFilename
 	local postBody = 'api=SYNO.FileStation.Delete&version=1&method=delete&path=' .. urlencode(FSAPIescape(fullPicPath))
 	
-	local respBody, respHeaders = LrHttp.post(serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. apiPath, postBody, postHeaders, 'POST', 5, 0)
 	
-	writeLogfile(4, "deletePic: LrHttp.post(" .. serverUrl .. apiPath .. ", " .. postBody .. ")\n")
+	writeLogfile(4, "deletePic: LrHttp.post(" .. h.serverUrl .. apiPath .. ", " .. postBody .. ")\n")
 	if not respBody then
 		writeTableLogfile(3, 'respHeaders', respHeaders)
 		if respHeaders then

@@ -171,12 +171,12 @@ function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams)
 end
 -----------------
 
--- function createTree(srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
+-- function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
 -- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir), 
 --	create each folder recursively if not already created
 -- 	store created directories in dirsCreated
 -- 	return created dstDir or nil on error
-function createTree(srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
+function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
 	writeLogfile(4, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
 
 	-- sanitize srcRoot: avoid trailing slash and backslash
@@ -217,7 +217,7 @@ function createTree(srcDir, srcRoot, dstRoot, dirsCreated, readOnly)
 			
 			local paramParentDir
 			if parentDir == "" then paramParentDir = "/" else paramParentDir = parentDir  end  
-			if not readOnly and not PSUploadAPI.createFolder (paramParentDir, newDir) then
+			if not readOnly and not PSUploadAPI.createFolder (uHandle, paramParentDir, newDir) then
 				writeLogfile(1,"Create dir - parent: " .. paramParentDir .. " newDir: " .. newDir .. " failed!\n")
 				return nil
 			end
@@ -267,14 +267,14 @@ function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, e
 	
 	-- generate thumbs	
 	if exportParams.thumbGenerate and ( 
-			( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportParams.LR_format,
+			( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, srcFilename, srcPhoto, exportParams.LR_format,
 								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-		or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportParams.LR_format,
+		or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, srcFilename, srcPhoto, exportParams.LR_format,
 								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
@@ -290,13 +290,13 @@ function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, e
 	or not waitSemaphore("PhotoStation", dstFilename)
 	-- upload thumbnails and original file
 	or exportParams.thumbGenerate and (
-		   not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-		or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-		or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
-		or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
+		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
-	or not PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
+	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, srcFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
 	then
 		signalSemaphore("PhotoStation")
 		retcode = false
@@ -355,7 +355,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	}
 	
 	-- get video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
-	local retcode, srcDateTime, duration, dimension, sampleAR, dispAR, rotation = PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
+	local retcode, srcDateTime, duration, dimension, sampleAR, dispAR, rotation = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcVideoFilename)
 	if not retcode then
 		return false
 	end
@@ -382,7 +382,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	end
 	
 	-- get the right conversion settings (depending on Height)
-	dummyIndex, convKeyOrig = PSConvert.getConvertKey(srcHeight)
+	dummyIndex, convKeyOrig = PSConvert.getConvertKey(exportParams.cHandle, srcHeight)
 	vid_Replace_Filename = convParams[convKeyOrig].filename
 	convKeyAdd = addVideo[convKeyOrig]
 	if convKeyAdd ~= 'None' then
@@ -422,10 +422,10 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	
 	if exportParams.thumbGenerate and ( 
 		-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
-		not PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thmb_ORG_Filename, realDimension, rotation)
+		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, srcVideoFilename, thmb_ORG_Filename, realDimension, rotation)
 
 		-- generate all other thumb from first thumb
-		or ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
+		or ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
 --								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>', thmb_XL_Filename,
@@ -434,7 +434,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
 	
-		or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
+		or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
 --								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB', 
 								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>^', thmb_XL_Filename,
@@ -445,24 +445,24 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	)
 
 	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
-	or (replaceOrgVideo and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
+	or (replaceOrgVideo and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, srcDateTime, dispAR, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(srcVideoFilename, srcDateTime, dispAR, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, srcDateTime, dispAR, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
 	or exportParams.thumbGenerate and (
 		-- upload thumbs, preview videos and original file
-		   not PSUploadAPI.uploadPictureFile(thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-		or not PSUploadAPI.uploadPictureFile(thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-		or not PSUploadAPI.uploadPictureFile(thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
-		or not PSUploadAPI.uploadPictureFile(thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
+		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
-	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(vid_Add_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
-	or not PSUploadAPI.uploadPictureFile(vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
+	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
+	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
 		signalSemaphore("PhotoStation")
 		retcode = false
@@ -704,7 +704,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- if photo was moved ... 
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
-					if publishMode == 'Publish' and (not exportParams.useFileStation or not PSFileStationAPI.deletePic(publishedPhotoId)) then
+					if publishMode == 'Publish' and (not exportParams.useFileStation or not PSFileStationAPI.deletePic(exportParams.fHandle, publishedPhotoId)) then
 						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check FileStation API access!\n')
     					table.insert( failures, srcFilename )
 						skipPhoto = true 					
@@ -721,7 +721,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in PhotoStation
-				local foundPhoto = PSFileStationAPI.existsPic(publishedPhotoId)
+				local foundPhoto = PSFileStationAPI.existsPic(exportParams.fHandle, publishedPhotoId)
 				if foundPhoto == 'yes' then
 					rendition:recordPublishedPhotoId(publishedPhotoId)
 					nNotCopied = nNotCopied + 1
@@ -737,7 +737,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			elseif publishMode == 'Export' or publishMode == 'Publish' then
 				-- normal publish or export process 
 				-- check if target Album (dstRoot) should be created 
-				if exportParams.createDstRoot and exportParams.dstRoot ~= '' and not createTree( './' .. exportParams.dstRoot,  ".", "", dirsCreated, readOnly) then
+				if exportParams.createDstRoot and exportParams.dstRoot ~= '' and 
+					not createTree(exportParams.uHandle, './' .. exportParams.dstRoot,  ".", "", dirsCreated, readOnly) then
 					table.insert( failures, srcFilename )
 					break 
 				end
@@ -751,7 +752,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						dstDir = exportParams.dstRoot
 					end
 				else
-					dstDir = createTree(LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, dirsCreated, readOnly) 
+					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, 
+										dirsCreated, readOnly) 
 				end
 				
 				if not dstDir then 	

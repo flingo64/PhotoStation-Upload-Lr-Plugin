@@ -2,7 +2,8 @@
 
 PSConvert.lua
 conversion primitives:
-	- convertPic
+	- initialize
+	- convertPicConcurrent
 	- convertVideo
 Copyright(c) 2015, Martin Messmer
 
@@ -42,15 +43,14 @@ require "PSUtilities"
 PSConvert = {}
 
 
--- we can store some variables in 'global' local variables safely:
--- each export task will get its own copy of these variables
--- local tmpdir = LrPathUtils.getStandardFilePath("temp")
-
+-- !!! don't use local variable for settings that may differ for export sessions!
+-- only w/ "reload plug-in on each export", each export task will get its own copy of these variables
+--[[
 local conv
 local dcraw
 local ffmpeg
 local qtfstart
--- local exiftool
+]]
 
 -- ffmpeg encoder to use depends on OS
 local encoderOpt
@@ -83,6 +83,8 @@ end
 
 -- initialize: set serverUrl, loginPath and uploadPath
 function PSConvert.initialize(PSUploaderPath)
+	local h = {} -- the handle
+
 	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")
 
 	local convertprog = 'convert'
@@ -98,23 +100,16 @@ function PSConvert.initialize(PSUploaderPath)
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
 	end
 	
-	conv = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
-	dcraw = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog)
-	ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
-	qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
+	h.conv = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
+	h.dcraw = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog)
+	h.ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
+	h.qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
 
---[[
-	-- exiftool is not required
-	if  LrFileUtils.exists(exiftoolprog)  ~= 'file' then
-		exiftool = nil 
-	else
-		exiftool = exiftoolprog
-	end
-]]
 	encoderOpt = iif(WIN_ENV, '-acodec libvo_aacenc',  '-strict experimental -acodec aac')
 	
-	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. conv .. "\n\t\t\tdcraw: " .. dcraw .. "\n\t\t\tffmpeg: " .. ffmpeg .. "\n\t\t\tqt-faststart: " .. qtfstart .. "\n")
-	return true
+	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. h.conv .. "\n\t\t\tdcraw: " .. h.dcraw .. 
+										 "\n\t\t\tffmpeg: " .. h.ffmpeg .. "\n\t\t\tqt-faststart: " .. h.qtfstart .. "\n")
+	return h
 end
 
 ---------------------- picture conversion functions ----------------------------------------------------------
@@ -124,7 +119,7 @@ end
 --  exportFormat	- Lr export file format setting: JPEG, PSD, TIFF, DNG, PSD or ORIGINAL	
 --
 --	returns optimal dcraw conversion params depending on file format or nil if is not a supported raw format 
-function getRawConvParams(picExt, srcPhoto, exportFormat)
+local function getRawConvParams(picExt, srcPhoto, exportFormat)
 	if 	   picExt == 'jpg' then
 		return nil
 	end
@@ -165,9 +160,9 @@ function getRawConvParams(picExt, srcPhoto, exportFormat)
 	end
 end
 
--- convertPicConcurrent(srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
+-- convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 -- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
-function PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
+function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 	-- if image is in DNG format extract the embedded jpg
 	local srcJpgFilename
 	local orgExt = string.lower(LrPathUtils.extension(srcFilename))
@@ -177,7 +172,7 @@ function PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat, con
 	if rawConvParams then
 		srcJpgFilename = (LrPathUtils.replaceExtension(srcFilename, 'jpg'))
 
-		local cmdline = cmdlineQuote() .. '"' .. dcraw .. '" ' .. rawConvParams .. '-c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' .. cmdlineQuote()
+		local cmdline = cmdlineQuote() .. '"' .. h.dcraw .. '" ' .. rawConvParams .. '-c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' .. cmdlineQuote()
 		writeLogfile(4, cmdline .. "\n")
 		
 		if LrTasks.execute(cmdline) > 0 then
@@ -189,7 +184,7 @@ function PSConvert.convertPicConcurrent(srcFilename, srcPhoto, exportFormat, con
 		srcJpgFilename = srcFilename
 	end
 	
-	local cmdline = cmdlineQuote() .. '"' .. conv .. '" "' .. srcJpgFilename .. '" ' ..
+	local cmdline = cmdlineQuote() .. '"' .. h.conv .. '" "' .. srcJpgFilename .. '" ' ..
 			shellEscape(
 						 '( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write "' .. xlFile .. '" ) -delete 0 ' ..
 		iif(lFile ~= '', '( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write "' ..  lFile .. '" +delete ) ', '') ..
@@ -209,7 +204,7 @@ end
 
 ---------------------- video functions ----------------------------------------------------------
 
--- ffmpegGetAdditionalInfo(srcVideoFilename) ---------------------------------------------------------
+-- ffmpegGetAdditionalInfo(h, srcVideoFilename) ---------------------------------------------------------
 --[[
 	get the capture date, duration, resolution and aspect ratio of a video via ffmpeg. Lr won't give you this information
 	returns:
@@ -221,12 +216,12 @@ end
 		dar				as aspect ratio 'N:M'
 		rotation		as string '0', '90', '180', '270'
 ]]
-function PSConvert.ffmpegGetAdditionalInfo(srcVideoFilename)
+function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
 	local outfile =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
 	-- LrTask.execute() will call cmd.exe /c cmdline, so we need additional outer quotes
-	local cmdline = cmdlineQuote() .. '"' .. ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> "' .. outfile .. '"' .. cmdlineQuote()
+	local cmdline = cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> "' .. outfile .. '"' .. cmdlineQuote()
 	local v,w,x -- iteration variables for string.gmatch()
 	
 	writeLogfile(4, cmdline .. "\n")
@@ -331,7 +326,7 @@ end
 
 -- ffmpegGetRotateParams(hardRotate, rotation, dimension, aspectRatio) ---------------------------------------------------------
 -- returns resulting ffmpeg rotation options, dimension and aspectRatio
-function PSConvert.ffmpegGetRotateParams(hardRotate, rotation, dimension, aspectRatio)
+function PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dimension, aspectRatio)
 	local rotateOpt 		= ''
 	local newDimension		= dimension
 	local newAspectRatio	= aspectRatio
@@ -373,18 +368,18 @@ function PSConvert.ffmpegGetRotateParams(hardRotate, rotation, dimension, aspect
 end
 
 -- ffmpegGetThumbFromVideo(srcVideoFilename, thumbFilename, dimension, rotation) ---------------------------------------------------------
-function PSConvert.ffmpegGetThumbFromVideo (srcVideoFilename, thumbFilename, dimension, rotation)
+function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, dimension, rotation)
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
 	local rotateOpt, nweDim, aspectRatio
 	
-	rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(true, rotation, dimension, string.gsub(dimension, 'x', ':'))
+	rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(h, true, rotation, dimension, string.gsub(dimension, 'x', ':'))
 	
 	writeLogfile(3, string.format("ffmpegGetThumbFromVideo: %s dim %s rotation %s --> newDim: %s aspectR: %s\n", 
 								srcVideoFilename, dimension, rotation, newDim, aspectRatio))
 	
 	-- generate first thumb from video
 	local cmdline = cmdlineQuote() ..
-						'"' .. ffmpeg .. 
+						'"' .. h.ffmpeg .. 
 						'" -i "' .. srcVideoFilename .. 
 						'" -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg '.. rotateOpt .. ' ' ..
 						'-s ' .. newDim .. ' -aspect ' .. aspectRatio .. 
@@ -445,7 +440,7 @@ local videoConversion = {
 }
 
 ---------------- getResolutionId --------------------------------------------------------------------
-function PSConvert.getConvertKey(height)
+function PSConvert.getConvertKey(h, height)
 	
 	for i = 1, #videoConversion do
 		if height <= videoConversion[i].upToHeight then 
@@ -457,7 +452,7 @@ function PSConvert.getConvertKey(height)
 
 end
 
--- convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
+-- convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
 --[[ 
 	converts a video to an mp4 with a given resolution using the ffmpeg and qt-faststart tool
 	srcVideoFilename	the src video file
@@ -465,7 +460,7 @@ end
 	dstHeight			target height in pixel
 	dstVideoFilename	the target video file
 ]]
-function PSConvert.convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename)
+function PSConvert.convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename)
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
 	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
 	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
@@ -474,7 +469,7 @@ function PSConvert.convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstH
 	local dstWidth = dstHeight * arw / arh
 	local dstDim = string.format("%dx%d", dstWidth, dstHeight)
 	local dstAspect = string.gsub(dstDim, 'x', ':')
-	local convKey = PSConvert.getConvertKey(dstHeight) 		-- get the conversionParams
+	local convKey = PSConvert.getConvertKey(h, dstHeight) 		-- get the conversionParams
 
 	writeLogfile(3, string.format("convertVideo: %s aspectR %s, dstHeight: %d hardRotate %s rotation %s using conversion %d/%s (%dp)\n", 
 								srcVideoFilename, aspectRatio, dstHeight, tostring(hardRotate), rotation,
@@ -482,14 +477,14 @@ function PSConvert.convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstH
 	
 	-- get rotation params based on rotate flag 
 	local rotateOpt
-	rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(hardRotate, rotation, dstDim, dstAspect)
+	rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dstDim, dstAspect)
 
 	-- add creation_time metadata to destination video
 	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(srcDateTime), '"%Y-%m-%d %H:%M:%S"', false)
 		
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
 	local cmdline =  cmdlineQuote() ..
-				'"' .. ffmpeg .. '" -i "' .. 
+				'"' .. h.ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
 				'" -y ' .. encoderOpt .. ' ' ..
 				createTimeOpt .. ' ' .. rotateOpt .. ' ' ..
@@ -508,7 +503,7 @@ function PSConvert.convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstH
 	end
 
 	cmdline =   cmdlineQuote() ..
-				'"' .. ffmpeg .. '" -i "' .. 
+				'"' .. h.ffmpeg .. '" -i "' .. 
 				srcVideoFilename .. 
 				'" -y ' .. encoderOpt .. ' ' ..
 				createTimeOpt .. ' ' .. rotateOpt .. ' ' ..
@@ -528,7 +523,7 @@ function PSConvert.convertVideo(srcVideoFilename, srcDateTime, aspectRatio, dstH
 
 --	LrFileUtils.copy(tmpVideoFilename, tmpVideoFilename ..".bak")
 	cmdline = 	cmdlineQuote() ..
-					'"' .. qtfstart .. '" "' ..  tmpVideoFilename .. '" "' .. dstVideoFilename .. '" 2> "' .. outfile ..'"' ..
+					'"' .. h.qtfstart .. '" "' ..  tmpVideoFilename .. '" "' .. dstVideoFilename .. '" 2> "' .. outfile ..'"' ..
 				cmdlineQuote()
 
 	writeLogfile(4, cmdline .. "\n")

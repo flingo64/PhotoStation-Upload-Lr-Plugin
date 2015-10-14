@@ -44,38 +44,41 @@ require "PSUtilities"
 
 PSUploadAPI = {}
 
--- we can store some variables in 'global' local variables safely:
--- each export task will get its own copy of these variables
-
 local stdHttpTimeout = 10
+
+-- !!! don't use local variable for settings that may differ for export sessions!
+-- only w/ "reload plug-in on each export", each export task will get its own copy of these variables
+--[[
 local serverUrl
 local loginPath
 local uploadPath
-
+]]
 ---------------------------------------------------------------------------------------------------------
 
 -- initialize: set serverUrl, loginPath and uploadPath
-function PSUploadAPI.initialize( server, personalPSOwner)
+function PSUploadAPI.initialize(server, personalPSOwner)
+	local h = {} -- the handle
+
 	writeLogfile(4, "PSUploadAPI.initialize(serverUrl=" .. server ..", " .. iif(personalPSOwner, "Personal PS(" .. ifnil(personalPSOwner,"<Nil>") .. ")", "Standard PS") .. ")\n")
 
-	serverUrl = server
+	h.serverUrl = server
 
 	if personalPSOwner then -- connect to Personal PhotoStation
-		loginPath = '/~' .. personalPSOwner .. '/photo/webapi/auth.php'
-		uploadPath = '/~' .. personalPSOwner .. '/photo/include/asst_file_upload.php'
+		h.loginPath = '/~' .. personalPSOwner .. '/photo/webapi/auth.php'
+		h.uploadPath = '/~' .. personalPSOwner .. '/photo/include/asst_file_upload.php'
 	else
-		loginPath = '/photo/webapi/auth.php'
-		uploadPath = '/photo/include/asst_file_upload.php'
+		h.loginPath = '/photo/webapi/auth.php'
+		h.uploadPath = '/photo/include/asst_file_upload.php'
 	end
 
-	return true
+	return h
 end
 		
 ---------------------------------------------------------------------------------------------------------
 
--- login(username, passowrd)
+-- login(h, username, passowrd)
 -- does, what it says
-function PSUploadAPI.login(username, password)
+function PSUploadAPI.login(h, username, password)
 	local postHeaders = {
 		{ field = 'Content-Type', value = 'application/x-www-form-urlencoded' },
 --		{ field = 'Cookie', value = ''  }, -- clearing Cookie: doesn't work
@@ -84,8 +87,8 @@ function PSUploadAPI.login(username, password)
 	-- login via PhotoStation WebAPI
 	local postBody = 'api=SYNO.PhotoStation.Auth&method=login&version=1&username=' .. urlencode(username) .. '&password=' .. urlencode(password)
 
-	writeLogfile(4, "login: LrHttp.post(" .. serverUrl .. loginPath .. ",...)\n")
-	local respBody, respHeaders = LrHttp.post(serverUrl .. loginPath, postBody, postHeaders, 'POST', stdHttpTimeout, string.len(postBody))
+	writeLogfile(4, "login: LrHttp.post(" .. h.serverUrl .. h.loginPath .. ",...)\n")
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.loginPath, postBody, postHeaders, 'POST', stdHttpTimeout, string.len(postBody))
 	
 	if not respBody then
     writeTableLogfile(3, 'respHeaders', respHeaders)
@@ -107,18 +110,18 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 
--- logout()
+-- logout(h)
 -- nothing to do here, invalidating the cookie would be perfect here
-function PSUploadAPI.logout ()
+function PSUploadAPI.logout (h)
 	return true
 end
 
 ---------------------------------------------------------------------------------------------------------
 
--- createFolder (parentDir, newDir) 
+-- createFolder (h, parentDir, newDir) 
 -- parentDir must exit
 -- newDir may or may not exist, will be created 
-function PSUploadAPI.createFolder (parentDir, newDir) 
+function PSUploadAPI.createFolder (h, parentDir, newDir) 
 	local postHeaders = {
 		{ field = 'Content-Type',			value = 'application/x-www-form-urlencoded' },
 		{ field = 'X-PATH', 				value = urlencode(parentDir) },
@@ -128,9 +131,9 @@ function PSUploadAPI.createFolder (parentDir, newDir)
 		{ field = 'X-IS-BATCH-LAST-FILE', 	value = '1' },
 	}
 	local postBody = ''
-	local respBody, respHeaders = LrHttp.post(serverUrl .. uploadPath, postBody, postHeaders, 'POST', stdHttpTimeout, 0)
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, postBody, postHeaders, 'POST', stdHttpTimeout, 0)
 	
-	writeLogfile(4, "createFolder: LrHttp.post(" .. serverUrl .. uploadPath .. ",...)\n")
+	writeLogfile(4, "createFolder: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ",...)\n")
 	if not respBody then
     writeTableLogfile(3, 'respHeaders', respHeaders)
     if respHeaders then
@@ -154,7 +157,7 @@ end
 ---------------------------------------------------------------------------------------------------------
 
 --[[ 
-uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position) 
+uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position) 
 upload a single file to PhotoStation
 	srcFilename	- local path to file
 	srcDateTime	- DateTimeOriginal (exposure date), only needed for the originals, not accompanying files
@@ -171,7 +174,7 @@ upload a single file to PhotoStation
 		LAST	- the original file must always be the last
 	The files belonging to one batch must be send in the right chronological order and tagged accordingly
 ]]
-function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position) 
+function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position) 
 	local seqOption
 	local datetimeOption
 	local retcode,reason
@@ -203,15 +206,15 @@ function PSUploadAPI.uploadPictureFile(srcFilename, srcDateTime, dstDir, dstFile
 	
 	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size %d --> timeout %d\n", 
 								srcFilename, dstDir, dstFilename, picType, position, fileSize, timeout))
-	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. serverUrl .. uploadPath .. ", timeout: " .. timeout .. ", fileSize: " .. fileSize .. "\n")
+	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ", timeout: " .. timeout .. ", fileSize: " .. fileSize .. "\n")
 
-	local h
+	local i
 	writeLogfile(4, "postHeaders:\n")
-	for h = 1, #postHeaders do
-		writeLogfile(4, 'Field: ' .. postHeaders[h].field .. ' Value: ' .. postHeaders[h].value .. '\n')
+	for i = 1, #postHeaders do
+		writeLogfile(4, 'Field: ' .. postHeaders[i].field .. ' Value: ' .. postHeaders[i].value .. '\n')
 	end
 
-	local respBody, respHeaders = LrHttp.post(serverUrl .. uploadPath, 
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, 
 								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
 	
 	if not respBody then

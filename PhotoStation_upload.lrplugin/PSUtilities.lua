@@ -11,9 +11,8 @@ useful functions:
 	
 	- openLogfile
 	- writeLogfile
-	-  closeLogfile
+	- closeLogfile
 	
-	- initializeEnv
 	- copyCollectionSettingsToExportParams
 	- openSession
 	- closeSession
@@ -284,19 +283,6 @@ end
 
 ---------------------- session environment ----------------------------------------------------------
 
--- initialzeEnv (exportParams) ---------------
--- initialize PhotoStation-API, FileStation API and Convert
-function initializeEnv (exportParams)
-	writeLogfile(2, "initializeEnv starting:\n")
-	local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
-
-	return (PSUploadAPI.initialize(exportParams.serverUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil)) and 
-			(exportParams.publishMode == 'Export' or not exportParams.useFileStation or 
-				PSFileStationAPI.initialize(FileStationUrl, iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
-										iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username))) and 
-			PSConvert.initialize(exportParams.PSUploaderPath))
-end
-
 -- copyCollectionSettingsToExportParams(collectionSettings, exportParams)
 -- copy temporarily the collections settings to exportParams, so that we can work solely with exportParams  
 function copyCollectionSettingsToExportParams(collectionSettings, exportParams)
@@ -309,8 +295,10 @@ function copyCollectionSettingsToExportParams(collectionSettings, exportParams)
 end
 
 -- openSession(exportParams, publishMode)
+-- initialize all required APIs: Convert, Upload, FileStation, Exiftool
 -- login to PhotoStation and FileStation, if required
 function openSession(exportParams, publishMode)
+
 	-- if "use secondary server was choosen, temporarily overwrite primary address
 	writeLogfile(4, "openSession: publishMode = " .. publishMode .."\n")
 	if exportParams.useSecondAddress then
@@ -323,17 +311,16 @@ function openSession(exportParams, publishMode)
 		exportParams.portFileStation = exportParams.portFileStation2
 	end
 	
-	-- generate global environment settings
-	if not initializeEnv (exportParams) then
-		writeLogfile(1, "openSession: cannot initialize environment!\n" )
-		return false, 'Initialize environment failed!\nSet Loglevel to Debug and open Logfile to get more details...'
-	end
-
 	-- Get missing settings, if not stored in preset.
 	if promptForMissingSettings(exportParams, publishMode) == 'cancel' then
 		return false, 'cancel'
 	end
 	publishMode = iif(publishMode == 'Delete', 'Delete', exportParams.publishMode)
+	
+	-- ConvertAPI: required if thumb generation is configured
+	if exportParams.thumbGenerate then
+			exportParams.cHandle = PSConvert.initialize(exportParams.PSUploaderPath)
+	end
 	
 	-- CheckExisting or Delete: Login to FileStation required
 	if (publishMode == 'CheckExisting' or publishMode == 'Delete') and not exportParams.useFileStation then
@@ -347,9 +334,12 @@ function openSession(exportParams, publishMode)
 		local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
 		local usernameFS = iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username)
 		local passwordFS = iif(exportParams.differentFSUser, exportParams.passwordFileStation, exportParams.password)
+		exportParams.fHandle = PSFileStationAPI.initialize(FileStationUrl, 
+															iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
+															usernameFS)
 
 		writeLogfile(3, "Login to FileStation(user: "  .. usernameFS .. ").\n")
-		local result, reason = PSFileStationAPI.login(usernameFS, passwordFS)
+		local result, reason = PSFileStationAPI.login(exportParams.fHandle, usernameFS, passwordFS)
 		if not result then
 			local errorMsg = string.format('FileStation Login failed!\nReason: %s\n', reason)
 			writeLogfile(1, errorMsg)
@@ -360,7 +350,9 @@ function openSession(exportParams, publishMode)
 
 	-- Publish or Export: Login to PhotoStation
 	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' then
-		local result, reason = PSUploadAPI.login(exportParams.username, exportParams.password)
+		exportParams.uHandle = PSUploadAPI.initialize(exportParams.serverUrl, 
+														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil))
+		local result, reason = PSUploadAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
 		if not result then
 			local errorMsg = string.format("Login to %s %s failed!\nReason: %s\n",
 									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
@@ -374,9 +366,10 @@ function openSession(exportParams, publishMode)
 								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
+	-- exiftool: required if not Delete and any exif translation was selected
 	if publishMode ~= 'Delete' and exportParams.exifTranslate then 
 		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
-		return iif(exportParams.eHandle, true, false) 
+		return iif(exportParams.eHandle, true, false), "Cannot start exiftool!" 
 	end
 	
 	return true
@@ -393,7 +386,7 @@ function closeSession(exportParams, publishMode)
 	
 	-- CheckExisting or Delete: Logout from FileStation
 	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
-		if not PSFileStationAPI.logout() then
+		if not PSFileStationAPI.logout(exportParams.fHandle) then
 			writeLogfile(1,"FileStation Logout failed\n")
 			return false
 		end
@@ -401,7 +394,7 @@ function closeSession(exportParams, publishMode)
 	
 	-- Publish or Export: Logout from PhotoStation
 	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' then
-		if not PSUploadAPI.logout () then
+		if not PSUploadAPI.logout (exportParams.uHandle) then
 			writeLogfile(1,"PhotoStation Logout failed\n")
 			return false
 		end
