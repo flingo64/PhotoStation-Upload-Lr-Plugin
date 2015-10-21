@@ -51,6 +51,7 @@ require "PSUtilities"
 PSExiftoolAPI = {}
 
 local noWhitespaceConversion = true	-- do not convert whitespaces to \n 
+local etConfigFile = LrPathUtils.child(_PLUGIN.path, 'PSExiftool.conf')
 
 ---------------------- sendCmd ----------------------------------------------------------------------
 
@@ -193,6 +194,15 @@ local function addSubject(h, subject)
 	return sendCmd(h, optionLine)
 end
 
+---------------------- translateFaceRegions -------------------------------------------------------------
+
+-- function translateFaceRegions(h)
+-- translate Picasa/Lr face region list to PhotoStation/WLPG face regions
+local function translateFaceRegions(h)
+	local optionLine = '-RegionInfoMp<MyRegionMp'
+	return sendCmd(h, optionLine)
+end
+
 ---------------------- open -------------------------------------------------------------------------
 
 -- function PSExiftoolAPI.open(exportParams)
@@ -221,13 +231,15 @@ function PSExiftoolAPI.open(exportParams)
         	
         	local cmdline = cmdlineQuote() .. 
         					'"' .. h.exiftool .. '" ' ..
-        					'-stay_open True -e -fast2 -m -n ' .. 
+        					'-config "' .. etConfigFile .. '" ' ..
+        					'-stay_open True ' .. 
         					'-@ "' .. h.etCommandFile .. '" ' ..
+        					' -common_args -fast2 -n -m ' ..
         					'> "' .. h.etLogFile .. '"' ..
         					cmdlineQuote()
         	local retcode
         	
-        	writeLogfile(2, string.format("exiftool Listener(%s): starting ...\n", h.etCommandFile))
+        	writeLogfile(2, string.format("exiftool Listener(%s): starting ...\n", cmdline))
         	h.cmdNumber = 0
         	local exitStatus = LrTasks.execute(cmdline)
         	if exitStatus > 0 then
@@ -268,30 +280,31 @@ end
 -- do all configured exif adjustments
 function PSExiftoolAPI.doExifTranslations(h, photoFilename, exportParams)
 	if not h then return false end
-
+	local queryResults = nil
+	
 	local sep = ';'		-- seperator for list elements
 	
 	-- ------------- query all requested exif parameters first -----
-	
-	if not setSeperator(h, sep)
-	or (exportParams.exifXlatFaceRegions and not queryFaceRegionList(h))
-	or (exportParams.exifXlatRating and not queryRating(h))
-	or not sendCmd(h, photoFilename, noWhitespaceConversion)
-	then
-		writeLogfile(3, "PSExiftoolAPI.doExifTranslations: send query data failed\n")
-		return false
+	if exportParams.exifXlatRating then
+		if not queryRating(h)
+		or not sendCmd(h, photoFilename, noWhitespaceConversion)
+		then
+			writeLogfile(3, "PSExiftoolAPI.doExifTranslations: send query data failed\n")
+			return false
+		end
+
+		queryResults = executeCmds(h) 
+
+		if not queryResults then
+			writeLogfile(3, "PSExiftoolAPI.doExifTranslations: execute query data failed\n")
+			return false
+		end
 	end
 
-	local queryResults = executeCmds(h) 
-
-	if not queryResults then
-		writeLogfile(3, "PSExiftoolAPI.doExifTranslations: execute query data failed\n")
-		return false
-	end
-	
 	-- ------------- do all requested conversions -----------------
 	
-	-- Face Region translations ---------
+	-- Face Region translations: defined in configfile ---------
+--[[
 	local foundFaceRegions = false
 	local listName = {}
 	local listRectangle = {}
@@ -321,13 +334,14 @@ function PSExiftoolAPI.doExifTranslations(h, photoFilename, exportParams)
 			end
 		end
 	end
+]]	
 	
 	-- Rating translation ---------------
 	local foundRating = false
 	local ratingSubject = ''
 	
 	if exportParams.exifXlatRating then
-		local ratingValue = parseResponse(queryResults, 'Rating')	
+		local ratingValue = parseResponse(queryResults, 'Rating', sep)	
 
 		if ratingValue then
 			foundRating = true 
@@ -338,18 +352,17 @@ function PSExiftoolAPI.doExifTranslations(h, photoFilename, exportParams)
 		end
 	end
 	
-	if not foundFaceRegions
+	if not exportParams.exifXlatFaceRegions
 	and not foundRating
 	then 
 		writeLogfile(4, "PSExiftoolAPI.doExifTranslations: No exif data found for translation.\n")
 		return true
 	end
-	
+
 	-- ------------- write back all requested conversions -----------------
 
-	if not setSeperator(h, sep)
-	or not setOverwrite(h)
-	or (foundFaceRegions and not insertFaceRegions(h, listName, listRectangle, sep))
+	if 
+	(exportParams.exifXlatFaceRegions and not translateFaceRegions(h))
 	or (foundRating and not addSubject(h, ratingSubject))
 	or not sendCmd(h, photoFilename, noWhitespaceConversion)
 	or not executeCmds(h) 
