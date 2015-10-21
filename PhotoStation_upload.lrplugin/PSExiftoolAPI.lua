@@ -31,7 +31,7 @@ PhotoStation Upload uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
-	- exiftool.exe
+	- exiftool.exe		see: http://www.sno.phy.queensu.ca/~phil/exiftool/
 ]]
 --------------------------------------------------------------------------------
 
