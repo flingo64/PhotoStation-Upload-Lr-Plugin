@@ -71,24 +71,6 @@ local function sendCmd(h, cmd, noWsConv)
 	return true;
 end
 
- --------------------- setOverwrite ----------------------------------------------------------------------
-
--- function setOverwrite(h)
--- send a set overwrite original command
-local function setOverwrite(h)
-	local setOverwriteCmd = '-overwrite_original'
-	return sendCmd(h, setOverwriteCmd)
-end
-
----------------------- setSeperator ----------------------------------------------------------------------
-
--- function setSeperator(h, sep)
--- send a set seperator command to exiftool
-local function setSeperator(h, sep)
-	local sepCmd = "-sep ".. sep
-	return sendCmd(h, sepCmd)
-end
-
 ---------------------- executeCmds ----------------------------------------------------------------------
 
 -- function executeCmds(h)
@@ -143,63 +125,21 @@ local function parseResponse(response, tag, sep)
 	return split(string.match(response, tag .. "%s+:%s+([^\r\n]+)"), sep)
 end 
 
----------------------- queryRegionList---------------------------------------------------------------
-
--- function queryFaceRegionList(h)
--- query <mwg-rs:RegionList> elements: Picasa and Lr store detected face regions here
-local function queryFaceRegionList(h)
-	return sendCmd(h, "-XMP-mwg-rs:RegionAreaH -XMP-mwg-rs:RegionAreaW -XMP-mwg-rs:RegionAreaX -XMP-mwg-rs:RegionAreaY ".. 
-						  "-XMP-mwg-rs:RegionName -XMP-mwg-rs:RegionType")  
-end
-
----------------------- insertFaceRegions -------------------------------------------------------------
-
--- function insertFaceRegions(h, listNames, listRectangles, sep)
--- insert <MPRI:Regions> elements: PhotoStation stores detected face regions here
-local function insertFaceRegions(h, listNames, listRectangles, sep)
-	local optionLine = '-XMP-MP:RegionPersonDisplayName='
-	
-	listNames = ifnil(listNames, {}, listNames)
-	writeLogfile(3, string.format("insertFaceRegions: inserting %d names, %d areas.\n", #listNames, #listRectangles))
-	for i = 1, #listNames do
-		if i > 1 then optionLine = optionLine .. sep end
-		optionLine = optionLine .. listNames[i]
-	end
-	sendCmd(h, optionLine)
-
-	optionLine = '-XMP-MP:RegionRectangle='
-	for i = 1, #listRectangles do
-		if i > 1 then optionLine = optionLine .. sep end
-		optionLine = optionLine .. listRectangles[i]
-	end
-	return sendCmd(h, optionLine, noWhitespaceConversion)
-end
-
----------------------- queryRating ---------------------------------------------------------------
-
--- function queryRating(h)
--- query <xmp:Rating> element
-local function queryRating(h)
-	return sendCmd(h, "-XMP:Rating")  
-end
-
----------------------- addSubject -------------------------------------------------------------
-
--- function addSubject(h, subject)
--- add <XMP:dc:Subject> element
-local function addSubject(h, subject)
-	local optionLine = '-XMP:Subject+=' .. subject
-	
-	writeLogfile(3, string.format("addSubject: adding '%s'.\n", subject))
-	return sendCmd(h, optionLine)
-end
-
 ---------------------- translateFaceRegions -------------------------------------------------------------
 
 -- function translateFaceRegions(h)
 -- translate Picasa/Lr face region list to PhotoStation/WLPG face regions
 local function translateFaceRegions(h)
 	local optionLine = '-RegionInfoMp<MyRegionMp'
+	return sendCmd(h, optionLine)
+end
+
+---------------------- translateRating -------------------------------------------------------------
+
+-- function translateRating(h)
+-- translate XMP:Rating (numeric) to '***' Subject tag
+local function translateRating(h)
+	local optionLine = '-XMP:Subject+<MyRatingSubject'
 	return sendCmd(h, optionLine)
 end
 
@@ -234,7 +174,7 @@ function PSExiftoolAPI.open(exportParams)
         					'-config "' .. etConfigFile .. '" ' ..
         					'-stay_open True ' .. 
         					'-@ "' .. h.etCommandFile .. '" ' ..
-        					' -common_args -fast2 -n -m ' ..
+        					' -common_args -overwrite_original -fast2 -n -m ' ..
         					'> "' .. h.etLogFile .. '"' ..
         					cmdlineQuote()
         	local retcode
@@ -280,90 +220,11 @@ end
 -- do all configured exif adjustments
 function PSExiftoolAPI.doExifTranslations(h, photoFilename, exportParams)
 	if not h then return false end
-	local queryResults = nil
 	
-	local sep = ';'		-- seperator for list elements
-	
-	-- ------------- query all requested exif parameters first -----
-	if exportParams.exifXlatRating then
-		if not queryRating(h)
-		or not sendCmd(h, photoFilename, noWhitespaceConversion)
-		then
-			writeLogfile(3, "PSExiftoolAPI.doExifTranslations: send query data failed\n")
-			return false
-		end
-
-		queryResults = executeCmds(h) 
-
-		if not queryResults then
-			writeLogfile(3, "PSExiftoolAPI.doExifTranslations: execute query data failed\n")
-			return false
-		end
-	end
-
-	-- ------------- do all requested conversions -----------------
-	
-	-- Face Region translations: defined in configfile ---------
---[[
-	local foundFaceRegions = false
-	local listName = {}
-	local listRectangle = {}
-	
-	if exportParams.exifXlatFaceRegions then
-		local listAreaH 	= parseResponse(queryResults, 'Region Area H', sep)	
-		local listAreaW 	= parseResponse(queryResults, 'Region Area W', sep)	
-		local listAreaX 	= parseResponse(queryResults, 'Region Area X', sep)	
-		local listAreaY 	= parseResponse(queryResults, 'Region Area Y', sep)	
-		local listAreaType	= parseResponse(queryResults, 'Region Type', sep)
-		local listAreaName	= parseResponse(queryResults, 'Region Name', sep)		
-
-		if listAreaH and listAreaW and listAreaX and listAreaY then
-			for i = 1, #listAreaH do
-				if not listAreaType or ifnil(listAreaType[i], 'Face') == 'Face' then
-					foundFaceRegions = true 
-					listRectangle[i] = string.format("%f, %f, %f, %f", 
-													listAreaX[i] - (listAreaW[i] / 2),
-													listAreaY[i] - (listAreaH[i] / 2),
-													listAreaW[i],
-													listAreaH[i]	
-												)
-					if listAreaName then listName[i] = listAreaName[i] end
-				else
-					writeLogfile(3, "PSExiftoolAPI.doExifTranslations: found non-face area: " .. listAreaType[i] .. "\n")
-				end						
-			end
-		end
-	end
-]]	
-	
-	-- Rating translation ---------------
-	local foundRating = false
-	local ratingSubject = ''
-	
-	if exportParams.exifXlatRating then
-		local ratingValue = parseResponse(queryResults, 'Rating', sep)	
-
-		if ratingValue then
-			foundRating = true 
-			writeLogfile(3, "PSExiftoolAPI.doExifTranslations: found rating: " .. ratingValue[1] .. "\n")
-			for i = 1, tonumber(ratingValue[1]) do
-				ratingSubject = ratingSubject .. '*'
-			end
-		end
-	end
-	
-	if not exportParams.exifXlatFaceRegions
-	and not foundRating
-	then 
-		writeLogfile(4, "PSExiftoolAPI.doExifTranslations: No exif data found for translation.\n")
-		return true
-	end
-
 	-- ------------- write back all requested conversions -----------------
 
-	if 
-	(exportParams.exifXlatFaceRegions and not translateFaceRegions(h))
-	or (foundRating and not addSubject(h, ratingSubject))
+	if (exportParams.exifXlatFaceRegions and not translateFaceRegions(h))
+	or (exportParams.exifXlatRating and not translateRating(h))
 	or not sendCmd(h, photoFilename, noWhitespaceConversion)
 	or not executeCmds(h) 
 	then
