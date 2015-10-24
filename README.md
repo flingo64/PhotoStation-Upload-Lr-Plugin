@@ -1,12 +1,12 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
 Version 3.6.x<br>
-__Important note for updating from V3.0.0 ... V3.5.x to V3.6.x:__ https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0<br>
-Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
-FAQs: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki<br>
+__[Important note for updating from V3.0.0 ... V3.5.x to V3.6.x] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+[Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
+[FAQs] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
 Forum threads: 
-- http://forum.synology.com/enu/viewtopic.php?f=17&t=96477 (English)
-- http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload (German)
+- [English Synology forum] (http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
+- [German Synology forum] (http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
 Copyright(c) 2015, Martin Messmer<br>
 
