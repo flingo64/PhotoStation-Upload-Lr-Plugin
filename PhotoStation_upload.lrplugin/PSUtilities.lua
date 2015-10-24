@@ -221,6 +221,16 @@ function mkSaveFilename(str)
 	return str
 end 
 
+---------------------- directory name normalizing routine --------------------------------------------------
+
+function normalizeDirname(str)
+	if (str) then
+		-- substitute '\' by '/' , remove leading and trailing '/'
+		str = string.gsub(string.gsub(string.gsub (str, "\\", "/"), "^/", ""), "\/$", "")
+	end
+	return str
+end 
+
 ---------------------- http encoding routines ---------------------------------------------------------
 
 function trim(s)
@@ -283,11 +293,26 @@ end
 
 ---------------------- session environment ----------------------------------------------------------
 
--- copyCollectionSettingsToExportParams(collectionSettings, exportParams)
--- copy temporarily the collections settings to exportParams, so that we can work solely with exportParams  
-function copyCollectionSettingsToExportParams(collectionSettings, exportParams)
-	exportParams.storeDstRoot 	= true
+-- copyCollectionSettingsToExportParams(publishedCollection, exportParams)
+-- copy temporarily the collections settings to exportParams, so that we can work solely with exportParams;  
+function copyCollectionSettingsToExportParams(publishedCollection, exportParams)
+	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
+	local parentCollectionSet
+	
+	exportParams.storeDstRoot 	= true			-- must be fixed in a Published Collection
+	
+	-- Build the directory path by recursively traversing the parent collection sets and prepend each directory
 	exportParams.dstRoot 		= collectionSettings.dstRoot
+	parentCollectionSet  = publishedCollection:getParent()
+	while parentCollectionSet do
+		local parentSettings = parentCollectionSet:getCollectionSetInfoSummary().collectionSettings
+		if parentSettings and ifnil(normalizeDirname(parentSettings.baseDir), '') ~= '' then
+			exportParams.dstRoot 		= normalizeDirname(parentSettings.baseDir) .. "/" .. exportParams.dstRoot	
+		end
+		parentCollectionSet  = parentCollectionSet:getParent()
+	end
+	writeLogfile(4, "copyCollectionSettings...(): dstRoot = " .. exportParams.dstRoot .."\n")
+	
 	exportParams.createDstRoot 	= collectionSettings.createDstRoot
 	exportParams.copyTree 		= collectionSettings.copyTree
 	exportParams.srcRoot 		= collectionSettings.srcRoot
