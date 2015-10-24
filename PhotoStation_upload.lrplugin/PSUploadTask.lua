@@ -184,7 +184,7 @@ function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly)
 	if lastchar == "/" or lastchar == "\\" then srcRoot = string.sub(srcRoot, 1, string.len(srcRoot) - 1) end
 
 	if srcDir == srcRoot then
-		return dstRoot
+		return normalizeDirname(dstRoot)
 	end
 	
 	-- check if picture source path is below the specified local root directory
@@ -196,10 +196,10 @@ function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly)
 
 	-- Valid subdir: now recurse the destination path and create directories if not already done
 	-- replace possible Win '\\' in path
-	local dstDirRel = string.gsub(string.sub(srcDir, subDirEndPos+2), "\\", "/")
+	local dstDirRel = normalizeDirname(string.sub(srcDir, subDirEndPos+2))
 
 	-- sanitize dstRoot: avoid trailing slash
-	if string.sub(dstRoot, string.len(dstRoot)) == "/" then dstRoot = string.sub(dstRoot, 1, string.len(dstRoot) - 1) end
+	dstRoot = normalizeDirname(dstRoot)
 	local dstDir = dstRoot .."/" .. dstDirRel
 
 	writeLogfile(4,"  createTree: dstDir is: " .. dstDir .. "\n")
@@ -284,7 +284,7 @@ function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, e
 	)
 	
 	-- exif translations	
-	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, srcFilename, exportParams))
+	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, srcFilename))
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
@@ -598,7 +598,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local publishedCollection = exportContext.publishedCollection
 	if publishedCollection then
 		-- copy collectionSettings to exportParams
-		copyCollectionSettingsToExportParams(publishedCollection:getCollectionInfoSummary().collectionSettings, exportParams)
+--		copyCollectionSettingsToExportParams(publishedCollection:getCollectionInfoSummary().collectionSettings, exportParams)
+		copyCollectionSettingsToExportParams(publishedCollection, exportParams)
 		publishMode = exportParams.publishMode
 	else
 		publishMode = 'Export'
@@ -688,9 +689,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		
 			nProcessed = nProcessed + 1
 			
-			-- sanitize dstRoot: remove leading and trailings slashes
-			if string.sub(exportParams.dstRoot,1,1) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 2) end
-			if string.sub(exportParams.dstRoot, string.len(exportParams.dstRoot)) == "/" then exportParams.dstRoot = string.sub(exportParams.dstRoot, 1, -2) end
+			-- sanitize dstRoot: replace \ by /, remove leading and trailings slashes
+			exportParams.dstRoot = normalizeDirname(exportParams.dstRoot)
 			writeLogfile(4, "  sanitized dstRoot: " .. exportParams.dstRoot .. "\n")
 			
 			local localPath, newPublishedPhotoId
