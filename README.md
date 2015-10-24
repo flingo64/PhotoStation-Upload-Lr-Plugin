@@ -1,7 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
 Version 3.6.x<br>
-Important note for updating from V3.0.0 ... V3.5.x to V3.6.x: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0
+__Important note for updating from V3.0.0 ... V3.5.x to V3.6.x:__ https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0<br>
 Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
 FAQs: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki<br>
 Forum threads: 
