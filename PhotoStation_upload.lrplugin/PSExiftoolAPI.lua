@@ -125,24 +125,6 @@ local function parseResponse(response, tag, sep)
 	return split(string.match(response, tag .. "%s+:%s+([^\r\n]+)"), sep)
 end 
 
----------------------- translateFaceRegions -------------------------------------------------------------
-
--- function translateFaceRegions(h)
--- translate Picasa/Lr face region list to PhotoStation/WLPG face regions
-local function translateFaceRegions(h)
-	local optionLine = '-RegionInfoMp<MyRegionMp'
-	return sendCmd(h, optionLine)
-end
-
----------------------- translateRating -------------------------------------------------------------
-
--- function translateRating(h)
--- translate XMP:Rating (numeric) to '***' Subject tag
-local function translateRating(h)
-	local optionLine = '-XMP:Subject+<MyRatingSubject'
-	return sendCmd(h, optionLine)
-end
-
 ---------------------- open -------------------------------------------------------------------------
 
 -- function PSExiftoolAPI.open(exportParams)
@@ -175,6 +157,8 @@ function PSExiftoolAPI.open(exportParams)
         					'-stay_open True ' .. 
         					'-@ "' .. h.etCommandFile .. '" ' ..
         					' -common_args -overwrite_original -fast2 -n -m ' ..
+        					iif (exportParams.exifXlatFaceRegions,  '"-RegionInfoMp<MyRegionMp" ' , '') ..
+        					iif (exportParams.exifXlatRating,  '"-XMP:Subject+<MyRatingSubject" ', '') ..
         					'> "' .. h.etLogFile .. '"' ..
         					cmdlineQuote()
         	local retcode
@@ -216,18 +200,14 @@ end
 
 ---------------------- doExifTranslations -------------------------------------------------------------
 
--- function PSExiftoolAPI.doExifTranslations(h, photoFilename, exportParams)
+-- function PSExiftoolAPI.doExifTranslations(h, photoFilename)
 -- do all configured exif adjustments
-function PSExiftoolAPI.doExifTranslations(h, photoFilename, exportParams)
+function PSExiftoolAPI.doExifTranslations(h, photoFilename)
 	if not h then return false end
 	
-	-- ------------- write back all requested conversions -----------------
-
-	if (exportParams.exifXlatFaceRegions and not translateFaceRegions(h))
-	or (exportParams.exifXlatRating and not translateRating(h))
-	or not sendCmd(h, photoFilename, noWhitespaceConversion)
-	or not executeCmds(h) 
-	then
+	-- ------------- write filename to processing queue -----------------
+	if not sendCmd(h, photoFilename, noWhitespaceConversion)
+	or not executeCmds(h) then
 		return false
 	end
 
