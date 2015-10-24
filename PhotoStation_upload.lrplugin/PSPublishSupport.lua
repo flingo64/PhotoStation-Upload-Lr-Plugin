@@ -100,7 +100,7 @@ publishServiceProvider.titleForPublishedCollection_standalone = LOC "$$$/PSPubli
  -- the published collection set, such as "Create ^1" or "Rename ^1".</p>
  -- <p>If not provided, Lightroom uses the default name, "Published Collection Set." </p>
 	
--- publishServiceProvider.titleForPublishedCollectionSet = "(something)" -- not used for Flickr plug-in
+publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSPublish/TitleForPublishedCollection=Published Collection Set"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -113,7 +113,7 @@ publishServiceProvider.titleForPublishedCollection_standalone = LOC "$$$/PSPubli
  -- <p>If not provided, Lightroom uses the value of
  -- <code>titleForPublishedCollectionSet</code> instead.</p>
 
---publishServiceProvider.titleForPublishedCollectionSet_standalone = "(something)" -- not used for Flickr plug-in
+publishServiceProvider.titleForPublishedCollectionSet_standalone = LOC "$$$/PSPublish/TitleForPublishedCollection/Standalone=Published Collection Set"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -153,10 +153,10 @@ end
 function publishServiceProvider.getCollectionBehaviorInfo( publishSettings )
 
 	return {
-		defaultCollectionName = LOC "$$$/PSPublish/DefaultCollectionName/Collection=Collection",
-		defaultCollectionCanBeDeleted = false,
+		defaultCollectionName = LOC "$$$/PSPublish/DefaultCollectionName/Collection=Default Collection",
+		defaultCollectionCanBeDeleted = true,
 		canAddCollection = true,
-		maxCollectionSetDepth = 0,
+--		maxCollectionSetDepth = 0,
 			-- Collection sets are not supported through the PhotoStation Upload plug-in.
 	}
 	
@@ -339,6 +339,8 @@ function publishServiceProvider.metadataThatTriggersRepublish( publishSettings )
 
 	return {
 
+		default = true,
+--[[
 		default = false,
 		title = true,
 		caption = true,
@@ -352,9 +354,8 @@ function publishServiceProvider.metadataThatTriggersRepublish( publishSettings )
 			-- customMetadata = true,
 			-- com.whoever.plugin_name.* = true,
 			-- com.whoever.plugin_name.field_name = true,
-
+]]
 	}
-
 end
 
 -- updatCollectionStatus: do some sanity checks on Published Collection dialog settings
@@ -409,10 +410,6 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
 	updateCollectionStatus( collectionSettings )
 		
-	if collectionSettings.storeDstRoot == nil then
-		collectionSettings.storeDstRoot = true
-	end
-
 	if collectionSettings.dstRoot == nil then
 		collectionSettings.dstRoot = ''
 	end
@@ -545,22 +542,15 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 
 end
 
-function publishServiceProvider.updateCollectionSettings(publishSettings, info)
-	local collectionSettings = assert( info.collectionSettings )
-
-end 
-
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
- -- creates a new published collection set or edits an existing one. It can add
- -- additional controls to the dialog box for editing this collection set. 
---[[ Not used for PhotoStation Upload plug-in.
+ -- has changed the per-collection settings defined via the <code>viewForCollectionSettings</code>
+ -- callback. It is your opportunity to update settings on your web service to
+ -- match the new settings.
 
-function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings, info )
-	-- See viewForCollectionSettings example above.
+function publishServiceProvider.updateCollectionSettings(publishSettings, info)
+	local collectionSettings = assert( info.collectionSettings )
 end
-
---]]
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
@@ -574,6 +564,99 @@ end
 
 --]]
 
+-- updatCollectionSetStatus: do some sanity checks on Published Collection Set dialog settings
+local function updateCollectionSetStatus( collectionSetSettings )
+	
+	local message = nil
+
+--[[
+	repeat
+		-- Use a repeat loop to allow easy way to "break" out.
+		-- (It only goes through once.)
+		
+		if collectionSetSettings.baseDir .... then
+			message = LOC "$$$/PSUpload/CollectionDialog/Messages/EnterSubPath=Enter a source path"
+			break
+		end
+				
+	until true
+]]	
+	if message then
+		collectionSetSettings.hasError = true
+		collectionSetSettings.message = message
+		collectionSetSettings.LR_canSaveCollection = false
+	else
+		collectionSetSettings.hasError = false
+		collectionSetSettings.message = nil
+		collectionSetSettings.LR_canSaveCollection = true
+	end
+	
+end
+
+--------------------------------------------------------------------------------
+--- (optional) This plug-in defined callback function is called when the user
+ -- creates a new published collection set or edits an existing one. It can add
+ -- additional controls to the dialog box for editing this collection set. 
+
+function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings, info )
+	local bind = LrView.bind
+	local share = LrView.share
+
+	local collectionSetSettings = assert( info.collectionSettings )
+
+	-- observe settings to enable/disable "Store" button
+	if collectionSetSettings.hasError == nil then
+		collectionSetSettings.hasError = false
+	end
+
+	collectionSetSettings:addObserver( 'baseDir', updateCollectionSetStatus )
+	updateCollectionSetStatus( collectionSetSettings )
+		
+	if collectionSetSettings.baseDir == nil then
+		collectionSetSettings.baseDir = ''
+	end
+
+	return f:group_box {
+		title = "PhotoStation Upload Settings",  -- this should be localized via LOC
+		size = 'small',
+		fill_horizontal = 1,
+		bind_to_object = assert( collectionSetSettings ),
+		
+		f:column {
+			fill_horizontal = 1,
+			spacing = f:label_spacing(),
+
+			f:row {
+				f:static_text {
+					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
+					alignment = 'right',
+					width = share 'labelWidth'
+				},
+
+				f:edit_field {
+					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
+					value = bind 'baseDir',
+					truncation = 'middle',
+					immediate = true,
+					fill_horizontal = 1,
+				},
+
+			},
+			
+			f:row {
+				alignment = 'left',
+
+				f:static_text {
+					title = bind 'message',
+					fill_horizontal = 1,
+					visible = bind 'hasError'
+				},
+			},
+		},
+	}
+
+end
+
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
  -- closes the dialog for creating a new published collection set or editing an existing
@@ -582,18 +665,6 @@ end
 
 function publishServiceProvider.endDialogForCollectionSetSettings( publishSettings, info )
 	-- not used for PhotoStation Upload plug-in
-end
-
---]]
-
---------------------------------------------------------------------------------
---- (optional) This plug-in defined callback function is called when the user
- -- has changed the per-collection settings defined via the <code>viewForCollectionSettings</code>
- -- callback. It is your opportunity to update settings on your web service to
- -- match the new settings.
---[[ Not used for PhotoStation Upload plug-in.
-
-function publishServiceProvider.updateCollectionSettings( publishSettings, info )
 end
 
 --]]
