@@ -1,6 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.5.x<br>
+Version 3.6.x<br>
+Important note for updating from V3.0.0 ... V3.5.x to V3.6.x: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0
 Release Notes: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases<br>
 FAQs: https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki<br>
 Forum threads: 
@@ -153,7 +154,7 @@ Publish Functionality:
 
 - __Support for Published Collections and Published Smart Collections__ 
 
-- No support for Published Collection Sets.
+- __Support for Published Collection Sets__
  
 - __Different Publish options__ (Published Collection dialog):
 
@@ -312,12 +313,22 @@ Translation of the Lr/Picasa face regions to PhotoStatio Face regions / Person t
 Translation of the XMP-rating tag to PhotoStation General * tags
 - Support for Photo-only Upload
 
+Version 3.6
+------------
+- Support for Published Collection Sets:
+	- Published Collection Sets may be associated with a target dir (format: dir{/subdir}). The target dir will be inherited by all child collections or collection sets
+	- Published Collection Sets may be nested to any level
+- Modified Metadata trigger for Published Collections: now any metadata change (incl. rating) will trigger a photo state change to "To be re-published"
+  __Important Note__: It is likely, that a bunch of photos will change to state "To be re-published" due to the modified trigger definition. Please make sure __all photos__ of all your collections are in state __"Published" before updating__ from older versions to V3.6.x! This allows you to identify which photos are affected by this change and you may then use __"Check Existing" to quickly "re-publish"__ those photos.
+
+- Use of '\'  is now tolerated in all target album definitions
+
 Open issues
 ============
 - issue in PhotoStation: if video aspect ratio is different from video dimension 
   (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
   the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
-- publishing requires access to FileStation WebAPI, which is cumbersome, since it requires access to the admin port.
+- Some features of publishing require access to FileStation WebAPI, which is cumbersome, since it requires access to the admin port.
   This may change sometime in the future, if the PhotoStation WebAPI will be published by Synology
 - "Show in PhotoStation" always opens the root of the target PhotoStation, not the root of the target Album nor the selected photo in the target Album
   
