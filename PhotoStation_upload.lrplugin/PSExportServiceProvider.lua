@@ -95,7 +95,7 @@ exportServiceProvider.exportPresetFields = {
 
 		-- exif translation parameters
 		{ key = 'exiftoolprog',		 	default = 			-- path to exiftool
-			iif(WIN_ENV, 'C:\\\Windows\\\exiftool.exe', '/usr/bin/exiftool') 
+			iif(WIN_ENV, 'C:\\\Windows\\\exiftool.exe', '/usr/local/bin/exiftool') 
 		},											
 		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
 		{ key = 'exifXlatFaceRegions',	default = true },	-- translate Lr/Picasa face regions to PS face regions
