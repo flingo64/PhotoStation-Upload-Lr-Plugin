@@ -79,6 +79,7 @@ exportServiceProvider.exportPresetFields = {
 		-- PhotoStation parameters
 		{ key = 'proto', 			default = 'http' },	-- transport protocol for PhotoStation upload
 		{ key = 'servername', 		default = '' },		-- name/address of the PhotoStation, may include ':port' extension
+		{ key = 'serverTimeout', 	default = 10 },		-- http timeout
 		{ key = 'serverUrl', 		default = '' },		-- proto + servername
 		{ key = 'psUrl', 			default = '' },		-- serverUrl + destination album (used for synopsis)
 		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal PhotoStation
@@ -128,6 +129,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'useSecondAddress',		default = false },		-- specify a secondoray (external) server address
 		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary PhotoStation upload
 		{ key = 'servername2', 			default = '' },			-- name/address of the secondary PhotoStation, may include ':port' extension
+		{ key = 'serverTimeout2',	 	default = 10 },			-- http timeout
 		{ key = 'useFileStation2',   	default = false },		-- use FileStation API for extended features via second. server
 		{ key = 'protoFileStation2',	default = 'https' },	-- transport protocol for secondary FileStation WEBAPI
 		{ key = 'portFileStation2',		default = '' },			-- port of the secondary FileStation WEBAPI

@@ -368,6 +368,35 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				immediate = true,
 				fill_horizontal = 1,
 			},
+
+			f:row {
+				alignment = 'right',
+				fill_horizontal = 0.5,
+
+				f:static_text {
+					title = LOC "$$$/PSUpload/ExportDialog/ServerTimeout=Timeout:",
+					alignment = 'right',
+				},
+
+				f:popup_menu {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
+					value = bind 'serverTimeout2',
+					alignment = 'left',
+					fill_horizontal = 1,
+					items = {
+						{ title	= '10s',	value 	= 10 },
+						{ title	= '20s',	value 	= 20 },
+						{ title	= '30s',	value 	= 30 },
+						{ title	= '40s',	value 	= 40 },
+						{ title	= '50s',	value 	= 50 },
+						{ title	= '60s',	value 	= 60 },
+						{ title	= '70s',	value 	= 70 },
+						{ title	= '80s',	value 	= 80 },
+						{ title	= '90s',	value 	= 90 },
+						{ title	= '100s',	value 	= 100 },
+					},
+				},
+			},
 		},
 	} 
 	
@@ -529,6 +558,35 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						immediate = true,
 						fill_horizontal = 1,
 					},
+
+        			f:row {
+        				alignment = 'right',
+        				fill_horizontal = 0.5,
+        
+        				f:static_text {
+        					title = LOC "$$$/PSUpload/ExportDialog/ServerTimeout=Timeout:",
+        					alignment = 'right',
+        				},
+        
+        				f:popup_menu {
+        				tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
+        					value = bind 'serverTimeout',
+        					alignment = 'left',
+        					fill_horizontal = 1,
+        					items = {
+        						{ title	= '10s',	value 	= 10 },
+        						{ title	= '20s',	value 	= 20 },
+        						{ title	= '30s',	value 	= 30 },
+        						{ title	= '40s',	value 	= 40 },
+        						{ title	= '50s',	value 	= 50 },
+        						{ title	= '60s',	value 	= 60 },
+        						{ title	= '70s',	value 	= 70 },
+        						{ title	= '80s',	value 	= 80 },
+        						{ title	= '90s',	value 	= 90 },
+        						{ title	= '100s',	value 	= 100 },
+        					},
+        				},
+        			},
 
 				},
 

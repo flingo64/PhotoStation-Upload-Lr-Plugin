@@ -193,10 +193,11 @@ function waitSemaphore(semaName, info)
 		-- make sure we are not waiting forever for an orphaned semaphore file
 		local fileAttr = LrFileUtils.fileAttributes(semaphoreFn)
 		if fileAttr and (fileAttr.fileCreationDate < LrDate.currentTime() - 300) then
-			return false
-		end
-		
-		LrTasks.sleep(1)
+			writeLogfile(3, info .. ": removing orphanded semaphore " .. semaName .. "\n")
+			signalSemaphore(semaName)
+		else
+			LrTasks.sleep(1)
+		end	
 	end
 
 	local semaphoreFile = io.open(semaphoreFn, "w")
@@ -330,6 +331,7 @@ function openSession(exportParams, publishMode)
 		writeLogfile(4, "openSession: copy second server parameters\n")
 		exportParams.proto = exportParams.proto2
 		exportParams.servername = exportParams.servername2
+		exportParams.servername = exportParams.serverTimeout2
 		exportParams.serverUrl = exportParams.proto .. "://" .. exportParams.servername
 		exportParams.useFileStation = exportParams.useFileStation2
 		exportParams.protoFileStation = exportParams.protoFileStation2
@@ -376,7 +378,8 @@ function openSession(exportParams, publishMode)
 	-- Publish or Export: Login to PhotoStation
 	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' then
 		exportParams.uHandle = PSUploadAPI.initialize(exportParams.serverUrl, 
-														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil))
+														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
+														exportParams.serverTimeout)
 		local result, reason = PSUploadAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
 		if not result then
 			local errorMsg = string.format("Login to %s %s failed!\nReason: %s\n",

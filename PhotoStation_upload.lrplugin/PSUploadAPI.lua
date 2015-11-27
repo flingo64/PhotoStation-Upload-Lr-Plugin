@@ -44,7 +44,7 @@ require "PSUtilities"
 
 PSUploadAPI = {}
 
-local stdHttpTimeout = 10
+-- local stdHttpTimeout = 10
 
 -- !!! don't use local variable for settings that may differ for export sessions!
 -- only w/ "reload plug-in on each export", each export task will get its own copy of these variables
@@ -56,12 +56,13 @@ local uploadPath
 ---------------------------------------------------------------------------------------------------------
 
 -- initialize: set serverUrl, loginPath and uploadPath
-function PSUploadAPI.initialize(server, personalPSOwner)
+function PSUploadAPI.initialize(server, personalPSOwner, serverTimeout)
 	local h = {} -- the handle
 
 	writeLogfile(4, "PSUploadAPI.initialize(serverUrl=" .. server ..", " .. iif(personalPSOwner, "Personal PS(" .. ifnil(personalPSOwner,"<Nil>") .. ")", "Standard PS") .. ")\n")
 
 	h.serverUrl = server
+	h.serverTimeout = serverTimeout
 
 	if personalPSOwner then -- connect to Personal PhotoStation
 		h.loginPath = '/~' .. personalPSOwner .. '/photo/webapi/auth.php'
@@ -88,7 +89,7 @@ function PSUploadAPI.login(h, username, password)
 	local postBody = 'api=SYNO.PhotoStation.Auth&method=login&version=1&username=' .. urlencode(username) .. '&password=' .. urlencode(password)
 
 	writeLogfile(4, "login: LrHttp.post(" .. h.serverUrl .. h.loginPath .. ",...)\n")
-	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.loginPath, postBody, postHeaders, 'POST', stdHttpTimeout, string.len(postBody))
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.loginPath, postBody, postHeaders, 'POST', h.serverTimeout, string.len(postBody))
 	
 	if not respBody then
     writeTableLogfile(3, 'respHeaders', respHeaders)
@@ -131,7 +132,7 @@ function PSUploadAPI.createFolder (h, parentDir, newDir)
 		{ field = 'X-IS-BATCH-LAST-FILE', 	value = '1' },
 	}
 	local postBody = ''
-	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, postBody, postHeaders, 'POST', stdHttpTimeout, 0)
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, postBody, postHeaders, 'POST', h.serverTimeout, 0)
 	
 	writeLogfile(4, "createFolder: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ",...)\n")
 	if not respBody then
