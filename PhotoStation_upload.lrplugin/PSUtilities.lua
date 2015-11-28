@@ -371,7 +371,7 @@ function openSession(exportParams, publishMode)
 		writeLogfile(4, "openSession: copy second server parameters\n")
 		exportParams.proto = exportParams.proto2
 		exportParams.servername = exportParams.servername2
-		exportParams.servername = exportParams.serverTimeout2
+		exportParams.serverTimeout = exportParams.serverTimeout2
 		exportParams.serverUrl = exportParams.proto .. "://" .. exportParams.servername
 		exportParams.useFileStation = exportParams.useFileStation2
 		exportParams.protoFileStation = exportParams.protoFileStation2
