@@ -160,10 +160,10 @@ function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams)
 	end
 
 	if exportParams.copyTree then
-		localPath = string.gsub(LrPathUtils.makeRelative(srcPhotoPath, exportParams.srcRoot), "\\", "/")
+		localPath = 		string.gsub(LrPathUtils.makeRelative(srcPhotoPath, exportParams.srcRoot), "\\", "/")
 		localRenderedPath = string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
 	else
-		localPath = LrPathUtils.leafName(srcPhotoPath)
+		localPath = 		LrPathUtils.leafName(srcPhotoPath)
 		localRenderedPath = LrPathUtils.leafName(localRenderedPath)
 	end
 	remotePath = iif(exportParams.dstRoot ~= '', exportParams.dstRoot .. '/' .. localRenderedPath, localRenderedPath)
@@ -608,6 +608,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		
 --	exportParams.exifTranslate = false
 	-- open session: initialize environment, get missing params and login
+--	local sessionSuccess, reason = true, Nil
 	local sessionSuccess, reason = openSession(exportParams, publishMode)
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
@@ -686,11 +687,13 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
 			local srcFilename = srcPhoto:getRawMetadata("path") 
 			local dstDir
+			local isDynamicDstRoot
 		
 			nProcessed = nProcessed + 1
 			
 			-- sanitize dstRoot: replace \ by /, remove leading and trailings slashes
-			exportParams.dstRoot = normalizeDirname(exportParams.dstRoot)
+--			exportParams.dstRoot = normalizeDirname(exportParams.dstRoot)
+			exportParams.dstRoot, isDynamicDstRoot = evaluateDirname(exportParams.dstRoot, srcPhoto)
 			writeLogfile(4, "  sanitized dstRoot: " .. exportParams.dstRoot .. "\n")
 			
 			local localPath, newPublishedPhotoId
@@ -737,7 +740,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			elseif publishMode == 'Export' or publishMode == 'Publish' then
 				-- normal publish or export process 
 				-- check if target Album (dstRoot) should be created 
-				if exportParams.createDstRoot and exportParams.dstRoot ~= '' and 
+				if (exportParams.createDstRoot or isDynamicDstRoot) and exportParams.dstRoot ~= '' and 
 					not createTree(exportParams.uHandle, './' .. exportParams.dstRoot,  ".", "", dirsCreated, readOnly) then
 					table.insert( failures, srcFilename )
 					break 

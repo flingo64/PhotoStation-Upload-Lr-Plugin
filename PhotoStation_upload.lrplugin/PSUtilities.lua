@@ -232,6 +232,46 @@ function normalizeDirname(str)
 	return str
 end 
 
+---------------------- directory name evaluation routine --------------------------------------------------
+
+function evaluateDirname(str, srcPhoto)
+	local isDynamicDstRoot = false
+	
+	if (str and string.find(str, "{", 1, true)) then
+		local srcPhotoDate
+		local srcPhotoFMetadata
+				
+		if string.find(str, "{Date", 1, true) then
+			isDynamicDstRoot = true;
+			srcPhotoDate = srcPhoto:getRawMetadata("dateTimeOriginal")
+		end
+		
+		if string.find(str, "{LrFM:", 1, true) then
+			isDynamicDstRoot = true;
+			srcPhotoFMetadata = srcPhoto:getFormattedMetadata()
+		end
+		
+		-- substitute date tokens: {Date <formatString>}
+		str = string.gsub (str, '({Date [^}]+})', function(dateParams)
+				local format = string.gsub(dateParams, "{Date ([^}]+)}", "%1")
+				local dateString = ifnil(LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), format, false), '')
+				
+				writeLogfile(3, string.format("xlatDateToken: format %s --> %s\n", ifnil(format, '<Nil>'), dateString)) 
+				return dateString 
+			end);
+			
+		-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}
+		str = string.gsub (str, '({LrFM:%w+})', function(metadataParam)
+				local metadataName = string.gsub(metadataParam, "{LrFM:(%w+)}", "%1")
+				local metadataString = ifnil(srcPhotoFMetadata[metadataName], '')
+				writeLogfile(3, string.format("xlatMetadataToken: key %s --> %s \n", ifnil(metadataName, '<Nil>'), metadataString)) 
+				return metadataString  
+			end);
+	end
+	
+	return normalizeDirname(str), isDynamicDstRoot
+end 
+
 ---------------------- http encoding routines ---------------------------------------------------------
 
 function trim(s)
