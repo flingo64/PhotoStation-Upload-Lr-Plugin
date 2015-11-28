@@ -260,10 +260,10 @@ function evaluateDirname(str, srcPhoto)
 				return dateString 
 			end);
 			
-		-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}
+		-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}, only string, number or boolean type allowed
 		str = string.gsub (str, '({LrFM:%w+})', function(metadataParam)
 				local metadataName = string.gsub(metadataParam, "{LrFM:(%w+)}", "%1")
-				local metadataString = ifnil(srcPhotoFMetadata[metadataName], '')
+				local metadataString = tostring(ifnil(srcPhotoFMetadata[metadataName], ''))
 				writeLogfile(3, string.format("xlatMetadataToken: key %s --> %s \n", ifnil(metadataName, '<Nil>'), metadataString)) 
 				return metadataString  
 			end);
