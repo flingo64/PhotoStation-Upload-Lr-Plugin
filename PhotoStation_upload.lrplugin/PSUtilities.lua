@@ -223,6 +223,8 @@ function mkSaveFilename(str)
 end 
 
 ---------------------- directory name normalizing routine --------------------------------------------------
+-- normalizeDirname(str)
+-- sanitize dstRoot: replace \ by /, remove leading and trailings slashes
 
 function normalizeDirname(str)
 	if (str) then
@@ -233,21 +235,20 @@ function normalizeDirname(str)
 end 
 
 ---------------------- directory name evaluation routine --------------------------------------------------
+-- evaluateDirname(str, srcPhoto)
+-- 	evaluate (substitute metadata tokens) and sanitize dstRoot 
 
 function evaluateDirname(str, srcPhoto)
-	local isDynamicDstRoot = false
-	
+
 	if (str and string.find(str, "{", 1, true)) then
 		local srcPhotoDate
 		local srcPhotoFMetadata
 				
 		if string.find(str, "{Date", 1, true) then
-			isDynamicDstRoot = true;
 			srcPhotoDate = srcPhoto:getRawMetadata("dateTimeOriginal")
 		end
 		
 		if string.find(str, "{LrFM:", 1, true) then
-			isDynamicDstRoot = true;
 			srcPhotoFMetadata = srcPhoto:getFormattedMetadata()
 		end
 		
@@ -269,7 +270,7 @@ function evaluateDirname(str, srcPhoto)
 			end);
 	end
 	
-	return normalizeDirname(str), isDynamicDstRoot
+	return normalizeDirname(str)
 end 
 
 ---------------------- http encoding routines ---------------------------------------------------------

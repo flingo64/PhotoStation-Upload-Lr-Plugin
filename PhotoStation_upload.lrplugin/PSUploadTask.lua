@@ -135,12 +135,12 @@ end
 
 -----------------
 
--- function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams) 
+-- function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams, dstRoot) 
 -- 	return relative local path of the srcPhoto and destination path of the rendered photo: remotePath = dstRoot + (localpath - srcRoot), 
 --	returns:
 -- 		localPath - relative local path as unix-path
 -- 		remotePath - absolute remote path as unix-path
-function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams) 
+function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams, dstRoot) 
 	local localRenderedPath
 	local localPath
 	local remotePath
@@ -166,7 +166,7 @@ function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams)
 		localPath = 		LrPathUtils.leafName(srcPhotoPath)
 		localRenderedPath = LrPathUtils.leafName(localRenderedPath)
 	end
-	remotePath = iif(exportParams.dstRoot ~= '', exportParams.dstRoot .. '/' .. localRenderedPath, localRenderedPath)
+	remotePath = iif(dstRoot ~= '', dstRoot .. '/' .. localRenderedPath, localRenderedPath)
 	return localPath, remotePath
 end
 -----------------
@@ -518,8 +518,9 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local srcPhotoPath = srcPhoto:getRawMetadata('path')
 		local publishedPath = ifnil(pubPhoto:getRemoteId(), '<Nil>')
 		local edited = pubPhoto:getEditedFlag()
+		local dstRoot = evaluateDirname(exportParams.dstRoot, srcPhoto)
 		
-		local localPath, remotePath = getPublishPath(srcPhotoPath, srcPhoto, nil, exportParams)
+		local localPath, remotePath = getPublishPath(srcPhotoPath, srcPhoto, nil, exportParams, dstRoot)
 		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
 		-- ignore extension: might be different 
 		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
@@ -686,22 +687,23 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			local srcPhoto = rendition.photo
 			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
 			local srcFilename = srcPhoto:getRawMetadata("path") 
+			local dstRoot
 			local dstDir
-			local isDynamicDstRoot
 		
 			nProcessed = nProcessed + 1
 			
-			-- sanitize dstRoot: replace \ by /, remove leading and trailings slashes
---			exportParams.dstRoot = normalizeDirname(exportParams.dstRoot)
-			exportParams.dstRoot, isDynamicDstRoot = evaluateDirname(exportParams.dstRoot, srcPhoto)
-			writeLogfile(4, "  sanitized dstRoot: " .. exportParams.dstRoot .. "\n")
+			-- evaluate and sanitize dstRoot: 
+			--   substitute metadata tokens
+			--   replace \ by /, remove leading and trailings slashes
+			dstRoot = evaluateDirname(exportParams.dstRoot, srcPhoto)
+			writeLogfile(4, "  sanitized dstRoot: " .. dstRoot .. "\n")
 			
 			local localPath, newPublishedPhotoId
 			
 			if publishMode ~= 'Export' then
 				-- publish process: generate a unique remote id for later modifications or deletions
 				-- use the relative destination pathname, so we are able to identify moved pictures
-				localPath, newPublishedPhotoId = getPublishPath(srcFilename, srcPhoto, renderedFilename, exportParams)
+				localPath, newPublishedPhotoId = getPublishPath(srcFilename, srcPhoto, renderedFilename, exportParams, dstRoot)
 				
 				writeLogfile(3, 'Old publishedPhotoId:' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId:  ' .. newPublishedPhotoId .. '"\n')
 				-- if photo was moved ... 
@@ -740,8 +742,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			elseif publishMode == 'Export' or publishMode == 'Publish' then
 				-- normal publish or export process 
 				-- check if target Album (dstRoot) should be created 
-				if (exportParams.createDstRoot or isDynamicDstRoot) and exportParams.dstRoot ~= '' and 
-					not createTree(exportParams.uHandle, './' .. exportParams.dstRoot,  ".", "", dirsCreated, readOnly) then
+				if exportParams.createDstRoot and dstRoot ~= '' and 
+					not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated, readOnly) then
 					table.insert( failures, srcFilename )
 					break 
 				end
@@ -749,13 +751,13 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- check if tree structure should be preserved
 				if not exportParams.copyTree then
 					-- just put it into the configured destination folder
-					if not exportParams.dstRoot or exportParams.dstRoot == '' then
+					if not dstRoot or dstRoot == '' then
 						dstDir = '/'
 					else
-						dstDir = exportParams.dstRoot
+						dstDir = dstRoot
 					end
 				else
-					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcFilename), exportParams.srcRoot, exportParams.dstRoot, 
+					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcFilename), exportParams.srcRoot, dstRoot, 
 										dirsCreated, readOnly) 
 				end
 				
