@@ -353,7 +353,7 @@ function copyCollectionSettingsToExportParams(publishedCollection, exportParams)
 		end
 		parentCollectionSet  = parentCollectionSet:getParent()
 	end
-	writeLogfile(4, "copyCollectionSettings...(): dstRoot = " .. exportParams.dstRoot .."\n")
+	writeLogfile(4, "copyCollectionSettings(): dstRoot = " .. exportParams.dstRoot .. "\n")
 	
 	exportParams.createDstRoot 	= collectionSettings.createDstRoot
 	exportParams.copyTree 		= collectionSettings.copyTree
