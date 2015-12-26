@@ -369,7 +369,7 @@ function PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dimension, asp
 	return rotateOpt, newDimension, newAspectRatio
 end
 
--- ffmpegGetThumbFromVideo(srcVideoFilename, thumbFilename, dimension, rotation) ---------------------------------------------------------
+-- ffmpegGetThumbFromVideo(srcVideoFilename, thumbFilename, dimension, rotation, duration) ---------------------------------------------------------
 function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, dimension, rotation, duration)
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
 	local rotateOpt, nweDim, aspectRatio
@@ -377,8 +377,8 @@ function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, 
 	
 	rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(h, true, rotation, dimension, string.gsub(dimension, 'x', ':'))
 	
-	writeLogfile(3, string.format("ffmpegGetThumbFromVideo: %s dim %s rotation %s --> newDim: %s aspectR: %s\n", 
-								srcVideoFilename, dimension, rotation, newDim, aspectRatio))
+	writeLogfile(3, string.format("ffmpegGetThumbFromVideo: %s dim %s rotation %s duration %d --> newDim: %s aspectR: %s snapshot at %s\n", 
+								srcVideoFilename, dimension, rotation, duration, newDim, aspectRatio, snapshotTime))
 	
 	-- generate first thumb from video
 	local cmdline = cmdlineQuote() ..
@@ -447,11 +447,11 @@ function PSConvert.getConvertKey(h, height)
 	
 	for i = 1, #videoConversion do
 		if height <= videoConversion[i].upToHeight then 
-			return videoConversion[i].id
+			return i, videoConversion[i].id
 		end
 	end
 
-	return videoConversion[#videoConversion].id
+	return #videoConversion, videoConversion[#videoConversion].id
 
 end
 
