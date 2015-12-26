@@ -446,11 +446,11 @@ function PSConvert.getConvertKey(h, height)
 	
 	for i = 1, #videoConversion do
 		if height <= videoConversion[i].upToHeight then 
-			return i, videoConversion[i].id
+			return videoConversion[i].id
 		end
 	end
 
-	return #videoConversion, videoConversion[#videoConversion].id
+	return videoConversion[#videoConversion].id
 
 end
 
