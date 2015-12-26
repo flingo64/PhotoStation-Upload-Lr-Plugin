@@ -206,11 +206,12 @@ end
 
 -- ffmpegGetAdditionalInfo(h, srcVideoFilename) ---------------------------------------------------------
 --[[
-	get the capture date, duration, resolution and aspect ratio of a video via ffmpeg. Lr won't give you this information
-	returns:
-		success			as boolean
+	get the capture date, duration, video format, resolution and aspect ratio of a video via ffmpeg. Lr won't give you this information
+	returns: 
+	  nil of vinfo:
 		dateTimeOrig 	as unix timestamp
 		duration 		in seconds
+		vformat			as string: 'h264', 'mjpeg', ...
 		dimension		as pixel dimension 'NxM'
 		sar				as aspect ratio 'N:M' 
 		dar				as aspect ratio 'N:M'
@@ -222,7 +223,8 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	local outfile =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
 	-- LrTask.execute() will call cmd.exe /c cmdline, so we need additional outer quotes
 	local cmdline = cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> "' .. outfile .. '"' .. cmdlineQuote()
-	local v,w,x -- iteration variables for string.gmatch()
+	local v,w,x,z -- iteration variables for string.gmatch()
+	local vinfo = {}
 	
 	writeLogfile(4, cmdline .. "\n")
 	LrTasks.execute(cmdline)
@@ -230,7 +232,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	
 	if not LrFileUtils.exists(outfile) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
-		return false
+		return nil
 	end
 
 	local ffmpegReport = LrFileUtils.readFile(outfile)
@@ -273,55 +275,55 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
      end
 
 	-------------- duration: search for avp: 'Duration: <HH:MM:ss.msec>,' -------------------------
-	local durationString, duration = nil
+	local durationString
 	for v in string.gmatch(ffmpegReport, "Duration:%s+([%d%p]+),") do
 		durationString = v
 		writeLogfile(4, "durationString: " .. durationString .. "\n")
 		-- translate from  HH:MM:ss.msec to seconds
-		duration = 	tonumber(string.sub(durationString,1,2)) * 3600 +
+		vinfo.duration = 	tonumber(string.sub(durationString,1,2)) * 3600 +
 					tonumber(string.sub(durationString,4,5)) * 60 +
 					tonumber(string.sub(durationString,7,11))
-		writeLogfile(4, string.format(" duration: %.2f\n", duration))
+		writeLogfile(4, string.format(" duration: %.2f\n", vinfo.duration))
      end
 	 
 	-------------- resolution: search for avp like:  -------------------------
 	-- Video: mjpeg (MJPG / 0x47504A4D), yuvj422p, 640x480, 30 tbr, 30 tbn, 30 tbc
 	-- Video: h264 (Main) (avc1 / 0x31637661), yuv420p, 1440x1080 [SAR 4:3 DAR 16:9], 12091 kb/s, 29.97 fps, 29.97 tbr, 30k tbn, 59.94 tbc
-	local dimension, sar, dar
-	for v, w, x in string.gmatch(ffmpegReport, "Video:[%s%w%(%)/]+,[%s%w]+,%s+([%dx]+)%s*%[*%w*%s*([%d:]*)%s*%w*%s*([%w:]*)%]*,") do
-		dimension = v
-		sar = w
-		dar = x
-		writeLogfile(4, string.format("dimension: %s [SAR: %s DAR: %s]\n", dimension, ifnil(sar, '<Nil>'), ifnil(dar, '<Nil>')))
+	for z, v, w, x in string.gmatch(ffmpegReport, "Video:%s+(%w+)[%s%w%(%)/]+,[%s%w]+,%s+([%dx]+)%s*%[*%w*%s*([%d:]*)%s*%w*%s*([%w:]*)%]*,") do
+		vinfo.vformat = z
+		vinfo.dimension = v
+		vinfo.sar = w
+		vinfo.dar = x
+		writeLogfile(4, string.format("dimension: %s vformat: %s [SAR: %s DAR: %s]\n", vinfo.dimension, vinfo.vformat, ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
     end
 	 
 	-- Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080, 17474 kb/s, SAR 65536:65536 DAR 16:9, 28.66 fps, 29.67 tbr, 90k tbn, 180k tbc
-	if not sar or (sar == '') then
+	-- get sar (sample aspect ratio) and dar (display aspect ratio)
+	if not vinfo.sar or (vinfo.sar == '') then
 		for w, x in string.gmatch(ffmpegReport, "Video:[%s%w%(%)/]+,[%s%w]+,[%s%w]+,[%s%w/]+,%s+SAR%s+([%d:]+)%s+DAR%s+([%d:]+)") do
-			sar = w
-			dar = x
-			writeLogfile(4, string.format("SAR: %s, DAR: %s\n", ifnil(sar, '<Nil>'), ifnil(dar, '<Nil>')))
+			vinfo.sar = w
+			vinfo.dar = x
+			writeLogfile(4, string.format("SAR: %s, DAR: %s\n", ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
 		end
 	end
 
 	-------------- rotation: search for avp like:  -------------------------
 	-- rotate          : 90
-	local rotation = '0'
+	vinfo.rotation = '0'
 	for v in string.gmatch(ffmpegReport, "rotate%s+:%s+([%d]+)") do
-		rotation = v
-		writeLogfile(4, string.format("rotation: %s\n", rotation))
+		vinfo.rotation = v
+		writeLogfile(4, string.format("rotation: %s\n", vinfo.rotation))
 	end
 	
 	LrFileUtils.delete(outfile)
 
-	local dateTimeOrig 
 	if dateCapture and dateCapture < creationTime then
-		dateTimeOrig = dateCapture
+		vinfo.dateTimeOrig = dateCapture
 	else
-		dateTimeOrig = creationTime
+		vinfo.dateTimeOrig = creationTime
 	end
 	
-	return true, dateTimeOrig, duration, dimension, sar, dar, rotation
+	return vinfo
 end
 
 -- ffmpegGetRotateParams(hardRotate, rotation, dimension, aspectRatio) ---------------------------------------------------------
@@ -466,7 +468,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, d
 	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
 	local arw = tonumber(string.sub(aspectRatio, 1, string.find(aspectRatio,':') - 1))
 	local arh = tonumber(string.sub(aspectRatio, string.find(aspectRatio,':') + 1, -1))
-	local dstWidth = dstHeight * arw / arh
+	local dstWidth = (dstHeight * arw / arh) + 0.5
 	local dstDim = string.format("%dx%d", dstWidth, dstHeight)
 	local dstAspect = string.gsub(dstDim, 'x', ':')
 	local convKey = PSConvert.getConvertKey(h, dstHeight) 		-- get the conversionParams
