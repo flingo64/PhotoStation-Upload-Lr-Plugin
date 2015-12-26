@@ -370,9 +370,10 @@ function PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dimension, asp
 end
 
 -- ffmpegGetThumbFromVideo(srcVideoFilename, thumbFilename, dimension, rotation) ---------------------------------------------------------
-function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, dimension, rotation)
+function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, dimension, rotation, duration)
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
 	local rotateOpt, nweDim, aspectRatio
+	local snapshotTime = iif(duration < 4, '00:00:00', '00:00:03') 
 	
 	rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(h, true, rotation, dimension, string.gsub(dimension, 'x', ':'))
 	
@@ -383,7 +384,7 @@ function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, 
 	local cmdline = cmdlineQuote() ..
 						'"' .. h.ffmpeg .. 
 						'" -i "' .. srcVideoFilename .. 
-						'" -y -vframes 1 -ss 00:00:01 -an -qscale 0 -f mjpeg '.. rotateOpt .. ' ' ..
+						'" -y -vframes 1 -ss ' .. snapshotTime .. ' -an -qscale 0 -f mjpeg '.. rotateOpt .. ' ' ..
 						'-s ' .. newDim .. ' -aspect ' .. aspectRatio .. 
 						' "' .. thumbFilename .. '" 2> "' .. outfile .. '"' ..
 					cmdlineQuote()
