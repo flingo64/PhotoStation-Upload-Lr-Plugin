@@ -487,9 +487,9 @@ function PSConvert.convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, d
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
 	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
 	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
-	local arw = tonumber(string.sub(aspectRatio, 1, string.find(aspectRatio,':') - 1))
-	local arh = tonumber(string.sub(aspectRatio, string.find(aspectRatio,':') + 1, -1))
-	local dstWidth = (dstHeight * arw / arh) + 0.5
+	local arw = tonumber(string.match(aspectRatio, '(%d+):%d+'))
+	local arh = tonumber(string.match(aspectRatio, '%d+:(%d+)'))
+	local dstWidth = math.floor(((dstHeight * arw / arh) + 0.5) / 2) * 2  -- make sure width is an even integer
 	local dstDim = string.format("%dx%d", dstWidth, dstHeight)
 	local dstAspect = string.gsub(dstDim, 'x', ':')
 	local convKey = PSConvert.getConvertKey(h, dstHeight) 		-- get the conversionParams
