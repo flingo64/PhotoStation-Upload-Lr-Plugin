@@ -7,6 +7,7 @@ PhotoStation Upload primitives:
 	- logout
 	- createDir
 	- uploadPicFile
+	- getPhotoUrl
 Copyright(c) 2015, Martin Messmer
 
 This file is part of PhotoStation Upload - Lightroom plugin.
@@ -200,9 +201,9 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 	}
 
 	-- calculate max. upload time for LrHttp.post()
-	-- we expect a minimum of 24 MBit/s upload speed --> 3MByte/s
+	-- we expect a minimum of 10 MBit/s upload speed --> 1.25 MByte/s
 	local fileSize = LrFileUtils.fileAttributes(srcFilename).fileSize
-	local timeout = fileSize / 3000000
+	local timeout = fileSize / 1250000
 	if timeout < 30 then timeout = 30 end
 	
 	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size %d --> timeout %d\n", 
@@ -236,4 +237,60 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
   end
 
   return respArray.success, respArray.err_msg
+end
+
+--[[ 
+getPhotoUrl(psBaseUrl, photoPath, srcPhoto)
+	returns the URL of a photo/video in the PhotoStation
+	URL of a photo in PS is:
+		http(s)://<PS-Server>/photo/#!Albums/album_<1rstLevelDirHex>/album_<1rstLevelAndSecondLevelDirHex>/.../album_<1rstToLastLevelDirHex>/<photo|video>_<1rstToLastLevelDirHex>_<completePhotoPathHex>
+	E.g. Photo Path:
+		Server: http://diskstation; Standard PhotoStation; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
+	yield PS Photo-URL:
+		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
+]]
+function PSUploadAPI.getPhotoUrl(psBaseUrl, photoPath, srcPhoto) 
+	local photoDir
+	local photoFilename
+	local i, j, k
+	local photoDirname = {}
+	local albumUrl
+	local photoPrefix = iif(srcPhoto:getRawMetadata('isVideo'), '/video_', '/photo_')
+	local dirSubUrl
+	local filenameSubUrl
+	local photoUrl
+	
+	photoDir, photoFilename = string.match(photoPath , '(.+)\/([^\/]+)')
+	
+	photoDirname = split(photoDir, '/')
+	
+--	writeLogfile(1, string.format("PSUploadAPI.getPhotoUrl(%s, %s): photoDir %s #photoDirname %d \n", psBaseUrl, photoPath, photoDir, #photoDirname))
+
+	albumUrl = psBaseUrl
+	
+	for i = 1, #photoDirname do
+		albumUrl = albumUrl .. '/album_'
+		dirSubUrl = ''
+		for j = 1, i do
+			if j > 1 then  
+				dirSubUrl = dirSubUrl .. string.format('%x', string.byte('/')) 
+			end
+			
+			for k = 1, string.len(photoDirname[j]) do
+				dirSubUrl = dirSubUrl .. string.format('%x', string.byte(photoDirname[j],k))
+			end
+		end
+		albumUrl = albumUrl .. dirSubUrl
+	end
+	
+	filenameSubUrl = ''
+	for k = 1, string.len(photoFilename) do
+		filenameSubUrl = filenameSubUrl .. string.format('%x', string.byte(photoFilename,k))
+	end
+
+	photoUrl = albumUrl .. photoPrefix .. dirSubUrl .. '_' .. filenameSubUrl
+	
+	writeLogfile(4, string.format("PSUploadAPI.getPhotoUrl(%s, %s) returns %s\n", psBaseUrl, photoPath, photoUrl))
+	
+	return photoUrl
 end
