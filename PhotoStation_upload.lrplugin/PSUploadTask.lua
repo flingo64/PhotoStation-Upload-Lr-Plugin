@@ -342,8 +342,8 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	local vid_HIGH_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))	-- 1080p
 	local realDimension
 	local retcode
-	local convKeyOrig, convKeyAdd, dummyIndex
-	local vid_Orig_Filename, vid_Add_Filename
+	local convKeyOrig, convKeyAdd
+	local vid_Orig_Filename, vid_Replace_Filename, vid_Add_Filename
 	
 	writeLogfile(3, string.format("uploadVideo: %s\n", srcVideoFilename)) 
 
@@ -355,34 +355,34 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	}
 	
 	-- get video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
-	local retcode, srcDateTime, duration, dimension, sampleAR, dispAR, rotation = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcVideoFilename)
-	if not retcode then
+	local vinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcVideoFilename)
+	if not vinfo then
 		return false
 	end
 	
 	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
 	-- overwrite the ffmpeg DateTimeOrig 
 	local metaDateTime, isOrigDateTime = getDateTimeOriginal(origVideoFilename, srcPhoto)
-	if isOrigDateTime or not srcDateTime then
-		srcDateTime = metaDateTime
+	if isOrigDateTime or not vinfo.srcDateTime then
+		vinfo.srcDateTime = metaDateTime
 	end
 	
 	-- get the real dimension: may be different from dimension if dar is set
 	-- dimension: NNNxMMM
-	local srcHeight = tonumber(string.sub(dimension, string.find(dimension,'x') + 1, -1))
-	if (ifnil(dispAR, '') == '') or (ifnil(sampleAR,'') == '1:1') then
-		realDimension = dimension
+	local srcHeight = tonumber(string.sub(vinfo.dimension, string.find(vinfo.dimension,'x') + 1, -1))
+	if (ifnil(vinfo.dar, '') == '') or (ifnil(vinfo.sar,'') == '1:1') then
+		realDimension = vinfo.dimension
 		-- aspectRatio: NNN:MMM
-		dispAR = string.gsub(dimension, 'x', ':')
+		vinfo.dar = string.gsub(vinfo.dimension, 'x', ':')
 	else
-		local darWidth = tonumber(string.sub(dispAR, 1, string.find(dispAR,':') - 1))
-		local darHeight = tonumber(string.sub(dispAR, string.find(dispAR,':') + 1, -1))
-		local realSrcWidth = srcHeight * darWidth / darHeight
-		realDimension = tostring(realSrcWidth) .. 'x' .. srcHeight
+		local darWidth = tonumber(string.sub(vinfo.dar, 1, string.find(vinfo.dar,':') - 1))
+		local darHeight = tonumber(string.sub(vinfo.dar, string.find(vinfo.dar,':') + 1, -1))
+		local realSrcWidth = math.floor(((srcHeight * darWidth / darHeight) + 0.5) / 2) * 2 -- make sure width is an even integer
+		realDimension = string.format("%dx%d", realSrcWidth, srcHeight)
 	end
 	
 	-- get the right conversion settings (depending on Height)
-	dummyIndex, convKeyOrig = PSConvert.getConvertKey(exportParams.cHandle, srcHeight)
+	_, convKeyOrig = PSConvert.getConvertKey(exportParams.cHandle, srcHeight)
 	vid_Replace_Filename = convParams[convKeyOrig].filename
 	convKeyAdd = addVideo[convKeyOrig]
 	if convKeyAdd ~= 'None' then
@@ -395,34 +395,39 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	for i = 1, #keywords do
 		if string.find(keywords[i]:getName(), 'Rotate-', 1, true) then
 			local metaRotation = string.sub (keywords[i]:getName(), 8)
-			if metaRotation ~= rotation then
-				rotation = metaRotation
+			if metaRotation ~= vinfo.rotation then
+				vinfo.rotation = metaRotation
 				addRotate = true
 				break
 			end
-			writeLogfile(3, string.format("Keyword[%d]= %s, rotation= %s\n", i, keywords[i]:getName(), rotation))
+			writeLogfile(3, string.format("Keyword[%d]= %s, rotation= %s\n", i, keywords[i]:getName(), vinfo.rotation))
 		end
 	end
 
 	-- video rotation only if requested by export param or by keyword (meta-rotation)
 	local videoRotation = '0'
 	if exportParams.hardRotate or addRotate then
-		videoRotation = rotation
+		videoRotation = vinfo.rotation
 	end
 	
-	-- replace original video if srcVideo is not already mp4 or if video is to be rotated
-	local replaceOrgVideo 
-	if (string.lower(vidExtOrg) ~= vidExt) or (videoRotation ~= '0') then
+	-- replace original video if srcVideo is to be rotated (meta or hard)
+	local replaceOrgVideo = false
+	if videoRotation ~= '0' then
 		replaceOrgVideo = true
 		vid_Orig_Filename = vid_Replace_Filename
 	else
-		replaceOrgVideo = false
 		vid_Orig_Filename = srcVideoFilename
+	end
+
+	-- Additional MP4 in orig dimension if video is not MP4
+	local addOrigAsMp4 = false
+	if not PSConvert.videoIsNativePSFormat(vidExtOrg) and not replaceOrgVideo then
+		addOrigAsMp4 = true
 	end
 	
 	if exportParams.thumbGenerate and ( 
 		-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
-		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, srcVideoFilename, thmb_ORG_Filename, realDimension, rotation)
+		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, srcVideoFilename, thmb_ORG_Filename, realDimension, vinfo.rotation, vinfo.duration)
 
 		-- generate all other thumb from first thumb
 		or ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
@@ -445,24 +450,25 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	)
 
 	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
-	or (replaceOrgVideo and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, srcDateTime, dispAR, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
+	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, vinfo.srcDateTime, vinfo.dar, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, srcDateTime, dispAR, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
 	or exportParams.thumbGenerate and (
 		-- upload thumbs, preview videos and original file
-		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
+		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
-	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
-	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
+	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
+	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
+	or 							   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
 		signalSemaphore("PhotoStation")
 		retcode = false
