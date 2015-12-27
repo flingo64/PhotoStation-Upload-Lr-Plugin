@@ -3,7 +3,14 @@
 PSConvert.lua
 conversion primitives:
 	- initialize
+
 	- convertPicConcurrent
+
+	- ffmpegGetAdditionalInfo
+	- ffmpegGetRotateParams
+	- ffmpegGetThumbFromVideo
+	- getConvertKey
+	- videoIsNativePSFormat
 	- convertVideo
 Copyright(c) 2015, Martin Messmer
 
@@ -442,7 +449,7 @@ local videoConversion = {
 	},	
 }
 
----------------- getResolutionId --------------------------------------------------------------------
+---------------- getConvertKey --------------------------------------------------------------------
 function PSConvert.getConvertKey(h, height)
 	
 	for i = 1, #videoConversion do
@@ -453,6 +460,19 @@ function PSConvert.getConvertKey(h, height)
 
 	return #videoConversion, videoConversion[#videoConversion].id
 
+end
+
+---------------- videoIsNativePSFormat --------------------------------------------------------------------
+-- return true if video format is natively supported by PS, i.e. it needs no conversion
+function PSConvert.videoIsNativePSFormat(videoExt)
+	
+	if 	   string.lower(videoExt) == 'mp4'
+		or string.lower(videoExt) == 'm4v'
+	then
+		return true
+	end
+
+	return false
 end
 
 -- convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
