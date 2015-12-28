@@ -172,15 +172,16 @@ publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSPublish/Titl
 --- (optional) This plug-in defined callback function is called when the user chooses
  -- the "Go to Published Collection" context-menu item.
 function publishServiceProvider.goToPublishedCollection( publishSettings, info )
-	local albumUrl 
-	
-	-- TODO: use the correct album url, not the PhotoStation base url
+	local psBaseUrl, albumUrl 
 	
 	if publishSettings.usePersonalPS then
-		albumUrl = publishSettings.serverUrl .. "/~" .. publishSettings.personalPSOwner .. "/photo"
+		psBaseUrl = publishSettings.serverUrl .. "/~" .. publishSettings.personalPSOwner .. "/photo/#!Albums"
 	else
-		albumUrl = publishSettings.serverUrl .. "/photo"
+		psBaseUrl = publishSettings.serverUrl .. "/photo/#!Albums"
 	end
+
+	albumUrl = PSUploadAPI.getAlbumUrl(psBaseUrl, getCollectionPath(info.publishedCollection))
+
 	LrHttp.openUrlInBrowser(albumUrl)
 end
 
@@ -196,8 +197,6 @@ publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForG
  -- "Go to Published Photo" context-menu item.
 function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 	local psBaseUrl, photoUrl 
-	
-	-- TODO: use the correct photo url, not the PhotoStation base url
 	
 	if publishSettings.usePersonalPS then
 		psBaseUrl = publishSettings.serverUrl .. "/~" .. publishSettings.personalPSOwner .. "/photo/#!Albums"

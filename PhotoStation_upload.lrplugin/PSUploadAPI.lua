@@ -240,13 +240,55 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 end
 
 --[[ 
+getAlbumUrl(psBaseUrl, albumPath)
+	returns the URL of an album in the PhotoStation
+	URL of an album in PS is:
+		http(s)://<PS-Server>/<PSBasedir>/#!Albums/album_<1rstLevelDirHex>/album_<1rstLevelAndSecondLevelDirHex>/.../album_<1rstToLastLevelDirHex>
+	E.g. Album Path:
+		Server: http://diskstation; Standard PhotoStation; Album Breadcrumb: Albums/Test/2007
+	yields PS Photo-URL:
+		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
+]]
+function PSUploadAPI.getAlbumUrl(psBaseUrl, albumPath) 
+	local i, j, k
+	local albumDirname = {}
+	local albumUrl
+	local dirSubUrl
+	
+	albumDirname = split(albumPath, '/')
+	
+	writeLogfile(1, string.format("PSUploadAPI.getAlbumUrl(%s, %s): #albumDirname %d \n", psBaseUrl, albumPath, #albumDirname))
+
+	albumUrl = psBaseUrl
+	
+	for i = 1, #albumDirname do
+		albumUrl = albumUrl .. '/album_'
+		dirSubUrl = ''
+		for j = 1, i do
+			if j > 1 then  
+				dirSubUrl = dirSubUrl .. string.format('%x', string.byte('/')) 
+			end
+			
+			for k = 1, string.len(albumDirname[j]) do
+				dirSubUrl = dirSubUrl .. string.format('%x', string.byte(albumDirname[j],k))
+			end
+		end
+		albumUrl = albumUrl .. dirSubUrl
+	end
+	
+	writeLogfile(4, string.format("PSUploadAPI.getAlbumUrl(%s, %s) returns %s\n", psBaseUrl, albumPath, albumUrl))
+	
+	return albumUrl
+end
+
+--[[ 
 getPhotoUrl(psBaseUrl, photoPath, srcPhoto)
 	returns the URL of a photo/video in the PhotoStation
 	URL of a photo in PS is:
-		http(s)://<PS-Server>/photo/#!Albums/album_<1rstLevelDirHex>/album_<1rstLevelAndSecondLevelDirHex>/.../album_<1rstToLastLevelDirHex>/<photo|video>_<1rstToLastLevelDirHex>_<completePhotoPathHex>
+		http(s)://<PS-Server>/<PSBasedir>/#!Albums/album_<1rstLevelDirHex>/album_<1rstLevelAndSecondLevelDirHex>/.../album_<1rstToLastLevelDirHex>/<photo|video>_<1rstToLastLevelDirHex>_<completePhotoPathHex>
 	E.g. Photo Path:
 		Server: http://diskstation; Standard PhotoStation; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
-	yield PS Photo-URL:
+	yields PS Photo-URL:
 		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 ]]
 function PSUploadAPI.getPhotoUrl(psBaseUrl, photoPath, srcPhoto) 

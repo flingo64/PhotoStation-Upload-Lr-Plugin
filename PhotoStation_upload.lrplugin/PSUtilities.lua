@@ -273,6 +273,38 @@ function evaluateDirname(str, srcPhoto)
 	return normalizeDirname(str)
 end 
 
+
+---------------------- Get Collection Path --------------------------------------------------
+
+-- getCollectionPath(publishedCollection)
+-- 	return the collection path of a collection or collection set by recursively traversing the collection and all of its parents
+
+function getCollectionPath(publishedCollection)
+	local parentCollectionSet
+	local collectionPath
+	
+	-- Build the directory path by recursively traversing the parent collection sets and prepend each directory
+	if publishedCollection:type() == 'LrPublishedCollection' then
+		local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
+		collectionPath 	= collectionSettings.dstRoot
+	else
+		local collectionSetSettings = publishedCollection:getCollectionSetInfoSummary().collectionSettings
+		collectionPath 	= collectionSetSettings.baseDir
+	end
+	
+	parentCollectionSet  = publishedCollection:getParent()
+	while parentCollectionSet do
+		local parentSettings = parentCollectionSet:getCollectionSetInfoSummary().collectionSettings
+		if parentSettings and ifnil(normalizeDirname(parentSettings.baseDir), '') ~= '' then
+			collectionPath = normalizeDirname(parentSettings.baseDir) .. "/" .. collectionPath	
+		end
+		parentCollectionSet  = parentCollectionSet:getParent()
+	end
+	writeLogfile(4, "getCollectionPath(): collectionPath = " .. collectionPath .. "\n")
+	
+	return collectionPath
+end
+
 ---------------------- http encoding routines ---------------------------------------------------------
 
 function trim(s)
@@ -339,22 +371,9 @@ end
 -- copy temporarily the collections settings to exportParams, so that we can work solely with exportParams;  
 function copyCollectionSettingsToExportParams(publishedCollection, exportParams)
 	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-	local parentCollectionSet
 	
 	exportParams.storeDstRoot 	= true			-- must be fixed in a Published Collection
-	
-	-- Build the directory path by recursively traversing the parent collection sets and prepend each directory
-	exportParams.dstRoot 		= collectionSettings.dstRoot
-	parentCollectionSet  = publishedCollection:getParent()
-	while parentCollectionSet do
-		local parentSettings = parentCollectionSet:getCollectionSetInfoSummary().collectionSettings
-		if parentSettings and ifnil(normalizeDirname(parentSettings.baseDir), '') ~= '' then
-			exportParams.dstRoot 		= normalizeDirname(parentSettings.baseDir) .. "/" .. exportParams.dstRoot	
-		end
-		parentCollectionSet  = parentCollectionSet:getParent()
-	end
-	writeLogfile(4, "copyCollectionSettings(): dstRoot = " .. exportParams.dstRoot .. "\n")
-	
+	exportParams.dstRoot 		= getCollectionPath(publishedCollection)
 	exportParams.createDstRoot 	= collectionSettings.createDstRoot
 	exportParams.copyTree 		= collectionSettings.copyTree
 	exportParams.srcRoot 		= collectionSettings.srcRoot
