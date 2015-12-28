@@ -235,25 +235,25 @@ function normalizeDirname(str)
 end 
 
 ---------------------- directory name evaluation routine --------------------------------------------------
--- evaluateDirname(str, srcPhoto)
--- 	evaluate (substitute metadata tokens) and sanitize dstRoot 
+-- evaluateDirname(path, srcPhoto)
+-- 	evaluate (substitute metadata tokens) and sanitize a given directory path 
 
-function evaluateDirname(str, srcPhoto)
+function evaluateDirname(path, srcPhoto)
 
-	if (str and string.find(str, "{", 1, true)) then
+	if (path and string.find(path, "{", 1, true)) then
 		local srcPhotoDate
 		local srcPhotoFMetadata
 				
-		if string.find(str, "{Date", 1, true) then
+		if string.find(path, "{Date", 1, true) then
 			srcPhotoDate = srcPhoto:getRawMetadata("dateTimeOriginal")
 		end
 		
-		if string.find(str, "{LrFM:", 1, true) then
+		if string.find(path, "{LrFM:", 1, true) then
 			srcPhotoFMetadata = srcPhoto:getFormattedMetadata()
 		end
 		
 		-- substitute date tokens: {Date <formatString>}
-		str = string.gsub (str, '({Date [^}]+})', function(dateParams)
+		path = string.gsub (path, '({Date [^}]+})', function(dateParams)
 				local format = string.gsub(dateParams, "{Date ([^}]+)}", "%1")
 				local dateString = ifnil(LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), format, false), '')
 				
@@ -262,7 +262,7 @@ function evaluateDirname(str, srcPhoto)
 			end);
 			
 		-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}, only string, number or boolean type allowed
-		str = string.gsub (str, '({LrFM:%w+})', function(metadataParam)
+		path = string.gsub (path, '({LrFM:%w+})', function(metadataParam)
 				local metadataName = string.gsub(metadataParam, "{LrFM:(%w+)}", "%1")
 				local metadataString = tostring(ifnil(srcPhotoFMetadata[metadataName], ''))
 				writeLogfile(3, string.format("xlatMetadataToken: key %s --> %s \n", ifnil(metadataName, '<Nil>'), metadataString)) 
@@ -270,7 +270,7 @@ function evaluateDirname(str, srcPhoto)
 			end);
 	end
 	
-	return normalizeDirname(str)
+	return normalizeDirname(path)
 end 
 
 
