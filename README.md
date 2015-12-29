@@ -1,7 +1,7 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.6.x<br>
-__[Important note for updating from V3.0.0 ... V3.5.x to V3.6.x] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+Version 3.7.x<br>
+__[Important note for updating from V3.0.0 ... V3.5.x to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
 [FAQs] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
 Forum threads: 
@@ -118,15 +118,15 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  --\> upload to:	Test/2010/10/img1.jpg<br>
 	  In other words:	\<local-base-path\>\\\<relative-path\>\\file -- upload to --\> \<Target Album\>/\<relative-path\>/file<br>
 
-- __Target Album may contain Metadata placeholders__:
+- __Target Album__ may contain __Metadata placeholders__:<br>
 	Metadata placeholders are evaluated for each uploaded photo/video, so that the actual target album may be different for each individual photo/video.
-	Metadata placeholders can be used to define a completely metadata-based PhotoStation target album layout, which is independent of the local directory layout.
+	Metadata placeholders can be used to define a metadata-based PhotoStation album layout, which is completely independent of the local directory layout.
 	Metadata placeholders look like:<br>
 	  - {Date %Y}
 	  - {Date %Y-%m-%d}
 	  - {LrFM:cameraModel}
 	  - {LrFM:isoRating}<br>
-	To learn more about the use of metadata placeholders and how they work, take a look at the Wiki 
+  To learn more about the use of metadata placeholders and how they work, take a look at the Wiki 
 
 - __Photo-plus-Thumbnail Upload__ (default) for faster PhotoStation fill-up and to minimize load on diskstation  
 
@@ -338,18 +338,18 @@ Version 3.6
 
 Version 3.7
 ------------
-- Support for metadata placeholders in target album definitions (Export, Published Collection, Published Collection Set):
-	- {Date <format>} for capture date/time (dateTimeOriginal) dependent metadata
-	- {LrFM:<key>} for any metadata supported by Lr-SDK / LrPhoto - photo:getFormattedMetadata(key)
-- Standard timeout for PhotoStation communication (for Login, album creation) is now configurable
-- Timeout calculation for uploads is now calculated based on a minimum of 10 MBit/s (was 24MBit/s before)
+- Support for __metadata placeholders__ in __target album__ definitions (Export, Published Collection, Published Collection Set):
+	- {Date \<format\>} for capture date/time (dateTimeOriginal) related metadata
+	- {LrFM:\<key\>} for any metadata supported by Lightroom SDK: LrPhoto - photo:getFormattedMetadata(key)
+- __Show in PhotoStation__ now works for Published Photos, Collections and Collection Sets.<br>
+  Will not work for Collections and Collection Sets that include metadata placeholders in the target album definition.	
+- __Standard timeout__ for PhotoStation communication (for Login, album creation) is now __configurable__ in Export/Publish dialog.
+- Timeout calculation for uploads is now calculated based on a minimum of 10 MBit/s (was 24MBit/s before).
 - Video upload:
-	- besides .mp4 files, now also .m4v files are handle as natively supported by PhotoStation, thus need no conversion
-	- any not natively supported video format (e.g. .avi, .mov, .3gp) will be converted to .mp4 format and now be uploaded in addition to the original video (rather than replacing the original video)
+	- besides .mp4 files now also __.m4v__ files are handle as natively supported by PhotoStation, thus need __no conversion__.
+	- any __not natively supported video format__ (e.g. .avi, .mov, .3gp) will be converted to .mp4 format and now be __uploaded in addition__ to the original video (rather than replacing the original video)
 	- Bugfix: video dimensions will always be even integers. When videos are rotated or scaled (e.g. when additional video upload is configured), it could happen the the resulting width was an odd integer, which was not supported by ffmpeg.
 	- Bugfix: thumb from video will be extracted at 00:00:00 sec for videos shorter than 4 seconds, otherwise at 00:00:03. Upload of video with duration < 1 sec failed in earlier versions due to failed thumb extraction ( at 00:00:01). 
-- Show in PhotoStation now works for Published Photos, Collections and Collection Sets.<br>
-  Will not work for Collections and Collection Sets that include metadata placeholders in the target album definition.	
 	
 Open issues
 ============
