@@ -118,7 +118,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  --\> upload to:	Test/2010/10/img1.jpg<br>
 	  In other words:	\<local-base-path\>\\\<relative-path\>\\file -- upload to --\> \<Target Album\>/\<relative-path\>/file<br>
 
-- __Target Album__ may contain __Metadata placeholders__:<br>
+- __Dynamic Target Album__ definition by using  __metadata placeholders__:<br>
 	Metadata placeholders are evaluated for each uploaded photo/video, so that the actual target album may be different for each individual photo/video.
 	Metadata placeholders can be used to define a metadata-based PhotoStation album layout, which is completely independent of the local directory layout.
 	Metadata placeholders look like:<br>
