@@ -173,7 +173,10 @@ publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSPublish/Titl
  -- the "Go to Published Collection" context-menu item.
 function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 	local psBaseUrl, albumUrl 
-	
+
+	-- make sure logfile is opened
+	openLogfile(publishSettings.logLevel)
+
 	if publishSettings.usePersonalPS then
 		psBaseUrl = publishSettings.serverUrl .. "/~" .. publishSettings.personalPSOwner .. "/photo/#!Albums"
 	else
@@ -198,6 +201,9 @@ publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForG
 function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 	local psBaseUrl, photoUrl 
 	
+	-- make sure logfile is opened
+	openLogfile(publishSettings.logLevel)
+
 	if publishSettings.usePersonalPS then
 		psBaseUrl = publishSettings.serverUrl .. "/~" .. publishSettings.personalPSOwner .. "/photo/#!Albums"
 	else
