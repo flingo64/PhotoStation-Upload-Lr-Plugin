@@ -41,6 +41,65 @@ local LrDate = import 'LrDate'
 
 require "PSUtilities"
 
+--====== local functions =====================================================--
+
+local function getAlbumId(albumPath)
+	local i
+	local albumId = 'album_'
+
+	for i = 1, string.len(albumPath) do
+		albumId = albumId .. string.format('%x', string.byte(albumPath,i))
+	end
+
+	return albumId
+end
+
+local function getPhotoId(photoPath, srcPhoto)
+	local i
+	local photoDir, photoFilename = string.match(photoPath , '(.+)\/([^\/]+)')
+	local albumSubId = ''
+	local photoSubId = ''
+	local photoId = iif(srcPhoto:getRawMetadata('isVideo'), 'video_', 'photo_')
+	
+	for i = 1, string.len(photoDir) do
+		albumSubId = albumSubId .. string.format('%x', string.byte(photoDir,i))
+	end
+
+	for i = 1, string.len(photoFilename) do
+		photoSubId = photoSubId .. string.format('%x', string.byte(photoFilename,i))
+	end
+
+	photoId = photoId .. albumSubId .. '_' .. photoSubId
+	
+	writeLogfile(4, string.format("getPhotoId(%s) returns %s\n", photoPath, photoId))
+	
+	return photoId
+end
+
+local function callSynoAPI (h, synoAPI, formData) 
+	local postHeaders = {
+		{ field = 'Content-Type', value = 'application/x-www-form-urlencoded' },
+	}
+
+	local postBody = 'api=' .. synoAPI .. '&' .. formData
+
+	writeLogfile(4, "callSynoAPI: LrHttp.post(" .. h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path .. ",...)\n")
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path, postBody, postHeaders, 'POST', h.serverTimeout, string.len(postBody))
+	
+	if not respBody then
+	    writeTableLogfile(3, 'respHeaders', respHeaders)
+    	if respHeaders then
+      		return nil, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
+          			trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
+    	else
+      		return nil, 'Unknown error on http request"'
+    	end
+	end
+	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
+	
+  return JSON:decode(respBody)
+end
+
 --============================================================================--
 
 PSUploadAPI = {}
@@ -59,6 +118,8 @@ local uploadPath
 -- initialize: set serverUrl, loginPath and uploadPath
 function PSUploadAPI.initialize(server, personalPSOwner, serverTimeout)
 	local h = {} -- the handle
+	local apiInfo = {}
+	local psBasePath
 
 	writeLogfile(4, "PSUploadAPI.initialize(serverUrl=" .. server ..", " .. iif(personalPSOwner, "Personal PS(" .. ifnil(personalPSOwner,"<Nil>") .. ")", "Standard PS") .. ")\n")
 
@@ -66,13 +127,43 @@ function PSUploadAPI.initialize(server, personalPSOwner, serverTimeout)
 	h.serverTimeout = serverTimeout
 
 	if personalPSOwner then -- connect to Personal PhotoStation
-		h.loginPath = '/~' .. personalPSOwner .. '/photo/webapi/auth.php'
-		h.uploadPath = '/~' .. personalPSOwner .. '/photo/include/asst_file_upload.php'
+		psBasePath = '/~' .. personalPSOwner .. '/photo'
 	else
-		h.loginPath = '/photo/webapi/auth.php'
-		h.uploadPath = '/photo/include/asst_file_upload.php'
+		psBasePath = '/photo'
 	end
 
+	h.psWebAPI = 	psBasePath .. '/webapi/'
+	h.uploadPath =	psBasePath .. '/include/asst_file_upload.php'
+
+	-- bootstrap the apiInfo table 
+	apiInfo['SYNO.API.Info'] = {
+		path		= "query.php",
+		minVersion	= 1,
+		maxVersion	= 1,
+	}
+	h.apiInfo = apiInfo
+	
+	-- get all API paths via 'SYNO.API.Info'
+	local formData = 
+			'query=all&' ..
+			'method=query&' ..
+			'version=1&' .. 
+			'ps_username='
+			 
+	local respArray, errorMsg = callSynoAPI (h, 'SYNO.API.Info', formData)
+
+	if not respArray then return nil, errorMsg end 
+
+	if respArray.error then 
+		errorCode = respArray.error.code
+		writeLogfile(1, string.format('PSUploadAPI.initialize: SYNO.API.Info returns error %\n', errorCode))
+		return nil, errorCode
+	end
+	
+	-- rewrite the apiInfo table with API infos retrieved via SYNO.API.Info
+	h.apiInfo = respArray.data
+	writeTableLogfile(4, 'apiInfo', h.apiInfo)
+	
 	return h
 end
 		
@@ -81,31 +172,17 @@ end
 -- login(h, username, passowrd)
 -- does, what it says
 function PSUploadAPI.login(h, username, password)
-	local postHeaders = {
-		{ field = 'Content-Type', value = 'application/x-www-form-urlencoded' },
---		{ field = 'Cookie', value = ''  }, -- clearing Cookie: doesn't work
-	}
+	local formData = 'method=login&' ..
+					 'version=1&' .. 
+					 'username=' .. urlencode(username) .. '&' .. 
+					 'password=' .. urlencode(password)
 
-	-- login via PhotoStation WebAPI
-	local postBody = 'api=SYNO.PhotoStation.Auth&method=login&version=1&username=' .. urlencode(username) .. '&password=' .. urlencode(password)
-
-	writeLogfile(4, "login: LrHttp.post(" .. h.serverUrl .. h.loginPath .. ",...)\n")
-	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.loginPath, postBody, postHeaders, 'POST', h.serverTimeout, string.len(postBody))
+	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Auth', formData)
 	
-	if not respBody then
-    writeTableLogfile(3, 'respHeaders', respHeaders)
-    if respHeaders then
-      return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
-          trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
-    else
-      return false, 'Unknown error on http request"'
-    end
-	end
-	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
+	if not respArray then return false, errorMsg end 
 	
-  local respArray = JSON:decode(respBody)
-  local errorCode = 0 
-  if respArray.error then errorCode = tonumber(respArray.error.code) end
+	local errorCode = 0 
+	if respArray.error then errorCode = tonumber(respArray.error.code) end
   
   return respArray.success, string.format('Error: %d\n', errorCode)
 end
@@ -250,30 +327,23 @@ getAlbumUrl(psBaseUrl, albumPath)
 		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
 ]]
 function PSUploadAPI.getAlbumUrl(psBaseUrl, albumPath) 
-	local i, j, k
-	local albumDirname = {}
+	local i
 	local albumUrl
-	local dirSubUrl
+	local subDirPath = ''
+	local subDirUrl  = ''
 	
-	albumDirname = split(albumPath, '/')
+	local albumDirname = split(albumPath, '/')
 	
-	writeLogfile(1, string.format("PSUploadAPI.getAlbumUrl(%s, %s): #albumDirname %d \n", psBaseUrl, albumPath, #albumDirname))
-
-	albumUrl = psBaseUrl
+	albumUrl = psBaseUrl .. '/'
 	
 	for i = 1, #albumDirname do
-		albumUrl = albumUrl .. '/album_'
-		dirSubUrl = ''
-		for j = 1, i do
-			if j > 1 then  
-				dirSubUrl = dirSubUrl .. string.format('%x', string.byte('/')) 
-			end
-			
-			for k = 1, string.len(albumDirname[j]) do
-				dirSubUrl = dirSubUrl .. string.format('%x', string.byte(albumDirname[j],k))
-			end
+		if i > 1 then  
+			subDirPath = subDirPath .. '/'
+			albumUrl = albumUrl .. '/'
 		end
-		albumUrl = albumUrl .. dirSubUrl
+		subDirPath = subDirPath .. albumDirname[i]
+		subDirUrl = getAlbumId(subDirPath) 
+		albumUrl = albumUrl .. subDirUrl
 	end
 	
 	writeLogfile(4, string.format("PSUploadAPI.getAlbumUrl(%s, %s) returns %s\n", psBaseUrl, albumPath, albumUrl))
@@ -285,52 +355,35 @@ end
 getPhotoUrl(psBaseUrl, photoPath, srcPhoto)
 	returns the URL of a photo/video in the PhotoStation
 	URL of a photo in PS is:
-		http(s)://<PS-Server>/<PSBasedir>/#!Albums/album_<1rstLevelDirHex>/album_<1rstLevelAndSecondLevelDirHex>/.../album_<1rstToLastLevelDirHex>/<photo|video>_<1rstToLastLevelDirHex>_<completePhotoPathHex>
+		http(s)://<PS-Server>/<PSBasedir>/#!Albums/album_<1rstLevelDirHex>/album_<1rstLevelAndSecondLevelDirHex>/.../album_<1rstToLastLevelDirHex>/<photo|video>_<1rstToLastLevelDirHex>_<photoFilenameHex>
 	E.g. Photo Path:
 		Server: http://diskstation; Standard PhotoStation; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
 	yields PS Photo-URL:
 		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 ]]
 function PSUploadAPI.getPhotoUrl(psBaseUrl, photoPath, srcPhoto) 
-	local photoDir
-	local photoFilename
-	local i, j, k
-	local photoDirname = {}
-	local albumUrl
-	local photoPrefix = iif(srcPhoto:getRawMetadata('isVideo'), '/video_', '/photo_')
-	local dirSubUrl
-	local filenameSubUrl
+	local i
+	local subDirPath = ''
+	local subDirUrl  = ''
 	local photoUrl
 	
-	photoDir, photoFilename = string.match(photoPath , '(.+)\/([^\/]+)')
+	local albumDir, _ = string.match(photoPath, '(.+)\/([^\/]+)')
 	
-	photoDirname = split(photoDir, '/')
-	
---	writeLogfile(1, string.format("PSUploadAPI.getPhotoUrl(%s, %s): photoDir %s #photoDirname %d \n", psBaseUrl, photoPath, photoDir, #photoDirname))
+	local albumDirname = split(albumDir, '/')
 
-	albumUrl = psBaseUrl
+	photoUrl = psBaseUrl .. '/'
 	
-	for i = 1, #photoDirname do
-		albumUrl = albumUrl .. '/album_'
-		dirSubUrl = ''
-		for j = 1, i do
-			if j > 1 then  
-				dirSubUrl = dirSubUrl .. string.format('%x', string.byte('/')) 
-			end
-			
-			for k = 1, string.len(photoDirname[j]) do
-				dirSubUrl = dirSubUrl .. string.format('%x', string.byte(photoDirname[j],k))
-			end
+	for i = 1, #albumDirname do
+		if i > 1 then  
+			subDirPath = subDirPath .. '/'
+			photoUrl = photoUrl .. '/'
 		end
-		albumUrl = albumUrl .. dirSubUrl
+		subDirPath = subDirPath .. albumDirname[i]
+		subDirUrl = getAlbumId(subDirPath) 
+		photoUrl = photoUrl .. subDirUrl
 	end
 	
-	filenameSubUrl = ''
-	for k = 1, string.len(photoFilename) do
-		filenameSubUrl = filenameSubUrl .. string.format('%x', string.byte(photoFilename,k))
-	end
-
-	photoUrl = albumUrl .. photoPrefix .. dirSubUrl .. '_' .. filenameSubUrl
+	photoUrl = photoUrl .. '/' .. getPhotoId(photoPath, srcPhoto)
 	
 	writeLogfile(4, string.format("PSUploadAPI.getPhotoUrl(%s, %s) returns %s\n", psBaseUrl, photoPath, photoUrl))
 	
