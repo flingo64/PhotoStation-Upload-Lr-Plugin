@@ -43,7 +43,7 @@ Requirements
 	- ffmpeg/ffmpeg.exe
 	- ffmpeg/qt-faststart.exe
 * For Exif Data Translation (e.g Lr/Picasa Face Detecton, Star Rating):
-	- exiftool
+	- exiftool: Version 10.0.2.0 (tested) and later should be fine
 	
 Installation
 =============
