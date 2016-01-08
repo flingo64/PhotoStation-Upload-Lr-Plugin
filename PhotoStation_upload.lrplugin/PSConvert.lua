@@ -210,6 +210,13 @@ function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, 
 end
 
 ---------------------- video functions ----------------------------------------------------------
+-- PSConvert.isVideo(filename)
+-- returns true if filename extension is one of the Lr supported video extensions  
+function PSConvert.isVideo(filename)
+	return iif(string.find('3gp,3gpp,avchd,avi,m2t,m2ts,m4v,mov,mp4,mpe,mpg,mts', 
+							string.lower(LrPathUtils.extension(filename)), 1, true), 
+				true, false)
+end
 
 -- ffmpegGetAdditionalInfo(h, srcVideoFilename) ---------------------------------------------------------
 --[[

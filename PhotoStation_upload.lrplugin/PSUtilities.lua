@@ -436,7 +436,7 @@ function openSession(exportParams, publishMode)
 	end
 
 	-- Publish or Export: Login to PhotoStation
-	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' then
+	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' or publishMode == 'Delete' then
 		exportParams.uHandle = PSUploadAPI.initialize(exportParams.serverUrl, 
 														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
 														exportParams.serverTimeout)
@@ -481,7 +481,7 @@ function closeSession(exportParams, publishMode)
 	end
 	
 	-- Publish or Export: Logout from PhotoStation
-	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' then
+	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' or publishMode == 'Delete' then
 		if not PSUploadAPI.logout (exportParams.uHandle) then
 			writeLogfile(1,"PhotoStation Logout failed\n")
 			return false

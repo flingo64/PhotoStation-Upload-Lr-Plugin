@@ -45,6 +45,7 @@ local LrHttp = 		import 'LrHttp'
 local LrPathUtils = import 'LrPathUtils'
 local LrView = 		import 'LrView'
 
+require "PSConvert"
 require "PSUtilities"
 require 'PSUploadTask'
 require 'PSFileStationAPI'
@@ -210,7 +211,7 @@ function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 		psBaseUrl = publishSettings.serverUrl .. "/photo/#!Albums"
 	end
 	
-	photoUrl = PSUploadAPI.getPhotoUrl(psBaseUrl, info.publishedPhoto:getRemoteId(), info.photo)
+	photoUrl = PSUploadAPI.getPhotoUrl(psBaseUrl, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
 	LrHttp.openUrlInBrowser(photoUrl)
 end
 
@@ -315,12 +316,13 @@ function publishServiceProvider.deletePhotosFromPublishedCollection( publishSett
 	local nProcessed = 0 
 
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
-		writeLogfile(2, 'deletePhotosFromPublishedCollection:  "' .. photoId .. '"\n')
-		if PSFileStationAPI.deletePic (publishSettings.fHandle, photoId) then
+--		if FileStationAPI.deletePic (publishSettings.fHandle, photoId) then
+		if PSUploadAPI.deletePic (publishSettings.uHandle, photoId, PSConvert.isVideo(photoId)) then
+			writeLogfile(2, photoId .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
 		else
-			writeLogfile(1, 'deletePhotosFromPublishedCollection:  "' .. photoId .. '" failed!\n')
+			writeLogfile(1, photoId .. ': deletion failed!\n')
 		end
 	end
 
@@ -839,7 +841,8 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 			local pubPhoto = publishedPhotos[i]
 			local publishedPath = pubPhoto:getRemoteId()
 			
-			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
+--			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
+			if publishedPath ~= nil then PSUploadAPI.deletePic(publishSettings.uHandle, publishedPath, PSConvert.isVideo(publishedPath)) end
 			nProcessed = i
 			progressScope:setPortionComplete(nProcessed, nPhotos)
 		end 

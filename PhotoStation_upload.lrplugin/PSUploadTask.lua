@@ -715,8 +715,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- if photo was moved ... 
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
-					if publishMode == 'Publish' and (not exportParams.useFileStation or not PSFileStationAPI.deletePic(exportParams.fHandle, publishedPhotoId)) then
-						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check FileStation API access!\n')
+--					if publishMode == 'Publish' and (not exportParams.useFileStation or not PSFileStationAPI.deletePic(exportParams.fHandle, publishedPhotoId)) then
+					if publishMode == 'Publish' and not PSUploadAPI.deletePic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
+--						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check FileStation API access!\n')
+						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check PhotoStation permissions!\n')
     					table.insert( failures, srcFilename )
 						skipPhoto = true 					
 					else
@@ -732,7 +734,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in PhotoStation
-				local foundPhoto = PSFileStationAPI.existsPic(exportParams.fHandle, publishedPhotoId)
+--				local foundPhoto = PSFileStationAPI.existsPic(exportParams.fHandle, publishedPhotoId)
+				local foundPhoto = PSUploadAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
 					rendition:recordPublishedPhotoId(publishedPhotoId)
 					nNotCopied = nNotCopied + 1
