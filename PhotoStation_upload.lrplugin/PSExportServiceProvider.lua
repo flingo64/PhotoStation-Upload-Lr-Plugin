@@ -139,8 +139,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'useFileStation2',   	default = false },		-- use FileStation API for extended features via second. server
 		{ key = 'protoFileStation2',	default = 'https' },	-- transport protocol for secondary FileStation WEBAPI
 		{ key = 'portFileStation2',		default = '' },			-- port of the secondary FileStation WEBAPI
-		]]
-		
+
 		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, CheckExisting, ...
 }
 
