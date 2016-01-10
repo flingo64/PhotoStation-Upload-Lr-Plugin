@@ -135,30 +135,45 @@ end
 
 -----------------
 
--- function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams, dstRoot) 
+-- function getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot) 
 -- 	return relative local path of the srcPhoto and destination path of the rendered photo: remotePath = dstRoot + (localpath - srcRoot), 
 --	returns:
 -- 		localPath - relative local path as unix-path
 -- 		remotePath - absolute remote path as unix-path
-function getPublishPath(srcPhotoPath, srcPhoto, renderedPhotoPath, exportParams, dstRoot) 
-	local localRenderedPath
+function getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot) 
+	local srcPhotoExtension = LrPathUtils.extension(srcPhotoPath)
+	local localRenderedPath, localRenderedExtension
 	local localPath
 	local remotePath
 	
 	-- if is virtual copy: add last three characters of photoId as suffix to filename
 	if srcPhoto:getRawMetadata('isVirtualCopy') then
 		srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '-' .. string.sub(srcPhoto:getRawMetadata('uuid'), -3), 
-												LrPathUtils.extension(srcPhotoPath))
+												srcPhotoExtension)
 		writeLogfile(3, 'isVirtualCopy: new srcPhotoPath is: ' .. srcPhotoPath .. '"\n')				
 	end
+
+	-- check if extension of rendered photo is different from original photo 
+	if exportParams.LR_format == 'ORIGINAL' then
+		localRenderedExtension = LrPathUtils.extension(srcPhotoPath)
+	else
+		localRenderedExtension = iif(exportParams.LR_format == 'JPEG', 'JPG', exportParams.LR_format)   
+		localRenderedExtension = iif(exportParams.LR_extensionCase == 'lowercase', string.lower(localRenderedExtension), localRenderedExtension)
+	end
+	
+	if string.lower(srcPhotoExtension) ~= string.lower(localRenderedExtension) then
+		-- if original and rendered photo extensions are different, use rendered photo extension
+		-- optionally append original extension to photoname (e.g. '_rw2.jpg')
+		if exportParams.RAWandJPG then
+			srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '_' .. srcPhotoExtension, localRenderedExtension)
+		else
+			srcPhotoPath = LrPathUtils.replaceExtension(srcPhotoPath, localRenderedExtension)
+		end
+		writeLogfile(3, string.format("'Orig %s <> rendered extension %s: new srcPhotoPath is: %s\n", srcPhotoExtension, localRenderedExtension, srcPhotoPath))				
+	end
+	
 	localRenderedPath = srcPhotoPath
 			
-	-- extension for published photo may differ from orgPhoto (e.g. RAW, DNG)
-	-- use extension of renderedPhotoPath instead, if available
-	if renderedPhotoPath ~= nil then
-		localRenderedPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath), LrPathUtils.extension(renderedPhotoPath))
-	end
-
 	if exportParams.copyTree then
 		localPath = 		string.gsub(LrPathUtils.makeRelative(srcPhotoPath, exportParams.srcRoot), "\\", "/")
 		localRenderedPath = string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
@@ -526,7 +541,7 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local edited = pubPhoto:getEditedFlag()
 		local dstRoot = evaluateDirname(exportParams.dstRoot, srcPhoto)
 		
-		local localPath, remotePath = getPublishPath(srcPhotoPath, srcPhoto, nil, exportParams, dstRoot)
+		local localPath, remotePath = getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot)
 		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
 		-- ignore extension: might be different 
 		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
@@ -710,20 +725,18 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			if publishMode ~= 'Export' then
 				-- publish process: generate a unique remote id for later modifications or deletions
 				-- use the relative destination pathname, so we are able to identify moved pictures
-				localPath, newPublishedPhotoId = getPublishPath(srcFilename, srcPhoto, renderedFilename, exportParams, dstRoot)
+				localPath, newPublishedPhotoId = getPublishPath(srcFilename, srcPhoto, exportParams, dstRoot)
 				
 				writeLogfile(3, 'Old publishedPhotoId:' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId:  ' .. newPublishedPhotoId .. '"\n')
 				-- if photo was moved ... 
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
---					if publishMode == 'Publish' and (not exportParams.useFileStation or not PSFileStationAPI.deletePic(exportParams.fHandle, publishedPhotoId)) then
 					if publishMode == 'Publish' and not PSPhotoStationAPI.deletePic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
---						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check FileStation API access!\n')
 						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check PhotoStation permissions!\n')
     					table.insert( failures, srcFilename )
 						skipPhoto = true 					
 					else
-						writeLogfile(2, 'Deleting remote photo at old path: ' .. publishedPhotoId .. '\n')							
+						writeLogfile(2, iif(publishMode == 'Publish', 'Deleting', 'CheckExisting: Would delete') .. ' remote photo at old path: ' .. publishedPhotoId .. '\n')							
 					end
 				end
 				publishedPhotoId = newPublishedPhotoId
@@ -740,11 +753,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				if foundPhoto == 'yes' then
 					rendition:recordPublishedPhotoId(publishedPhotoId)
 					nNotCopied = nNotCopied + 1
-					writeLogfile(2, 'Upload of "' .. LrPathUtils.leafName(localPath) .. '" to "' .. publishedPhotoId .. '" not needed, already there (mode: CheckExisting)\n')
+					writeLogfile(2, 'CheckExisting: No Upload needed for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. publishedPhotoId .. '\n')
 				elseif foundPhoto == 'no' then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
-					writeLogfile(2, 'Upload of "' .. LrPathUtils.leafName(localPath) .. '" to "' .. ifnil(LrPathUtils.parent(publishedPhotoId), "/") .. '" needed, but suppressed (mode: CheckExisting)!\n')
+					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. ifnil(LrPathUtils.parent(publishedPhotoId), "/") .. '\n')
 				else -- error
 					table.insert( failures, srcFilename )
 					break 

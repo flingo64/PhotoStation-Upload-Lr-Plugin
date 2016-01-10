@@ -435,6 +435,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.srcRoot = ''
 	end
 
+	if collectionSettings.RAWandJPG == nil then
+		collectionSettings.RAWandJPG = false
+	end
+
 	if collectionSettings.publishMode == nil then
 		collectionSettings.publishMode = 'Publish'
 	end
@@ -511,6 +515,19 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 					validate = validateDirectory,
 					truncation = 'middle',
 					immediate = true,
+					fill_horizontal = 1,
+				},
+			},
+
+			f:row {
+				f:checkbox {
+					title = LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
+									"Non-JPEG photo will be renamed to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
+									"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
+									"IMG-001.JPG --> IMG-001.JPG",
+					alignment = 'left',
+					value = bind 'RAWandJPG',
 					fill_horizontal = 1,
 				},
 			},
@@ -718,10 +735,11 @@ publishServiceProvider.supportsCustomSortOrder = true
 function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSettings, info, remoteIdSequence )
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
 	local albumPath = PSLrUtilities.getCollectionPath(publishedCollection)
-	
+
 	-- make sure logfile is opened
 --	openLogfile(publishSettings.logLevel)
 
+--[[
 	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n ")
 
 	-- open session: initialize environment, get missing params and login
@@ -735,7 +753,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	end
 
 	PSPhotoStationAPI.sortPics(publishSettings.uHandle, albumPath, remoteIdSequence)
-	
+]]	
 	return true
 end
 

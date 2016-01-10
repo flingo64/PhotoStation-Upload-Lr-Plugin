@@ -348,6 +348,7 @@ function copyCollectionSettingsToExportParams(publishedCollection, exportParams)
 	exportParams.createDstRoot 	= collectionSettings.createDstRoot
 	exportParams.copyTree 		= collectionSettings.copyTree
 	exportParams.srcRoot 		= collectionSettings.srcRoot
+	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
 	exportParams.publishMode 	= collectionSettings.publishMode
 end
 

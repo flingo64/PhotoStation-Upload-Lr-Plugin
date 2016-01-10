@@ -109,6 +109,9 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
 		{ key = 'isPS6', 			default = false },	-- use upload optimization for PhotoStation 6 (not THUMB_L required)
 
+		-- misc options
+		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
+
 		-- video parameters
 		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
 		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUM res videos

@@ -246,7 +246,9 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 	local share = LrView.share
 	local conditionalItem = LrView.conditionalItem
 
-	-- config section for destination path: only in Export dialog
+	-- ================== Destination Path and Uplaod Option view =======================================
+	-- view for destination path: only in Export dialog
+	
 	local dstPathView = f:view {
 		fill_horizontal = 1,
 
@@ -313,73 +315,23 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					fill_horizontal = 1,
 				},
 			},
+
+			f:row {
+				f:checkbox {
+					title = LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
+									"Note: All Non-JPEG photos will be renamed in PhotoStation to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
+									"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
+									"IMG-001.JPG --> IMG-001.JPG",
+					alignment = 'left',
+					value = bind 'RAWandJPG',
+					fill_horizontal = 1,
+				},
+			},
+
 		},
 	} 
 	
-	-- config section for secondary server: Export or Publish dialog
-	local secondServerView = f:view {
-		fill_horizontal = 1,
-
-		f:row {
-			f:radio_button {
-				title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=Second Server Address:",
-				alignment = 'right',
-				width = share 'labelWidth',
-				value = bind 'useSecondAddress',
-				checked_value = true,
-			},
-
-			f:popup_menu {
-				title = LOC "$$$/PSUpload/ExportDialog/PROTOCOL2=Protocol:",
-				value = bind 'proto2',
-				enabled = bind 'useSecondAddress',
-				items = {
-					{ title	= 'http',   value 	= 'http' },
-					{ title	= 'https',	value 	= 'https' },
-				},
-			},
-
-			f:edit_field {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
-				value = bind 'servername2',
-				truncation = 'middle',
-				enabled = bind 'useSecondAddress',
-				immediate = true,
-				fill_horizontal = 1,
-			},
-
-			f:row {
-				alignment = 'right',
-				fill_horizontal = 0.5,
-
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/ServerTimeout=Timeout:",
-					alignment = 'right',
-				},
-
-				f:popup_menu {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
-					value = bind 'serverTimeout2',
-					enabled = bind 'useSecondAddress',
-					alignment = 'left',
-					fill_horizontal = 1,
-					items = {
-						{ title	= '10s',	value 	= 10 },
-						{ title	= '20s',	value 	= 20 },
-						{ title	= '30s',	value 	= 30 },
-						{ title	= '40s',	value 	= 40 },
-						{ title	= '50s',	value 	= 50 },
-						{ title	= '60s',	value 	= 60 },
-						{ title	= '70s',	value 	= 70 },
-						{ title	= '80s',	value 	= 80 },
-						{ title	= '90s',	value 	= 90 },
-						{ title	= '100s',	value 	= 100 },
-					},
-				},
-			},
-		},
-	} 
-
 	-- config section for Export or Publish dialog
 	local result = {
 	
@@ -387,6 +339,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			title = LOC "$$$/PSUpload/ExportDialog/PsSettings=PhotoStation Server",
 			
 			synopsis = bind { key = 'psUrl', object = propertyTable },
+
+			-- ================== Target PhotoStation =================================================================
 
 			f:group_box {
 				fill_horizontal = 1,
@@ -430,7 +384,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
         				},
         
         				f:popup_menu {
-        				tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
+        					tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
         					value = bind 'serverTimeout',
 							enabled =  LrBinding.negativeOfKey('useSecondAddress'),
         					alignment = 'left',
@@ -449,12 +403,67 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
         					},
         				},
         			},
+        		}, 
+        		
+        		f:row {
+        			f:radio_button {
+        				title = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=Second Server Address:",
+        				alignment = 'right',
+        				width = share 'labelWidth',
+        				value = bind 'useSecondAddress',
+        				checked_value = true,
+        			},
+        
+        			f:popup_menu {
+        				title = LOC "$$$/PSUpload/ExportDialog/PROTOCOL2=Protocol:",
+        				value = bind 'proto2',
+        				enabled = bind 'useSecondAddress',
+        				items = {
+        					{ title	= 'http',   value 	= 'http' },
+        					{ title	= 'https',	value 	= 'https' },
+        				},
+        			},
+        
+        			f:edit_field {
+        				tooltip = LOC "$$$/PSUpload/ExportDialog/SERVERNAME2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
+        				value = bind 'servername2',
+        				truncation = 'middle',
+        				enabled = bind 'useSecondAddress',
+        				immediate = true,
+        				fill_horizontal = 1,
+        			},
+        
+        			f:row {
+        				alignment = 'right',
+        				fill_horizontal = 0.5,
+        
+        				f:static_text {
+        					title = LOC "$$$/PSUpload/ExportDialog/ServerTimeout=Timeout:",
+        					alignment = 'right',
+        				},
+        
+        				f:popup_menu {
+        				tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
+        					value = bind 'serverTimeout2',
+        					enabled = bind 'useSecondAddress',
+        					alignment = 'left',
+        					fill_horizontal = 1,
+        					items = {
+        						{ title	= '10s',	value 	= 10 },
+        						{ title	= '20s',	value 	= 20 },
+        						{ title	= '30s',	value 	= 30 },
+        						{ title	= '40s',	value 	= 40 },
+        						{ title	= '50s',	value 	= 50 },
+        						{ title	= '60s',	value 	= 60 },
+        						{ title	= '70s',	value 	= 70 },
+        						{ title	= '80s',	value 	= 80 },
+        						{ title	= '90s',	value 	= 90 },
+        						{ title	= '100s',	value 	= 100 },
+        					},
+        				},
+        			},
+        		},
 
-				},
-
-				f:separator { fill_horizontal = 1 },
-				secondServerView,
-				
 				f:separator { fill_horizontal = 1 },
 
 				f:row {
@@ -483,8 +492,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						fill_horizontal = 1,
 					},
 				},
-
-				f:separator { fill_horizontal = 1 },
 
 				f:row {
 					f:static_text {
@@ -516,7 +523,11 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				},
 			},
 			
+			-- ================== Target Album and Upload Method ===============================================
+			
 			conditionalItem(not propertyTable.LR_isExportForPublish, dstPathView),
+			
+			-- ================== Exif Translations ============================================================
 			
 			f:group_box {
 				fill_horizontal = 1,
@@ -558,6 +569,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
         		},
 
 			},
+
+			-- ================== Thumbnail Options ================================================
 
 			f:group_box {
 				fill_horizontal = 1,
@@ -683,6 +696,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 			},
 
+			-- ================== Video Options =================================================================
+
 			f:group_box {
 				fill_horizontal = 1,
 				title = LOC "$$$/PSUpload/ExportDialog/Videos=Upload additional video resolutions for ...-Res Videos",
@@ -760,6 +775,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					},
 				},
 			},
+
+			-- ================== Log Options =================================================================
 
 			f:row {
 				f:static_text {
