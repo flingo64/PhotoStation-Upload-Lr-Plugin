@@ -55,7 +55,7 @@ require "PSUtilities"
 require "PSConvert"
 require "PSUpdate"
 require "PSUploadAPI"
-require "PSFileStationAPI"		-- publish only
+require "PSPhotoStationAPI"
 require "PSExiftoolAPI"
 
 --============================================================================--
@@ -604,6 +604,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	-- check if this rendition process is an export or a publish
 	local publishedCollection = exportContext.publishedCollection
 	if publishedCollection then
+		exportSession:recordRemoteCollectionId(publishedCollection.localIdentifier) 
 		-- copy collectionSettings to exportParams
 --		copyCollectionSettingsToExportParams(publishedCollection:getCollectionInfoSummary().collectionSettings, exportParams)
 		copyCollectionSettingsToExportParams(publishedCollection, exportParams)
@@ -716,7 +717,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
 --					if publishMode == 'Publish' and (not exportParams.useFileStation or not PSFileStationAPI.deletePic(exportParams.fHandle, publishedPhotoId)) then
-					if publishMode == 'Publish' and not PSUploadAPI.deletePic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
+					if publishMode == 'Publish' and not PSPhotoStationAPI.deletePic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
 --						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check FileStation API access!\n')
 						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check PhotoStation permissions!\n')
     					table.insert( failures, srcFilename )
@@ -735,7 +736,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in PhotoStation
 --				local foundPhoto = PSFileStationAPI.existsPic(exportParams.fHandle, publishedPhotoId)
-				local foundPhoto = PSUploadAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
+				local foundPhoto = PSPhotoStationAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
 					rendition:recordPublishedPhotoId(publishedPhotoId)
 					nNotCopied = nNotCopied + 1

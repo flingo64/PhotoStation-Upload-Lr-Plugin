@@ -39,16 +39,16 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 
 	-- Lightroom SDK
-local LrDate = 		import 'LrDate'
-local LrDialogs = 	import 'LrDialogs'
-local LrHttp = 		import 'LrHttp'
-local LrPathUtils = import 'LrPathUtils'
-local LrView = 		import 'LrView'
+local LrApplication =	import 'LrApplication'
+local LrDate = 			import 'LrDate'
+local LrDialogs = 		import 'LrDialogs'
+local LrHttp = 			import 'LrHttp'
+local LrPathUtils = 	import 'LrPathUtils'
+local LrView = 			import 'LrView'
 
 require "PSConvert"
 require "PSUtilities"
 require 'PSUploadTask'
-require 'PSFileStationAPI'
 require 'PSUploadExportDialogSections'
 
 --===========================================================================--
@@ -184,7 +184,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 		psBaseUrl = publishSettings.serverUrl .. "/photo/#!Albums"
 	end
 
-	albumUrl = PSUploadAPI.getAlbumUrl(psBaseUrl, getCollectionPath(info.publishedCollection))
+	albumUrl = PSPhotoStationAPI.getAlbumUrl(psBaseUrl, PSLrUtilities.getCollectionPath(info.publishedCollection))
 
 	LrHttp.openUrlInBrowser(albumUrl)
 end
@@ -211,7 +211,7 @@ function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 		psBaseUrl = publishSettings.serverUrl .. "/photo/#!Albums"
 	end
 	
-	photoUrl = PSUploadAPI.getPhotoUrl(psBaseUrl, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
+	photoUrl = PSPhotoStationAPI.getPhotoUrl(psBaseUrl, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
 	LrHttp.openUrlInBrowser(photoUrl)
 end
 
@@ -270,11 +270,11 @@ end
  -- @return (string) "ignore", "cancel", "delete", or nil
  -- (If you return nil, Lightroom's default dialog will be displayed.)
 --[[ Not used for PhotoStation Upload plug-in.
+]]--
 
 function publishServiceProvider.shouldDeletePublishedCollection( publishSettings, info )
 end
 
-]]--
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
@@ -297,7 +297,7 @@ end
  -- the service. If the service you are supporting allows photos to be deleted
  -- via its API, you should do that from this function.
 
-function publishServiceProvider.deletePhotosFromPublishedCollection( publishSettings, arrayOfPhotoIds, deletedCallback )
+function publishServiceProvider.deletePhotosFromPublishedCollection( publishSettings, arrayOfPhotoIds, deletedCallback, localCollectionId)
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
@@ -317,7 +317,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection( publishSett
 
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
 --		if FileStationAPI.deletePic (publishSettings.fHandle, photoId) then
-		if PSUploadAPI.deletePic (publishSettings.uHandle, photoId, PSConvert.isVideo(photoId)) then
+		if PSPhotoStationAPI.deletePic (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, photoId .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
@@ -708,54 +708,36 @@ end
  -- enable collections from this service to be sorted manually and will call
  -- the <a href="#publishServiceProvider.imposeSortOrderOnPublishedCollection"><code>imposeSortOrderOnPublishedCollection</code></a>
  -- callback to cause photos to be sorted on the service after each Publish
-publishServiceProvider.supportsCustomSortOrder = false
+publishServiceProvider.supportsCustomSortOrder = true
 	
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called after each time
  -- that photos are published via this service assuming the published collection
  -- is set to "User Order." Your plug-in should ensure that the photos are displayed
  -- in the designated sequence on the service.
---[[
 function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSettings, info, remoteIdSequence )
-	return
-	local photosetId = info.remoteCollectionId
+	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
+	local albumPath = PSLrUtilities.getCollectionPath(publishedCollection)
+	
+	-- make sure logfile is opened
+--	openLogfile(publishSettings.logLevel)
 
-	if photosetId then
+	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n ")
 
-		-- Get existing list of photos from the photoset. We want to be sure that we don't
-		-- remove photos that were posted to this photoset by some other means by doing
-		-- this call, so we look for photos that were missed and reinsert them at the end.
-
-		local existingPhotoSequence = FlickrAPI.listPhotosFromPhotoset( publishSettings, { photosetId = photosetId } )
-
-		-- Make a copy of the remote sequence from LR and then tack on any photos we didn't see earlier.
-		
-		local combinedRemoteSequence = {}
-		local remoteIdsInSequence = {}
-		
-		for i, id in ipairs( remoteIdSequence ) do
-			combinedRemoteSequence[ i ] = id
-			remoteIdsInSequence[ id ] = true
+	-- open session: initialize environment, get missing params and login
+	local sessionSuccess, reason = openSession(publishSettings, 'Sort')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: imposeSortOrderOnPublishedCollection failed!", reason, "critical")
 		end
-		
-		for _, id in ipairs( existingPhotoSequence ) do
-			if not remoteIdsInSequence[ id ] then
-				combinedRemoteSequence[ #combinedRemoteSequence + 1 ] = id
-			end
-		end
-		
-		-- There may be no photos left in the set, so check for that before trying
-		-- to set the sequence.
-		if existingPhotoSequence and existingPhotoSequence.primary then
-			FlickrAPI.setPhotosetSequence( publishSettings, {
-									photosetId = photosetId,
-									primary = existingPhotoSequence.primary,
-									photoIds = combinedRemoteSequence } )
-		end
-								
+		closeLogfile()
+		return
 	end
+
+	PSPhotoStationAPI.sortPics(publishSettings.uHandle, albumPath, remoteIdSequence)
+	
+	return true
 end
-]]
 
 -------------------------------------------------------------------------------
 --- This plug-in defined callback function is called when the user attempts to change the name
@@ -842,7 +824,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 			local publishedPath = pubPhoto:getRemoteId()
 			
 --			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
-			if publishedPath ~= nil then PSUploadAPI.deletePic(publishSettings.uHandle, publishedPath, PSConvert.isVideo(publishedPath)) end
+			if publishedPath ~= nil then PSPhotoStationAPI.deletePic(publishSettings.uHandle, publishedPath, PSConvert.isVideo(publishedPath)) end
 			nProcessed = i
 			progressScope:setPortionComplete(nProcessed, nPhotos)
 		end 

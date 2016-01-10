@@ -57,6 +57,8 @@ local LrPrefs	 		= import 'LrPrefs'
 local LrTasks 			= import 'LrTasks'
 local LrView 			= import 'LrView'
 
+require "PSLrUtilities"
+
 JSON = assert(loadfile (LrPathUtils.child(_PLUGIN.path, 'JSON.lua')))()
 
 --============================================================================--
@@ -274,37 +276,6 @@ function evaluateDirname(path, srcPhoto)
 end 
 
 
----------------------- Get Collection Path --------------------------------------------------
-
--- getCollectionPath(publishedCollection)
--- 	return the collection path of a collection or collection set by recursively traversing the collection and all of its parents
-
-function getCollectionPath(publishedCollection)
-	local parentCollectionSet
-	local collectionPath
-	
-	-- Build the directory path by recursively traversing the parent collection sets and prepend each directory
-	if publishedCollection:type() == 'LrPublishedCollection' then
-		local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-		collectionPath 	= collectionSettings.dstRoot
-	else
-		local collectionSetSettings = publishedCollection:getCollectionSetInfoSummary().collectionSettings
-		collectionPath 	= collectionSetSettings.baseDir
-	end
-	
-	parentCollectionSet  = publishedCollection:getParent()
-	while parentCollectionSet do
-		local parentSettings = parentCollectionSet:getCollectionSetInfoSummary().collectionSettings
-		if parentSettings and ifnil(normalizeDirname(parentSettings.baseDir), '') ~= '' then
-			collectionPath = normalizeDirname(parentSettings.baseDir) .. "/" .. collectionPath	
-		end
-		parentCollectionSet  = parentCollectionSet:getParent()
-	end
-	writeLogfile(4, "getCollectionPath(): collectionPath = " .. collectionPath .. "\n")
-	
-	return collectionPath
-end
-
 ---------------------- http encoding routines ---------------------------------------------------------
 
 function trim(s)
@@ -372,8 +343,8 @@ end
 function copyCollectionSettingsToExportParams(publishedCollection, exportParams)
 	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
 	
-	exportParams.storeDstRoot 	= true			-- must be fixed in a Published Collection
-	exportParams.dstRoot 		= getCollectionPath(publishedCollection)
+	exportParams.storeDstRoot 	= true			-- dstRoot must be set in a Published Collection
+	exportParams.dstRoot 		= PSLrUtilities.getCollectionPath(publishedCollection)
 	exportParams.createDstRoot 	= collectionSettings.createDstRoot
 	exportParams.copyTree 		= collectionSettings.copyTree
 	exportParams.srcRoot 		= collectionSettings.srcRoot
@@ -381,8 +352,8 @@ function copyCollectionSettingsToExportParams(publishedCollection, exportParams)
 end
 
 -- openSession(exportParams, publishMode)
--- initialize all required APIs: Convert, Upload, FileStation, Exiftool
--- login to PhotoStation and FileStation, if required
+-- initialize all required APIs: Convert, Upload, Exiftool
+-- login to PhotoStation, if required
 function openSession(exportParams, publishMode)
 
 	-- if "use secondary server was choosen, temporarily overwrite primary address
@@ -393,54 +364,37 @@ function openSession(exportParams, publishMode)
 		exportParams.servername = exportParams.servername2
 		exportParams.serverTimeout = exportParams.serverTimeout2
 		exportParams.serverUrl = exportParams.proto .. "://" .. exportParams.servername
-		exportParams.useFileStation = exportParams.useFileStation2
-		exportParams.protoFileStation = exportParams.protoFileStation2
-		exportParams.portFileStation = exportParams.portFileStation2
 	end
 	
 	-- Get missing settings, if not stored in preset.
 	if promptForMissingSettings(exportParams, publishMode) == 'cancel' then
 		return false, 'cancel'
 	end
-	publishMode = iif(publishMode == 'Delete', 'Delete', exportParams.publishMode)
+
+	if publishMode ~= 'Delete' and publishMode ~= 'Sort' then
+		publishMode = exportParams.publishMode
+	end
 	
 	-- ConvertAPI: required if thumb generation is configured
 	if exportParams.thumbGenerate then
 			exportParams.cHandle = PSConvert.initialize(exportParams.PSUploaderPath)
 	end
-	
-	-- CheckExisting or Delete: Login to FileStation required
-	if (publishMode == 'CheckExisting' or publishMode == 'Delete') and not exportParams.useFileStation then
-		local errorMsg = string.format("Publish(%s): Login to FileStation required, but not configured!\n", publishMode)
-		writeLogfile(1, errorMsg)
-		return false, errorMsg
-	end
 
-	-- FileStation access is also required for publishing photos that have been moved
-	if publishMode ~= 'Export' and exportParams.useFileStation then
-		local FileStationUrl = exportParams.protoFileStation .. '://' .. string.gsub(exportParams.servername, ":%d+", "") .. ":" .. exportParams.portFileStation
-		local usernameFS = iif(exportParams.differentFSUser, exportParams.usernameFileStation, exportParams.username)
-		local passwordFS = iif(exportParams.differentFSUser, exportParams.passwordFileStation, exportParams.password)
-		exportParams.fHandle = PSFileStationAPI.initialize(FileStationUrl, 
-															iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
-															usernameFS)
-
-		writeLogfile(3, "Login to FileStation(user: "  .. usernameFS .. ").\n")
-		local result, reason = PSFileStationAPI.login(exportParams.fHandle, usernameFS, passwordFS)
-		if not result then
-			local errorMsg = string.format('FileStation Login failed!\nReason: %s\n', reason)
-			writeLogfile(1, errorMsg)
-			return false, errorMsg
-		end
-		writeLogfile(2, "FileStation Login(" .. FileStationUrl .. ") OK.\n")
-	end
-
-	-- Publish or Export: Login to PhotoStation
-	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' or publishMode == 'Delete' then
-		exportParams.uHandle = PSUploadAPI.initialize(exportParams.serverUrl, 
+	-- Login to PhotoStation: not required for CheckMoved
+	if publishMode ~= 'CheckMoved' then
+		local result, reason
+		exportParams.uHandle, reason = PSPhotoStationAPI.initialize(exportParams.serverUrl, 
 														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
 														exportParams.serverTimeout)
-		local result, reason = PSUploadAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
+		if not exportParams.uHandle then
+			local errorMsg = string.format("Initialize of %s %s failed!\nReason: %s\n",
+									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
+									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), reason)
+			writeLogfile(1, errorMsg)
+			return 	false, errorMsg
+		end
+		
+		result, reason = PSPhotoStationAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
 		if not result then
 			local errorMsg = string.format("Login to %s %s failed!\nReason: %s\n",
 									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
@@ -454,8 +408,8 @@ function openSession(exportParams, publishMode)
 								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
-	-- exiftool: required if not Delete and any exif translation was selected
-	if publishMode ~= 'Delete' and exportParams.exifTranslate then 
+	-- exiftool: required if not Delete or Sort and any exif translation was selected
+	if not string.find('Delete,Sort', publishMode, 1, true) and exportParams.exifTranslate then 
 		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
 		return iif(exportParams.eHandle, true, false), "Cannot start exiftool!" 
 	end
@@ -473,16 +427,18 @@ function closeSession(exportParams, publishMode)
 	end
 	
 	-- CheckExisting or Delete: Logout from FileStation
+--[[
 	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
 		if not PSFileStationAPI.logout(exportParams.fHandle) then
 			writeLogfile(1,"FileStation Logout failed\n")
 			return false
 		end
 	end
+]]
 	
 	-- Publish or Export: Logout from PhotoStation
 	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' or publishMode == 'Delete' then
-		if not PSUploadAPI.logout (exportParams.uHandle) then
+		if not PSPhotoStationAPI.logout (exportParams.uHandle) then
 			writeLogfile(1,"PhotoStation Logout failed\n")
 			return false
 		end

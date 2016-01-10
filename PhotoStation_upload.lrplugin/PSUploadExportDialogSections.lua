@@ -164,23 +164,8 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
-		if propertyTable.useFileStation and (string.match(propertyTable.portFileStation, '(%d+)') ~= propertyTable.portFileStation) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterNumericPort=Enter a numeric value for FileStation port"
-			break
-		end
-
-		if propertyTable.useFileStation and propertyTable.differentFSUser and ifnil(propertyTable.usernameFileStation, "") == ""  then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/UsernameFSMissing=Enter a username for FileStation access"
-			break
-		end
-
 		if propertyTable.useSecondAddress and ifnil(propertyTable.servername2, "") == "" then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/Servername2Missing=Enter a secondary servername"
-			break
-		end
-
-		if propertyTable.useSecondAddress and propertyTable.useFileStation2 and string.match(propertyTable.portFileStation2, '(%d+)') ~= propertyTable.portFileStation2 then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterNumericPort2=Enter a numeric value for secondary FileStation port"
 			break
 		end
 
@@ -239,14 +224,8 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'exifXlatFaceRegions', updateExportStatus )
 	propertyTable:addObserver( 'exifXlatRating', updateExportStatus )
 
-	propertyTable:addObserver( 'useFileStation', updateExportStatus )
-	propertyTable:addObserver( 'portFileStation', updateExportStatus )
-	propertyTable:addObserver( 'differentFSUser', updateExportStatus )
-	propertyTable:addObserver( 'usernameFileStation', updateExportStatus )
 	propertyTable:addObserver( 'useSecondAddress', updateExportStatus )
 	propertyTable:addObserver( 'servername2', updateExportStatus )
-	propertyTable:addObserver( 'useFileStation2', updateExportStatus )
-	propertyTable:addObserver( 'portFileStation2', updateExportStatus )
 
 	propertyTable:addObserver( 'LR_renamingTokensOn', updateExportStatus )
 	
@@ -381,6 +360,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				f:popup_menu {
 				tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
 					value = bind 'serverTimeout2',
+					enabled = bind 'useSecondAddress',
 					alignment = 'left',
 					fill_horizontal = 1,
 					items = {
@@ -399,126 +379,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			},
 		},
 	} 
-	
-	-- config section for FileStation API: only in Publish dialog
-	local fileStationView = f:view {
-		fill_horizontal = 1,
 
-		f:row {
-			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/UseFileStation=Use FileStation API:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/UseFileStationTT=Use of FileStation API is required for Publish mode 'Find Existing' and file deletion",
-				alignment = 'right',
-				width = share 'labelWidth',
-				value = bind 'useFileStation',
-				enabled =  LrBinding.negativeOfKey('useSecondAddress'),
-			},
-
-			f:popup_menu {
-				title = LOC "$$$/PSUpload/ExportDialog/FSProto=Protocol:",
-				value = bind 'protoFileStation',
-				visible =  bind 'useFileStation',
-				enabled =  LrBinding.negativeOfKey('useSecondAddress'),
-				items = {
-					{ title	= 'http',   value 	= 'http' },
-					{ title	= 'https',	value 	= 'https' },
-				},
-			},
-
-			f:edit_field {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/FSPortTT=Enter the port of the FileStation.\nThis is typically the Admin Port of the DiskStation(e.g. 5000 for http, 5001 for https",
-				value = bind 'portFileStation',
-				visible =  bind 'useFileStation',
-				enabled =  LrBinding.negativeOfKey('useSecondAddress'),
-				truncation = 'middle',
-				validate = validatePort,
-				immediate = true,
-				fill_horizontal = 1,
-			},
-		},
-	}
-
-	-- config section for FileStation API via secondary server: only in Publish dialog
-	local fileStation2View = f:view {
-		fill_horizontal = 1,
-
-		f:row {
-			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/UseFileStation2=Use FileStation API:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/UseFileStationTT=Use of FileStation API via secondary server: required for Publish mode 'Find Existing' and file deletion",
-				value = bind 'useFileStation2',
-				enabled = bind 'useSecondAddress',
-				alignment = 'right',
-				width = share 'labelWidth',
-			},
-
-			f:popup_menu {
-				title = LOC "$$$/PSUpload/ExportDialog/FSProto2=Protocol:",
-				value = bind 'protoFileStation2',
-				visible = bind 'useFileStation2',
-				enabled = bind 'useSecondAddress',
---				enabled = LrBinding.andAllKeys('useSecondAddress', 'useFileStation2'),  -- won't work (see Lr forum)
-				items = {
-					{ title	= 'http',   value 	= 'http' },
-					{ title	= 'https',	value 	= 'https' },
-				},
-			},
-
-			f:edit_field {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/FSPort2TT=Enter the port of the FileStation.\nThis is typically the Admin Port (e.g. 5000 for http, 5001 for https)",
-				value = bind 'portFileStation2',
-				visible = bind 'useFileStation2',
-				enabled = bind 'useSecondAddress',
---				enabled = LrBinding.andAllKeys('useSecondAddress', 'useFileStation2'), -- won't work (see Lr forum)
-				truncation = 'middle',
-				validate = validatePort,
-				immediate = true,
-				fill_horizontal = 1,
-			},
-		},
-	}
-
-	-- config section for FileStation API different user account: only in Publish dialog
-	local fileStationPWView = f:view {
-		fill_horizontal = 1,
-		f:row {
-			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/DiffFSUser=Use FileStation Login:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/DiffFSUserTT=If your PhotoStation uses its own user management, then enter the diskstation username/password for FileStation access here.",
-				alignment = 'right',
-				width = share 'labelWidth',
-				value = bind 'differentFSUser',
-			},
-
-			f:edit_field {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/FSUserTT=Enter the username for FileStation access.",
-				value = bind 'usernameFileStation',
-				truncation = 'middle',
-				enabled = bind 'differentFSUser',
-				visible = bind 'differentFSUser',
-				immediate = true,
-				fill_horizontal = 1,
-			},
-
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/FSPassword=Password:",
-				alignment = 'right',
-				enabled = bind 'differentFSUser',
-				visible = bind 'differentFSUser',
-			},
-
-			f:password_field {
-				value = bind 'passwordFileStation',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/FSPasswordTT=Enter the password for FileStation access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
-				enabled = bind 'differentFSUser',
-				visible = bind 'differentFSUser',
-				truncation = 'middle',
-				immediate = true,
-				fill_horizontal = 1,
-			},
-		},
-	}
-	
 	-- config section for Export or Publish dialog
 	local result = {
 	
@@ -571,6 +432,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
         				f:popup_menu {
         				tooltip = LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nuse higher value (>= 40s), if you experience problems due to disks in standby mode",
         					value = bind 'serverTimeout',
+							enabled =  LrBinding.negativeOfKey('useSecondAddress'),
         					alignment = 'left',
         					fill_horizontal = 1,
         					items = {
@@ -590,13 +452,9 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 				},
 
-				conditionalItem(propertyTable.LR_isExportForPublish, fileStationView),
-
 				f:separator { fill_horizontal = 1 },
 				secondServerView,
 				
-				conditionalItem(propertyTable.LR_isExportForPublish, fileStation2View),
-
 				f:separator { fill_horizontal = 1 },
 
 				f:row {
@@ -655,10 +513,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 						immediate = true,
 						fill_horizontal = 1,
 					},
-
 				},
-
-				conditionalItem(propertyTable.LR_isExportForPublish, fileStationPWView),
 			},
 			
 			conditionalItem(not propertyTable.LR_isExportForPublish, dstPathView),
