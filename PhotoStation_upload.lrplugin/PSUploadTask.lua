@@ -153,25 +153,27 @@ function getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot)
 		writeLogfile(3, 'isVirtualCopy: new srcPhotoPath is: ' .. srcPhotoPath .. '"\n')				
 	end
 
-	-- check if extension of rendered photo is different from original photo 
-	if exportParams.LR_format == 'ORIGINAL' then
-		localRenderedExtension = LrPathUtils.extension(srcPhotoPath)
-	else
-		localRenderedExtension = iif(exportParams.LR_format == 'JPEG', 'JPG', exportParams.LR_format)   
-		localRenderedExtension = iif(exportParams.LR_extensionCase == 'lowercase', string.lower(localRenderedExtension), localRenderedExtension)
+	-- for photos: check if extension of rendered photo is different from original photo
+	if not srcPhoto:getRawMetadata('isVideo') then
+    	if exportParams.LR_format == 'ORIGINAL' then
+    		localRenderedExtension = LrPathUtils.extension(srcPhotoPath)
+    	else
+    		localRenderedExtension = iif(exportParams.LR_format == 'JPEG', 'JPG', exportParams.LR_format)   
+    		localRenderedExtension = iif(exportParams.LR_extensionCase == 'lowercase', string.lower(localRenderedExtension), localRenderedExtension)
+    	end
+    	
+    	if string.lower(srcPhotoExtension) ~= string.lower(localRenderedExtension) then
+    		-- if original and rendered photo extensions are different, use rendered photo extension
+    		-- optionally append original extension to photoname (e.g. '_rw2.jpg')
+    		if exportParams.RAWandJPG then
+    			srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '_' .. srcPhotoExtension, localRenderedExtension)
+    		else
+    			srcPhotoPath = LrPathUtils.replaceExtension(srcPhotoPath, localRenderedExtension)
+    		end
+    		writeLogfile(3, string.format("'Orig %s <> rendered extension %s: new srcPhotoPath is: %s\n", srcPhotoExtension, localRenderedExtension, srcPhotoPath))				
+    	end
 	end
-	
-	if string.lower(srcPhotoExtension) ~= string.lower(localRenderedExtension) then
-		-- if original and rendered photo extensions are different, use rendered photo extension
-		-- optionally append original extension to photoname (e.g. '_rw2.jpg')
-		if exportParams.RAWandJPG then
-			srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '_' .. srcPhotoExtension, localRenderedExtension)
-		else
-			srcPhotoPath = LrPathUtils.replaceExtension(srcPhotoPath, localRenderedExtension)
-		end
-		writeLogfile(3, string.format("'Orig %s <> rendered extension %s: new srcPhotoPath is: %s\n", srcPhotoExtension, localRenderedExtension, srcPhotoPath))				
-	end
-	
+		
 	localRenderedPath = srcPhotoPath
 			
 	if exportParams.copyTree then
