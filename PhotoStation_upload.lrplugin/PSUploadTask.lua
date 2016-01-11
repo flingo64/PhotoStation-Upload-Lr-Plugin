@@ -575,7 +575,7 @@ end
 -- of each export and publish session before the rendition objects are generated.
 function PSUploadTask.updateExportSettings(exportParams)
 -- do some initialization stuff
-	local prefs = LrPrefs.prefsForPlugin()
+-- local prefs = LrPrefs.prefsForPlugin()
 
 	-- Start Debugging
 	openLogfile(exportParams.logLevel)
@@ -621,20 +621,16 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	-- check if this rendition process is an export or a publish
 	local publishedCollection = exportContext.publishedCollection
 	if publishedCollection then
+		-- set remoteCollectionId to localCollectionId: see PSPublishSupport.imposeSortOrderOnPublishedCollection()
 		exportSession:recordRemoteCollectionId(publishedCollection.localIdentifier) 
-		-- copy collectionSettings to exportParams
---		copyCollectionSettingsToExportParams(publishedCollection:getCollectionInfoSummary().collectionSettings, exportParams)
-		copyCollectionSettingsToExportParams(publishedCollection, exportParams)
 		publishMode = exportParams.publishMode
 	else
 		publishMode = 'Export'
 		exportParams.publishMode = 'Export'
 	end
 		
---	exportParams.exifTranslate = false
 	-- open session: initialize environment, get missing params and login
---	local sessionSuccess, reason = true, Nil
-	local sessionSuccess, reason = openSession(exportParams, publishMode)
+	local sessionSuccess, reason = openSession(exportParams, publishMode, publishedCollection)
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: processRenderedPhotos failed!", reason, "critical")
@@ -664,7 +660,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		end
 		showFinalMessage("PhotoStation CheckMoved done", message, "info")
 		closeLogfile()
-		closeSession(exportParams, publishMode)
+		closeSession(exportParams)
 		return
 	end
 
@@ -816,7 +812,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 
 	writeLogfile(2,"--------------------------------------------------------------------\n")
-	closeSession(exportParams, publishMode)
+	closeSession(exportParams)
 	
 	timeUsed = 	LrDate.currentTime() - startTime
 	timePerPic = timeUsed / nProcessed
