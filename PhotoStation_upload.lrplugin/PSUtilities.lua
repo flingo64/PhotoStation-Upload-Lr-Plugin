@@ -13,7 +13,6 @@ useful functions:
 	- writeLogfile
 	- closeLogfile
 	
-	- copyCollectionSettingsToExportParams
 	- openSession
 	- closeSession
 	
@@ -247,7 +246,11 @@ function evaluateDirname(path, srcPhoto)
 		local srcPhotoFMetadata
 				
 		if string.find(path, "{Date", 1, true) then
-			srcPhotoDate = srcPhoto:getRawMetadata("dateTimeOriginal")
+			if srcPhoto:getRawMetadata('isVideo') then
+				srcPhotoDate = LrDate.timeFromPosixDate(getDateTimeOriginal(path, srcPhoto))
+			else
+				srcPhotoDate = srcPhoto:getRawMetadata("dateTimeOriginal")
+			end
 		end
 		
 		if string.find(path, "{LrFM:", 1, true) then
@@ -338,26 +341,14 @@ end
 
 ---------------------- session environment ----------------------------------------------------------
 
--- copyCollectionSettingsToExportParams(publishedCollection, exportParams)
--- copy temporarily the collections settings to exportParams, so that we can work solely with exportParams;  
-function copyCollectionSettingsToExportParams(publishedCollection, exportParams)
-	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-	
-	exportParams.storeDstRoot 	= true			-- dstRoot must be set in a Published Collection
-	exportParams.dstRoot 		= PSLrUtilities.getCollectionPath(publishedCollection)
-	exportParams.createDstRoot 	= collectionSettings.createDstRoot
-	exportParams.copyTree 		= collectionSettings.copyTree
-	exportParams.srcRoot 		= collectionSettings.srcRoot
-	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
-	exportParams.publishMode 	= collectionSettings.publishMode
-end
+-- openSession(exportParams, publishMode, publishedCollection)
+-- 	- copy all relevant settings into exportParams 
+-- 	- initialize all required APIs: Convert, Upload, Exiftool
+-- 	- login to PhotoStation, if required
+--	- start exiftool listener, if required
+function openSession(exportParams, publishMode, publishedCollection)
 
--- openSession(exportParams, publishMode)
--- initialize all required APIs: Convert, Upload, Exiftool
--- login to PhotoStation, if required
-function openSession(exportParams, publishMode)
-
-	-- if "use secondary server was choosen, temporarily overwrite primary address
+	-- if "use secondary server" was choosen, temporarily overwrite primary address
 	writeLogfile(4, "openSession: publishMode = " .. publishMode .."\n")
 	if exportParams.useSecondAddress then
 		writeLogfile(4, "openSession: copy second server parameters\n")
@@ -367,22 +358,36 @@ function openSession(exportParams, publishMode)
 		exportParams.serverUrl = exportParams.proto .. "://" .. exportParams.servername
 	end
 	
+	-- if is Publish process, temporarily overwrite exportParams w/ CollectionSettings for Target Album
+	if publishedCollection then
+    	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
+		writeLogfile(4, "openSession: copy collection settings\n")
+    	
+    	exportParams.storeDstRoot 	= true			-- dstRoot must be set in a Published Collection
+    	exportParams.dstRoot 		= PSLrUtilities.getCollectionPath(publishedCollection)
+    	exportParams.createDstRoot 	= collectionSettings.createDstRoot
+    	exportParams.copyTree 		= collectionSettings.copyTree
+    	exportParams.srcRoot 		= collectionSettings.srcRoot
+    	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
+    	exportParams.publishMode 	= collectionSettings.publishMode
+	end
+	
 	-- Get missing settings, if not stored in preset.
 	if promptForMissingSettings(exportParams, publishMode) == 'cancel' then
 		return false, 'cancel'
 	end
 
-	if publishMode ~= 'Delete' and publishMode ~= 'Sort' then
+	if not string.find('Delete,Sort', publishMode, 1, true) then
 		publishMode = exportParams.publishMode
 	end
 	
-	-- ConvertAPI: required if thumb generation is configured
-	if exportParams.thumbGenerate then
+	-- ConvertAPI: required if Export/Publish and thumb generation is configured
+	if string.find('Export,Publish', publishMode, 1, true) and exportParams.thumbGenerate and not exportParams.cHandle then
 			exportParams.cHandle = PSConvert.initialize(exportParams.PSUploaderPath)
 	end
 
 	-- Login to PhotoStation: not required for CheckMoved
-	if publishMode ~= 'CheckMoved' then
+	if publishMode ~= 'CheckMoved' and not exportParams.uHandle then
 		local result, reason
 		exportParams.uHandle, reason = PSPhotoStationAPI.initialize(exportParams.serverUrl, 
 														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
@@ -401,6 +406,7 @@ function openSession(exportParams, publishMode)
 									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
 									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), reason)
 			writeLogfile(1, errorMsg)
+			 exportParams.uHandle = nil
 			return 	false, errorMsg
 					
 		end
@@ -409,8 +415,8 @@ function openSession(exportParams, publishMode)
 								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
-	-- exiftool: required if not Delete or Sort and any exif translation was selected
-	if not string.find('Delete,Sort', publishMode, 1, true) and exportParams.exifTranslate then 
+	-- exiftool: required if Export/Publish and and any exif translation was selected
+	if string.find('Export,Publish', publishMode, 1, true) and exportParams.exifTranslate and not exportParams.eHandle then 
 		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
 		return iif(exportParams.eHandle, true, false), "Cannot start exiftool!" 
 	end
@@ -419,32 +425,16 @@ function openSession(exportParams, publishMode)
 end
 
 -- closeSession(exportParams, publishMode)
--- logout from PhotoStation and FileStation, if required
-function closeSession(exportParams, publishMode)
-	writeLogfile(3,"closeSession(" .. publishMode .. "):...\n")
+-- terminate exiftool
+function closeSession(exportParams)
+	writeLogfile(3,"closeSession() starting\n")
 
-	if  publishMode ~= 'Delete' and exportParams.exifTranslate then 
-		PSExiftoolAPI.close(exportParams.eHandle) 
+	if exportParams.eHandle then 
+		PSExiftoolAPI.close(exportParams.eHandle)
+		exportParams.eHandle = nil 
 	end
-	
-	-- CheckExisting or Delete: Logout from FileStation
---[[
-	if publishMode == 'CheckExisting' or publishMode == 'Delete' then
-		if not PSFileStationAPI.logout(exportParams.fHandle) then
-			writeLogfile(1,"FileStation Logout failed\n")
-			return false
-		end
-	end
-]]
-	
-	-- Publish or Export: Logout from PhotoStation
-	if publishMode == 'Publish' or publishMode == 'CheckExisting' or publishMode == 'Export' or publishMode == 'Delete' then
-		if not PSPhotoStationAPI.logout (exportParams.uHandle) then
-			writeLogfile(1,"PhotoStation Logout failed\n")
-			return false
-		end
-	end
-	writeLogfile(3,"closeSession(" .. publishMode .. ") done.\n")
+		
+	writeLogfile(3,"closeSession() done.\n")
 
 	return true
 end
@@ -462,9 +452,8 @@ function promptForMissingSettings(exportParams, publishMode)
 	local needDstRoot = not exportParams.storeDstRoot
 	local needPublishMode = false
 	local needLoglevel = false
-	local needPwFS = exportParams.LR_isExportForPublish and exportParams.differentFSUser and ifnil(exportParams.passwordFileStation, '') == ''
 
-	if exportParams.LR_isExportForPublish and publishMode ~= 'Delete' and ifnil(exportParams.publishMode, 'Ask') == 'Ask' then
+	if exportParams.LR_isExportForPublish and not string.find('Delete,Sort', publishMode, 1, true) and ifnil(exportParams.publishMode, 'Ask') == 'Ask' then
 		exportParams.publishMode = 'Publish'
 		needPublishMode = true
 	end
@@ -475,7 +464,7 @@ function promptForMissingSettings(exportParams, publishMode)
 		needLoglevel = true
 	end
 	
-	if not (needPw or needDstRoot or needPublishMode or needLoglevel or needPwFS) then
+	if not (needPw or needDstRoot or needPublishMode or needLoglevel) then
 		return "ok"
 	end
 	
@@ -510,45 +499,6 @@ function promptForMissingSettings(exportParams, publishMode)
 			f:password_field {
 				value = bind 'password',
 				tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Enter the password for PhotoStation access.",
-				truncation = 'middle',
-				immediate = true,
-				width = share 'labelWidth',
-				fill_horizontal = 1,
-			},
-		},
-	}
-
-	local passwdFSView = f:view {
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/USERNAMEFS=FileStation Login:",
-				alignment = 'right',
-				width = share 'labelWidth',
-			},
-
-			f:edit_field {
-				value = bind 'usernameFileStation',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/USERNAMEFSTT=Enter the username for FileStation access.",
-				truncation = 'middle',
-				immediate = true,
---				width = share 'labelWidth',
-				width_in_chars = 16,
-				fill_horizontal = 1,
-			},
-		},
-		
-		f:spacer {	height = 5, },
-
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/PASSWORDFS=FileStation Password:",
-				alignment = 'right',
-				width = share 'labelWidth',
-			},
-
-			f:password_field {
-				value = bind 'passwordFileStation',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDFSTT=Enter the password for FileStation access.",
 				truncation = 'middle',
 				immediate = true,
 				width = share 'labelWidth',
@@ -643,8 +593,6 @@ function promptForMissingSettings(exportParams, publishMode)
 		bind_to_object = exportParams,
 
 		conditionalItem(needPw, passwdView), 
-		f:spacer {	height = 10, },
-		conditionalItem(needPwFS, passwdFSView), 
 		f:spacer {	height = 10, },
 		conditionalItem(needDstRoot, dstRootView), 
 		f:spacer {	height = 10, },
