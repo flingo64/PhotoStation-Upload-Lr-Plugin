@@ -327,6 +327,16 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					value = bind 'RAWandJPG',
 					fill_horizontal = 1,
 				},
+
+				f:checkbox {
+					title = LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos in PhotoStation",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
+									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
+					alignment = 'left',
+					value = bind 'sortPhotos',
+					enabled =  LrBinding.negativeOfKey('copyTree'),
+					fill_horizontal = 1,
+				},
 			},
 
 		},

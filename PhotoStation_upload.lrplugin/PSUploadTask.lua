@@ -541,7 +541,7 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local srcPhotoPath = srcPhoto:getRawMetadata('path')
 		local publishedPath = ifnil(pubPhoto:getRemoteId(), '<Nil>')
 		local edited = pubPhoto:getEditedFlag()
-		local dstRoot = evaluateDirname(exportParams.dstRoot, srcPhoto)
+		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
 		
 		local localPath, remotePath = getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot)
 		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
@@ -715,7 +715,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			-- evaluate and sanitize dstRoot: 
 			--   substitute metadata tokens
 			--   replace \ by /, remove leading and trailings slashes
-			dstRoot = evaluateDirname(exportParams.dstRoot, srcPhoto)
+			dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
 			writeLogfile(4, "  sanitized dstRoot: " .. dstRoot .. "\n")
 			
 			local localPath, newPublishedPhotoId

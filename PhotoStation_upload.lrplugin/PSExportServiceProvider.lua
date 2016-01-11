@@ -111,7 +111,8 @@ exportServiceProvider.exportPresetFields = {
 
 		-- misc options
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
-
+		{ key = 'sortPhotos',		default = false },	-- sort photos in PhotoStation acc. to collection sort order 
+		
 		-- video parameters
 		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
 		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUM res videos

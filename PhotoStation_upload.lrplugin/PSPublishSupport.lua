@@ -40,6 +40,7 @@ of it requires the prior written permission of Adobe.
 
 	-- Lightroom SDK
 local LrApplication =	import 'LrApplication'
+local LrBinding	= 		import 'LrBinding'
 local LrDate = 			import 'LrDate'
 local LrDialogs = 		import 'LrDialogs'
 local LrHttp = 			import 'LrHttp'
@@ -297,12 +298,13 @@ end
  -- the service. If the service you are supporting allows photos to be deleted
  -- via its API, you should do that from this function.
 
-function publishServiceProvider.deletePhotosFromPublishedCollection( publishSettings, arrayOfPhotoIds, deletedCallback, localCollectionId)
+function publishServiceProvider.deletePhotosFromPublishedCollection(publishSettings, arrayOfPhotoIds, deletedCallback, localCollectionId)
+	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(localCollectionId)
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, 'Delete')
+	local sessionSuccess, reason = openSession(publishSettings, 'Delete', publishedCollection)
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: deletePhotosFromPublishedCollection failed!", reason, "critical")
@@ -316,7 +318,6 @@ function publishServiceProvider.deletePhotosFromPublishedCollection( publishSett
 	local nProcessed = 0 
 
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
---		if FileStationAPI.deletePic (publishSettings.fHandle, photoId) then
 		if PSPhotoStationAPI.deletePic (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, photoId .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
@@ -334,7 +335,6 @@ function publishServiceProvider.deletePhotosFromPublishedCollection( publishSett
 
 	showFinalMessage("PhotoStation Upload: DeletePhotosFromPublishedCollection done", message, "info")
 	closeLogfile()
-	closeSession(publishSettings, 'Delete');
 
 end
 
@@ -439,6 +439,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.RAWandJPG = false
 	end
 
+	if collectionSettings.sortPhotos == nil then
+		collectionSettings.sortPhotos = false
+	end
+
 	if collectionSettings.publishMode == nil then
 		collectionSettings.publishMode = 'Publish'
 	end
@@ -528,6 +532,16 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 									"IMG-001.JPG --> IMG-001.JPG",
 					alignment = 'left',
 					value = bind 'RAWandJPG',
+					fill_horizontal = 1,
+				},
+
+				f:checkbox {
+					title = LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos in PhotoStation",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
+									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
+					alignment = 'left',
+					value = bind 'sortPhotos',
+					enabled =  LrBinding.negativeOfKey('copyTree'),
 					fill_horizontal = 1,
 				},
 			},
@@ -733,27 +747,41 @@ publishServiceProvider.supportsCustomSortOrder = true
  -- is set to "User Order." Your plug-in should ensure that the photos are displayed
  -- in the designated sequence on the service.
 function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSettings, info, remoteIdSequence )
+	-- get publishedCollections: 
+	--   remoteCollectionId is the only collectionId we have here, so it must be equal to localCollectionId to retrieve the publishedCollection!!!
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
 	local albumPath = PSLrUtilities.getCollectionPath(publishedCollection)
 
 	-- make sure logfile is opened
---	openLogfile(publishSettings.logLevel)
+	openLogfile(publishSettings.logLevel)
 
---[[
-	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n ")
+	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n")
 
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, 'Sort')
+	local sessionSuccess, reason = openSession(publishSettings, 'Sort', publishedCollection)
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: imposeSortOrderOnPublishedCollection failed!", reason, "critical")
+			showFinalMessage("PhotoStation Upload: Sort Photos in Album failed!", reason, "critical")
 		end
-		closeLogfile()
-		return
+		closeLogfile(publishSettings)
+		return false
 	end
 
+	-- do not sort if not configured or is Tree Mirror or Target Album is dynamic 
+	if not publishSettings.sortPhotos or publishSettings.copyTree then
+		writeLogfile(3, "imposeSortOrderOnPublishedCollection: nothing to sort, done.\n")
+		return false
+	elseif PSLrUtilities.isDynamicAlbumPath(publishSettings.dstRoot) then
+		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Cannot sort photo: target album is dynamic!\n")
+		return false
+	end
+	
 	PSPhotoStationAPI.sortPics(publishSettings.uHandle, albumPath, remoteIdSequence)
-]]	
+
+	showFinalMessage("PhotoStation Upload: Sort Photos in Album done", "Sort Photos in Album done.", "info")
+
+	closeLogfile(publishSettings)
+
 	return true
 end
 
@@ -811,7 +839,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	openLogfile(publishSettings.logLevel)
 
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, 'Delete')
+	local sessionSuccess, reason = openSession(publishSettings, 'Delete', info.publishedCollection)
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: deletePublishedCollection failed!", reason, "critical")
@@ -858,7 +886,6 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		closeLogfile()
 	end )
 	
-	closeSession(publishSettings, 'Delete')
 end
 
 --------------------------------------------------------------------------------

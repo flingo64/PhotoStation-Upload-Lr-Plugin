@@ -235,50 +235,6 @@ function normalizeDirname(str)
 	return str
 end 
 
----------------------- directory name evaluation routine --------------------------------------------------
--- evaluateDirname(path, srcPhoto)
--- 	evaluate (substitute metadata tokens) and sanitize a given directory path 
-
-function evaluateDirname(path, srcPhoto)
-
-	if (path and string.find(path, "{", 1, true)) then
-		local srcPhotoDate
-		local srcPhotoFMetadata
-				
-		if string.find(path, "{Date", 1, true) then
-			if srcPhoto:getRawMetadata('isVideo') then
-				srcPhotoDate = LrDate.timeFromPosixDate(getDateTimeOriginal(path, srcPhoto))
-			else
-				srcPhotoDate = srcPhoto:getRawMetadata("dateTimeOriginal")
-			end
-		end
-		
-		if string.find(path, "{LrFM:", 1, true) then
-			srcPhotoFMetadata = srcPhoto:getFormattedMetadata()
-		end
-		
-		-- substitute date tokens: {Date <formatString>}
-		path = string.gsub (path, '({Date [^}]+})', function(dateParams)
-				local format = string.gsub(dateParams, "{Date ([^}]+)}", "%1")
-				local dateString = ifnil(LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), format, false), '')
-				
-				writeLogfile(3, string.format("xlatDateToken: format %s --> %s\n", ifnil(format, '<Nil>'), dateString)) 
-				return dateString 
-			end);
-			
-		-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}, only string, number or boolean type allowed
-		path = string.gsub (path, '({LrFM:%w+})', function(metadataParam)
-				local metadataName = string.gsub(metadataParam, "{LrFM:(%w+)}", "%1")
-				local metadataString = tostring(ifnil(srcPhotoFMetadata[metadataName], ''))
-				writeLogfile(3, string.format("xlatMetadataToken: key %s --> %s \n", ifnil(metadataName, '<Nil>'), metadataString)) 
-				return metadataString  
-			end);
-	end
-	
-	return normalizeDirname(path)
-end 
-
-
 ---------------------- http encoding routines ---------------------------------------------------------
 
 function trim(s)
@@ -369,6 +325,7 @@ function openSession(exportParams, publishMode, publishedCollection)
     	exportParams.copyTree 		= collectionSettings.copyTree
     	exportParams.srcRoot 		= collectionSettings.srcRoot
     	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
+    	exportParams.sortPhotos 	= collectionSettings.sortPhotos
     	exportParams.publishMode 	= collectionSettings.publishMode
 	end
 	
