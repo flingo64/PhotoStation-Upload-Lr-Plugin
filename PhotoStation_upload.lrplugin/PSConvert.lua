@@ -323,9 +323,9 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	LrFileUtils.delete(outfile)
 
 	if dateCapture and dateCapture < creationTime then
-		vinfo.dateTimeOrig = dateCapture
+		vinfo.srcDateTime = dateCapture
 	else
-		vinfo.dateTimeOrig = creationTime
+		vinfo.srcDateTime = creationTime
 	end
 	
 	return vinfo
