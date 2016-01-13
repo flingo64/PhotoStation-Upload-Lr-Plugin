@@ -41,6 +41,7 @@ of it requires the prior written permission of Adobe.
 	-- Lightroom SDK
 local LrApplication =	import 'LrApplication'
 local LrBinding	= 		import 'LrBinding'
+local LrColor = 		import 'LrColor'
 local LrDate = 			import 'LrDate'
 local LrDialogs = 		import 'LrDialogs'
 local LrHttp = 			import 'LrHttp'
@@ -299,12 +300,15 @@ end
  -- via its API, you should do that from this function.
 
 function publishServiceProvider.deletePhotosFromPublishedCollection(publishSettings, arrayOfPhotoIds, deletedCallback, localCollectionId)
+	publishSettings.publishMode = 'Delete'
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(localCollectionId)
+	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
+	publishSettings.publishMode = 'Delete'
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, 'Delete', publishedCollection)
+	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'Delete Photos from Published Collection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: deletePhotosFromPublishedCollection failed!", reason, "critical")
@@ -447,138 +451,139 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.publishMode = 'Publish'
 	end
 
-	return f:group_box {
-		title = "PhotoStation Upload Settings",  -- this should be localized via LOC
+	return f:view {
 		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSettings ),
 		
-		f:column {
-			fill_horizontal = 1,
-			spacing = f:label_spacing(),
+    	f:column {
+    		fill_horizontal = 1,
+    		spacing = f:label_spacing(),
 
---[[
-			f:checkbox {
-				title = "Enable Rating",  -- this should be localized via LOC
-				value = bind 'enableRating',
-			},
-
-			f:checkbox {
-				title = "Enable Comments",  -- this should be localized via LOC
-				value = bind 'enableComments',
-			},
-]]
-
-			f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-
-				f:edit_field {
-					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
-					value = bind 'dstRoot',
-					truncation = 'middle',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
-					alignment = 'left',
-					width = share 'labelWidth',
-					value = bind 'createDstRoot',
-					fill_horizontal = 1,
-				},
-			},
-			
-			f:row {
-				f:radio_button {
-					title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat copy to Target Album",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
-					alignment = 'right',
-					value = bind 'copyTree',
-					checked_value = false,
-					width = share 'labelWidth',
-				},
-
-				f:radio_button {
-					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to Local Path:",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
-					alignment = 'left',
-					value = bind 'copyTree',
-					checked_value = true,
-				},
-
-				f:edit_field {
-					value = bind 'srcRoot',
-					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=Enter the local path that is the root of the directory tree you want to mirror below the Target Album.",
-					enabled = bind 'copyTree',
-					visible = bind 'copyTree',
-					validate = validateDirectory,
-					truncation = 'middle',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-			},
-
-			f:row {
-				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
-									"Non-JPEG photo will be renamed to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
-									"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
-									"IMG-001.JPG --> IMG-001.JPG",
-					alignment = 'left',
-					value = bind 'RAWandJPG',
-					fill_horizontal = 1,
-				},
-
-				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos in PhotoStation",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
-									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
-					alignment = 'left',
-					value = bind 'sortPhotos',
-					enabled =  LrBinding.negativeOfKey('copyTree'),
-					fill_horizontal = 1,
-				},
-			},
-
-			f:row {
-				alignment = 'left',
---				fill_horizontal = 1,
-
-				f:static_text {
-					title = LOC "$$$/PSUpload/CollectionSettings/PublishMode=Publish Mode:",
-					alignment = 'right',
-				},
-				f:popup_menu {
-					tooltip = LOC "$$$/PSUpload/CollectionSettings/PublishModeTT=How to publish",
-					value = bind 'publishMode',
-					alignment = 'left',
-					fill_horizontal = 1,
-					items = {
-						{ title	= 'Ask me later',																value 	= 'Ask' },
-						{ title	= 'Normal',																		value 	= 'Publish' },
-						{ title	= 'CheckExisting: Set Unpublished to Published if existing in PhotoStation.',	value 	= 'CheckExisting' },
-						{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
-					},
-				},
-			},
-
-			f:row {
-				alignment = 'left',
-
-				f:static_text {
-					title = bind 'message',
-					fill_horizontal = 1,
-					visible = bind 'hasError'
-				},
-			},
-		},
-	}
+    		f:group_box {
+    			title = LOC "$$$/PSUpload/ExportDialog/TargetAlbum=Target Album and Upload Method",
+       			fill_horizontal = 1,
+    
+    			f:row {
+    				f:static_text {
+    					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
+    					alignment = 'right',
+    					width = share 'labelWidth'
+    				},
+    
+    				f:edit_field {
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
+    					value = bind 'dstRoot',
+    					truncation = 'middle',
+    					immediate = true,
+    					fill_horizontal = 1,
+    				},
+    
+    				f:checkbox {
+    					title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
+    					alignment = 'left',
+    					width = share 'labelWidth',
+    					value = bind 'createDstRoot',
+    					fill_horizontal = 1,
+    				},
+    			}, -- row
+    			
+    			f:row {
+    				f:radio_button {
+    					title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat copy to Target Album",
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
+    					alignment = 'right',
+    					value = bind 'copyTree',
+    					checked_value = false,
+    					width = share 'labelWidth',
+    				},
+    
+    				f:radio_button {
+    					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to Local Path:",
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
+    					alignment = 'left',
+    					value = bind 'copyTree',
+    					checked_value = true,
+    				},
+    
+    				f:edit_field {
+    					value = bind 'srcRoot',
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=Enter the local path that is the root of the directory tree you want to mirror below the Target Album.",
+    					enabled = bind 'copyTree',
+    					visible = bind 'copyTree',
+    					validate = validateDirectory,
+    					truncation = 'middle',
+    					immediate = true,
+    					fill_horizontal = 1,
+    				},
+    			}, -- row
+    
+    			f:separator { fill_horizontal = 1 },
+    
+    			f:row {
+    				f:checkbox {
+    					title = LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
+    									"Non-JPEG photo will be renamed to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
+    									"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
+    									"IMG-001.JPG --> IMG-001.JPG",
+    					alignment = 'left',
+    					value = bind 'RAWandJPG',
+    					fill_horizontal = 1,
+    				},
+    
+    				f:checkbox {
+    					title = LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos in PhotoStation",
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
+    									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
+    					alignment = 'left',
+    					value = bind 'sortPhotos',
+    					enabled =  LrBinding.negativeOfKey('copyTree'),
+    					fill_horizontal = 1,
+    				},
+    			}, -- row
+    		}, -- group
+    	
+    		f:spacer { height = 10, },
+    
+    		f:row {
+    			alignment = 'left',
+    			fill_horizontal = 1,
+    
+    			f:static_text {
+    				title = LOC "$$$/PSUpload/CollectionSettings/PublishMode=Publish Mode:",
+    				alignment = 'right',
+    				width = share 'labelWidth',
+    			},
+    
+    			f:popup_menu {
+    				tooltip = LOC "$$$/PSUpload/CollectionSettings/PublishModeTT=How to publish",
+    				value = bind 'publishMode',
+    				alignment = 'left',
+    				fill_horizontal = 1,
+    				items = {
+    					{ title	= 'Ask me later',																value 	= 'Ask' },
+    					{ title	= 'Normal',																		value 	= 'Publish' },
+    					{ title	= 'CheckExisting: Set Unpublished to Published if existing in PhotoStation.',	value 	= 'CheckExisting' },
+    					{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
+    				},
+    			},
+			}, -- row
+	
+    		f:spacer { height = 10, },
+    		
+    		f:row {
+    			alignment = 'left',
+    
+    			f:static_text {
+    				title = bind 'message',
+    				text_color = LrColor("red"),
+    				fill_horizontal = 1,
+    				visible = bind 'hasError'
+    			},
+    		}, --row
+		}, --column
+	} -- view
 
 end
 
@@ -691,9 +696,9 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 					fill_horizontal = 1,
 					visible = bind 'hasError'
 				},
-			},
-		},
-	}
+			}, --row
+		}, --column
+	} --group
 
 end
 
@@ -747,6 +752,7 @@ publishServiceProvider.supportsCustomSortOrder = true
  -- is set to "User Order." Your plug-in should ensure that the photos are displayed
  -- in the designated sequence on the service.
 function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSettings, info, remoteIdSequence )
+	publishSettings.publishMode = 'Delete'
 	-- get publishedCollections: 
 	--   remoteCollectionId is the only collectionId we have here, so it must be equal to localCollectionId to retrieve the publishedCollection!!!
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
@@ -758,7 +764,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n")
 
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, 'Sort', publishedCollection)
+	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'Sorting Photos in Collection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: Sort Photos in Album failed!", reason, "critical")
@@ -835,11 +841,13 @@ end
  -- published collection via the Publish Services panel user interface. This is
  -- your plug-in's opportunity to make the corresponding change on the service.
 function publishServiceProvider.deletePublishedCollection( publishSettings, info )
+	publishSettings.publishMode = 'Delete'
+
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, 'Delete', info.publishedCollection)
+	local sessionSuccess, reason = openSession(publishSettings, info.publishedCollection, 'Delete Published Collection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: deletePublishedCollection failed!", reason, "critical")
