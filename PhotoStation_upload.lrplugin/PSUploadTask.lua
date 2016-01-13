@@ -62,131 +62,8 @@ require "PSExiftoolAPI"
 		
 PSUploadTask = {}
 
-------------- getDateTimeOriginal -------------------------------------------------------------------
-
--- getDateTimeOriginal(srcFilename, srcPhoto)
--- get the DateTimeOriginal (capture date) of a photo or whatever comes close to it
--- tries various methods to get the info including Lr metadata, exiftool (if enabled), file infos
--- returns a unix timestamp and a boolean indicating if we found a real DateTimeOrig
-function getDateTimeOriginal(srcFilename, srcPhoto)
-	local srcDateTime = nil
-	local isOrigDateTime = false
-	
-	if srcPhoto:getRawMetadata("dateTimeOriginal") then
-		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginal")
-		isOrigDateTime = true
-		writeLogfile(3, "  dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-	elseif srcPhoto:getRawMetadata("dateTimeOriginalISO8601") then
-		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
-		isOrigDateTime = true
-		writeLogfile(3, "  dateTimeOriginalISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-	elseif srcPhoto:getRawMetadata("dateTimeDigitized") then
-		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitized")
-		writeLogfile(3, "  dateTimeDigitized: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-	elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
-		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
-		writeLogfile(3, "  dateTimeDigitizedISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-	elseif srcPhoto:getFormattedMetadata("dateCreated") and srcPhoto:getFormattedMetadata("dateCreated") ~= '' then
-		local srcDateTimeStr = srcPhoto:getFormattedMetadata("dateCreated")
-		local year,month,day,hour,minute,second,tzone
-		local foundDate = false -- avoid empty dateCreated
-		
-		-- iptcDateCreated: date is mandatory, time as whole, seconds and timezone may or may not be present
-		for year,month,day,hour,minute,second,tzone in string.gmatch(srcDateTimeStr, "(%d+)-(%d+)-(%d+)T*(%d*):*(%d*):*(%d*)Z*(%w*)") do
-			writeLogfile(4, string.format("dateCreated: %s Year: %s Month: %s Day: %s Hour: %s Minute: %s Second: %s Zone: %s\n",
-											srcDateTimeStr, year, month, day, ifnil(hour, "00"), ifnil(minute, "00"), ifnil(second, "00"), ifnil(tzone, "local")))
-			srcDateTime = LrDate.timeFromComponents(tonumber(year), tonumber(month), tonumber(day),
-													tonumber(ifnil(hour, "0")),
-													tonumber(ifnil(minute, "0")),
-													tonumber(ifnil(second, "0")),
-													iif(not tzone or tzone == "", "local", tzone))
-			foundDate = true
-		end
-		if foundDate then writeLogfile(3, "  dateCreated: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n") end
-	
-	-- dateTime is typically the date of the Lightroom import --> worst choice
---[[ 
-	elseif srcPhoto:getRawMetadata("dateTime") then
-		srcDateTime = srcPhoto:getRawMetadata("dateTime")
-		writeLogfile(3, "  RawMetadate datetime\n")
-		writeLogfile(3, "  dateTime: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-]]
-	end
-	
-	-- if nothing found in srcPhoto: take the fileCreationDate
-	if not srcDateTime then
-		local fileAttr = LrFileUtils.fileAttributes( srcFilename )
---		srcDateTime = exiftoolGetDateTimeOrg(srcFilename)
---		if srcDateTime then 
---			writeLogfile(3, "  exiftoolDateTimeOrg: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
---		elseif fileAttr["fileCreationDate"] then
-		if fileAttr["fileCreationDate"] then
-			srcDateTime = fileAttr["fileCreationDate"]
-			writeLogfile(3, "  fileCreationDate: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
---[[
-]]
-		else
-			srcDateTime = LrDate.currentTime()
-			writeLogfile(3, "  no date found, using current date: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		end
-	end
-	return LrDate.timeToPosixDate(srcDateTime), isOrigDateTime
-end
-
 -----------------
 
--- function getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot) 
--- 	return relative local path of the srcPhoto and destination path of the rendered photo: remotePath = dstRoot + (localpath - srcRoot), 
---	returns:
--- 		localPath - relative local path as unix-path
--- 		remotePath - absolute remote path as unix-path
-function getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot) 
-	local srcPhotoExtension = LrPathUtils.extension(srcPhotoPath)
-	local localRenderedPath, localRenderedExtension
-	local localPath
-	local remotePath
-	
-	-- if is virtual copy: add last three characters of photoId as suffix to filename
-	if srcPhoto:getRawMetadata('isVirtualCopy') then
-		srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '-' .. string.sub(srcPhoto:getRawMetadata('uuid'), -3), 
-												srcPhotoExtension)
-		writeLogfile(3, 'isVirtualCopy: new srcPhotoPath is: ' .. srcPhotoPath .. '"\n')				
-	end
-
-	-- for photos: check if extension of rendered photo is different from original photo
-	if not srcPhoto:getRawMetadata('isVideo') then
-    	if exportParams.LR_format == 'ORIGINAL' then
-    		localRenderedExtension = LrPathUtils.extension(srcPhotoPath)
-    	else
-    		localRenderedExtension = iif(exportParams.LR_format == 'JPEG', 'JPG', exportParams.LR_format)   
-    		localRenderedExtension = iif(exportParams.LR_extensionCase == 'lowercase', string.lower(localRenderedExtension), localRenderedExtension)
-    	end
-    	
-    	if string.lower(srcPhotoExtension) ~= string.lower(localRenderedExtension) then
-    		-- if original and rendered photo extensions are different, use rendered photo extension
-    		-- optionally append original extension to photoname (e.g. '_rw2.jpg')
-    		if exportParams.RAWandJPG then
-    			srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '_' .. srcPhotoExtension, localRenderedExtension)
-    		else
-    			srcPhotoPath = LrPathUtils.replaceExtension(srcPhotoPath, localRenderedExtension)
-    		end
-    		writeLogfile(3, string.format("'Orig %s <> rendered extension %s: new srcPhotoPath is: %s\n", srcPhotoExtension, localRenderedExtension, srcPhotoPath))				
-    	end
-	end
-		
-	localRenderedPath = srcPhotoPath
-			
-	if exportParams.copyTree then
-		localPath = 		string.gsub(LrPathUtils.makeRelative(srcPhotoPath, exportParams.srcRoot), "\\", "/")
-		localRenderedPath = string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
-	else
-		localPath = 		LrPathUtils.leafName(srcPhotoPath)
-		localRenderedPath = LrPathUtils.leafName(localRenderedPath)
-	end
-	remotePath = iif(dstRoot ~= '', dstRoot .. '/' .. localRenderedPath, localRenderedPath)
-	return localPath, remotePath
-end
------------------
 
 -- function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
 -- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir), 
@@ -264,34 +141,34 @@ local thumbSharpening = {
 }
 
 -----------------
--- uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportParams) 
+-- uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams) 
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, exportParams) 
-	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcFilename)))
+function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams) 
+	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedPhotoPath)))
 	local picExt = 'jpg'
-	local picDir = LrPathUtils.parent(srcFilename)
+	local picDir = LrPathUtils.parent(renderedPhotoPath)
 	local thmb_XL_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
 	local thmb_L_Filename = iif(not exportParams.isPS6, LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
 	local thmb_M_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
-	local srcDateTime = getDateTimeOriginal(origFilename, srcPhoto)
+	local srcDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	local retcode
 	
 	-- generate thumbs	
 	if exportParams.thumbGenerate and ( 
-			( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, srcFilename, srcPhoto, exportParams.LR_format,
+			( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, renderedPhotoPath, srcPhoto, exportParams.LR_format,
 								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>', thmb_XL_Filename,
 								'800x800>',    thmb_L_Filename,
 								'640x640>',    thmb_B_Filename,
 								'320x320>',    thmb_M_Filename,
 								'120x120>',    thmb_S_Filename) )
-		or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, srcFilename, srcPhoto, exportParams.LR_format,
+		or ( exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, renderedPhotoPath, srcPhoto, exportParams.LR_format,
 								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness], 
 								'1280x1280>^', thmb_XL_Filename,
 								'800x800>^',   thmb_L_Filename,
@@ -301,7 +178,7 @@ function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, e
 	)
 	
 	-- exif translations	
-	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, srcFilename))
+	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath))
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
@@ -313,7 +190,7 @@ function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, e
 		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
 		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
-	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, srcFilename, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
+	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, renderedPhotoPath, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST') 
 	then
 		signalSemaphore("PhotoStation")
 		retcode = false
@@ -334,17 +211,17 @@ function uploadPhoto(origFilename, srcFilename, srcPhoto, dstDir, dstFilename, e
 end
 
 -----------------
--- uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
+-- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
-	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename)))
-	local vidExtOrg = LrPathUtils.extension(srcVideoFilename)
-	local picDir = LrPathUtils.parent(srcVideoFilename)
+function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
+	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
+	local vidExtOrg = LrPathUtils.extension(renderedVideoPath)
+	local picDir = LrPathUtils.parent(renderedVideoPath)
 	local picExt = 'jpg'
 	local vidExt = 'mp4'
 	local thmb_ORG_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename, picExt))
@@ -362,7 +239,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	local convKeyOrig, convKeyAdd
 	local vid_Orig_Filename, vid_Replace_Filename, vid_Add_Filename
 	
-	writeLogfile(3, string.format("uploadVideo: %s\n", srcVideoFilename)) 
+	writeLogfile(3, string.format("uploadVideo: %s\n", renderedVideoPath)) 
 
 	local convParams = { 
 		HIGH =  	{ height = 1080,	filename = vid_HIGH_Filename },
@@ -372,14 +249,14 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	}
 	
 	-- get video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
-	local vinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcVideoFilename)
+	local vinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, renderedVideoPath)
 	if not vinfo then
 		return false
 	end
 	
 	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
 	-- overwrite the ffmpeg DateTimeOrig 
-	local metaDateTime, isOrigDateTime = getDateTimeOriginal(origVideoFilename, srcPhoto)
+	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	if isOrigDateTime or not vinfo.srcDateTime then
 		vinfo.srcDateTime = metaDateTime
 	end
@@ -433,7 +310,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 		replaceOrgVideo = true
 		vid_Orig_Filename = vid_Replace_Filename
 	else
-		vid_Orig_Filename = srcVideoFilename
+		vid_Orig_Filename = renderedVideoPath
 	end
 
 	-- Additional MP4 in orig dimension if video is not MP4
@@ -444,7 +321,7 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	
 	if exportParams.thumbGenerate and ( 
 		-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
-		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, srcVideoFilename, thmb_ORG_Filename, realDimension, vinfo.rotation, vinfo.duration)
+		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, renderedVideoPath, thmb_ORG_Filename, realDimension, vinfo.rotation, vinfo.duration)
 
 		-- generate all other thumb from first thumb
 		or ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
@@ -467,10 +344,10 @@ function uploadVideo(origVideoFilename, srcVideoFilename, srcPhoto, dstDir, dstF
 	)
 
 	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
-	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, vinfo.srcDateTime, vinfo.dar, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
+	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo.srcDateTime, vinfo.dar, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, srcVideoFilename, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
@@ -540,10 +417,11 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local srcPhoto = pubPhoto:getPhoto()
 		local srcPhotoPath = srcPhoto:getRawMetadata('path')
 		local publishedPath = ifnil(pubPhoto:getRemoteId(), '<Nil>')
+		local renderedExtension = ifnil(LrPathUtils.extension(publishedPath), 'nil')
 		local edited = pubPhoto:getEditedFlag()
 		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
 		
-		local localPath, remotePath = getPublishPath(srcPhotoPath, srcPhoto, exportParams, dstRoot)
+		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
 		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
 		-- ignore extension: might be different 
 		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
@@ -623,14 +501,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	if publishedCollection then
 		-- set remoteCollectionId to localCollectionId: see PSPublishSupport.imposeSortOrderOnPublishedCollection()
 		exportSession:recordRemoteCollectionId(publishedCollection.localIdentifier) 
-		publishMode = exportParams.publishMode
 	else
-		publishMode = 'Export'
 		exportParams.publishMode = 'Export'
 	end
 		
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(exportParams, publishMode, publishedCollection)
+	local sessionSuccess, reason = openSession(exportParams, publishedCollection, "Photo Upload")
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: processRenderedPhotos failed!", reason, "critical")
@@ -706,6 +582,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			local srcPhoto = rendition.photo
 			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
+			local renderedExtension = LrPathUtils.extension(renderedFilename)
 			local srcFilename = srcPhoto:getRawMetadata("path") 
 			local dstRoot
 			local dstDir
@@ -723,7 +600,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			if publishMode ~= 'Export' then
 				-- publish process: generate a unique remote id for later modifications or deletions
 				-- use the relative destination pathname, so we are able to identify moved pictures
-				localPath, newPublishedPhotoId = getPublishPath(srcFilename, srcPhoto, exportParams, dstRoot)
+				localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
 				
 				writeLogfile(3, 'Old publishedPhotoId:' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId:  ' .. newPublishedPhotoId .. '"\n')
 				-- if photo was moved ... 
@@ -755,7 +632,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				elseif foundPhoto == 'no' then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
-					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. ifnil(LrPathUtils.parent(publishedPhotoId), "/") .. '\n')
+--					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. ifnil(LrPathUtils.parent(publishedPhotoId), "/") .. '\n')
+					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. newPublishedPhotoId .. '\n')
 				else -- error
 					table.insert( failures, srcFilename )
 					break 
@@ -789,7 +667,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 				if srcPhoto:getRawMetadata("isVideo") then
 					writeLogfile(4, pathOrMessage .. ": is video\n") 
-					if not uploadVideo(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos) then
+					if not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos) then
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
@@ -797,7 +675,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 					end
 				else
-					if not uploadPhoto(srcFilename, pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams) then
+					if not uploadPhoto(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams) then
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' ..  dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
