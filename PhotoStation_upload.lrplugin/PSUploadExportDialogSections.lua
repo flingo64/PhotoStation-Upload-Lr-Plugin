@@ -316,6 +316,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 				},
 			},
 
+			f:separator { fill_horizontal = 1 },
+
 			f:row {
 				f:checkbox {
 					title = LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
