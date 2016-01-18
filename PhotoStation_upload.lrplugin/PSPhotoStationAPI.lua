@@ -7,7 +7,7 @@ PhotoStation Upload primitives:
 	- logout
 	- getAlbumUrl
 	- getPhotoUrl
-	- listPics
+	- listAlbum
 	- deletePic
 	- existsPic
 	- sortPics
@@ -54,6 +54,8 @@ local function getAlbumId(albumPath)
 	local i
 	local albumId = 'album_'
 
+	if ifnil(albumPath, '') == '' then return '' end
+	
 	for i = 1, string.len(albumPath) do
 		albumId = albumId .. string.format('%x', string.byte(albumPath,i))
 	end
@@ -78,7 +80,7 @@ local function getPhotoId(photoPath, isVideo)
 	local i
 	local photoDir, photoFilename = string.match(photoPath , '(.*)\/([^\/]+)')
 	if not photoDir then
-		photoDir = ''
+		photoDir = '/'
 		photoFilename = photoPath
 	end
 	local albumSubId = ''
@@ -305,19 +307,20 @@ function PSPhotoStationAPI.getPhotoUrl(psBaseUrl, photoPath, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- listPics: returns all photos/videos in a given album
+-- listAlbum: returns all photos/videos and optionally albums in a given album
 -- returns
 --		success: 		true, false 
 --		errorcode:		errorcode, if not success
 --		files:			array of files, if success
-function PSPhotoStationAPI.listPics(h, dstDir)
+function PSPhotoStationAPI.listAlbum(h, dstDir, listItems, recursive)
+	-- recursive doesn't seem to work
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
 					 'id=' .. getAlbumId(dstDir) .. '&' ..
-					 'type=photo,video&' ..  
+					 'type=' .. listItems .. '&' ..   
 					 'offset=0&' .. 
 					 'limit=-1&' ..
-					 'recursive=false&'.. 
+					 'recursive=' .. iif(recursive, 'true', 'false') .. '&'.. 
 					 'additional=album_permission'
 --					 'additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location'
 
@@ -328,11 +331,11 @@ function PSPhotoStationAPI.listPics(h, dstDir)
 	local errorCode = 0 
 	if respArray.error then 
 		errorCode = tonumber(respArray.error.code)
-		writeLogfile(1, string.format('listPics: Error: %d\n', errorCode))
+		writeLogfile(1, string.format('listAlbum: Error: %d\n', errorCode))
 		return false, errorCode, nil
 	end
 	
-	writeTableLogfile(4, 'listPics', respArray.data.items)
+	writeTableLogfile(4, 'listAlbum', respArray.data.items)
 	return true, 0, respArray.data.items
 end
 
@@ -354,11 +357,12 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- existsPic(dstFilename, isVideo) - check if a photo exists in PhotoStation
--- 	- if directory of photo is not in cache, reloads cache w/ directory via listPics()
+-- 	- if directory of photo is not in cache, reloads cache w/ directory via listAlbum()
 -- 	- searches for filename in a local directory cache (findInCache())
 -- 	returns true, if filename 	
 function PSPhotoStationAPI.existsPic(h, dstFilename, isVideo)
 	local _, _, dstDir = string.find(dstFilename, '(.*)\/', 1, false)
+	dstDir = ifnil(dstDir, '') 
 	writeLogfile(4, string.format('existsPic: dstFilename %s --> dstDir %s\n', dstFilename, dstDir))
 	
 	-- check if folder of current photo is in cache
@@ -366,9 +370,9 @@ function PSPhotoStationAPI.existsPic(h, dstFilename, isVideo)
 		-- if not: refresh cach w/ folder of current photo
 		local success, errorCode
 		
-		success, errorCode, psDirCache = PSPhotoStationAPI.listPics(h, dstDir)
+		success, errorCode, psDirCache = PSPhotoStationAPI.listAlbum(h, dstDir, 'photo,video', false)
 		if not success and errorCode ~= 408 then -- 408: no such file or dir
-			writeLogfile(3, string.format('existsPic: Error on listPics: %d\n', errorCode))
+			writeLogfile(3, string.format('existsPic: Error on listAlbum: %d\n', errorCode))
 		   	return 'error'
 		end
 		psDirInCache = dstDir
@@ -395,6 +399,54 @@ function PSPhotoStationAPI.deletePic (h, dstFilename, isVideo)
 
 	writeLogfile(3, string.format('deletePic(%s) returns %s\n', dstFilename, tostring(respArray.success)))
 	return respArray.success
+end
+
+---------------------------------------------------------------------------------------------------------
+
+-- deleteAlbum(h, albumPath) 
+function PSPhotoStationAPI.deleteAlbum (h, albumPath) 
+	local formData = 'method=delete&' ..
+					 'version=1&' .. 
+					 'id=' .. getAlbumId(albumPath) .. '&'
+
+	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
+	
+	if not respArray then return false, errorMsg end 
+	if respArray.error then 
+		local errorCode = respArray.error.code 
+		writeLogfile(3, string.format('deleteAlbum: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+	end
+
+	writeLogfile(3, string.format('deleteAlbum(%s) returns %s\n', albumPath, tostring(respArray.success)))
+	return respArray.success
+end
+
+---------------------------------------------------------------------------------------------------------
+
+-- deleteEmptyAlbums (h, albumPath, albumsDeleted, photosLeft) 
+-- deletes recursively all empty albums below albumPath.
+-- fills albumsDeleted and photosLeft 
+-- returns:
+-- 		success - the Album itself can be deleted (is empty) 
+function PSPhotoStationAPI.deleteEmptyAlbums(h, albumPath, albumsDeleted, photosLeft)
+	local success, errorcode, albumItems = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album', false)
+	local canDeleteThisAlbum = true
+		
+	for i = 1, #albumItems do
+		local itemPath = albumPath .. '/' .. albumItems[i].info.name
+		if albumItems[i].type ~= 'album' then
+			table.insert(photosLeft, itemPath) 
+			canDeleteThisAlbum = false
+		else 
+			if PSPhotoStationAPI.deleteEmptyAlbums(h, itemPath, albumsDeleted, photosLeft) then
+				PSPhotoStationAPI.deleteAlbum (h, itemPath)
+				table.insert(albumsDeleted, itemPath) 
+			else
+				canDeleteThisAlbum = false
+			end
+		end
+	end
+	return canDeleteThisAlbum
 end
 
 ---------------------------------------------------------------------------------------------------------
