@@ -352,6 +352,8 @@ function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportPar
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
+	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, true) 
+
 	or exportParams.thumbGenerate and (
 		-- upload thumbs, preview videos and original file
 		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
