@@ -11,6 +11,7 @@ useful functions:
 	
 	- openLogfile
 	- writeLogfile
+	- writeTableLogfile
 	- closeLogfile
 	
 	- openSession
@@ -594,9 +595,10 @@ function showFinalMessage (title, message, msgType)
 	
 	writeLogfile(2, message .. '\n')
 
-	if appVersion.major < 5 or msgType == 'critical' then 
+	if msgType == 'critical' then 
 		LrDialogs.message(title, message, msgType)
-	else
+	elseif appVersion.major >= 5 then
+		-- showBezel not supported in Lr4 and below  
 		LrDialogs.showBezel(message, 10)
 	end
 	
