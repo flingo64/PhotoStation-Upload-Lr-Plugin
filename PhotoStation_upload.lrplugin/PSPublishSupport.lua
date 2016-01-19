@@ -186,7 +186,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 		psBaseUrl = publishSettings.serverUrl .. "/photo/#!Albums"
 	end
 
-	albumUrl = PSPhotoStationAPI.getAlbumUrl(psBaseUrl, PSLrUtilities.getCollectionPath(info.publishedCollection))
+	albumUrl = PSPhotoStationAPI.getAlbumUrl(psBaseUrl, PSLrUtilities.getCollectionUploadPath(info.publishedCollection))
 
 	LrHttp.openUrlInBrowser(albumUrl)
 end
@@ -756,7 +756,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	-- get publishedCollections: 
 	--   remoteCollectionId is the only collectionId we have here, so it must be equal to localCollectionId to retrieve the publishedCollection!!!
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
-	local albumPath = PSLrUtilities.getCollectionPath(publishedCollection)
+	local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
 
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
@@ -891,7 +891,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		progressScope:done()
 	end )
 		
-	local collectionPath =  PSLrUtilities.getCollectionPath(info.publishedCollection)
+	local collectionPath =  PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
 	
 	local albumsDeleted = {}
 	local photosLeft = {}

@@ -321,7 +321,7 @@ function openSession(exportParams, publishedCollection, reason)
 		writeLogfile(4, "openSession: copy collection settings\n")
     	
     	exportParams.storeDstRoot 	= true			-- dstRoot must be set in a Published Collection
-    	exportParams.dstRoot 		= PSLrUtilities.getCollectionPath(publishedCollection)
+    	exportParams.dstRoot 		= PSLrUtilities.getCollectionUploadPath(publishedCollection)
     	exportParams.createDstRoot 	= collectionSettings.createDstRoot
     	exportParams.copyTree 		= collectionSettings.copyTree
     	exportParams.srcRoot 		= collectionSettings.srcRoot
