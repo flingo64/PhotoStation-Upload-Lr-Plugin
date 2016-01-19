@@ -126,7 +126,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {Date %Y-%m-%d}
 	  - {LrFM:cameraModel}
 	  - {LrFM:isoRating}<br>
-  To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish|Export:-How-to-use-metadata-placeholders-in-target-album-definitions.) 
+  To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-target-album-definitions) 
 
 - __Photo-plus-Thumbnail Upload__ (default) for faster PhotoStation fill-up and to minimize load on diskstation  
 
