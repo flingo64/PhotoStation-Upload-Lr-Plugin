@@ -148,7 +148,7 @@ local thumbSharpening = {
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
 function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams) 
-	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedPhotoPath)))
+	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedPhotoPath)))
 	local picExt = 'jpg'
 	local picDir = LrPathUtils.parent(renderedPhotoPath)
 	local thmb_XL_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
@@ -219,7 +219,7 @@ end
 	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
 ]]
 function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
-	local picBasename = mkSaveFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
+	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
 	local vidExtOrg = LrPathUtils.extension(renderedVideoPath)
 	local picDir = LrPathUtils.parent(renderedVideoPath)
 	local picExt = 'jpg'
