@@ -311,7 +311,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'Delete Photos from Published Collection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: deletePhotosFromPublishedCollection failed!", reason, "critical")
+			showFinalMessage("PhotoStation Upload: DeletePhotosFromPublishedCollection failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -330,6 +330,20 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 			writeLogfile(1, photoId .. ': deletion failed!\n')
 		end
 	end
+
+	local collectionPath =  PSLrUtilities.getCollectionUploadPath(publishedCollection)
+	
+	local albumsDeleted = {}
+	local photosLeft = {}
+	
+	if not PSLrUtilities.isDynamicAlbumPath(collectionPath) then
+		_ = PSPhotoStationAPI.deleteEmptyAlbums(publishSettings.uHandle, collectionPath, albumsDeleted, photosLeft)
+		
+		if #albumsDeleted > 0 then
+			writeLogfile(2, string.format("PhotoStation Upload: DeletePhotosFromPublishedCollection:\n\tDeleted Albums:\n\t\t%s\n",
+										table.concat(albumsDeleted, "\n\t\t")))
+		end
+	end										
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
