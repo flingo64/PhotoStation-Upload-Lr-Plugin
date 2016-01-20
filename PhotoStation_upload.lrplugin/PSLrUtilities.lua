@@ -171,7 +171,7 @@ function PSLrUtilities.getCollectionPath(collection)
 	collectionPath	= collection:getName()
 	parentCollectionSet  = collection:getParent()
 	while parentCollectionSet do
-		collectionPath = parentCollectionSet:getName() .. "/" .. collectionPath	
+		collectionPath = mkLegalFilename(parentCollectionSet:getName()) .. "/" .. collectionPath	
 		parentCollectionSet  = parentCollectionSet:getParent()
 	end
 	writeLogfile(4, "getCollectionPath() returns " .. collectionPath .. "\n")
@@ -255,7 +255,7 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
     			local metadataName = string.gsub(metadataParam, "{LrFM:(%w+)}", "%1")
     			local metadataString = tostring(ifnil(srcPhotoFMetadata[metadataName], ''))
     			writeLogfile(3, string.format("evaluateAlbumPath: key %s --> %s \n", ifnil(metadataName, '<Nil>'), metadataString)) 
-    			return metadataString  
+    			return mkLegalFilename(metadataString)  
     		end);
 	end
 	
