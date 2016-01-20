@@ -7,12 +7,22 @@ Copyright(c) 2015, Martin Messmer
 useful functions:
 	- ifnil
 	- iif
-	- mkSaveFilename
+	- split
+	- trim
 	
 	- openLogfile
 	- writeLogfile
 	- writeTableLogfile
 	- closeLogfile
+	
+	- waitSemaphore
+	- signalSemaphore
+	
+	- mkLegalFilename
+	- mkSafeFilename
+	- normalizeDirname
+	
+	- urlencode
 	
 	- openSession
 	- closeSession
@@ -96,6 +106,10 @@ function split(inputstr, sep)
     return t
 end
 
+function trim(s)
+  return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
+end
+
 ----------------------- logging ---------------------------------------------------------
 -- we can store some variables in 'global' local variables safely:
 -- each export task will get its own copy of these variables
@@ -109,6 +123,13 @@ local loglevel
 	3 - tracing
 	4 - debug
 ]]	
+
+local loglevelname = {
+	'ERROR',
+	'INFO ',
+	'TRACE',
+	'DEBUG',
+}
 
 -- getLogFilename: return the filename of the logfile
 function getLogFilename()
@@ -128,9 +149,6 @@ function openLogfile (level)
 	-- openLogfile may be called more than once w/ different loglevel, so change loglevel first
 	loglevel = level
 
-	-- if logfilename already set: nothing to do, logfile was already opened (and truncated)
-	if logfilename then return end
-	
 	logfilename = getLogFilename()
 	
 	-- if logfile does not exist: nothing to do, logfile will be created on first writeLogfile()
@@ -138,7 +156,7 @@ function openLogfile (level)
 
 	-- if logfile exists and is younger than 60 secs: do not truncate, it may be in use by a parallel export/publish process
 	local logfileAttrs = LrFileUtils.fileAttributes(logfilename)
-	if logfileAttrs and logfileAttrs.fileModificationDate > (LrDate.currentTime() - 60) then return end
+	if logfileAttrs and logfileAttrs.fileModificationDate > (LrDate.currentTime() - 300) then return end
 	
 	-- else: truncate existing logfile
 	local logfile = io.open(logfilename, "w")
@@ -150,7 +168,7 @@ end
 function writeLogfile (level, msg)
 	if level <= loglevel then
 		local logfile = io.open(logfilename, "a")
-		logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ": " .. msg)
+		logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ", " .. ifnil(loglevelname[level], tostring(level)) .. ": " .. msg)
 		io.close (logfile)
 	end
 end
@@ -214,17 +232,35 @@ function signalSemaphore(semaName)
 	LrFileUtils.delete(semaphoreFn)
 end
 
----------------------- filename encoding routines ---------------------------------------------------------
+---------------------- filename/dirname sanitizing routines ---------------------------------------------------------
 
-function mkSaveFilename(str)
+-- mkLegalFilename: substitute illegal filename char by their %nnn representation
+-- This function should be used when a arbitrary string shall be used as filename or dirname 
+function mkLegalFilename(str)
 	if (str) then
-		-- substitute blanks, '(' and ')' by '-'
-		str = string.gsub (str, "[%s%(%)]", "-") 
+		writeLogfile(4, string.format("mkLegalFilename: was %s\n", str)) 
+		-- illegal filename characters: '\', '/', ':', '?', '*',  '"', '<', '>', '|'  
+		str = string.gsub (str, '([\\\/:%?%*"<>|])', function (c)
+								return string.format ("%%%02X", string.byte(c))
+         end) 
+		writeLogfile(4, string.format("mkLegalFilename: now %s\n", str)) 
 	end
 	return str
 end 
 
----------------------- directory name normalizing routine --------------------------------------------------
+-- mkSafeFilename: substitute illegal and critical characters by '-'
+-- may only be used for temp. files!
+function mkSafeFilename(str)
+	if (str) then
+		-- illegal filename characters: '\', ':', '?', '*',  '"', '<', '>', '|'  
+		-- critical characters '(', ')', and ' '
+--		writeLogfile(4, string.format("mkSafeFilename: was %s\n", str)) 
+		str = string.gsub (str, '[\\:%?%*"<>|%s%(%)]', '-') 
+--		writeLogfile(4, string.format("mkSafeFilename: now %s\n", str)) 
+	end
+	return str
+end 
+
 -- normalizeDirname(str)
 -- sanitize dstRoot: replace \ by /, remove leading and trailings slashes
 
@@ -237,10 +273,6 @@ function normalizeDirname(str)
 end 
 
 ---------------------- http encoding routines ---------------------------------------------------------
-
-function trim(s)
-  return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
-end
 
 function urlencode(str)
 	if (str) then
