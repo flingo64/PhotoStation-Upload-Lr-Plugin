@@ -1,6 +1,6 @@
 PhotoStation Upload (Lightroom plugin)
 ======================================
-Version 3.7.x<br>
+Version 4.0.x<br>
 __[Important note for updating from V3.0.0 ... V3.5.x to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
 [FAQs] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
@@ -8,7 +8,7 @@ Forum threads:
 - [English Synology forum] (http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
 - [German Synology forum] (http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
-Copyright(c) 2015, Martin Messmer<br>
+Copyright(c) 2016, Martin Messmer<br>
 
 Overview
 =========
@@ -33,10 +33,6 @@ Requirements
 	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3
 * Synology PhotoStation:
 	PhotoStation 6 (tested)
-* For Publish mode: 
-	- Access to Synology FileStation WebAPI (reachable via admin port) is required for mode "Check Existing" and photo deletion
-	- For option 'Check Existing' (see below): user account w/ read access to /photo
-	- For full publish support (incl. photo deletion / photo movement): user account w/ write access to /photo
 * For local Thumbnail generation: Synology PhotoStation Uploader, required components:
 	- ImageMagick/convert.exe
 	- ImageMagick/dcraw.exe
@@ -68,7 +64,7 @@ Publishing in Lightroom on the other hand is meant for synchonizing local photo 
 - define the settings for the Publish Service
 - define the Published Collection and the settings for that Published Collection
 
-As soon as you've done this, Lightroom will keep track of which photo from the collection has to be published, re-published (when it was modified locally) or deleted. Besides that basic functions, some publish services can also re-import certain infos such as tags, comments or ratings back from the publish target.
+As soon as you've done this, Lightroom will keep track of which photo from the collection has to been published, needs to be re-published (when it was modified locally) or deleted. Besides that basic functions, some publish services can also re-import certain infos such as tags, comments or ratings back from the publish target.
 
 Export vs. Publish Service - PhotoStation Upload
 -------------------------------------------------
@@ -80,19 +76,17 @@ The Export dialog includes settings for:
 
 a) the installation path of the Synology<br>
 b) the target PhotoStation (server, login, Standard/Personal PhotoStation)<br>
-c) -- no --<br>
-d) target Album within the target PhotoStation and Upload method<br>
-e) quality parameters for thumbs and additional videos<br>
+c) target Album within the target PhotoStation and Upload method<br>
+d) quality parameters for thumbs and additional videos<br>
 
 The Publish dialog on the other hand includes settings for:
 
 a) the installation path of the Synology<br>
 b) the target PhotoStation (server, login, Standard/Personal PhotoStation)<br>
-c) the FileStation API parameters: (protocol, port, login)<br>
-d) -- no --<br>
-e) quality parameters for thumbs and additional videos<br>
+c) -- no --<br>
+d) quality parameters for thumbs and additional videos<br>
 
-The Album settings ( d) ) are not stored within the Publish settings but within the Published Collections settings. Therefore, you don't need to define a different Publish Service for each Published Collection you want to publish. In most cases you will only have one Publish Service definition and a bunch of Published Collections below it. An additional Publish Service definition is only required, if you want to upload to a different PhotoStation or if you want to use different upload quality settings.
+The Album settings ( c) ) are not stored within the Publish settings but within the Published Collections settings. Therefore, you don't need to define a different Publish Service for each Published Collection you want to publish. In most cases you will only have one Publish Service definition and a bunch of Published Collections below it. An additional Publish Service definition is only required, if you want to upload to a different PhotoStation or if you want to use different upload quality settings.
 
 Export Funtionality
 --------------------
@@ -121,23 +115,26 @@ This eases the consistent definition of the Export/Publish settings for both acc
 - __Dynamic Target Album__ definition by using  __metadata placeholders__:<br>
 	Metadata placeholders are evaluated for each uploaded photo/video, so that the actual target album may be different for each individual photo/video.
 	Metadata placeholders can be used to define a metadata-based PhotoStation album layout, which is completely independent of the local directory layout.
+	Metadata placeholders can also be used to define a PhotoStation album layout, which is identical to an existing Collection Set hierarchy.
 	Metadata placeholders look like:<br>
 	  - {Date %Y}
 	  - {Date %Y-%m-%d}
 	  - {LrFM:cameraModel}
-	  - {LrFM:isoRating}<br>
+	  - {LrFM:isoRating}
+	  - {LrCC:path ^Yearly Collections}
+	  - {LrCC:name}<br>
   To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-target-album-definitions) 
 
-- __Photo-plus-Thumbnail Upload__ (default) for faster PhotoStation fill-up and to minimize load on diskstation  
+- __Photo-plus-Thumbnail Upload__ (default) for faster PhotoStation fill-up and to minimize load on the diskstation  
 
 - __Photo-only Upload__ (optional) for a faster Upload:<br>
 	This upload option makes sense, when you have a fast diskstation and you want the diskstation to do the thumbnail generation. 
 	It also makes sense to upload w/ Photo-only option when you don't need the thumbnails on the diskstation (e.g. upload photos for backup purpose) and you upload to an un-indexed folder, so that no thumb conversion will be done on the diskstation. 
 	Important note: It is not possible to keep already uploaded thumbs and just upload the photo itself. When you use the photo-only option, any belonging, already existing thumb on the diskstation will be removed! (Sorry, I wish I could do better)  
 
-- __Optimize the upload for PhotoStation 6__ by not uploading the THUMB_L thumbnail.
+- __Optimize the upload for PhotoStation 6__ by not generating/uploading the THUMB_L thumbnail.
 
-- __Upload of videos and accompanying videos with a lower resolution__
+- __Upload of original or processed videos and accompanying videos with a lower resolution__
 
 - __Different video rotation options:__<br>
 	- __Hard-rotation for soft-rotated videos__ for better player compatibility:<br>
@@ -153,6 +150,10 @@ This eases the consistent definition of the Export/Publish settings for both acc
 
 	  Meta-rotated videos may be soft-rotated (by adding the rotation flag in the uploaded mp4-video) or hard-rotated.<br>
 	  Please note, that if you use meta-rotation, the (soft- or hard-) rotated video will be uploaded as MP4 video, instead of the original video, which may have a different format/coding (e.g. .mov/mjpeg). 
+
+- Processed __RAW+JPG to same Album__:<br>
+	Most cameras support RAW+JPG output, where both files have the same basename, but different extensions (e.g. .rw2 and -jpg). If for any reason you wish to upload processed versions of both files, both files would map to the same upload filename (*.jpg) and
+	thus override each others during upload. To circumvent this collision, this option will rename all non-jpg files to <orig-filename><orig-extension>.jpg.   
 
 - __Exif Metadata translation:__<br>
 	- Translation of Face regions generated by __Lr or Picasa face detection__ to PhotoStation Person tags<br>
@@ -183,12 +184,16 @@ Publish Functionality:
 	  Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature. To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
 	  Check Moved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.<br>
   
+- Impose __sort order of photos in Lr Published Collections__ in PhotoStation:<br>
+	Sort order is only supported on Flat Uploads
+
 - __Deletion of published photos__, when deleted locally (from Collection or Library)
 
 - __Deletion of complete Published Collections__
 
+- __Deletion of empty PhotoStation Albums__ after deletion of published photos or complete Published Collections
+
 - No support for re-import of comments or ratings
-- No support for custom-defined sort order
 
 Additional Funtionality
 ------------------------
@@ -351,18 +356,31 @@ Version 3.7
 	- Bugfix: video dimensions will always be even integers. When videos are rotated or scaled (e.g. when additional video upload is configured), it could happen the the resulting width was an odd integer, which was not supported by ffmpeg.
 	- Bugfix: thumb from video will be extracted at 00:00:00 sec for videos shorter than 4 seconds, otherwise at 00:00:03. Upload of video with duration < 1 sec failed in earlier versions due to failed thumb extraction ( at 00:00:01). 
 	
+Version 4.0
+-----------
+- __FileStation API no longer required: yeah, finally got rid of it!___
+- Support for photo __sort order__ of Published Collections in PhotoStation album on __flat uploads__
+- Support for __RAW+JPG to same Album__
+- '__Delete__ Photos in Published Collection' and 'Delete Published Collection' will now __remove empty albums__ on PhotoStation
+- Support for mirroring of local Collection Set hierarchies via metadata placeholder '{LrCC:...}'
+- __Video__ Upload will now __delete__ the video in PS __before uploading__ the new video(s):<br>
+	PhotosStation would otherwise keep old versions of the video which were uploaded before
+- Logfile handling:
+	- now includes Loglevel of messages
+	- will now be truncated at the beginning of a session if logfile is older than 5 minutes 
+- Bugfixes:
+	- Metadata placeholder {Date ..} is now more robust: will also find DateTimeDigitized and other alternative timestamps if DateTimeOriginal is missing
+	- Processed videos will now be uploaded with the correct filename extension
+
 Open issues
 ============
 - issue in PhotoStation: if video aspect ratio is different from video dimension 
   (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
   the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
-- Deletion of a Published Collection will not delete the related album in PhotoStation
-- Some features of publishing require access to FileStation WebAPI, which is cumbersome, since it requires access to the admin port.
-  This may change sometime in the future, if the PhotoStation WebAPI will be published by Synology
   
 Copyright
 ==========
-Copyright(c) 2015, Martin Messmer
+Copyright(c) 2016, Martin Messmer
 
 PhotoStation Upload is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
