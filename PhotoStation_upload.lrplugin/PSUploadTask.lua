@@ -422,23 +422,38 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local renderedExtension = ifnil(LrPathUtils.extension(publishedPath), 'nil')
 		local edited = pubPhoto:getEditedFlag()
 		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
-		
-		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
-		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
-		-- ignore extension: might be different 
-		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
-			writeLogfile(2, "CheckMoved(" .. localPath .. " must be moved at target from " .. publishedPath .. 
-							" to " .. remotePath .. ", edited= " .. tostring(edited) .. ")\n")
+
+		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
+		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
+					
+		if skipPhoto then
+ 			writeLogfile(2, string.format("CheckMoved(%s): Skip photo due to unknown target album %s\n", srcPhotoPath, dstRoot))
 			catalog:withWriteAccessDo( 
 				'SetEdited',
 				function(context)
 					pubPhoto:setEditedFlag(true)
 				end,
 				{timeout=5}
-			)
-			nMoved = nMoved + 1
-		else
-			writeLogfile(2, "CheckMoved(" .. localPath .. ") not moved.\n")
+    		)
+    		nMoved = nMoved + 1
+    	else
+    		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
+    		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
+    		-- ignore extension: might be different 
+    		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
+    			writeLogfile(2, "CheckMoved(" .. localPath .. "): Must be moved at target from " .. publishedPath .. 
+    							" to " .. remotePath .. ", edited= " .. tostring(edited) .. "\n")
+    			catalog:withWriteAccessDo( 
+    				'SetEdited',
+    				function(context)
+    					pubPhoto:setEditedFlag(true)
+    				end,
+    				{timeout=5}
+    			)
+    			nMoved = nMoved + 1
+    		else
+    			writeLogfile(2, "CheckMoved(" .. localPath .. "): Not moved.\n")
+    		end
 		end
 		nProcessed = i
 		progressScope:setPortionComplete(nProcessed, nPhotos)
@@ -595,11 +610,18 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			--   substitute metadata tokens
 			--   replace \ by /, remove leading and trailings slashes
 			dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
-			writeLogfile(4, "  sanitized dstRoot: " .. dstRoot .. "\n")
+			
+			-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
+			skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
+			
+			writeLogfile(4, string.format("  sanitized dstRoot: %s\n", dstRoot))
 			
 			local localPath, newPublishedPhotoId
 			
-			if publishMode ~= 'Export' then
+			if skipPhoto then
+				writeLogfile(2, string.format('Skip photo: "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
+				table.insert( failures, srcFilename )
+			elseif publishMode ~= 'Export' then
 				-- publish process: generate a unique remote id for later modifications or deletions
 				-- use the relative destination pathname, so we are able to identify moved pictures
 				localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
