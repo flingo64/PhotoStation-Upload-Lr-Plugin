@@ -224,7 +224,14 @@ function PSLrUtilities.isDynamicAlbumPath(path)
 end
 
 -- evaluateAlbumPath(path, srcPhoto)
--- 	evaluate (substitute metadata tokens) and sanitize a given directory path 
+--[[
+-- 	Substitute metadata placeholders by actual values from the photo and sanitize a given directory path.
+	Metadata placeholders look in general like: {<category>:<type> <options>|<defaultValue_or_mandatory>}
+	'?' stands for mandatory, no default available. 
+	- unrecognized placeholders will be left unchanged, they might be intended path components
+	- undefined mandatory metadata will be substituted by ?
+	- undefined optional metadata will be substituted by their default or '' if no default
+]]  
 
 function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 
@@ -237,12 +244,15 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 		local srcPhotoDate = LrDate.timeFromPosixDate(PSLrUtilities.getDateTimeOriginal(srcPhoto))
 		
 		-- substitute date tokens: {Date <formatString>}
-		path = string.gsub (path, '({Date [^}]+})', function(dateParams)
-				local format = string.gsub(dateParams, "{Date ([^}]+)}", "%1")
-				local dateString = ifnil(LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), format, false), '')
+		path = string.gsub (path, '({Date[^}]*})', function(dateParams)
+				local dateFormat, dataDefault = string.match(dateParams, "{Date%s*(.*)|(.*)}")
+				if not dateFormat then
+					dateFormat = string.match(dateParams, "{Date%s(.*)}")
+				end
+				local dateString = LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), dateFormat, false)
 				
-				writeLogfile(3, string.format("evaluateAlbumPath: date format %s --> %s\n", ifnil(format, '<Nil>'), dateString)) 
-				return dateString 
+				writeLogfile(3, string.format("evaluateAlbumPath: date format %s --> %s\n", ifnil(dateFormat, '<Nil>'), ifnil(dateString, '<Nil>'))) 
+				return iif(ifnil(dateString, '') ~= '',  dateString, ifnil(dataDefault, '')) 
 			end);
 	end
 	
@@ -251,11 +261,15 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 		local srcPhotoFMetadata = srcPhoto:getFormattedMetadata()
 
     	-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}, only string, number or boolean type allowed
-    	path = string.gsub (path, '({LrFM:%w+})', function(metadataParam)
-    			local metadataName = string.gsub(metadataParam, "{LrFM:(%w+)}", "%1")
-    			local metadataString = tostring(ifnil(srcPhotoFMetadata[metadataName], ''))
+    	path = string.gsub (path, '({LrFM:[^}]*})', function(metadataParam)
+    			local metadataName, dataDefault = string.match(metadataParam, "{LrFM:(.*)|(.*)}")
+    			if not metadataName then
+    				metadataName = string.match(metadataParam, "{LrFM:(.*)}")
+    			end
+    			local metadataString = iif(ifnil(srcPhotoFMetadata[metadataName], '') ~= '', srcPhotoFMetadata[metadataName], ifnil(dataDefault, ''))
+    			if metadataString ~= '?' then metadataString = mkLegalFilename(metadataString) end
     			writeLogfile(3, string.format("evaluateAlbumPath: key %s --> %s \n", ifnil(metadataName, '<Nil>'), metadataString)) 
-    			return mkLegalFilename(metadataString)  
+    			return metadataString
     		end);
 	end
 	
@@ -269,8 +283,11 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 		end
 		
 		-- substitute Lr contained collection name or path: {LrCC:<name>|<path> <filter>}
-		path = string.gsub (path, '({LrCC:.*})', function(contCollParam)
-				local dataType, dataFilter = string.match(contCollParam, '{LrCC:(%w+)%s*(.*)}')
+		path = string.gsub (path, '({LrCC:[^}]*})', function(contCollParam)
+				local dataType, dataFilter, dataDefault = string.match(contCollParam, '{LrCC:(%w+)%s*(.*)|(.*)}')
+				if not dataType then
+					dataType, dataFilter = string.match(contCollParam, '{LrCC:(%w+)%s*(.*)}')
+				end
 				if not dataType then
 					dataType = string.match(contCollParam, '{LrCC:(%w+)}')
 				end
@@ -284,7 +301,7 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 				
 				if not containedCollectionPath or not containedCollectionPath[1] then
 					writeLogfile(4, string.format("evaluateAlbumPath:  %s: no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
-					return ''  
+					return ifnil(dataDefault,'')  
 				end
 				
 				for i = 1, #containedCollectionPath do
@@ -304,7 +321,7 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 					end 
 				end
 				writeLogfile(3, string.format("evaluateAlbumPath:  %s: no match  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
-				return ''  
+				return ifnil(dataDefault,'')  
 			end);
 	end
 	
