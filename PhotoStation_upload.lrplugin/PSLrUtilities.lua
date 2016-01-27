@@ -206,7 +206,7 @@ function PSLrUtilities.getCollectionUploadPath(publishedCollection)
 		end
 		parentCollectionSet  = parentCollectionSet:getParent()
 	end
-	writeLogfile(4, "getCollectionUploadPath() returns " .. collectionPath .. "\n")
+	writeLogfile(4, "getCollectionUploadPath() returns " .. ifnil(collectionPath, '<Nil>') .. "\n")
 	
 	return collectionPath
 end

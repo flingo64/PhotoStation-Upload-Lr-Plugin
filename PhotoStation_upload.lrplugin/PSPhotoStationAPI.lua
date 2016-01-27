@@ -5,12 +5,18 @@ PhotoStation Upload primitives:
 	- initialize
 	- login
 	- logout
+
 	- getAlbumUrl
 	- getPhotoUrl
+
 	- listAlbum
 	- deletePic
 	- existsPic
 	- sortPics
+
+	- addComments
+	- getComments
+	
 Copyright(c) 2016, Martin Messmer
 
 This file is part of PhotoStation Upload - Lightroom plugin.
@@ -169,8 +175,9 @@ function PSPhotoStationAPI.initialize(server, personalPSOwner, serverTimeout)
 		psBasePath = '/photo'
 	end
 
-	h.psWebAPI = 	psBasePath .. '/webapi/'
-	h.uploadPath =	psBasePath .. '/include/asst_file_upload.php'
+	h.psAlbumRoot	= 	psBasePath .. '/#!Albums'
+	h.psWebAPI 		= 	psBasePath .. '/webapi/'
+	h.uploadPath 	=	psBasePath .. '/include/asst_file_upload.php'
 
 	-- bootstrap the apiInfo table 
 	apiInfo['SYNO.API.Info'] = {
@@ -234,7 +241,7 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 --[[ 
-getAlbumUrl(psBaseUrl, albumPath)
+getAlbumUrl(h, albumPath)
 	returns the URL of an album in the PhotoStation
 	URL of an album in PS is:
 		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
@@ -243,7 +250,7 @@ getAlbumUrl(psBaseUrl, albumPath)
 	yields PS Photo-URL:
 		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
 ]]
-function PSPhotoStationAPI.getAlbumUrl(psBaseUrl, albumPath) 
+function PSPhotoStationAPI.getAlbumUrl(h, albumPath) 
 	local i
 	local albumUrl
 	local subDirPath = ''
@@ -251,7 +258,7 @@ function PSPhotoStationAPI.getAlbumUrl(psBaseUrl, albumPath)
 	
 	local albumDirname = split(albumPath, '/')
 	
-	albumUrl = psBaseUrl
+	albumUrl = h.serverUrl .. h.psAlbumRoot
 	
 	for i = 1, #albumDirname do
 		if i > 1 then  
@@ -262,13 +269,13 @@ function PSPhotoStationAPI.getAlbumUrl(psBaseUrl, albumPath)
 		albumUrl = albumUrl .. '/' .. subDirUrl
 	end
 	
-	writeLogfile(3, string.format("PSPhotoStationAPI.getAlbumUrl(%s, %s) returns %s\n", psBaseUrl, albumPath, albumUrl))
+	writeLogfile(3, string.format("PSPhotoStationAPI.getAlbumUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, albumPath, albumUrl))
 	
 	return albumUrl
 end
 
 --[[ 
-getPhotoUrl(psBaseUrl, photoPath, isVideo)
+getPhotoUrl(h, photoPath, isVideo)
 	returns the URL of a photo/video in the PhotoStation
 	URL of a photo in PS is:
 		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>/<PhotoId>
@@ -277,7 +284,7 @@ getPhotoUrl(psBaseUrl, photoPath, isVideo)
 	yields PS Photo-URL:
 		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 ]]
-function PSPhotoStationAPI.getPhotoUrl(psBaseUrl, photoPath, isVideo) 
+function PSPhotoStationAPI.getPhotoUrl(h, photoPath, isVideo) 
 	local i
 	local subDirPath = ''
 	local subDirUrl  = ''
@@ -288,7 +295,7 @@ function PSPhotoStationAPI.getPhotoUrl(psBaseUrl, photoPath, isVideo)
 	local albumDirname = split(albumDir, '/')
 	if not albumDirname then albumDirname = {} end
 
-	photoUrl = psBaseUrl
+	photoUrl = h.serverUrl .. h.psAlbumRoot
 	
 	for i = 1, #albumDirname do
 		if i > 1 then  
@@ -301,7 +308,7 @@ function PSPhotoStationAPI.getPhotoUrl(psBaseUrl, photoPath, isVideo)
 	
 	photoUrl = photoUrl .. '/' .. getPhotoId(photoPath, isVideo)
 	
-	writeLogfile(3, string.format("PSPhotoStationAPI.getPhotoUrl(%s, %s) returns %s\n", psBaseUrl, photoPath, photoUrl))
+	writeLogfile(3, string.format("PSPhotoStationAPI.getPhotoUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, photoPath, photoUrl))
 	
 	return photoUrl
 end
@@ -394,7 +401,7 @@ function PSPhotoStationAPI.deletePic (h, dstFilename, isVideo)
 	if not respArray then return false, errorMsg end 
 	if respArray.error then 
 		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('deletePic: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+		writeLogfile(3, string.format('deletePic: Error: %d\n', errorCode))
 	end
 
 	writeLogfile(3, string.format('deletePic(%s) returns %s\n', dstFilename, tostring(respArray.success)))
@@ -414,7 +421,7 @@ function PSPhotoStationAPI.deleteAlbum (h, albumPath)
 	if not respArray then return false, errorMsg end 
 	if respArray.error then 
 		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('deleteAlbum: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+		writeLogfile(3, string.format('deleteAlbum: Error: %d\n', errorCode))
 	end
 
 	writeLogfile(3, string.format('deleteAlbum(%s) returns %s\n', albumPath, tostring(respArray.success)))
@@ -451,7 +458,7 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 
--- sortPics (h, dstFilename) 
+-- sortPics (h, albumPath, sortedPhotos) 
 function PSPhotoStationAPI.sortPics (h, albumPath, sortedPhotos) 
 	local formData = 'method=arrangeitem&' ..
 					 'version=1&' .. 
@@ -475,10 +482,52 @@ function PSPhotoStationAPI.sortPics (h, albumPath, sortedPhotos)
 	if not respArray then return false, errorMsg end 
 	if respArray.error then 
 		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('sortPics: Error: %s (%d)\n', ifnil(FSAPIerrorCode[errorCode], 'Unknown error code'), errorCode))
+		writeLogfile(3, string.format('sortPics: Error: (%d)\n', errorCode))
 	end
 
 	writeLogfile(3, string.format('sortPics(%s) returns %s\n', albumPath, tostring(respArray.success)))
 	return respArray.success
+end
+
+---------------------------------------------------------------------------------------------------------
+
+-- addComment (h, dstFilename, isVideo, comment, username) 
+function PSPhotoStationAPI.addComment (h, dstFilename, isVideo, comment, username) 
+	local formData = 'method=create&' ..
+					 'version=1&' .. 
+					 'id=' .. getPhotoId(dstFilename, isVideo) .. '&' .. 
+					 'name=' .. username .. '&' .. 
+					 'comment='.. urlencode(comment) 
+
+	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
+	
+	if not respArray then return false, errorMsg end 
+	if respArray.error then 
+		local errorCode = respArray.error.code 
+		writeLogfile(3, string.format('addComment: Error: %d\n', errorCode))
+	end
+
+	writeLogfile(3, string.format('addComment(%s, %s, %s) returns %s\n', dstFilename, comment, username, tostring(respArray.success)))
+	return respArray.success
+end
+
+---------------------------------------------------------------------------------------------------------
+
+-- getComments (h, dstFilename) 
+function PSPhotoStationAPI.getComments (h, dstFilename, isVideo) 
+	local formData = 'method=list&' ..
+					 'version=1&' .. 
+					 'id=' .. getPhotoId(dstFilename, isVideo) 
+
+	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
+	
+	if not respArray then return false, errorMsg end 
+	if respArray.error then 
+		local errorCode = respArray.error.code 
+		writeLogfile(3, string.format('addComment: Error: %d\n', errorCode))
+	end
+
+	writeLogfile(3, string.format('getComments(%s, %s) returns %s\n', dstFilename, comment, tostring(respArray.success)))
+	return respArray.success, respArray.data.comments
 end
 

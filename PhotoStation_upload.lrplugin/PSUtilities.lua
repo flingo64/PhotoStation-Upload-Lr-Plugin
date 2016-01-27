@@ -330,15 +330,15 @@ end
 
 ---------------------- session environment ----------------------------------------------------------
 
--- openSession(exportParams, publishedCollection, reason)
+-- openSession(exportParams, publishedCollection, operation)
 -- 	- copy all relevant settings into exportParams 
 -- 	- initialize all required APIs: Convert, Upload, Exiftool
 -- 	- login to PhotoStation, if required
 --	- start exiftool listener, if required
-function openSession(exportParams, publishedCollection, reason)
+function openSession(exportParams, publishedCollection, operation)
 
 	-- if "use secondary server" was choosen, temporarily overwrite primary address
-	writeLogfile(4, string.format("openSession: reason = %s , publishMode = %s\n", reason, exportParams.publishMode))
+	writeLogfile(4, string.format("openSession: operation = %s , publishMode = %s\n", operation, exportParams.publishMode))
 	if exportParams.useSecondAddress then
 		writeLogfile(4, "openSession: copy second server parameters\n")
 		exportParams.proto = exportParams.proto2
@@ -348,7 +348,7 @@ function openSession(exportParams, publishedCollection, reason)
 	end
 	
 	-- if is Publish process, temporarily overwrite exportParams w/ CollectionSettings for Target Album
-	if publishedCollection then
+	if publishedCollection and publishedCollection:type() == 'LrPublishedCollection' then
     	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
 		writeLogfile(4, "openSession: copy collection settings\n")
     	
@@ -359,18 +359,21 @@ function openSession(exportParams, publishedCollection, reason)
     	exportParams.srcRoot 		= collectionSettings.srcRoot
     	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
     	exportParams.sortPhotos 	= collectionSettings.sortPhotos
-		if not string.find('Delete,Sort', exportParams.publishMode, 1, true) then
+		if string.find('ProcessRenderedPhotos', operation, 1, true) then
 			exportParams.publishMode 	= collectionSettings.publishMode
+		else
+			-- avoid prompt for PublishMode if operation is not ProcessRenderedPhotos
+			exportParams.publishMode 	= 'Publish'
 		end
 	end
 	
 	-- Get missing settings, if not stored in preset.
-	if promptForMissingSettings(exportParams, reason) == 'cancel' then
+	if promptForMissingSettings(exportParams, operation) == 'cancel' then
 		return false, 'cancel'
 	end
 
 	-- ConvertAPI: required if Export/Publish and thumb generation is configured
-	if string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.thumbGenerate and not exportParams.cHandle then
+	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.thumbGenerate and not exportParams.cHandle then
 			exportParams.cHandle = PSConvert.initialize(exportParams.PSUploaderPath)
 	end
 
@@ -404,7 +407,7 @@ function openSession(exportParams, publishedCollection, reason)
 	end
 
 	-- exiftool: required if Export/Publish and and any exif translation was selected
-	if string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate and not exportParams.eHandle then 
+	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate and not exportParams.eHandle then 
 		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
 		return iif(exportParams.eHandle, true, false), "Cannot start exiftool!" 
 	end
@@ -429,9 +432,9 @@ end
 
 ---------------------- Dialog functions ----------------------------------------------------------
 
--- promptForMissingSettings(exportParams, reason)
+-- promptForMissingSettings(exportParams, operation)
 -- check for parameters set to "Ask me later" and open a dialog to get values for them
-function promptForMissingSettings(exportParams, reason)
+function promptForMissingSettings(exportParams, operation)
 	local f = LrView.osFactory()
 	local bind = LrView.bind
 	local share = LrView.share
@@ -441,7 +444,7 @@ function promptForMissingSettings(exportParams, reason)
 	local needPublishMode = false
 	local needLoglevel = false
 
-	if ifnil(exportParams.publishMode, 'Ask') == 'Ask' then
+	if operation == 'ProcessRenderedPhotos' and ifnil(exportParams.publishMode, 'Ask') == 'Ask' then
 		exportParams.publishMode = 'Publish'
 		needPublishMode = true
 	end
@@ -459,7 +462,7 @@ function promptForMissingSettings(exportParams, reason)
 	local headerView = f:view {
 		f:row {
 			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing= Please enter missing parameters for: '" .. reason .. "'",
+				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing= Please enter missing parameters for: '" .. operation .. "'",
 				alignment = 'left',
 			},
 		},

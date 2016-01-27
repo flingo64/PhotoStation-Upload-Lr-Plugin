@@ -523,7 +523,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 		
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(exportParams, publishedCollection, "Photo Upload")
+	local sessionSuccess, reason = openSession(exportParams, publishedCollection, "ProcessRenderedPhotos")
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: processRenderedPhotos failed!", reason, "critical")

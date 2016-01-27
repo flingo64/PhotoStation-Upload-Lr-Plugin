@@ -175,18 +175,30 @@ publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSPublish/Titl
 --- (optional) This plug-in defined callback function is called when the user chooses
  -- the "Go to Published Collection" context-menu item.
 function publishServiceProvider.goToPublishedCollection( publishSettings, info )
-	local psBaseUrl, albumUrl 
+	local albumPath, albumUrl 
 
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
-	if publishSettings.usePersonalPS then
-		psBaseUrl = publishSettings.serverUrl .. "/~" .. publishSettings.personalPSOwner .. "/photo/#!Albums"
-	else
-		psBaseUrl = publishSettings.serverUrl .. "/photo/#!Albums"
+	albumPath = PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
+	
+	if PSLrUtilities.isDynamicAlbumPath(albumPath)then 
+		showFinalMessage("PhotoStation Upload: GoToPublishedCollection failed!", "Cannot open dynamic album path: '" .. albumPath .. "'", "critical")
+		closeLogfile()
+		return
 	end
 
-	albumUrl = PSPhotoStationAPI.getAlbumUrl(psBaseUrl, PSLrUtilities.getCollectionUploadPath(info.publishedCollection))
+	-- open session: initialize environment, get missing params and login
+	local sessionSuccess, reason = openSession(publishSettings, info.publishedCollection, 'GoToPublishedCollection')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: GoToPublishedCollection failed!", reason, "critical")
+		end
+		closeLogfile()
+		return
+	end
+	
+	albumUrl = PSPhotoStationAPI.getAlbumUrl(publishSettings.uHandle, albumPath)
 
 	LrHttp.openUrlInBrowser(albumUrl)
 end
@@ -202,18 +214,23 @@ publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForG
 --- (optional) This plug-in defined callback function is called when the user chooses the
  -- "Go to Published Photo" context-menu item.
 function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
-	local psBaseUrl, photoUrl 
+	local photoUrl
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
-	if publishSettings.usePersonalPS then
-		psBaseUrl = publishSettings.serverUrl .. "/~" .. publishSettings.personalPSOwner .. "/photo/#!Albums"
-	else
-		psBaseUrl = publishSettings.serverUrl .. "/photo/#!Albums"
+	-- open session: initialize environment, get missing params and login
+	-- 		now way to get the belgonging publishedCollection here: use nil 
+	local sessionSuccess, reason = openSession(publishSettings, nil, 'GoToPublishedPhoto')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: goToPublishedPhoto failed!", reason, "critical")
+		end
+		closeLogfile()
+		return
 	end
 	
-	photoUrl = PSPhotoStationAPI.getPhotoUrl(psBaseUrl, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
+	photoUrl = PSPhotoStationAPI.getPhotoUrl(publishSettings.uHandle, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
 	LrHttp.openUrlInBrowser(photoUrl)
 end
 
@@ -306,9 +323,8 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
-	publishSettings.publishMode = 'Delete'
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'Delete Photos from Published Collection')
+	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'DeletePhotosFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: DeletePhotosFromPublishedCollection failed!", reason, "critical")
@@ -766,7 +782,6 @@ publishServiceProvider.supportsCustomSortOrder = true
  -- is set to "User Order." Your plug-in should ensure that the photos are displayed
  -- in the designated sequence on the service.
 function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSettings, info, remoteIdSequence )
-	publishSettings.publishMode = 'Delete'
 	-- get publishedCollections: 
 	--   remoteCollectionId is the only collectionId we have here, so it must be equal to localCollectionId to retrieve the publishedCollection!!!
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
@@ -778,7 +793,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n")
 
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'Sorting Photos in Collection')
+	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'ImposeSortOrderOnPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: Sort Photos in Album failed!", reason, "critical")
@@ -855,13 +870,12 @@ end
  -- published collection via the Publish Services panel user interface. This is
  -- your plug-in's opportunity to make the corresponding change on the service.
 function publishServiceProvider.deletePublishedCollection( publishSettings, info )
-	publishSettings.publishMode = 'Delete'
 
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
 	-- open session: initialize environment, get missing params and login
-	local sessionSuccess, reason = openSession(publishSettings, info.publishedCollection, 'Delete Published Collection')
+	local sessionSuccess, reason = openSession(publishSettings, info.publishedCollection, 'DeletePublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: deletePublishedCollection failed!", reason, "critical")
@@ -939,40 +953,86 @@ end
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called (if supplied)  
  -- to retrieve comments from the remote service, for a single collection of photos 
- -- that have been published through this service. .
---[[ Not used for PhotoStation Upload plug-in.
-
+ -- that have been published through this service.
+ -- 	publishSettings (table) The settings for this publish service, as specified
+		-- by the user in the Publish Manager dialog. Any changes that you make in
+		-- this table do not persist beyond the scope of this function call.
+ --		arrayOfPhotoInfo (table) An array of tables with a member table for each photo.
+		-- Each member table has these fields:
+			-- photo: 			The photo object
+			-- publishedPhoto:	The publishing data for that photo
+			-- remoteId: (string or number) The remote systems unique identifier
+					-- 	for the photo, as previously recorded by the plug-in
+			-- url: (string, optional) The URL for the photo, as assigned by the
+					--	remote service and previously recorded by the plug-in.
+			-- commentCount: (number) The number of existing comments
+					-- 	for this photo in Lightroom's catalog database.
+ -- 	commentCallback (function) A callback function that your implementation should call to record
+ -- 
 function publishServiceProvider.getCommentsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, commentCallback )
+	-- get the belonging Published Collection by evaluating the first photo
+	local containedPublishedCollections = arrayOfPhotoInfo[1].photo:getContainedPublishedCollections() 
+	local publishedCollection
+	
+	
+	for i=1, #containedPublishedCollections do
+		if containedPublishedCollections[i]:getService():getPluginId() == plugin_TkId then
+			-- TODO: check if collection supports comments
+			publishedCollection = containedPublishedCollections[i]
+		end
+	end
+	-- make sure logfile is opened
+	openLogfile(publishSettings.logLevel)
+
+	if #arrayOfPhotoInfo > 100 then
+		showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", 'Too many photos', "critical")
+		closeLogfile()
+		return
+	end
+	
+	-- open session: initialize environment, get missing params and login
+	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetCommentsFromPublishedCollection')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", reason, "critical")
+		end
+		closeLogfile()
+		return
+	end
+
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 
-		local comments = FlickrAPI.getComments( publishSettings, {
-								photoId = photoInfo.remoteId,
-							} )
-		
-		local commentList = {}
-		
-		if comments and #comments > 0 then
-
-			for _, comment in ipairs( comments ) do
-
-				table.insert( commentList, {
-								commentId = comment.id,
-								commentText = comment.commentText,
-								dateCreated = comment.datecreate,
-								username = comment.author,
-								realname = comment.authorname,
-								url = comment.permalink
-							} )
-
-			end			
-
-		end	
-
-		commentCallback{ publishedPhoto = photoInfo, comments = commentList }						    
-
+		local success, comments = PSPhotoStationAPI.getComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+		if not success then
+			writeLogfile(1, string.format("GetCommentsFromPublishedCollection: %s failed!\n", photoInfo.remoteId))
+		else
+    		local commentList = {}
+    
+    		if comments and #comments > 0 then
+    
+    			for _, comment in ipairs( comments ) do
+    				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
+    
+    				table.insert( commentList, {
+    								commentId = comment.id,
+    								commentText = comment.comment,
+    								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
+	   								username = comment.name,
+	  								realname = comment.name,
+    								url = PSPhotoStationAPI.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+    							} )
+    
+    			end			
+    
+    		end	
+			writeLogfile(2, string.format("GetCommentsFromPublishedCollection: %s - %d comments\n", photoInfo.remoteId, #commentList))
+			writeTableLogfile(4, "commentList", commentList)
+    		commentCallback( {publishedPhoto = photoInfo, comments = commentList} )						    
+		end
 	end
+	return true
 end
-]]
+
 --------------------------------------------------------------------------------
 --- (optional, string) This plug-in defined property allows you to customize the
  -- name of the viewer-defined ratings that are obtained from the service via
@@ -1017,22 +1077,35 @@ end
  -- at all times for photos published by this service. If you implement this function,
  -- it allows you to disable the Comments panel temporarily if, for example,
  -- the connection to your server is down.
---[[ Not used for PhotoStation Upload plug-in.
-
-function publishServiceProvider.canAddCommentsToService( publishSettings )
-	return false
-end
+--[[
 ]]
+function publishServiceProvider.canAddCommentsToService( publishSettings )
+--	return publishSettings.supportComments
+	return true
+end
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user adds 
  -- a new comment to a published photo in the Library module's Comments panel. 
  -- Your implementation should publish the comment to the service.
---[[ Not used for PhotoStation Upload plug-in.
 
  function publishServiceProvider.addCommentToPublishedPhoto( publishSettings, remotePhotoId, commentText )
-	return true
+	-- make sure logfile is opened
+	openLogfile(publishSettings.logLevel)
+
+	-- open session: initialize environment, get missing params and login
+	local sessionSuccess, reason = openSession(publishSettings, nil, 'AddCommentToPublishedPhoto')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: AddCommentToPublishedPhoto failed!", reason, "critical")
+		end
+		closeLogfile()
+		return
+	end
+--	changeLoglevel(4)
+
+	writeLogfile(2, string.format("AddCommentToPublishedPhoto: %s - %s\n", remotePhotoId, commentText))
+	return PSPhotoStationAPI.addComment(publishSettings.uHandle, remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentText, publishSettings.username .. '@Lr')
 end
-]]
 --------------------------------------------------------------------------------
 
 PSPublishSupport = publishServiceProvider
