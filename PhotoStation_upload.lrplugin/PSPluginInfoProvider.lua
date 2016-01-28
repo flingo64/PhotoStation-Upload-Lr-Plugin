@@ -165,7 +165,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 	if prefs.updateAvailable == nil then
 		synops = ""
 		updateAvail = false
-	elseif prefs.updateAvailable == '' then
+	elseif prefs.updateAvailable == '' or prefs.updateAvailable == pluginVersion then
 		synops = LOC "$$$/PSUpload/PluginDialog/NOUPDATE=Plugin is up-to-date"
 		updateAvail = false
 	else
