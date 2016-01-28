@@ -623,7 +623,7 @@ function showFinalMessage (title, message, msgType)
 	local updateAvail = false
 	local updateNotice
 	
-	if ifnil(prefs.updateAvailable, '') ~= '' then
+	if ifnil(prefs.updateAvailable, '') ~= pluginVersion then
 		updateNotice = 'Version ' .. prefs.updateAvailable .. ' available!\n'
 		updateAvail = true
 	end
