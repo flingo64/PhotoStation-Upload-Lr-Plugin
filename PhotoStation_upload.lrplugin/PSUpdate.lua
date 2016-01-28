@@ -51,7 +51,6 @@ local serverUrl='http://messmer-online.de/LrPSUploadCheckForUpdate.php'
 -- checkForUpdate: check  for updates once per day
 function PSUpdate.checkForUpdate()
 	local prefs = LrPrefs.prefsForPlugin()
-	local pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' .. plugin_rev .. '.' .. plugin_build
 	local lrVersion = LrApplication.versionString()
 	local osVersion = LrSystemInfo.osVersion()
 	local lang = LrLocalization.currentLanguage()
@@ -108,6 +107,8 @@ function PSUpdate.checkForUpdate()
 					'&uid=' .. urlencode(uid) ..
 					'&sec=' .. LrMD5.digest(lrVersion .. pluginVersion .. osVersion .. lang .. uid .. plugin_TkId)
 
+--	writeLogfile(2, 'CheckForUpdate: ' .. checkUpdateRequest)
+	
 	local result, response = sendCheckUpdate(checkUpdateRequest)
 	
 	if not result then
