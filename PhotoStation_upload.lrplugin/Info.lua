@@ -42,7 +42,9 @@ plugin_major = 4
 plugin_minor = 0
 plugin_rev = 0
 plugin_build = 20160122
+pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' .. plugin_rev .. '.' .. plugin_build
 plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
+
 return {
 
 	LrSdkVersion = 5.0,
