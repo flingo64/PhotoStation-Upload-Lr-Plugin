@@ -623,12 +623,12 @@ function showFinalMessage (title, message, msgType)
 	local updateAvail = false
 	local updateNotice
 	
-	if ifnil(prefs.updateAvailable, '') ~= pluginVersion then
+	if ifnil(prefs.updateAvailable, '') ~= '' and ifnil(prefs.updateAvailable, '') ~= pluginVersion then
 		updateNotice = 'Version ' .. prefs.updateAvailable .. ' available!\n'
 		updateAvail = true
 	end
 	
-	writeLogfile(2, message .. '\n')
+	writeLogfile(2, title .. ": " .. message .. '\n')
 
 	if msgType == 'critical' then 
 		LrDialogs.message(title, message, msgType)

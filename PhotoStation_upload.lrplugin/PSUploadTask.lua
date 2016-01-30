@@ -651,8 +651,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				local foundPhoto = PSPhotoStationAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
 					rendition:recordPublishedPhotoId(publishedPhotoId)
+					-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
+					rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier))
 					nNotCopied = nNotCopied + 1
-					writeLogfile(2, 'CheckExisting: No Upload needed for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. publishedPhotoId .. '\n')
+					writeLogfile(2, string.format('CheckExisting: No Upload needed for "%s" to "%s" in collection "%s"\n', LrPathUtils.leafName(localPath), publishedPhotoId,  tostring(publishedCollection.localIdentifier)))
 				elseif foundPhoto == 'no' then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
@@ -695,7 +697,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
-						if publishedCollection then rendition:recordPublishedPhotoId(publishedPhotoId) end
+						if publishedCollection then 
+							rendition:recordPublishedPhotoId(publishedPhotoId) 
+							-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
+							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier))
+						end
 						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 					end
 				else
@@ -703,7 +709,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' ..  dstDir .. '" failed!!!\n')
 						table.insert( failures, dstDir .. "/" .. renderedFilename )
 					else
-						if publishedCollection then rendition:recordPublishedPhotoId(publishedPhotoId) end
+						if publishedCollection then 
+							rendition:recordPublishedPhotoId(publishedPhotoId) 
+							-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
+							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier))
+						end
 						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 					end
 				end

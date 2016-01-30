@@ -481,6 +481,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.publishMode = 'Publish'
 	end
 
+	if collectionSettings.enableComments == nil then
+		collectionSettings.enableComments = false
+	end
+
 	return f:view {
 		size = 'small',
 		fill_horizontal = 1,
@@ -569,6 +573,15 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     					alignment = 'left',
     					value = bind 'sortPhotos',
     					enabled =  LrBinding.negativeOfKey('copyTree'),
+    					fill_horizontal = 1,
+    				},
+
+    				f:checkbox {
+    					title = LOC "$$$/PSUpload/ExportDialog/EnableComments=Enable Comments",
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
+    									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
+    					alignment = 'left',
+    					value = bind 'enableComments',
     					fill_horizontal = 1,
     				},
     			}, -- row
@@ -971,25 +984,48 @@ end
  -- 
 function publishServiceProvider.getCommentsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, commentCallback )
 	-- get the belonging Published Collection by evaluating the first photo
-	local containedPublishedCollections = arrayOfPhotoInfo[1].photo:getContainedPublishedCollections() 
+	local numPhotos =  #arrayOfPhotoInfo
+	local containedPublishedCollections 
 	local publishedCollection
 	
-	
-	for i=1, #containedPublishedCollections do
-		if containedPublishedCollections[i]:getService():getPluginId() == plugin_TkId then
-			-- TODO: check if collection supports comments
-			publishedCollection = containedPublishedCollections[i]
-		end
-	end
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
-	if #arrayOfPhotoInfo > 100 then
+	if numPhotos == 0 then
+		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: nothing to do.\n"))
+		closeLogfile()
+		return
+	elseif arrayOfPhotoInfo[1].url == nil then
+		showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", 'Cannot sync comments due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		closeLogfile()
+		return
+	end
+
+	writeLogfile(2, string.format("GetCommentsFromPublishedCollection: url/collectionId: %s.\n", arrayOfPhotoInfo[1].url))
+
+	-- the remoteUrl contains the local collection identifier
+	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(arrayOfPhotoInfo[1].url))
+	if not publishedCollection then
+		showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", 'Cannot sync comments due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		closeLogfile()
+		return
+	end	
+	
+	if not publishedCollection:getCollectionInfoSummary().collectionSettings.enableComments then
+		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: comments not enabled for this collection.\n"))
+		closeLogfile()
+		return
+	end
+		
+--[[
+	if numPhotos > 100 then 
 		showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", 'Too many photos', "critical")
 		closeLogfile()
 		return
 	end
-	
+]]
+	writeLogfile(2, string.format("GetCommentsFromPublishedCollection: got %d photos\n", numPhotos))
+
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetCommentsFromPublishedCollection')
 	if not sessionSuccess then
@@ -1027,7 +1063,8 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     		end	
 			writeLogfile(2, string.format("GetCommentsFromPublishedCollection: %s - %d comments\n", photoInfo.remoteId, #commentList))
 			writeTableLogfile(4, "commentList", commentList)
-    		commentCallback( {publishedPhoto = photoInfo, comments = commentList} )						    
+--    		commentCallback( {publishedPhoto = photoInfo, comments = commentList} )						    
+    		commentCallback {publishedPhoto = photoInfo, comments = commentList} 						    
 		end
 	end
 	return true
