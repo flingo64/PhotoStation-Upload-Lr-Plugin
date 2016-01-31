@@ -39,14 +39,16 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 
 	-- Lightroom SDK
-local LrApplication =	import 'LrApplication'
-local LrBinding	= 		import 'LrBinding'
-local LrColor = 		import 'LrColor'
-local LrDate = 			import 'LrDate'
-local LrDialogs = 		import 'LrDialogs'
-local LrHttp = 			import 'LrHttp'
-local LrPathUtils = 	import 'LrPathUtils'
-local LrView = 			import 'LrView'
+local LrApplication =		import 'LrApplication'
+local LrBinding	= 			import 'LrBinding'
+local LrColor = 			import 'LrColor'
+local LrFunctionContext =	import 'LrFunctionContext'
+local LrDate = 				import 'LrDate'
+local LrDialogs = 			import 'LrDialogs'
+local LrHttp = 				import 'LrHttp'
+local LrPathUtils = 		import 'LrPathUtils'
+local LrProgressScope =		import 'LrProgressScope'
+local LrView = 				import 'LrView'
 
 require "PSConvert"
 require "PSUtilities"
@@ -485,6 +487,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.enableComments = false
 	end
 
+	if collectionSettings.enableRatings == nil then
+		collectionSettings.enableRatings = false
+	end
+
 	return f:view {
 		size = 'small',
 		fill_horizontal = 1,
@@ -578,10 +584,17 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 
     				f:checkbox {
     					title = LOC "$$$/PSUpload/ExportDialog/EnableComments=Enable Comments",
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
-    									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/EnableCommentsTT=Enable synchronization of comments for this Published Collection.\n",
     					alignment = 'left',
     					value = bind 'enableComments',
+    					fill_horizontal = 1,
+    				},
+
+    				f:checkbox {
+    					title = LOC "$$$/PSUpload/ExportDialog/EnableRatings=Enable Ratings",
+    					tooltip = LOC "$$$/PSUpload/ExportDialog/EnableRatingsTT=Enable synchronization of ratings for this Published Collection.\n",
+    					alignment = 'left',
+    					value = bind 'enableRatings',
     					fill_horizontal = 1,
     				},
     			}, -- row
@@ -905,32 +918,32 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	
 	writeLogfile(2, string.format("deletePublishedCollection: deleting %d published photos from collection %s\n", nPhotos, info.name ))
 
-	-- Set progress title.
-	import 'LrFunctionContext'.callWithContext( 'publishServiceProvider.deletePublishedCollection', function( context )
-	
-		local progressScope = LrDialogs.showModalProgressDialog {
+	local progressScope = LrProgressScope ( {
 							title = LOC( "$$$/PSPublish/DeletingCollectionAndContents=Deleting collection ^[^1^]", info.name ),
-							functionContext = context }
+--								functionContext = context,
+						 }) 
 						
-		for i = 1, nPhotos do
-			if progressScope:isCanceled() then break end
-			
-			local pubPhoto = publishedPhotos[i]
-			local publishedPath = pubPhoto:getRemoteId()
+	local canceled = false
+	for i = 1, nPhotos do
+		if progressScope:isCanceled() then 
+			canceled = true
+			break 
+		end
+		
+		local pubPhoto = publishedPhotos[i]
+		local publishedPath = pubPhoto:getRemoteId()
 
-			writeLogfile(2, string.format("deletePublishedCollection: deleting %s from  %s\n ", publishedPath, info.name ))
+		writeLogfile(2, string.format("deletePublishedCollection: deleting %s from  %s\n ", publishedPath, info.name ))
 
 --			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
-			if PSPhotoStationAPI.deletePic(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
-				writeLogfile(2, publishedPath .. ': successfully deleted.\n')
-				nProcessed = nProcessed + 1
-			else
-				writeLogfile(1, publishedPath .. ': deletion failed!\n')
-			end
-			progressScope:setPortionComplete(nProcessed, nPhotos)
-		end 
-		progressScope:done()
-	end )
+		if PSPhotoStationAPI.deletePic(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
+			writeLogfile(2, publishedPath .. ': successfully deleted.\n')
+			nProcessed = nProcessed + 1
+		else
+			writeLogfile(1, publishedPath .. ': deletion failed!\n')
+		end
+		progressScope:setPortionComplete(nProcessed, nPhotos)
+	end 
 		
 	local collectionPath =  PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
 	
@@ -938,7 +951,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	local photosLeft = {}
 	local albumDeleted = false
 	
-	if not PSLrUtilities.isDynamicAlbumPath(collectionPath) then
+	if not canceled and not PSLrUtilities.isDynamicAlbumPath(collectionPath) then
 		local canDeleteAlbum = PSPhotoStationAPI.deleteEmptyAlbums(publishSettings.uHandle, collectionPath, albumsDeleted, photosLeft)
 		
 		writeLogfile(2, string.format("DeletePublishedCollection --> can delete this album: %s\n\tDeleted Albums:\n\t\t%s\n\tPhotos left:\n\t\t%s\n",
@@ -951,6 +964,8 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 			albumDeleted = PSPhotoStationAPI.deleteAlbum(publishSettings.uHandle, collectionPath)
 		end
 	end
+
+	progressScope:done()
 	
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
@@ -986,7 +1001,8 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	-- get the belonging Published Collection by evaluating the first photo
 	local numPhotos =  #arrayOfPhotoInfo
 	local containedPublishedCollections 
-	local publishedCollection
+	local publishedCollection, publishedCollectionName
+	local nProcessed = 0 
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
@@ -1000,8 +1016,6 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		closeLogfile()
 		return
 	end
-
-	writeLogfile(2, string.format("GetCommentsFromPublishedCollection: url/collectionId: %s.\n", arrayOfPhotoInfo[1].url))
 
 	-- the remoteUrl contains the local collection identifier
 	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(arrayOfPhotoInfo[1].url))
@@ -1017,14 +1031,8 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end
 		
---[[
-	if numPhotos > 100 then 
-		showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", 'Too many photos', "critical")
-		closeLogfile()
-		return
-	end
-]]
-	writeLogfile(2, string.format("GetCommentsFromPublishedCollection: got %d photos\n", numPhotos))
+	publishedCollectionName = publishedCollection:getName()
+	writeLogfile(2, string.format("GetCommentsFromPublishedCollection for %d photos in collection %s.\n", numPhotos, publishedCollectionName))
 
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetCommentsFromPublishedCollection')
@@ -1036,10 +1044,16 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end
 
+	local progressScope = LrProgressScope( 
+								{ 	title = LOC( "$$$/PSPublish/GetCommentsFromPublishedCollection=Downloading comments for collection ^[^1^]", publishedCollection:getName()),
+--							 		functionContext = context 
+							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
+		if progressScope:isCanceled() then break end
 
-		local success, comments = PSPhotoStationAPI.getComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
-		if not success then
+		local comments = PSPhotoStationAPI.getComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+		
+		if not comments then
 			writeLogfile(1, string.format("GetCommentsFromPublishedCollection: %s failed!\n", photoInfo.remoteId))
 		else
     		local commentList = {}
@@ -1063,10 +1077,13 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     		end	
 			writeLogfile(2, string.format("GetCommentsFromPublishedCollection: %s - %d comments\n", photoInfo.remoteId, #commentList))
 			writeTableLogfile(4, "commentList", commentList)
---    		commentCallback( {publishedPhoto = photoInfo, comments = commentList} )						    
-    		commentCallback {publishedPhoto = photoInfo, comments = commentList} 						    
+    		commentCallback({publishedPhoto = photoInfo, comments = commentList})
 		end
-	end
+   		nProcessed = nProcessed + 1
+   		progressScope:setPortionComplete(nProcessed, numPhotos) 						    
+	end 
+	progressScope:done()
+
 	return true
 end
 
@@ -1084,26 +1101,103 @@ publishServiceProvider.titleForPhotoRating = LOC "$$$/PSPublish/TitleForPhotoRat
 --- (optional) This plug-in defined callback function is called (if supplied)
  -- to retrieve ratings from the remote service, for a single collection of photos 
  -- that have been published through this service. This function is called:
-  -- <ul>
-    -- <li>For every photo in the published collection each time <i>any</i> photo
-	-- in the collection is published or re-published.</li>
- 	-- <li>When the user clicks the Refresh button in the Library module's Comments panel.</li>
-	-- <li>After the user adds a new comment to a photo in the Library module's Comments panel.</li>
-  -- </ul>
---[[ Not used for PhotoStation Upload plug-in.
-
+    -- For every photo in the published collection each time any photo in the collection is published or re-published.
+ 	-- When the user clicks the Refresh button in the Library module's Comments panel.
+	-- After the user adds a new comment to a photo in the Library module's Comments panel.
 function publishServiceProvider.getRatingsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, ratingCallback )
+	-- get the belonging Published Collection by evaluating the first photo
+	local numPhotos =  #arrayOfPhotoInfo
+	local containedPublishedCollections 
+	local publishedCollection, publishedCollectionName
+	local nProcessed = 0 
+	
+	-- make sure logfile is opened
+	openLogfile(publishSettings.logLevel)
 
-	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
-
-		local rating = FlickrAPI.getNumOfFavorites( publishSettings, { photoId = photoInfo.remoteId } )
-		if type( rating ) == 'string' then rating = tonumber( rating ) end
-
-		ratingCallback{ publishedPhoto = photoInfo, rating = rating or 0 }
-
+	if numPhotos == 0 then
+		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: nothing to do.\n"))
+		closeLogfile()
+		return
+	elseif arrayOfPhotoInfo[1].url == nil then
+		showFinalMessage("PhotoStation Upload: GetRatingsFromPublishedCollection failed!", 'Cannot sync ratings due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		closeLogfile()
+		return
 	end
+
+	-- the remoteUrl contains the local collection identifier
+	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(arrayOfPhotoInfo[1].url))
+	if not publishedCollection then
+		showFinalMessage("PhotoStation Upload: GetRatingsFromPublishedCollection failed!", 'Cannot sync ratings due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		closeLogfile()
+		return
+	end	
+	
+	if not publishedCollection:getCollectionInfoSummary().collectionSettings.enableRatings then
+		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: ratings not enabled for this collection.\n"))
+		closeLogfile()
+		return
+	end
+		
+	publishedCollectionName = publishedCollection:getName()
+	writeLogfile(2, string.format("GetRatingsFromPublishedCollection for %d photos in collection %s.\n", numPhotos, publishedCollectionName))
+
+	-- open session: initialize environment, get missing params and login
+	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetRatingsFromPublishedCollection')
+	if not sessionSuccess then
+		if reason ~= 'cancel' then
+			showFinalMessage("PhotoStation Upload: GetRatingsFromPublishedCollection failed!", reason, "critical")
+		end
+		closeLogfile()
+		return
+	end
+
+	local catalog = LrApplication.activeCatalog()
+	local progressScope = LrProgressScope( 
+								{ 	title = LOC( "$$$/PSPublish/GetRatingsFromPublishedCollection=Downloading ratings for collection ^[^1^]", publishedCollection:getName()),
+--							 		functionContext = context 
+							 	})    
+	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
+		if progressScope:isCanceled() then break end
+
+		local photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+		local rating
+		
+		if not photoTags then
+			writeLogfile(1, string.format("GetRatingsFromPublishedCollection: %s failed!\n", photoInfo.remoteId))
+		else
+    		if photoTags and #photoTags > 0 then
+				for i = 1, #photoTags do
+					local photoTag = photoTags[i]
+    				if photoTag.type == 'desc' and string.match(photoTag.name, '([%*]+)') then
+    					rating = math.min(string.len(photoTag.name), 5)
+    					break
+    				end	
+    			end			
+       		end	
+       		if not rating then rating = 0 end
+       		
+			writeLogfile(4, string.format("GetRatingsFromPublishedCollection: %s - rating %d\n", photoInfo.remoteId, rating))
+			if ifnil(photoInfo.photo:getRawMetadata('rating'), 0) ~= rating then
+			writeLogfile(2, string.format("GetRatingsFromPublishedCollection: %s - change rating from %d to %d\n", 
+											photoInfo.remoteId, ifnil(photoInfo.photo:getRawMetadata('rating'), 0), rating))
+    			catalog:withWriteAccessDo( 
+    				'SetRating',
+    				function(context)
+						photoInfo.photo:setRawMetadata('rating', rating)
+    				end,
+    				{timeout=5}
+        		)
+			end
+			writeLogfile(4, string.format("GetRatingsFromPublishedCollection: %s - callback w/ rating %d\n", photoInfo.remoteId, rating))
+			ratingCallback({ publishedPhoto = photoInfo, rating = rating or 0 })
+		end
+   		nProcessed = nProcessed + 1
+   		progressScope:setPortionComplete(nProcessed, numPhotos) 						    
+	end 
+	progressScope:done()
+
+	return true
 end
-]]	
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called whenever a
@@ -1136,7 +1230,7 @@ end
 			showFinalMessage("PhotoStation Upload: AddCommentToPublishedPhoto failed!", reason, "critical")
 		end
 		closeLogfile()
-		return
+		return false
 	end
 --	changeLoglevel(4)
 
