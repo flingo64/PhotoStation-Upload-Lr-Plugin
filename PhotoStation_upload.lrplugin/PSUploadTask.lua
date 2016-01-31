@@ -423,6 +423,9 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local edited = pubPhoto:getEditedFlag()
 		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
 
+		-- check if backlink to the containing Published Collection must be adjusted
+		local adjustBacklink = iif(pubPhoto:getRemoteUrl() ~= tostring(publishedCollection.localIdentifier), true, false)
+
 		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
 		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
 					
@@ -431,6 +434,8 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 			catalog:withWriteAccessDo( 
 				'SetEdited',
 				function(context)
+					if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier)) end
+					-- mark as 'To Re-publish'
 					pubPhoto:setEditedFlag(true)
 				end,
 				{timeout=5}
@@ -446,6 +451,8 @@ function checkMoved(publishedCollection, exportContext, exportParams)
     			catalog:withWriteAccessDo( 
     				'SetEdited',
     				function(context)
+						if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier)) end
+						-- mark as 'To Re-publish'
     					pubPhoto:setEditedFlag(true)
     				end,
     				{timeout=5}
@@ -453,6 +460,16 @@ function checkMoved(publishedCollection, exportContext, exportParams)
     			nMoved = nMoved + 1
     		else
     			writeLogfile(2, "CheckMoved(" .. localPath .. "): Not moved.\n")
+				if adjustBacklink then
+        			catalog:withWriteAccessDo( 
+        				'Add Published Collection ack link',
+        				function(context)
+    						-- adjust backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
+    						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier))
+        				end,
+        				{timeout=5}
+        			)
+				end
     		end
 		end
 		nProcessed = i
@@ -654,7 +671,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
 					rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier))
 					nNotCopied = nNotCopied + 1
-					writeLogfile(2, string.format('CheckExisting: No Upload needed for "%s" to "%s" in collection "%s"\n', LrPathUtils.leafName(localPath), publishedPhotoId,  tostring(publishedCollection.localIdentifier)))
+					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', LrPathUtils.leafName(localPath), publishedPhotoId))
 				elseif foundPhoto == 'no' then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
