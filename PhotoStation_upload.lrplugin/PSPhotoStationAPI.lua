@@ -3,6 +3,7 @@
 PSPhotoStationAPI.lua
 PhotoStation Upload primitives:
 	- initialize
+	- getErrorMsg
 	- login
 	- logout
 
@@ -46,6 +47,47 @@ local LrDate = import 'LrDate'
 require "PSUtilities"
 
 --====== local functions =====================================================--
+
+local PSAPIerrorMsgs = {
+	[0]   = 'No error',
+	[100] = 'Unknown error ',
+    [101] = 'No parameter of API, method or version',
+    [102] = 'The requested API does not exist',
+    [103] = 'The requested method does not exist',
+    [104] = 'The requested version does not support the functionality',
+    [105] = 'The logged in session does not have permission',
+    [106] = 'Session timeout',
+    [107] = 'Session interrupted by duplicate login',
+	[400] = 'Invalid parameter',
+	[401] = 'Unknown error of file operation',
+	[402] = 'System is too busy',
+	[403] = 'Invalid user does this file operation',
+	[404] = 'Invalid group does this file operation',
+	[405] = 'Invalid user and group does this file operation',
+	[406] = 'Can’t get user/group information from the account server',
+	[407] = 'Operation not permitted',
+	[408] = 'No such file or directory',
+	[409] = 'Non-supported file system',
+	[410] = 'Failed to connect internet-based file system (ex: CIFS)',
+	[411] = 'Read-only file system',
+	[412] = 'Filename too long in the non-encrypted file system',
+	[413] = 'Filename too long in the encrypted file system',
+	[414] = 'File already exists',
+	[415] = 'Disk quota exceeded',
+	[416] = 'No space left on device',
+	[417] = 'Input/output error',
+	[418] = 'Illegal name or path',
+	[419] = 'Illegal file name',
+	[420] = 'Illegal file name on FAT filesystem',
+	[421] = 'Device or resource busy',
+	[599] = 'No such task No such task of the file operation',
+	[1001]  = 'Http error: no response body, no response header',
+	[1002]  = 'Http error: no response data, no errorcode in response header',
+	[1003]  = 'Http error: No JSON response data',
+	[12007] = 'Http error: cannotFindHost',
+	[12029] = 'Http error: cannotConnectToHost',
+}
+
 --[[ 
 getAlbumId(albumPath)
 	returns the AlbumId of a given Album path (not leading and trailing slashes) in PhotoStation
@@ -132,32 +174,46 @@ local function callSynoAPI (h, synoAPI, formData)
 	if not respBody then
 	    writeTableLogfile(3, 'respHeaders', respHeaders)
     	if respHeaders then
-      		return nil, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
-          			trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
+      		writeLogfile(3, string.format("Error %s on http request: %s\n", 
+      				ifnil(respHeaders["error"].errorCode, 'Unknown'),
+          			trim(ifnil(respHeaders["error"].name, 'Unknown error description')))) 
+    		local errorCode = tonumber(ifnil(respHeaders["error"].nativeCode, '1002'))
+      		return nil, errorCode
     	else
-      		return nil, 'Unknown error on http request"'
+      		return nil, 1001
     	end
 	end
 	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
 	
-  return JSON:decode(respBody)
+	local respArray = JSON:decode(respBody)
+
+	if not respArray then return nil, 1003 end 
+
+	if respArray.error then 
+		local errorCode = tonumber(respArray.error.code)
+		writeLogfile(1, string.format('PSPhotoStationAPI.callSynoAPI: %s returns error %d\n', synoAPI, errorCode))
+		return nil, errorCode
+	end
+	
+	return respArray
 end
 
 --====== global functions ====================================================--
 
 PSPhotoStationAPI = {}
 
--- local stdHttpTimeout = 10
-
--- !!! don't use local variable for settings that may differ for export sessions!
--- only w/ "reload plug-in on each export", each export task will get its own copy of these variables
---[[
-local serverUrl
-local loginPath
-local uploadPath
-]]
 ---------------------------------------------------------------------------------------------------------
+-- getErrorMsg(errorCode)
+-- translates errorCode to ErrorMsg
+function PSPhotoStationAPI.getErrorMsg(errorCode)
+	if PSAPIerrorMsgs[errorCode] == nil then
+		-- we don't have a documented  message for that code
+		return string.format("ErrorCode: %d", errorCode)
+	end
+	return PSAPIerrorMsgs[errorCode]
+end
 
+---------------------------------------------------------------------------------------------------------
 -- initialize: set serverUrl, loginPath and uploadPath
 function PSPhotoStationAPI.initialize(server, personalPSOwner, serverTimeout)
 	local h = {} -- the handle
@@ -194,25 +250,18 @@ function PSPhotoStationAPI.initialize(server, personalPSOwner, serverTimeout)
 			'version=1&' .. 
 			'ps_username='
 			 
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.API.Info', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.API.Info', formData)
 
-	if not respArray then return nil, errorMsg end 
+	if not respArray then return nil, errorCode end 
 
-	if respArray.error then 
-		errorCode = respArray.error.code
-		writeLogfile(1, string.format('PSPhotoStationAPI.initialize: SYNO.API.Info returns error %\n', errorCode))
-		return nil, errorCode
-	end
-	
 	-- rewrite the apiInfo table with API infos retrieved via SYNO.API.Info
 	h.apiInfo = respArray.data
 -- 	writeTableLogfile(4, 'apiInfo', h.apiInfo)
 	
 	return h
 end
-		
----------------------------------------------------------------------------------------------------------
 
+---------------------------------------------------------------------------------------------------------
 -- login(h, username, passowrd)
 -- does, what it says
 function PSPhotoStationAPI.login(h, username, password)
@@ -221,14 +270,11 @@ function PSPhotoStationAPI.login(h, username, password)
 					 'username=' .. urlencode(username) .. '&' .. 
 					 'password=' .. urlencode(password)
 
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Auth', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Auth', formData)
 	
-	if not respArray then return false, errorMsg end 
+	if not respArray then return false, errorCode end 
 	
-	local errorCode = 0 
-	if respArray.error then errorCode = tonumber(respArray.error.code) end
-  
-  return respArray.success, string.format('Error: %d\n', errorCode)
+	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -240,16 +286,14 @@ function PSPhotoStationAPI.logout (h)
 end
 
 ---------------------------------------------------------------------------------------------------------
---[[ 
-getAlbumUrl(h, albumPath)
-	returns the URL of an album in the PhotoStation
-	URL of an album in PS is:
-		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
-	E.g. Album Path:
-		Server: http://diskstation; Standard PhotoStation; Album Breadcrumb: Albums/Test/2007
-	yields PS Photo-URL:
-		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
-]]
+-- getAlbumUrl(h, albumPath)
+--	returns the URL of an album in the PhotoStation
+--	URL of an album in PS is:
+--		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
+--	E.g. Album Path:
+--		Server: http://diskstation; Standard PhotoStation; Album Breadcrumb: Albums/Test/2007
+--	yields PS Photo-URL:
+--		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
 function PSPhotoStationAPI.getAlbumUrl(h, albumPath) 
 	local i
 	local albumUrl
@@ -274,16 +318,15 @@ function PSPhotoStationAPI.getAlbumUrl(h, albumPath)
 	return albumUrl
 end
 
---[[ 
-getPhotoUrl(h, photoPath, isVideo)
-	returns the URL of a photo/video in the PhotoStation
-	URL of a photo in PS is:
-		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>/<PhotoId>
-	E.g. Photo Path:
-		Server: http://diskstation; Standard PhotoStation; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
-	yields PS Photo-URL:
-		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
-]]
+---------------------------------------------------------------------------------------------------------
+-- getPhotoUrl(h, photoPath, isVideo)
+--	returns the URL of a photo/video in the PhotoStation
+--	URL of a photo in PS is:
+--		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>/<PhotoId>
+--	E.g. Photo Path:
+--		Server: http://diskstation; Standard PhotoStation; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
+--	yields PS Photo-URL:
+--		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 function PSPhotoStationAPI.getPhotoUrl(h, photoPath, isVideo) 
 	local i
 	local subDirPath = ''
@@ -331,25 +374,17 @@ function PSPhotoStationAPI.listAlbum(h, dstDir, listItems, recursive)
 					 'additional=album_permission'
 --					 'additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location'
 
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
 	
-	if not respArray then return false, errorMsg end 
-	
-	local errorCode = 0 
-	if respArray.error then 
-		errorCode = tonumber(respArray.error.code)
-		writeLogfile(1, string.format('listAlbum: Error: %d\n', errorCode))
-		return false, errorCode, nil
-	end
-	
+	if not respArray then return nil, errorCode end 
+
 	writeTableLogfile(4, 'listAlbum', respArray.data.items)
-	return true, 0, respArray.data.items
+	return respArray.data.items
 end
 
 ---------------------------------------------------------------------------------------------------------
 -- directory cache for existsPic()
 -- one directory will be cached at any time
-
 local psDirInCache = nil 	-- pathname of directory in cache
 local psDirCache = nil		-- the directory cache
 
@@ -375,10 +410,10 @@ function PSPhotoStationAPI.existsPic(h, dstFilename, isVideo)
 	-- check if folder of current photo is in cache
 	if dstDir ~= psDirInCache then
 		-- if not: refresh cach w/ folder of current photo
-		local success, errorCode
+		local errorCode
 		
-		success, errorCode, psDirCache = PSPhotoStationAPI.listAlbum(h, dstDir, 'photo,video', false)
-		if not success and errorCode ~= 408 then -- 408: no such file or dir
+		psDirCache, errorCode = PSPhotoStationAPI.listAlbum(h, dstDir, 'photo,video', false)
+		if not psDirCache and errorCode ~= 408 then -- 408: no such file or dir
 			writeLogfile(3, string.format('existsPic: Error on listAlbum: %d\n', errorCode))
 		   	return 'error'
 		end
@@ -389,54 +424,43 @@ function PSPhotoStationAPI.existsPic(h, dstFilename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
-
 -- deletePic (h, dstFilename) 
 function PSPhotoStationAPI.deletePic (h, dstFilename, isVideo) 
 	local formData = 'method=delete&' ..
 					 'version=1&' .. 
 					 'id=' .. getPhotoId(dstFilename, isVideo) .. '&'
 
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
 	
-	if not respArray then return false, errorMsg end 
-	if respArray.error then 
-		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('deletePic: Error: %d\n', errorCode))
-	end
+	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('deletePic(%s) returns %s\n', dstFilename, tostring(respArray.success)))
+	writeLogfile(3, string.format('deletePic(%s) returns OK\n', dstFilename))
 	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
-
 -- deleteAlbum(h, albumPath) 
 function PSPhotoStationAPI.deleteAlbum (h, albumPath) 
 	local formData = 'method=delete&' ..
 					 'version=1&' .. 
 					 'id=' .. getAlbumId(albumPath) .. '&'
 
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
 	
-	if not respArray then return false, errorMsg end 
-	if respArray.error then 
-		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('deleteAlbum: Error: %d\n', errorCode))
-	end
+	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('deleteAlbum(%s) returns %s\n', albumPath, tostring(respArray.success)))
+	writeLogfile(3, string.format('deleteAlbum(%s) returns OK\n', albumPath))
 	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
-
 -- deleteEmptyAlbums (h, albumPath, albumsDeleted, photosLeft) 
 -- deletes recursively all empty albums below albumPath.
 -- fills albumsDeleted and photosLeft 
 -- returns:
 -- 		success - the Album itself can be deleted (is empty) 
 function PSPhotoStationAPI.deleteEmptyAlbums(h, albumPath, albumsDeleted, photosLeft)
-	local success, errorcode, albumItems = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album', false)
+	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album', false)
 	local canDeleteThisAlbum = true
 		
 	for i = 1, #albumItems do
@@ -457,7 +481,6 @@ function PSPhotoStationAPI.deleteEmptyAlbums(h, albumPath, albumsDeleted, photos
 end
 
 ---------------------------------------------------------------------------------------------------------
-
 -- sortPics (h, albumPath, sortedPhotos) 
 function PSPhotoStationAPI.sortPics (h, albumPath, sortedPhotos) 
 	local formData = 'method=arrangeitem&' ..
@@ -477,20 +500,15 @@ function PSPhotoStationAPI.sortPics (h, albumPath, sortedPhotos)
 	
 	formData = formData .. 'item_id=' .. item_ids
 	
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
 	
-	if not respArray then return false, errorMsg end 
-	if respArray.error then 
-		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('sortPics: Error: (%d)\n', errorCode))
-	end
+	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('sortPics(%s) returns %s\n', albumPath, tostring(respArray.success)))
+	writeLogfile(3, string.format('sortPics(%s) returns OK.\n', albumPath))
 	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
-
 -- addComment (h, dstFilename, isVideo, comment, username) 
 function PSPhotoStationAPI.addComment (h, dstFilename, isVideo, comment, username) 
 	local formData = 'method=create&' ..
@@ -499,35 +517,26 @@ function PSPhotoStationAPI.addComment (h, dstFilename, isVideo, comment, usernam
 					 'name=' .. username .. '&' .. 
 					 'comment='.. urlencode(comment) 
 
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
 	
-	if not respArray then return false, errorMsg end 
-	if respArray.error then 
-		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('addComment: Error: %d\n', errorCode))
-	end
+	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('addComment(%s, %s, %s) returns %s\n', dstFilename, comment, username, tostring(respArray.success)))
+	writeLogfile(3, string.format('addComment(%s, %s, %s) returns OK.\n', dstFilename, comment, username))
 	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
-
 -- getComments (h, dstFilename) 
 function PSPhotoStationAPI.getComments (h, dstFilename, isVideo) 
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
 					 'id=' .. getPhotoId(dstFilename, isVideo) 
 
-	local respArray, errorMsg = callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
 	
-	if not respArray then return false, errorMsg end 
-	if respArray.error then 
-		local errorCode = respArray.error.code 
-		writeLogfile(3, string.format('addComment: Error: %d\n', errorCode))
-	end
+	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('getComments(%s, %s) returns %s\n', dstFilename, comment, tostring(respArray.success)))
-	return respArray.success, respArray.data.comments
+	writeLogfile(3, string.format('getComments(%s) returns OK.\n', dstFilename))
+	return respArray.data.comments
 end
 
