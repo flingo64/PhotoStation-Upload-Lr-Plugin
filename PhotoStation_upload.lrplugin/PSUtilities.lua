@@ -379,23 +379,27 @@ function openSession(exportParams, publishedCollection, operation)
 
 	-- Login to PhotoStation: not required for CheckMoved
 	if exportParams.publishMode ~= 'CheckMoved' and not exportParams.uHandle then
-		local result, reason
-		exportParams.uHandle, reason = PSPhotoStationAPI.initialize(exportParams.serverUrl, 
+		local result, errorCode
+		exportParams.uHandle, errorCode = PSPhotoStationAPI.initialize(exportParams.serverUrl, 
 														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
 														exportParams.serverTimeout)
 		if not exportParams.uHandle then
-			local errorMsg = string.format("Initialize of %s %s failed!\nReason: %s\n",
+			local errorMsg = string.format("Initialization of %s %s at\n%s\nfailed!\nReason: %s\n",
 									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
-									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), reason)
+									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
+									exportParams.serverUrl,
+									PSPhotoStationAPI.getErrorMsg(errorCode))
 			writeLogfile(1, errorMsg)
 			return 	false, errorMsg
 		end
 		
-		result, reason = PSPhotoStationAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
+		result, errorCode = PSPhotoStationAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
 		if not result then
-			local errorMsg = string.format("Login to %s %s failed!\nReason: %s\n",
+			local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
 									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
-									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), reason)
+									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
+									exportParams.serverUrl,
+									PSPhotoStationAPI.getErrorMsg(errorCode))
 			writeLogfile(1, errorMsg)
 			 exportParams.uHandle = nil
 			return 	false, errorMsg
