@@ -1007,6 +1007,11 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
+	if publishSettings.operationCanceled then
+		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: canceled by user\n"))
+		return
+	end
+	
 	if numPhotos == 0 then
 		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: nothing to do.\n"))
 		closeLogfile()
@@ -1039,6 +1044,9 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", reason, "critical")
+		else
+			writeLogfile(2, string.format("GetCommentsFromPublishedCollection: canceled by user\n"))
+			publishSettings.operationCanceled = true
 		end
 		closeLogfile()
 		return
@@ -1114,6 +1122,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
+	if publishSettings.operationCanceled then
+		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: canceled by user\n"))
+		return
+	end
+	
 	if numPhotos == 0 then
 		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: nothing to do.\n"))
 		closeLogfile()
@@ -1146,6 +1159,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("PhotoStation Upload: GetRatingsFromPublishedCollection failed!", reason, "critical")
+		else
+			writeLogfile(2, string.format("GetRatingsFromPublishedCollection: canceled by user\n"))
+			publishSettings.operationCanceled = true
 		end
 		closeLogfile()
 		return
@@ -1160,7 +1176,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		if progressScope:isCanceled() then break end
 
 		local photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
-		local rating
+		local rating = nil
+		local label = nil
 		
 		if not photoTags then
 			writeLogfile(1, string.format("GetRatingsFromPublishedCollection: %s failed!\n", photoInfo.remoteId))
@@ -1168,27 +1185,54 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		if photoTags and #photoTags > 0 then
 				for i = 1, #photoTags do
 					local photoTag = photoTags[i]
-    				if photoTag.type == 'desc' and string.match(photoTag.name, '([%*]+)') then
-    					rating = math.min(string.len(photoTag.name), 5)
-    					break
+    				if photoTag.type == 'desc' then
+
+    					-- ratings look like '*', '**', ... '*****'
+    					if string.match(photoTag.name, '([%*]+)') then
+    						rating = math.min(string.len(photoTag.name), 5)
+
+    					-- labels look like '+R'(ed label), '+Y'(ellow), '+g'(reen), '+b'(lue), '+P'(urple)  (case-insensitive)
+    					elseif string.match(photoTag.name, '(%+[RrYyGgBbPp])') then
+    						local labelName = {
+    							r	= 'red',
+    							y 	= 'yellow',
+    							g	= 'green',
+    							b 	= 'blue',
+    							p	= 'purple',
+    						}
+    						label = string.gsub(string.lower(photoTag.name), '%+([RrYyGgBbPp])', labelName)
+    					end
     				end	
     			end			
-       		end	
-       		if not rating then rating = 0 end
-       		
-			writeLogfile(4, string.format("GetRatingsFromPublishedCollection: %s - rating %d\n", photoInfo.remoteId, rating))
-			if ifnil(photoInfo.photo:getRawMetadata('rating'), 0) ~= rating then
-			writeLogfile(2, string.format("GetRatingsFromPublishedCollection: %s - change rating from %d to %d\n", 
-											photoInfo.remoteId, ifnil(photoInfo.photo:getRawMetadata('rating'), 0), rating))
+       		end
+       		label = ifnil(label, 'none')
+       		       		
+			writeLogfile(4, string.format("GetRatingsFromPublishedCollection: %s - rating %d, label %s\n", photoInfo.remoteId, ifnil(rating, 0), label))
+			if photoInfo.photo:getRawMetadata('rating') ~= rating then
+				writeLogfile(2, string.format("GetRatingsFromPublishedCollection: %s - change rating from %d to %d\n", 
+											photoInfo.remoteId, ifnil(photoInfo.photo:getRawMetadata('rating'), 0), ifnil(rating, 0)))
     			catalog:withWriteAccessDo( 
-    				'SetRating',
+    				'SetRatingAndLabel',
     				function(context)
 						photoInfo.photo:setRawMetadata('rating', rating)
     				end,
     				{timeout=5}
         		)
 			end
-			writeLogfile(4, string.format("GetRatingsFromPublishedCollection: %s - callback w/ rating %d\n", photoInfo.remoteId, rating))
+
+			if photoInfo.photo:getRawMetadata('colorNameForLabel') ~= label then
+				writeLogfile(2, string.format("GetRatingsFromPublishedCollection: %s - change label from %s to %s\n", 
+											photoInfo.remoteId, ifnil(photoInfo.photo:getRawMetadata('colorNameForLabel'), 0), label))
+    			catalog:withWriteAccessDo( 
+    				'SetRatingAndLabel',
+    				function(context)
+						photoInfo.photo:setRawMetadata('colorNameForLabel', label)
+    				end,
+    				{timeout=5}
+        		)
+			end
+
+			writeLogfile(4, string.format("GetRatingsFromPublishedCollection: %s - callback w/ rating %d\n", photoInfo.remoteId, ifnil(rating, 0)))
 			ratingCallback({ publishedPhoto = photoInfo, rating = rating or 0 })
 		end
    		nProcessed = nProcessed + 1
@@ -1232,7 +1276,6 @@ end
 		closeLogfile()
 		return false
 	end
---	changeLoglevel(4)
 
 	writeLogfile(2, string.format("AddCommentToPublishedPhoto: %s - %s\n", remotePhotoId, commentText))
 	return PSPhotoStationAPI.addComment(publishSettings.uHandle, remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentText, publishSettings.username .. '@Lr')
