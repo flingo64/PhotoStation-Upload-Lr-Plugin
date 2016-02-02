@@ -179,8 +179,11 @@ function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, 
 	if rawConvParams then
 		srcJpgFilename = (LrPathUtils.replaceExtension(srcFilename, 'jpg'))
 
-		local cmdline = cmdlineQuote() .. '"' .. h.dcraw .. '" ' .. rawConvParams .. '-c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' .. cmdlineQuote()
-		writeLogfile(4, cmdline .. "\n")
+		local cmdline = cmdlineQuote() .. '"' .. 
+							h.dcraw .. '" ' .. rawConvParams .. '-c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' ..
+							' 2>> "' .. iif(getLogLevel() >= 4, getLogFilename(), getNullFilename()) .. '"' 	 
+						cmdlineQuote()
+		writeLogfile(3, cmdline .. "\n")
 		
 		if LrTasks.execute(cmdline) > 0 then
 			writeLogfile(3,cmdline .. "... failed!\n")
@@ -191,15 +194,21 @@ function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, 
 		srcJpgFilename = srcFilename
 	end
 	
-	local cmdline = cmdlineQuote() .. '"' .. h.conv .. '" "' .. srcJpgFilename .. '" ' ..
+	local cmdline = 
+		cmdlineQuote() .. '"' .. 
+			h.conv .. '" "' .. 
+			srcJpgFilename .. '" ' ..
 			shellEscape(
 						 '( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write "' .. xlFile .. '" ) -delete 0 ' ..
 		iif(lFile ~= '', '( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write "' ..  lFile .. '" +delete ) ', '') ..
 						 '( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write "' ..  bFile .. '" +delete ) ' ..
 						 '( +clone   -define jpeg:size=' ..  mSize .. ' -thumbnail '  ..  mSize .. ' ' .. convParams .. ' -write "' ..  mFile .. '" +delete ) ' ..
 								    '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' "' 	   ..  sFile .. '"'
-			) .. cmdlineQuote()
-	writeLogfile(4, cmdline .. "\n")
+			) ..
+			' 2>> "' .. iif(getLogLevel() >= 4, getLogFilename(), getNullFilename()) .. '"' 
+		cmdlineQuote()
+--			) .. cmdlineQuote()
+	writeLogfile(3, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then
 		writeLogfile(3,cmdline .. "... failed!\n")
 		writeLogfile(1, "convertPicConcurrent: " .. srcFilename  .. " failed!\n")
