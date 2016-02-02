@@ -141,6 +141,7 @@ function PSExiftoolAPI.open(exportParams)
 	-- the commandFile and logFile must be unique for each exiftool listener
 	h.etCommandFile = LrPathUtils.child(tmpdir, "ExiftoolCmds-" .. tostring(LrDate.currentTime()) .. ".txt")
 	h.etLogFile = LrPathUtils.replaceExtension(h.etCommandFile, "log")
+	h.etErrLogFile = LrPathUtils.replaceExtension(h.etCommandFile, "error.log")
 
 	-- open and truncate commands file
 	local cmdFile = io.open(h.etCommandFile, "w")
@@ -159,7 +160,8 @@ function PSExiftoolAPI.open(exportParams)
         					' -common_args -overwrite_original -fast2 -n -m ' ..
         					iif (exportParams.exifXlatFaceRegions,  '"-RegionInfoMp<MyRegionMp" ' , '') ..
         					iif (exportParams.exifXlatRating,  '"-XMP:Subject+<MyRatingSubject" ', '') ..
-        					'> "' .. h.etLogFile .. '"' ..
+        					'> "'  .. h.etLogFile .. 	'" ' ..
+        					'2> "' .. h.etErrLogFile .. '"' .. 
         					cmdlineQuote()
         	local retcode
         	
@@ -176,6 +178,7 @@ function PSExiftoolAPI.open(exportParams)
         
         	LrFileUtils.delete(h.etCommandFile)
         	LrFileUtils.delete(h.etLogFile)
+        	LrFileUtils.delete(h.etErrLogFile)
         	
         	return retcode
         end 
