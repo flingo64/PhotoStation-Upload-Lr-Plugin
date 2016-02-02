@@ -4,17 +4,26 @@ PSUtilities.lua
 Utilities for Lightroom PhotoStation Upload
 Copyright(c) 2015, Martin Messmer
 
-useful functions:
+exported functions:
+	- JSON.onDecodeError
+	- JSON.onDecodeNilError
+	- JSON.onDecodeHtmlError
+	
 	- ifnil
 	- iif
 	- split
 	- trim
 	
+	- getNullFilename
+
 	- openLogfile
 	- writeLogfile
 	- writeTableLogfile
 	- closeLogfile
-	
+	- getLogFilename
+	- getLogLevel
+	- changeLogLevel
+		
 	- waitSemaphore
 	- signalSemaphore
 	
@@ -68,12 +77,31 @@ local LrTasks 			= import 'LrTasks'
 local LrView 			= import 'LrView'
 
 require "PSLrUtilities"
-
 JSON = assert(loadfile (LrPathUtils.child(_PLUGIN.path, 'JSON.lua')))()
 
 --============================================================================--
 
 tmpdir = LrPathUtils.getStandardFilePath("temp")
+
+----------------------- JSON helper --------------------------------------------------------------
+-- Overwrite JSON.assert() to redirect output to logfile
+--[[
+JSON.assert = function (assert, message)
+	writeLogfile(4, string.format("JSON-Assert: msg=%s\n",ifnil(message, '<Nil>')))
+end
+]]
+
+-- overwriting of onDecodeError did not work (requires new JSON object ???)
+--[[
+]]
+JSON.onDecodeError = function (message, text, location, etc) 
+	writeLogfile(3, string.format("JSON-DecodeError: msg=%s, txt=%s\n", 
+									ifnil(message, '<Nil>'), ifnil(text, '<Nil>')))
+	writeLogfile(4, string.format("JSON-DecodeError: loc=%s, etc=%s\n", 
+									ifnil(location, '<Nil>'),ifnil(etc, '<Nil>')))
+end
+JSON.onDecodeOfNilError  = JSON.onDecodeError
+JSON.onDecodeOfHTMLError = JSON.onDecodeError
 
 ---------------------- useful helpers ----------------------------------------------------------
 
@@ -134,6 +162,11 @@ local loglevelname = {
 -- getLogFilename: return the filename of the logfile
 function getLogFilename()
 	return LrPathUtils.child(tmpdir, "PhotoStationUpload.log")
+end
+
+-- getLogLogLevel: return the current loglevel
+function getLogLevel()
+	return loglevel
 end
 
 -- changeLoglevel: change the loglevel (after promptForMissingSettings)
@@ -234,6 +267,16 @@ end
 
 ---------------------- filename/dirname sanitizing routines ---------------------------------------------------------
 
+---------------------------------------------------------------------------------------
+-- getNullFilename: get the OS specifiy filename of the NULL file
+function getNullFilename()
+	if WIN_ENV then
+		return 'NUL'
+	else
+		return '/dev/null'
+	end
+end
+---------------------------------------------------------------------------------------
 -- mkLegalFilename: substitute illegal filename char by their %nnn representation
 -- This function should be used when a arbitrary string shall be used as filename or dirname 
 function mkLegalFilename(str)
@@ -248,6 +291,7 @@ function mkLegalFilename(str)
 	return str
 end 
 
+---------------------------------------------------------------------------------------
 -- mkSafeFilename: substitute illegal and critical characters by '-'
 -- may only be used for temp. files!
 function mkSafeFilename(str)
@@ -282,13 +326,6 @@ function urlencode(str)
 	end
 	return str
 end 
-
------------------------ JSON helper --------------------------------------------------------------
-function JSON:onDecodeError(message, text, location, etc)
-	writeLogfile(4, string.format("JSON-DecodeError: msg=%s, txt=%s, loc=%s, etc=%s\n", 
-									ifnil(message, '<Nil>'), ifnil(text, '<Nil>'),
-									ifnil(location, '<Nil>'),ifnil(etc, '<Nil>')))
-end
 
 ---------------------- table operations ----------------------------------------------------------
 
