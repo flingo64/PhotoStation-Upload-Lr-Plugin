@@ -89,6 +89,7 @@ local PSAPIerrorMsgs = {
 	[1003]  = 'Http error: No JSON response data',
 	[12007] = 'Http error: cannotFindHost',
 	[12029] = 'Http error: cannotConnectToHost',
+	[12038] = 'Http error: serverCertificateHasUnknownRoot',
 }
 
 --[[ 
