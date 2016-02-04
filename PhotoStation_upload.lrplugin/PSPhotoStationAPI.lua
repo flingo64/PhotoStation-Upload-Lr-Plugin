@@ -83,6 +83,7 @@ local PSAPIerrorMsgs = {
 	[419] = 'Illegal file name',
 	[420] = 'Illegal file name on FAT filesystem',
 	[421] = 'Device or resource busy',
+	[470] = 'No such file',
 	[599] = 'No such task No such task of the file operation',
 	[1001]  = 'Http error: no response body, no response header',
 	[1002]  = 'Http error: no response data, no errorcode in response header',
@@ -558,18 +559,34 @@ function PSPhotoStationAPI.getTags(h, type)
 	
 	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('getGeneralTags returns %d tags.\n', respArray.data.total))
+	writeLogfile(3, string.format('getTags returns %d tags.\n', respArray.data.total))
 	return respArray.data.tags
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- createTag (h, type, name) 
+-- create a new tagId/tagString mapping of or given type: desc, people, geo
+function PSPhotoStationAPI.createTag(h, type, name)
+	local formData = 'method=create&' ..
+					 'version=1&' .. 
+					 'type=' .. type .. '&' .. 
+					 'name=' .. urlencode(name) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Tag', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('createTag returns tagId %s.\n', respArray.data.id))
+	return respArray.data.id
+end
+
+---------------------------------------------------------------------------------------------------------
 -- getPhotoTags (h, dstFilename, isVideo) 
--- get table of tags (general,people, geo) of a photo
+-- get table of tags (general,people,geo) of a photo
 function PSPhotoStationAPI.getPhotoTags(h, dstFilename, isVideo)
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
 					 'type=people,geo,desc&' .. 
---					 'additional=info&' .. 
 					 'id=' .. getPhotoId(dstFilename, isVideo) 
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
@@ -578,4 +595,50 @@ function PSPhotoStationAPI.getPhotoTags(h, dstFilename, isVideo)
 
 	writeLogfile(3, string.format('getPhotoTags(%s) returns %d tags.\n', dstFilename, #respArray.data.tags))
 	return respArray.data.tags
+end
+
+---------------------------------------------------------------------------------------------------------
+-- addPhotoTag (h, dstFilename, isVideo, tagId) 
+-- add a new tag (general,people,geo) to a photo
+function PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId)
+	local formData = 'method=' .. type .. '_tag&' ..
+					 'version=1&' .. 
+					 'tag_id=' .. tagId .. '&' .. 
+					 'id=' .. getPhotoId(dstFilename, isVideo) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('addPhotoTag(%s) returns %d item_tag_ids.\n', dstFilename, #respArray.data.item_tag_ids))
+	return respArray.data.item_tag_ids
+end
+
+---------------------------------------------------------------------------------------------------------
+-- createAndAddPhotoTag (h, dstFilename, isVideo, type, name) 
+-- create and add a new tag (general,people,geo) to a photo
+function PSPhotoStationAPI.createAndAddPhotoTag(h, dstFilename, isVideo, type, name)
+	local tagId = PSPhotoStationAPI.createTag(h, type, name)
+	
+	if not tagId or not PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId) then
+		return false
+	end
+	 
+	writeLogfile(3, string.format('createAndAddPhotoTag(%s) returns OK.\n', dstFilename))
+	return true	
+end
+
+---------------------------------------------------------------------------------------------------------
+-- replaceLabelPhotoTag (h, dstFilename, isVideo, name) 
+-- replace a label tag in a photo
+-- TODO read existing tags, photoTags and delete any existing label tag
+function PSPhotoStationAPI.replaceLabelPhotoTag(h, dstFilename, isVideo, name)
+	local tagId = PSPhotoStationAPI.createTag(h, 'desc', name)
+	
+	if not tagId or not PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, 'desc', tagId) then
+		return false
+	end
+	 
+	writeLogfile(3, string.format('replaceLabelPhotoTag(%s) returns OK.\n', dstFilename))
+	return true	
 end
