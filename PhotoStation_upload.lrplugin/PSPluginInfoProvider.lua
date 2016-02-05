@@ -34,7 +34,6 @@ local LrPathUtils 	= import 'LrPathUtils'
 local LrFileUtils	= import 'LrFileUtils'
 local LrPrefs		= import 'LrPrefs'
 local LrTasks		= import 'LrTasks'
-local progExt = nil			-- .exe for WIN_ENV
 
 
 -- PhotoStation Upload plug-in
@@ -59,7 +58,8 @@ local function validatePSUploadProgPath( view, path )
 	local convertprog = 'convert'
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
-	if progExt then
+	if getProgExt() then
+		local progExt = getProgExt()
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
@@ -118,10 +118,6 @@ function pluginInfoProvider.startDialog( propertyTable )
 
 	-- TODO: Uploader program path should be a plugin setting, not an export/publish setting
 	--[[ 
-	if WIN_ENV  then
-		progExt = 'exe'
-	end
-	
 	if prefs.PSUploaderPath == nil then
 		prefs.PSUploaderPath = iif(WIN_ENV, 
 						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',

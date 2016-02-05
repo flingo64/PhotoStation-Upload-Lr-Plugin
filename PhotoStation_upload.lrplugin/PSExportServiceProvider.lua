@@ -94,12 +94,13 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'dstRoot', 			default = '' },		-- destination Album on PhotoStation: no leading or trailing slash required
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
 
-		-- exif translation parameters
+		-- upload options / exif translation parameters
 		{ key = 'exiftoolprog',		 	default = 			-- path to exiftool
 			iif(WIN_ENV, 'C:\\\Windows\\\exiftool.exe', '/usr/local/bin/exiftool') 
 		},											
 		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
 		{ key = 'exifXlatFaceRegions',	default = true },	-- translate Lr/Picasa face regions to PS face regions
+		{ key = 'exifXlatLabel', 		default = true },	-- translate Lr labels (red, green, ...) to PS keywords
 		{ key = 'exifXlatRating', 		default = true },	-- translate Lr star rating (XMP:rating) to PS keywords
 
 		-- thumbnail parameters
@@ -109,7 +110,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
 		{ key = 'isPS6', 			default = false },	-- use upload optimization for PhotoStation 6 (not THUMB_L required)
 
-		-- misc options
+		-- Album options
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
 		{ key = 'sortPhotos',		default = false },	-- sort photos in PhotoStation acc. to collection sort order 
 		
@@ -122,29 +123,12 @@ exportServiceProvider.exportPresetFields = {
 		-- logging/debugging parameters
 		{ key = 'logLevel', 		default = 2 },		-- loglevel 
 
-		-- Publish Service Provider: FileStationAPI - no longer needed
-		--[[
-		{ key = 'useFileStation',   	default = true },		-- use FileStation API for extended features via prim. server
-		{ key = 'protoFileStation',		default = 'http' },		-- transport protocol for FileStation WEBAPI
-		{ key = 'portFileStation',		default = '5000' },		-- port of the FileStation WEBAPI
-		{ key = 'differentFSUser', 		default = false },		-- use a different user/password for FileStation WEBAPI
-		{ key = 'usernameFileStation', 	default = '' },			-- account for FileStation WEBAPI
-		{ key = 'passwordFileStation', 	default = '' },			-- guess what...
-		]]
-		
 		-- Secondary Server
 		{ key = 'useSecondAddress',		default = false },		-- specify a secondoray (external) server address
 		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary PhotoStation upload
 		{ key = 'servername2', 			default = '' },			-- name/address of the secondary PhotoStation, may include ':port' extension
 		{ key = 'serverTimeout2',	 	default = 10 },			-- http timeout
 		
-		-- Publish Service Provider: Secondary Server FileStationAPI - no longer needed
-		--[[
-		{ key = 'useFileStation2',   	default = false },		-- use FileStation API for extended features via second. server
-		{ key = 'protoFileStation2',	default = 'https' },	-- transport protocol for secondary FileStation WEBAPI
-		{ key = 'portFileStation2',		default = '' },			-- port of the secondary FileStation WEBAPI
-		]]
-
 		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, CheckExisting, ...
 }
 

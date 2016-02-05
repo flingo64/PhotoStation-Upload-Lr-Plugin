@@ -1,6 +1,6 @@
 --[[----------------------------------------------------------------------------
 
-PSUploadExportDialogSections.lua
+PSDialogs.lua
 Export dialog customization for Lightroom PhotoStation Upload
 Copyright(c) 2015, Martin Messmer
 
@@ -44,9 +44,9 @@ local LrView 		= import 'LrView'
 local LrPathUtils 	= import 'LrPathUtils'
 local LrFileUtils	= import 'LrFileUtils'
 local LrShell 		= import 'LrShell'
-local progExt = nil			-- .exe for WIN_ENV
 
 require "PSUtilities"
+require "PSDialogs"
 
 --============================================================================--
 
@@ -78,16 +78,6 @@ function validateDirectory( view, path )
 	return true, LrPathUtils.standardizePath(path)
 end
 
--- validateProgram: check if a given path points to a local program
-local function validateProgram( view, path )
-	if LrFileUtils.exists(path) ~= 'file'
-	or progExt and string.lower(LrPathUtils.extension( path )) ~= progExt then
-		return false, path
-	end
-
-	return true, LrPathUtils.standardizePath(path)	
-end
-
 -- validatePSUploadProgPath: 
 --[[	check if a given path points to the root directory of the Synology PhotoStation Uploader tool 
 		we require the following converters that ship with the Uploader:
@@ -99,7 +89,8 @@ local function validatePSUploadProgPath( view, path )
 	local convertprog = 'convert'
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
-	if progExt then
+	if getProgExt() then
+		local progExt = getProgExt()
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
@@ -172,9 +163,7 @@ local function updateExportStatus( propertyTable )
 		-- Publish Service Provider end
 
 		-- Exif translation start
-		propertyTable.exifTranslate = propertyTable.exifXlatFaceRegions or propertyTable.exifXlatRating 
-
-		if propertyTable.exifTranslate and not validateProgram( _, propertyTable.exiftoolprog ) then
+		if propertyTable.exifTranslate and not PSDialogs.validateProgram( _, propertyTable.exiftoolprog ) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Enter path to exiftool"
 			break
 		end
@@ -206,10 +195,6 @@ end
 
 function PSUploadExportDialogSections.startDialog( propertyTable )
 	
-	if WIN_ENV  then
-		progExt = 'exe'
-	end
-	
 	propertyTable:addObserver( 'thumbGenerate', updateExportStatus )
 	propertyTable:addObserver( 'PSUploaderPath', updateExportStatus )
 
@@ -221,8 +206,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
 
 	propertyTable:addObserver( 'exiftoolprog', updateExportStatus )
-	propertyTable:addObserver( 'exifXlatFaceRegions', updateExportStatus )
-	propertyTable:addObserver( 'exifXlatRating', updateExportStatus )
+	propertyTable:addObserver( 'exifTranslate', updateExportStatus )
 
 	propertyTable:addObserver( 'useSecondAddress', updateExportStatus )
 	propertyTable:addObserver( 'servername2', updateExportStatus )
@@ -237,7 +221,6 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 end
 
 -------------------------------------------------------------------------------
-
 -- function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTable )
 function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTable )
 
@@ -245,104 +228,10 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 	local bind = LrView.bind
 	local share = LrView.share
 	local conditionalItem = LrView.conditionalItem
-
-	-- ================== Destination Path and Uplaod Option view =======================================
-	-- view for destination path: only in Export dialog
 	
-	local dstPathView = f:view {
-		fill_horizontal = 1,
-
-		f:group_box {
-			fill_horizontal = 1,
-			title = LOC "$$$/PSUpload/ExportDialog/TargetAlbum=Target Album and Upload Method",
-
-			f:row {
-				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/StoreDstRootTT=Enter Target Album here or you will be prompted for it when the upload starts.",
-					alignment = 'right',
-					width = share 'labelWidth',
-					value = bind 'storeDstRoot',
-				},
-
-				f:edit_field {
-					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
-					value = bind 'dstRoot',
-					truncation = 'middle',
-					enabled = bind 'storeDstRoot',
-					visible = bind 'storeDstRoot',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
-					alignment = 'left',
-					value = bind 'createDstRoot',
-					enabled = bind 'storeDstRoot',
-					visible = bind 'storeDstRoot',
-					fill_horizontal = 1,
-				},
-			},
-		
-			f:row {
-
-				f:radio_button {
-					title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat Copy to Target",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
-					alignment = 'right',
-					value = bind 'copyTree',
-					checked_value = false,
-					width = share 'labelWidth',
-				},
-
-				f:radio_button {
-					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror Tree relative to local Path:",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
-					alignment = 'left',
-					value = bind 'copyTree',
-					checked_value = true,
-				},
-
-				f:edit_field {
-					value = bind 'srcRoot',
-					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=Enter the local path that is the root of the directory tree you want to mirror below the Target Album.",
-					enabled = bind 'copyTree',
-					visible = bind 'copyTree',
-					validate = validateDirectory,
-					truncation = 'middle',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-			},
-
-			f:separator { fill_horizontal = 1 },
-
-			f:row {
-				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
-									"Note: All Non-JPEG photos will be renamed in PhotoStation to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
-									"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
-									"IMG-001.JPG --> IMG-001.JPG",
-					alignment = 'left',
-					value = bind 'RAWandJPG',
-					fill_horizontal = 1,
-				},
-
-				f:checkbox {
-					title = LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos in PhotoStation",
-					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
-									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
-					alignment = 'left',
-					value = bind 'sortPhotos',
-					enabled =  LrBinding.negativeOfKey('copyTree'),
-					fill_horizontal = 1,
-				},
-			},
-
-		},
-	} 
+	if propertyTable.isCollection == nil then
+		propertyTable.isCollection = false
+	end
 	
 	-- config section for Export or Publish dialog
 	local result = {
@@ -537,51 +426,8 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			
 			-- ================== Target Album and Upload Method ===============================================
 			
-			conditionalItem(not propertyTable.LR_isExportForPublish, dstPathView),
+			conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.targetAlbumView(f, propertyTable)),
 			
-			-- ================== Exif Translations ============================================================
-			
-			f:group_box {
-				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/ExifOpt=Exif Translations",
-
-				f:row {
-					f:checkbox {
---						fill_horizontal = 1,
-						title = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegions=Lr/Picasa Faces -> PS Faces",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lightroom or Picasa Face Regions to PhotoStation Person Tags",
-						value = bind 'exifXlatFaceRegions',
-					},
-				
-					f:checkbox {
---						fill_horizontal = 1,
-						title = LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating -> PS '***' Tags",
-						tooltip = LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lightroom (XMP) ratings (*stars*) to PhotoStation General *** Tags",
-						value = bind 'exifXlatRating',
-					},
-				},
-
-        		f:row {
-        				f:static_text {
-        					title = LOC "$$$/PSUpload/ExportDialog/exiftoolprog=ExifTool program:",
-        					alignment = 'right',
-							visible = bind 'exifTranslate',
-        					width = share 'labelWidth'
-        				},
-        	
-        				f:edit_field {
-        					value = bind 'exiftoolprog',
-        					truncation = 'middle',
-        					validate = validateProgram,
-							visible = bind 'exifTranslate',
-        					immediate = true,
-        					fill_horizontal = 1,
-        				},
-        
-        		},
-
-			},
-
 			-- ================== Thumbnail Options ================================================
 
 			f:group_box {
@@ -712,7 +558,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 			f:group_box {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/Videos=Upload additional video resolutions for ...-Res Videos",
+				title = LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options: Additional video resolutions for ...-Res Videos",
 
 				f:row {
 					f:row {
@@ -787,6 +633,10 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 					},
 				},
 			},
+
+            -- ================== Upload Options ============================================================
+            
+            conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.UploadOptionsView(f, propertyTable)),
 
 			-- ================== Log Options =================================================================
 

@@ -15,7 +15,8 @@ exported functions:
 	- trim
 	
 	- getNullFilename
-
+	- getProgExt
+	
 	- openLogfile
 	- writeLogfile
 	- writeTableLogfile
@@ -265,10 +266,10 @@ function signalSemaphore(semaName)
 	LrFileUtils.delete(semaphoreFn)
 end
 
----------------------- filename/dirname sanitizing routines ---------------------------------------------------------
+---------------------- OS specific infos -----------------------------------------------------------------------------
 
 ---------------------------------------------------------------------------------------
--- getNullFilename: get the OS specifiy filename of the NULL file
+-- getNullFilename: get the OS specific filename of the NULL file
 function getNullFilename()
 	if WIN_ENV then
 		return 'NUL'
@@ -276,6 +277,19 @@ function getNullFilename()
 		return '/dev/null'
 	end
 end
+
+---------------------------------------------------------------------------------------
+-- getProgExt: get the OS specifiy filename extension for programs
+function getProgExt()
+	if WIN_ENV then
+		return 'exe'
+	else
+		return nil
+	end
+end
+
+---------------------- filename/dirname sanitizing routines ---------------------------------------------------------
+
 ---------------------------------------------------------------------------------------
 -- mkLegalFilename: substitute illegal filename char by their %nnn representation
 -- This function should be used when a arbitrary string shall be used as filename or dirname 
@@ -396,12 +410,23 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.srcRoot 		= collectionSettings.srcRoot
     	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
     	exportParams.sortPhotos 	= collectionSettings.sortPhotos
+    	exportParams.exifTranslate 			= collectionSettings.exifTranslate
+    	exportParams.exifXlatFaceRegions 	= collectionSettings.exifXlatFaceRegions
+    	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
+    	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
+    	
 		if string.find('ProcessRenderedPhotos', operation, 1, true) then
 			exportParams.publishMode 	= collectionSettings.publishMode
 		else
 			-- avoid prompt for PublishMode if operation is not ProcessRenderedPhotos
 			exportParams.publishMode 	= 'Publish'
 		end
+	end
+	
+	if not exifTranslate then
+    	exportParams.exifXlatFaceRegions 	= false
+    	exportParams.exifXlatLabel 			= false
+    	exportParams.exifXlatRating 		= false
 	end
 	
 	-- Get missing settings, if not stored in preset.

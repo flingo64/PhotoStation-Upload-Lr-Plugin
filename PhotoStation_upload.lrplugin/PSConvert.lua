@@ -99,8 +99,8 @@ function PSConvert.initialize(PSUploaderPath)
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
 
-	if WIN_ENV  then
-		local progExt = 'exe'
+	if getProgExt() then
+ 		local progExt = getProgExt()
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		dcrawprog = LrPathUtils.addExtension(dcrawprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)

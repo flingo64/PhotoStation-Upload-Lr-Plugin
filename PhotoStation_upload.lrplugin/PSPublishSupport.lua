@@ -50,10 +50,8 @@ local LrPathUtils = 		import 'LrPathUtils'
 local LrProgressScope =		import 'LrProgressScope'
 local LrView = 				import 'LrView'
 
-require "PSConvert"
+require "PSDialogs"
 require "PSUtilities"
-require 'PSUploadTask'
-require 'PSUploadExportDialogSections'
 
 --===========================================================================--
 
@@ -421,6 +419,15 @@ local function updateCollectionStatus( collectionSettings )
 			message = LOC ("$$$/PSUpload/CollectionDialog/CheckMovedNotNeeded=CheckMoved not supported if not mirror tree copy.\n")
 			break
 		end
+
+		-- Exif translation start
+
+		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( _, collectionSettings.exiftoolprog ) then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Enter path to exiftool"
+			break
+		end
+		-- Exif translation end
+
 	until true
 	
 	if message then
@@ -442,6 +449,7 @@ end
 function publishServiceProvider.viewForCollectionSettings( f, publishSettings, info )
 	local bind = LrView.bind
 	local share = LrView.share
+	local conditionalItem = LrView.conditionalItem
 
 	local collectionSettings = assert( info.collectionSettings )
 
@@ -453,8 +461,19 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
 	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
 	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
+	collectionSettings:addObserver( 'exiftoolprog', updateCollectionStatus )
+	collectionSettings:addObserver( 'exifTranslate', updateCollectionStatus )
 	updateCollectionStatus( collectionSettings )
 		
+	if collectionSettings.isCollection == nil then
+		collectionSettings.isCollection = true
+	end
+
+	if collectionSettings.publishMode == nil then
+		collectionSettings.publishMode = 'Publish'
+	end
+
+	--============= Album options ===================================
 	if collectionSettings.dstRoot == nil then
 		collectionSettings.dstRoot = ''
 	end
@@ -479,20 +498,60 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.sortPhotos = false
 	end
 
-	if collectionSettings.publishMode == nil then
-		collectionSettings.publishMode = 'Publish'
+	--============= upload options ===================================
+	-- move Upload options from publish service settings to collection settings
+	if collectionSettings.exiftoolprog == nil then
+		collectionSettings.exiftoolprog = publishSettings.exiftoolprog
 	end
 
-	if collectionSettings.enableComments == nil then
-		collectionSettings.enableComments = false
+	if collectionSettings.exifTranslate == nil then
+		collectionSettings.exifTranslate = publishSettings.exifTranslate
 	end
 
-	if collectionSettings.enableRatings == nil then
-		collectionSettings.enableRatings = false
+	if collectionSettings.exifXlatFaceRegions == nil then
+		collectionSettings.exifXlatFaceRegions = publishSettings.exifXlatFaceRegions
 	end
 
+	if collectionSettings.exifXlatRating == nil then
+		collectionSettings.exifXlatRating = publishSettings.exifXlatRating
+	end
+
+	if collectionSettings.exifXlatLabel == nil then
+		collectionSettings.exifXlatLabel = publishSettings.exifXlatLabel
+	end
+
+	-- commentsUpload is only a collection setting
+	if collectionSettings.commentsUpload == nil then
+		collectionSettings.commentsUpload = true
+	end
+
+	--============= download options ===================================
+	if collectionSettings.commentsDownload == nil then
+		collectionSettings.commentsDownload = false
+	end
+
+	if collectionSettings.captionDownload == nil then
+		collectionSettings.captionDownload = false
+	end
+
+	if collectionSettings.tagsDownload == nil then
+		collectionSettings.tagsDownload = false
+	end
+
+	if collectionSettings.PS2LrRating == nil then
+		collectionSettings.PS2LrRating = false
+	end
+
+	if collectionSettings.PS2LrLabel == nil then
+		collectionSettings.PS2LrLabel = false
+	end
+
+	if collectionSettings.PS2LrFaces == nil then
+		collectionSettings.PS2LrFaces = false
+	end
+	
 	return f:view {
-		size = 'small',
+--		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSettings ),
 		
@@ -500,108 +559,19 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     		fill_horizontal = 1,
     		spacing = f:label_spacing(),
 
-    		f:group_box {
-    			title = LOC "$$$/PSUpload/ExportDialog/TargetAlbum=Target Album and Upload Method",
-       			fill_horizontal = 1,
-    
-    			f:row {
-    				f:static_text {
-    					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
-    					alignment = 'right',
-    					width = share 'labelWidth'
-    				},
-    
-    				f:edit_field {
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
-    					value = bind 'dstRoot',
-    					truncation = 'middle',
-    					immediate = true,
-    					fill_horizontal = 1,
-    				},
-    
-    				f:checkbox {
-    					title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
-    					alignment = 'left',
-    					width = share 'labelWidth',
-    					value = bind 'createDstRoot',
-    					fill_horizontal = 1,
-    				},
-    			}, -- row
-    			
-    			f:row {
-    				f:radio_button {
-    					title = LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat copy to Target Album",
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
-    					alignment = 'right',
-    					value = bind 'copyTree',
-    					checked_value = false,
-    					width = share 'labelWidth',
-    				},
-    
-    				f:radio_button {
-    					title = LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror tree relative to Local Path:",
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
-    					alignment = 'left',
-    					value = bind 'copyTree',
-    					checked_value = true,
-    				},
-    
-    				f:edit_field {
-    					value = bind 'srcRoot',
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=Enter the local path that is the root of the directory tree you want to mirror below the Target Album.",
-    					enabled = bind 'copyTree',
-    					visible = bind 'copyTree',
-    					validate = validateDirectory,
-    					truncation = 'middle',
-    					immediate = true,
-    					fill_horizontal = 1,
-    				},
-    			}, -- row
-    
-    			f:separator { fill_horizontal = 1 },
-    
-    			f:row {
-    				f:checkbox {
-    					title = LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
-    									"Non-JPEG photo will be renamed to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
-    									"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
-    									"IMG-001.JPG --> IMG-001.JPG",
-    					alignment = 'left',
-    					value = bind 'RAWandJPG',
-    					fill_horizontal = 1,
-    				},
-    
-    				f:checkbox {
-    					title = LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos in PhotoStation",
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in PhotoStation according to sort order of Published Collection.\n" ..
-    									"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
-    					alignment = 'left',
-    					value = bind 'sortPhotos',
-    					enabled =  LrBinding.negativeOfKey('copyTree'),
-    					fill_horizontal = 1,
-    				},
+			PSDialogs.targetAlbumView(f, collectionSettings),
 
-    				f:checkbox {
-    					title = LOC "$$$/PSUpload/ExportDialog/EnableComments=Enable Comments",
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/EnableCommentsTT=Enable synchronization of comments for this Published Collection.\n",
-    					alignment = 'left',
-    					value = bind 'enableComments',
-    					fill_horizontal = 1,
-    				},
-
-    				f:checkbox {
-    					title = LOC "$$$/PSUpload/ExportDialog/EnableRatings=Enable Ratings",
-    					tooltip = LOC "$$$/PSUpload/ExportDialog/EnableRatingsTT=Enable synchronization of ratings for this Published Collection.\n",
-    					alignment = 'left',
-    					value = bind 'enableRatings',
-    					fill_horizontal = 1,
-    				},
-    			}, -- row
-    		}, -- group
-    	
     		f:spacer { height = 10, },
     
+            PSDialogs.UploadOptionsView(f, collectionSettings),
+ 
+ 	  		f:spacer { height = 10, },
+    
+            PSDialogs.DownloadOptionsView(f, collectionSettings),
+ 
+ 	  		f:spacer { height = 10, },
+    
+ 
     		f:row {
     			alignment = 'left',
     			fill_horizontal = 1,
@@ -719,7 +689,7 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 
 	return f:group_box {
 		title = "PhotoStation Upload Settings",  -- this should be localized via LOC
-		size = 'small',
+--		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSetSettings ),
 		
@@ -729,7 +699,7 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 
 			f:row {
 				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Enter Target Album:",
+					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Target Album:",
 					alignment = 'right',
 					width = share 'labelWidth'
 				},
@@ -1030,7 +1000,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end	
 	
-	if not publishedCollection:getCollectionInfoSummary().collectionSettings.enableComments then
+	if not publishedCollection:getCollectionInfoSummary().collectionSettings.commentsDownload then
 		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: comments not enabled for this collection.\n"))
 		closeLogfile()
 		return
@@ -1103,7 +1073,7 @@ end
 	-- @name publishServiceProvider.titleForPhotoRating
 	-- @class property
 
-publishServiceProvider.titleForPhotoRating = LOC "$$$/PSPublish/TitleForPhotoRating=Photo Rating"
+publishServiceProvider.titleForPhotoRating = LOC "$$$/PSPublish/TitleForPhotoRating=Photo Tags"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called (if supplied)
@@ -1145,8 +1115,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		return
 	end	
 	
-	if not publishedCollection:getCollectionInfoSummary().collectionSettings.enableRatings then
-		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: ratings not enabled for this collection.\n"))
+	if not publishedCollection:getCollectionInfoSummary().collectionSettings.tagsDownload then
+		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: Tag download not enabled for this collection.\n"))
 		closeLogfile()
 		return
 	end
