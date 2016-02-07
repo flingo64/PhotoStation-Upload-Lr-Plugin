@@ -423,7 +423,7 @@ function openSession(exportParams, publishedCollection, operation)
 		end
 	end
 	
-	if not exifTranslate then
+	if not exportParams.exifTranslate then
     	exportParams.exifXlatFaceRegions 	= false
     	exportParams.exifXlatLabel 			= false
     	exportParams.exifXlatRating 		= false
