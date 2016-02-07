@@ -15,11 +15,14 @@ PhotoStation Upload primitives:
 	- existsPic
 	- sortPics
 
-	- addComments
-	- getComments
+	- addPhotoComments
+	- getPhotoComments
+	
+	- getPhotoExifs
 	
 	- getTags
 	- getPhotoTags
+	
 	
 Copyright(c) 2016, Martin Messmer
 
@@ -514,8 +517,8 @@ function PSPhotoStationAPI.sortPics (h, albumPath, sortedPhotos)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- addComment (h, dstFilename, isVideo, comment, username) 
-function PSPhotoStationAPI.addComment (h, dstFilename, isVideo, comment, username) 
+-- addPhotoComment (h, dstFilename, isVideo, comment, username) 
+function PSPhotoStationAPI.addPhotoComment (h, dstFilename, isVideo, comment, username) 
 	local formData = 'method=create&' ..
 					 'version=1&' .. 
 					 'id=' .. getPhotoId(dstFilename, isVideo) .. '&' .. 
@@ -526,13 +529,13 @@ function PSPhotoStationAPI.addComment (h, dstFilename, isVideo, comment, usernam
 	
 	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('addComment(%s, %s, %s) returns OK.\n', dstFilename, comment, username))
+	writeLogfile(3, string.format('addPhotoComment(%s, %s, %s) returns OK.\n', dstFilename, comment, username))
 	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getComments (h, dstFilename) 
-function PSPhotoStationAPI.getComments (h, dstFilename, isVideo) 
+-- getPhotoComments (h, dstFilename) 
+function PSPhotoStationAPI.getPhotoComments (h, dstFilename, isVideo) 
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
 					 'id=' .. getPhotoId(dstFilename, isVideo) 
@@ -541,8 +544,40 @@ function PSPhotoStationAPI.getComments (h, dstFilename, isVideo)
 	
 	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('getComments(%s) returns OK.\n', dstFilename))
+	writeLogfile(3, string.format('getPhotoComments(%s) returns OK.\n', dstFilename))
 	return respArray.data.comments
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getPhotoExifs (h, dstFilename) 
+function PSPhotoStationAPI.getPhotoExifs (h, dstFilename, isVideo) 
+	local formData = 'method=getexif&' ..
+					 'version=1&' .. 
+					 'id=' .. getPhotoId(dstFilename, isVideo) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('getPhotoExifs(%s) returns %d exifs.\n', dstFilename, respArray.data.total))
+	return respArray.data.exifs
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getPhotoTags (h, dstFilename, isVideo) 
+-- get table of tags (general,people,geo) of a photo
+function PSPhotoStationAPI.getPhotoTags(h, dstFilename, isVideo)
+	local formData = 'method=list&' ..
+					 'version=1&' .. 
+					 'type=people,geo,desc&' .. 
+					 'id=' .. getPhotoId(dstFilename, isVideo) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('getPhotoTags(%s) returns %d tags.\n', dstFilename, #respArray.data.tags))
+	return respArray.data.tags
 end
 
 ---------------------------------------------------------------------------------------------------------
