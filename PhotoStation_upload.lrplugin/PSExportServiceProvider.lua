@@ -100,7 +100,7 @@ exportServiceProvider.exportPresetFields = {
 		},											
 		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
 		{ key = 'exifXlatFaceRegions',	default = true },	-- translate Lr/Picasa face regions to PS face regions
-		{ key = 'exifXlatLabel', 		default = true },	-- translate Lr labels (red, green, ...) to PS keywords
+		{ key = 'exifXlatLabel', 		default = true },	-- translate Lr label (red, green, ...) to PS keyword
 		{ key = 'exifXlatRating', 		default = true },	-- translate Lr star rating (XMP:rating) to PS keywords
 
 		-- thumbnail parameters
