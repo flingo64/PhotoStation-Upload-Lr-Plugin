@@ -158,13 +158,23 @@ function PSExiftoolAPI.open(exportParams)
         					'-stay_open True ' .. 
         					'-@ "' .. h.etCommandFile .. '" ' ..
         					' -common_args -overwrite_original -fast2 -n -m ' ..
-        					iif (exportParams.exifXlatFaceRegions,  '"-RegionInfoMp<MyRegionMp" ' , '') ..
-        					iif (exportParams.exifXlatRating,  '"-XMP:Subject+<MyRatingSubject" ', '') ..
         					'> "'  .. h.etLogFile .. 	'" ' ..
         					'2> "' .. h.etErrLogFile .. '"' .. 
         					cmdlineQuote()
         	local retcode
         	
+        	-- store all pre-configured translations 
+			local i = 0
+			h.exifXlat = {}
+			if exportParams.exifXlatFaceRegions then
+				i = i + 1 
+				h.exifXlat[i] = '-RegionInfoMp<MyRegionMp'
+			end
+			if exportParams.exifXlatRating then
+				i = i + 1 
+				h.exifXlat[i] = '-XMP:Subject+<MyRatingSubject'
+			end
+
         	writeLogfile(2, string.format("exiftool Listener(%s): starting ...\n", cmdline))
         	h.cmdNumber = 0
         	local exitStatus = LrTasks.execute(cmdline)
@@ -200,19 +210,25 @@ function PSExiftoolAPI.close(h)
 	return true
 end
 
-
 ---------------------- doExifTranslations -------------------------------------------------------------
-
--- function PSExiftoolAPI.doExifTranslations(h, photoFilename)
+-- function PSExiftoolAPI.doExifTranslations(h, photoFilename, additionalCmd)
 -- do all configured exif adjustments
-function PSExiftoolAPI.doExifTranslations(h, photoFilename)
+function PSExiftoolAPI.doExifTranslations(h, photoFilename, additionalCmd)
 	if not h then return false end
 	
-	-- ------------- write filename to processing queue -----------------
-	if not sendCmd(h, photoFilename, noWhitespaceConversion)
+	------------- add all pre-configured translations ------------------
+	for i=1, #h.exifXlat do
+		if not sendCmd(h, h.exifXlat[i]) then return false end
+	end
+	------------- add additional translations ------------------
+	if (additionalCmd and not sendCmd(h, additionalCmd))
+	
+	--------------- write filename to processing queue -----------------
+	or not sendCmd(h, photoFilename, noWhitespaceConversion)
 	or not executeCmds(h) then
 		return false
 	end
 
 	return true
 end
+
