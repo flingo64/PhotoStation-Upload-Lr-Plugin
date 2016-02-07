@@ -157,6 +157,7 @@ function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportPar
 	local thmb_B_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
 	local srcDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
+	local exifXlatLabelCmd = iif(exportParams.exifXlatLabel and not string.find('none,grey', string.lower(srcPhoto:getRawMetadata('colorNameForLabel'))), "-XMP:Subject+=" .. '+' .. srcPhoto:getRawMetadata('colorNameForLabel'), nil)
 	local retcode
 	
 	-- generate thumbs	
@@ -178,7 +179,7 @@ function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportPar
 	)
 	
 	-- exif translations	
-	or ( exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath))
+	or not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd)
 
 	-- wait for PhotoStation semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
@@ -191,7 +192,8 @@ function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportPar
 		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
 	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, renderedPhotoPath, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST')
-	or not PSPhotoStationAPI.replaceLabelPhotoTag(exportParams.uHandle, dstDir .. '/' .. dstFilename, false, '+' .. string.sub(srcPhoto:getRawMetadata('colorNameForLabel'),1,1))
+--	or (exportParams.exifXlatLabel and 
+--			not PSPhotoStationAPI.replaceLabelPhotoTag(exportParams.uHandle, dstDir .. '/' .. dstFilename, false, '+' .. string.sub(srcPhoto:getRawMetadata('colorNameForLabel'),1,1)))
 	then
 		signalSemaphore("PhotoStation")
 		retcode = false
@@ -366,7 +368,8 @@ function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportPar
 	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
 	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
 	or 							   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
-	or not PSPhotoStationAPI.replaceLabelPhotoTag(exportParams.uHandle, dstDir .. '/' .. vid_Replace_Filename, true, '+' .. string.sub(srcPhoto:getRawMetadata('colorNameForLabel'),1,1))
+--	or (exportParams.exifXlatLabel 
+--			and not PSPhotoStationAPI.replaceLabelPhotoTag(exportParams.uHandle, dstDir .. '/' .. vid_Replace_Filename, true, '+' .. string.sub(srcPhoto:getRawMetadata('colorNameForLabel'),1,1)))
 	then 
 		signalSemaphore("PhotoStation")
 		retcode = false
