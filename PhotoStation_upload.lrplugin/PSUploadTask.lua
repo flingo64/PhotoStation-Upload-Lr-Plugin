@@ -439,7 +439,7 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 			catalog:withWriteAccessDo( 
 				'SetEdited',
 				function(context)
-					if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier)) end
+					if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime())) end
 					-- mark as 'To Re-publish'
 					pubPhoto:setEditedFlag(true)
 				end,
@@ -456,7 +456,7 @@ function checkMoved(publishedCollection, exportContext, exportParams)
     			catalog:withWriteAccessDo( 
     				'SetEdited',
     				function(context)
-						if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier)) end
+						if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime())) end
 						-- mark as 'To Re-publish'
     					pubPhoto:setEditedFlag(true)
     				end,
@@ -471,6 +471,7 @@ function checkMoved(publishedCollection, exportContext, exportParams)
         				function(context)
     						-- adjust backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
     						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier))
+							pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime())) 
         				end,
         				{timeout=5}
         			)
@@ -674,7 +675,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				if foundPhoto == 'yes' then
 					rendition:recordPublishedPhotoId(publishedPhotoId)
 					-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-					rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier))
+					rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
 					nNotCopied = nNotCopied + 1
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', LrPathUtils.leafName(localPath), publishedPhotoId))
 				elseif foundPhoto == 'no' then
@@ -722,7 +723,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						if publishedCollection then 
 							rendition:recordPublishedPhotoId(publishedPhotoId) 
 							-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier))
+							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
 						end
 						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 					end
@@ -734,7 +735,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						if publishedCollection then 
 							rendition:recordPublishedPhotoId(publishedPhotoId) 
 							-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier))
+							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
 						end
 						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 					end
