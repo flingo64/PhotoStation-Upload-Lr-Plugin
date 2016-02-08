@@ -5,7 +5,10 @@ Lightroom utilities:
 	- getCollectionPath
 	- getCollectionUploadPath
 	- evaluateAlbumPath
-
+	- getModifiedKeywords
+	- addPhotoKeywordNames
+	- removePhotoKeyword
+	
 Copyright(c) 2016, Martin Messmer
 
 This file is part of PhotoStation Upload - Lightroom plugin.
@@ -27,10 +30,10 @@ along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------------
 
 -- Lightroom API
-local LrFileUtils = import 'LrFileUtils'
-local LrPathUtils = import 'LrPathUtils'
--- local LrHttp = import 'LrHttp'
-local LrDate = import 'LrDate'
+local LrApplication =	import 'LrApplication'
+local LrFileUtils = 	import 'LrFileUtils'
+local LrPathUtils = 	import 'LrPathUtils'
+local LrDate = 			import 'LrDate'
 
 --====== local functions =====================================================--
 
@@ -39,7 +42,6 @@ local LrDate = import 'LrDate'
 PSLrUtilities = {}
 
 ---------------------- isVideo() ----------------------------------------------------------
---
 -- isVideo(filename)
 -- returns true if filename extension is one of the Lr supported video extensions  
 function PSLrUtilities.isVideo(filename)
@@ -49,7 +51,6 @@ function PSLrUtilities.isVideo(filename)
 end
 
 ------------- getDateTimeOriginal -------------------------------------------------------------------
-
 -- getDateTimeOriginal(srcPhoto)
 -- get the DateTimeOriginal (capture date) of a photo or whatever comes close to it
 -- tries various methods to get the info including Lr metadata, exiftool (if enabled), file infos
@@ -109,7 +110,6 @@ function PSLrUtilities.getDateTimeOriginal(srcPhoto)
 end
 
 ---------------------- Get Publish Path --------------------------------------------------
-
 -- function getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot) 
 -- 	return relative local path of the srcPhoto and destination path of the rendered photo: remotePath = dstRoot + (localpath - srcRoot), 
 --	returns:
@@ -153,14 +153,11 @@ function PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams,
 					localPath, remotePath))
 	return localPath, remotePath
 end
------------------
 
 ---------------------- getCollectionPath --------------------------------------------------
-
 -- getCollectionPath(collection)
 -- 	return collection hierarchy path of a (Published) Collection by recursively traversing the collection and all of its parents
 --  returns a path like: <CollectionSetName>/<CollectionSetName>/.../>CollectionName>
-
 function PSLrUtilities.getCollectionPath(collection)
 	local parentCollectionSet
 	local collectionPath
@@ -181,10 +178,8 @@ end
 
 
 ---------------------- getCollectionUploadPath --------------------------------------------------
-
 -- getCollectionUploadPath(publishedCollection)
 -- 	return the target album path path of a PSUpload Published Collection by recursively traversing the collection and all of its parents
-
 function PSLrUtilities.getCollectionUploadPath(publishedCollection)
 	local parentCollectionSet
 	local collectionPath
@@ -211,11 +206,9 @@ function PSLrUtilities.getCollectionUploadPath(publishedCollection)
 	return collectionPath
 end
 
----------------------- album path evaluation routines --------------------------------------------------
-
+---------------------- isDynamicAlbumPath --------------------------------------------------
 -- isDynamicAlbumPath(path)
 -- 	return true if album path contains metadata placeholders 
-
 function PSLrUtilities.isDynamicAlbumPath(path)
 	if (path and string.find(path, "{", 1, true)) then
 		return true
@@ -223,16 +216,14 @@ function PSLrUtilities.isDynamicAlbumPath(path)
 	return false	
 end
 
+--------------------------------------------------------------------------------------------
 -- evaluateAlbumPath(path, srcPhoto)
---[[
 -- 	Substitute metadata placeholders by actual values from the photo and sanitize a given directory path.
-	Metadata placeholders look in general like: {<category>:<type> <options>|<defaultValue_or_mandatory>}
-	'?' stands for mandatory, no default available. 
-	- unrecognized placeholders will be left unchanged, they might be intended path components
-	- undefined mandatory metadata will be substituted by ?
-	- undefined optional metadata will be substituted by their default or '' if no default
-]]  
-
+--	Metadata placeholders look in general like: {<category>:<type> <options>|<defaultValue_or_mandatory>}
+--	'?' stands for mandatory, no default available. 
+--	- unrecognized placeholders will be left unchanged, they might be intended path components
+--	- undefined mandatory metadata will be substituted by ?
+--	- undefined optional metadata will be substituted by their default or '' if no default
 function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 
 	if (not path or not string.find(path, "{", 1, true)) then
@@ -328,4 +319,73 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 	return normalizeDirname(path)
 end 
 
+--------------------------------------------------------------------------------------------
+-- getModifiedKeywords(srcPhoto, tagList)
+-- checks the keyword list of a photo against a list keywords
+-- returns:
+-- 		- a list of keyword names to be added (in keyword list, but not in photo's keyword list)
+-- 		- a list of keyword namesto be removed (in photo's keyword list, but not in keyword list)
+-- 		- a list of keyword to be removed (in photo's keyword list, but not in keyword list)
+function PSLrUtilities.getModifiedKeywords(srcPhoto, tagList)
+	local keywords = srcPhoto:getRawMetadata("keywords")
+	local keywordNamesAdd, keywordNamesRemove, keywordsRemove = {}, {}, {}
+	local nAdd, nRemove = 0, 0
+	
+	-- look for keywords to be added
+	for i = 1, #tagList do
+		local found = false 
+		
+		for j = 1, #tagList do
+			if keywords[j]:getName() == tagList[i] then
+				found = true
+				break
+			end
+		end
+		if not found then
+			nAdd = nAdd + 1
+			keywordNamesAdd[nAdd] = tagList[i]  
+		end
+	end
+					
+	-- look for keywords to be removed
+	for i = 1, #keywords do
+		local found = false 
+		
+		for j = 1, #tagList do
+			if keywords[i]:getName() == tagList[j] then
+				found = true
+				break
+			end
+		end
+		if not found then
+			nRemove = nRemove + 1
+			keywordsRemove[nRemove] = keywords[i]  
+			keywordNamesRemove[nRemove] = keywords[i]:getName()  
+		end
+	end
+					
+	return keywordNamesAdd, keywordNamesRemove, keywordsRemove
+end
 
+
+--------------------------------------------------------------------------------------------
+-- addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
+function PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
+	local activeCatalog = LrApplication.activeCatalog()
+	local keyword
+	
+	for i = 1, #keywordNamesAdd do
+		keyword = activeCatalog:createKeyword(keywordNamesAdd[i], {}, true, nil, true)
+		srcPhoto:addKeyword(keyword) 
+	end
+	return true
+end
+
+--------------------------------------------------------------------------------------------
+-- removePhotoKeywords(srcPhoto, keywordsRemove)
+function PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
+	for i = 1, #keywordsRemove do
+		srcPhoto:removeKeyword(keywordsRemove[i])
+	end
+	return true
+end
