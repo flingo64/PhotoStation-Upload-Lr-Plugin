@@ -327,7 +327,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'DeletePhotosFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: DeletePhotosFromPublishedCollection failed!", reason, "critical")
+			showFinalMessage("PhotoStation Upload: Delete photos failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -356,18 +356,18 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 		_ = PSPhotoStationAPI.deleteEmptyAlbums(publishSettings.uHandle, collectionPath, albumsDeleted, photosLeft)
 		
 		if #albumsDeleted > 0 then
-			writeLogfile(2, string.format("PhotoStation Upload: DeletePhotosFromPublishedCollection:\n\tDeleted Albums:\n\t\t%s\n",
+			writeLogfile(2, string.format("PhotoStation Upload: Delete photos:\n\tDeleted Albums:\n\t\t%s\n",
 										table.concat(albumsDeleted, "\n\t\t")))
 		end
 	end										
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
+	local message = LOC ("$$$/PSUpload/Upload/Errors/DeletePhotosFromPublishedCollection=" .. 
 					string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n", 
 					nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 
-	showFinalMessage("PhotoStation Upload: DeletePhotosFromPublishedCollection done", message, "info")
+	showFinalMessage("PhotoStation Upload: Delete photos done", message, "info")
 	closeLogfile()
 
 end
@@ -891,8 +891,8 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	end
 
 	writeLogfile(3, "deletePublishedCollection: starting\n")
-	local startTime = LrDate.currentTime()
 	local publishedPhotos = info.publishedCollection:getPublishedPhotos() 
+	local startTime = LrDate.currentTime()
 	local nPhotos = #publishedPhotos
 	local nProcessed = 0 
 	
@@ -979,58 +979,61 @@ end
  -- 
 function publishServiceProvider.getCommentsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, commentCallback )
 	-- get the belonging Published Collection by evaluating the first photo
-	local numPhotos =  #arrayOfPhotoInfo
+	local nPhotos =  #arrayOfPhotoInfo
 	local containedPublishedCollections 
 	local publishedCollection, publishedCollectionName
 	local nProcessed = 0 
+	local nComments = 0 
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
 	if publishSettings.operationCanceled then
-		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: canceled by user\n"))
+		writeLogfile(2, string.format("Get comments: canceled by user\n"))
 		return
 	end
 	
-	if numPhotos == 0 then
-		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: nothing to do.\n"))
+	if nPhotos == 0 then
+		writeLogfile(2, string.format("Get comments: nothing to do.\n"))
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
-		showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", 'Cannot sync comments due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("PhotoStation Upload: Get comments failed!", 'Cannot sync comments due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end
 
 	-- the remoteUrl contains the local collection identifier
-	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(arrayOfPhotoInfo[1].url))
+	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(string.match(arrayOfPhotoInfo[1].url, '(%d+)')))
 	if not publishedCollection then
-		showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", 'Cannot sync comments due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("PhotoStation Upload: Get comments failed!", 'Cannot sync comments due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end	
 	
 	if not publishedCollection:getCollectionInfoSummary().collectionSettings.commentsDownload then
-		writeLogfile(2, string.format("GetCommentsFromPublishedCollection: comments not enabled for this collection.\n"))
+		writeLogfile(2, string.format("Get comments: comments not enabled for this collection.\n"))
 		closeLogfile()
 		return
 	end
 		
 	publishedCollectionName = publishedCollection:getName()
-	writeLogfile(2, string.format("GetCommentsFromPublishedCollection for %d photos in collection %s.\n", numPhotos, publishedCollectionName))
+	writeLogfile(2, string.format("Get comments for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
 
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetCommentsFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: GetCommentsFromPublishedCollection failed!", reason, "critical")
+			showFinalMessage("PhotoStation Upload: Get comments failed!", reason, "critical")
 		else
-			writeLogfile(2, string.format("GetCommentsFromPublishedCollection: canceled by user\n"))
+			writeLogfile(2, string.format("Get comments: canceled by user\n"))
 			publishSettings.operationCanceled = true
 		end
 		closeLogfile()
 		return
 	end
+
+	local startTime = LrDate.currentTime()
 
 	local progressScope = LrProgressScope( 
 								{ 	title = LOC( "$$$/PSPublish/GetCommentsFromPublishedCollection=Downloading comments for collection ^[^1^]", publishedCollection:getName()),
@@ -1042,7 +1045,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		local comments = PSPhotoStationAPI.getPhotoComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
 		
 		if not comments then
-			writeLogfile(1, string.format("GetCommentsFromPublishedCollection: %s failed!\n", photoInfo.remoteId))
+			writeLogfile(1, string.format("Get comments: %s failed!\n", photoInfo.remoteId))
 		else
     		local commentList = {}
     
@@ -1062,15 +1065,23 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     			end			
     
     		end	
-			writeLogfile(2, string.format("GetCommentsFromPublishedCollection: %s - %d comments\n", photoInfo.remoteId, #commentList))
+			writeLogfile(2, string.format("Get comments: %s - %d comments\n", photoInfo.remoteId, #commentList))
 			writeTableLogfile(4, "commentList", commentList)
     		commentCallback({publishedPhoto = photoInfo, comments = commentList})
+    		nComments = nComments + #comments
 		end
    		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, numPhotos) 						    
+   		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
 	end 
 	progressScope:done()
 
+	local timeUsed 	= LrDate.currentTime() - startTime
+	local picPerSec = nProcessed / timeUsed
+	local message = LOC ("$$$/PSUpload/Upload/Errors/GetCommentsFromPublishedCollection=" .. 
+					string.format("Got %d comments for  %d of %d pics in %d seconds (%.1f pics/sec).", 
+					nComments, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+
+	showFinalMessage("PhotoStation Upload: Get comments done", message, "info")
 	return true
 end
 
@@ -1093,59 +1104,62 @@ publishServiceProvider.titleForPhotoRating = LOC "$$$/PSPublish/TitleForPhotoRat
 	-- After the user adds a new comment to a photo in the Library module's Comments panel.
 function publishServiceProvider.getRatingsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, ratingCallback )
 	-- get the belonging Published Collection by evaluating the first photo
-	local numPhotos =  #arrayOfPhotoInfo
+	local nPhotos =  #arrayOfPhotoInfo
 	local containedPublishedCollections 
 	local publishedCollection, publishedCollectionName
 	local nProcessed = 0 
+	local nChanges = 0 
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
 	if publishSettings.operationCanceled then
-		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: canceled by user\n"))
+		writeLogfile(2, string.format("Get ratings: canceled by user\n"))
 		return
 	end
 	
-	if numPhotos == 0 then
-		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: nothing to do.\n"))
+	if nPhotos == 0 then
+		writeLogfile(2, string.format("Get ratings: nothing to do.\n"))
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
-		showFinalMessage("PhotoStation Upload: GetRatingsFromPublishedCollection failed!", 'Cannot sync ratings due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("PhotoStation Upload: Get ratings failed!", 'Cannot sync ratings due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end
 
 	-- the remoteUrl contains the local collection identifier
-	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(arrayOfPhotoInfo[1].url))
+	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(string.match(arrayOfPhotoInfo[1].url, '(%d+)')))
 	if not publishedCollection then
-		showFinalMessage("PhotoStation Upload: GetRatingsFromPublishedCollection failed!", 'Cannot sync ratings due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("PhotoStation Upload: Get ratings failed!", 'Cannot sync ratings due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end	
 	
 	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
 	if not collectionSettings.tagsDownload and not collectionSettings.captionDownload then
-		writeLogfile(2, string.format("GetRatingsFromPublishedCollection: Tag download and Caption download is not enabled for this collection.\n"))
+		writeLogfile(2, string.format("Get ratings: Tag download and Caption download is not enabled for this collection.\n"))
 		closeLogfile()
 		return
 	end
 		
 	publishedCollectionName = publishedCollection:getName()
-	writeLogfile(2, string.format("GetRatingsFromPublishedCollection for %d photos in collection %s.\n", numPhotos, publishedCollectionName))
+	writeLogfile(2, string.format("Get ratings for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
 
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetRatingsFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: GetRatingsFromPublishedCollection failed!", reason, "critical")
+			showFinalMessage("PhotoStation Upload: Get ratings failed!", reason, "critical")
 		else
-			writeLogfile(2, string.format("GetRatingsFromPublishedCollection: canceled by user\n"))
+			writeLogfile(2, string.format("Get ratings: canceled by user\n"))
 			publishSettings.operationCanceled = true
 		end
 		closeLogfile()
 		return
 	end
+
+	local startTime = LrDate.currentTime()
 
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
@@ -1162,51 +1176,64 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local captionPS, captionChanged
 		local ratingPS, ratingChanged
 		local labelPS, compareLabel, labelChanged
-		local tagsPS
+		local tagsPS, tagsChanged = {}
+		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
+		local resultText = ''
+				
 		local wasEdited = photoInfo.publishedPhoto:getEditedFlag()
 		
-		writeLogfile(3, string.format("GetRatingsFromPublishedCollection: %s - wasEdited %s\n", photoInfo.remoteId, tostring(wasEdited)))
+		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
 		
-		-- get caption from PhotoStation
-		if collectionSettings.captionDownload then
-			photoExifs = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
-    		if photoExifs and #photoExifs > 0 then
-    			for i = 1, #photoExifs do
-    				local photoExif = photoExifs[i]
-    				if photoExif.label == 'Image Description' then
-    					captionPS = photoExif.value
-    					break
-    				end
-    			end
+		if tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
+			writeLogfile(2, string.format("Get ratings: %s - too young, skipped\n", photoInfo.remoteId))
+			skipPhoto = true 
+		else 
+    		writeLogfile(4, string.format("Get ratings: %s - wasEdited %s\n", photoInfo.remoteId, tostring(wasEdited)))
+    		
+    		-- get caption from PhotoStation
+    		if collectionSettings.captionDownload then
+    			photoExifs = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+        		if photoExifs and #photoExifs > 0 then
+        			for i = 1, #photoExifs do
+        				local photoExif = photoExifs[i]
+        				if photoExif.label == 'Image Description' then
+        					captionPS = photoExif.value
+        					break
+        				end
+        			end
+        		end
     		end
-		end
-		
-		-- get tags and translated tags (rating, label, faces) from PhotoStation and check if different from corresponding value in Lr
-		if collectionSettings.tagsDownload then
-			photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
-		
-    		if not photoTags then
-    			writeLogfile(1, string.format("GetRatingsFromPublishedCollection: %s failed!\n", photoInfo.remoteId))
-    		elseif photoTags and #photoTags > 0 then
-				for i = 1, #photoTags do
-					local photoTag = photoTags[i]
-					writeLogfile(4, string.format("GetRatingsFromPublishedCollection: found tag type %s name %s\n", photoTag.type, photoTag.name))
-					
-    				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
-					if collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '%+(%a+)') then
-						labelPS = string.match(string.lower(photoTag.name), '%+(%a+)')
-
-   					-- ratings look like general tag '*', '**', ... '*****'
-    				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, '([%*]+)') then
-						ratingPS = math.min(string.len(photoTag.name), 5)
-					
-					-- 
-					else
-					
-					end -- if rating or label
-    			end -- for
-    		end
+    		
+    		-- get tags and translated tags (rating, label, faces) from PhotoStation and check if different from corresponding value in Lr
+    		if collectionSettings.tagsDownload then
+    			photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+    		
+        		if not photoTags then
+        			writeLogfile(1, string.format("Get ratings: %s failed!\n", photoInfo.remoteId))
+        		elseif photoTags and #photoTags > 0 then
+    				for i = 1, #photoTags do
+    					local photoTag = photoTags[i]
+    					writeLogfile(4, string.format("Get ratings: found tag type %s name %s\n", photoTag.type, photoTag.name))
     					
+        				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
+    					if collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '%+(%a+)') then
+    						labelPS = string.match(string.lower(photoTag.name), '%+(%a+)')
+    
+       					-- ratings look like general tag '*', '**', ... '*****'
+        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, '([%*]+)') then
+    						ratingPS = math.min(string.len(photoTag.name), 5)
+    					
+    					-- any other general tag is taken as-is
+    					elseif photoTag.type == 'desc' then
+    						table.insert(tagsPS, photoTag.name)
+    					end -- if rating or label
+        			end -- for
+        		end
+        					
+    		end
+    
+    		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
+    
        		-- special handling for empty label
        		if not labelPS then
        			labelPS = 'none'
@@ -1215,63 +1242,96 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
        			compareLabel = labelPS
        		end
        		       		
-		end
-
-		writeLogfile(3, string.format("GetRatingsFromPublishedCollection: %s - caption '%s', rating %d, label '%s'\n", photoInfo.remoteId, ifnil(captionPS, ''), ifnil(ratingPS, 0), labelPS))
-		
-		-- check if PS label is different to Lr
-		if ifnil(captionPS, '') ~= ifnil(srcPhoto:getFormattedMetadata('caption'), '') then
-			captionChanged = true  
-			writeLogfile(2, string.format("GetRatingsFromPublishedCollection: %s - change caption from %s to %s\n", 
-											photoInfo.remoteId, ifnil(photoInfo.photo:getFormattedMetadata('caption'), '<Nil>'), ifnil(captionPS, '<Nil>')))
-		end
-
-		-- check if PS label is different to Lr
-		if collectionSettings.PS2LrLabel and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= compareLabel then
-			labelChanged = true
-			writeLogfile(2, string.format("GetRatingsFromPublishedCollection: %s - label changed from %s to %s\n", 
-										photoInfo.remoteId, photoInfo.photo:getRawMetadata('colorNameForLabel'), labelPS))
-		end
-
-		-- check if PS rating is different to Lr
-		if collectionSettings.PS2LrRating and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  ~= ifnil(ratingPS, 0) then
-			ratingChanged = true
-			writeLogfile(2, string.format("GetRatingsFromPublishedCollection: %s - rating changed from %d to %d\n", 
-										photoInfo.remoteId, ifnil(photoInfo.photo:getRawMetadata('rating'), 0), ifnil(ratingPS, 0)))
-		end
-
-		-- if anything changed in PhotoStation, change value in Lr
-		if  captionChanged or labelChanged or ratingChanged then
-    		catalog:withWriteAccessDo( 
-    			'SetCaptionLabelRating',
-    			function(context)
-    				if captionChanged	then photoInfo.photo:setRawMetadata('caption', captionPS) end
-    				if labelChanged		then photoInfo.photo:setRawMetadata('colorNameForLabel', labelPS) end
-    				if ratingChanged	then photoInfo.photo:setRawMetadata('rating', ratingPS) end
-    			end,
-    			{timeout=5}
-    		)
-
-			-- reset "Edited" flag in Lr
-			if not wasEdited then
-				writeLogfile(3, string.format("GetRatingsFromPublishedCollection: %s - resetting Edited Flag\n", photoInfo.remoteId))
-			
+    		writeLogfile(3, string.format("Get ratings: %s - caption '%s', rating %d, label '%s', %d general tags\n", photoInfo.remoteId, ifnil(captionPS, ''), ifnil(ratingPS, 0), labelPS, #tagsPS))
+    		
+    		-- check if PS label is different to Lr
+    		if ifnil(captionPS, '') ~= ifnil(srcPhoto:getFormattedMetadata('caption'), '') then
+    			captionChanged = true
+    			nChanges = nChanges + 1
+    			resultText = resultText ..  string.format(" caption changed from %s to %s,", ifnil(srcPhoto:getFormattedMetadata('caption'), '<Nil>'), ifnil(captionPS, '<Nil>'))
+    			writeLogfile(3, string.format("Get ratings: %s - caption changed from %s to %s\n", 
+    											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('caption'), '<Nil>'), ifnil(captionPS, '<Nil>')))
+    		end
+    
+    		-- check if PS label is different to Lr
+    		if collectionSettings.PS2LrLabel and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= compareLabel then
+    			labelChanged = true
+    			nChanges = nChanges + 1  
+    			resultText = resultText ..  string.format(" label changed from %s to %s,", srcPhoto:getRawMetadata('colorNameForLabel'), labelPS)
+    			writeLogfile(3, string.format("Get ratings: %s - label changed from %s to %s\n", 
+    										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel'), labelPS))
+    		end
+    
+    		-- check if PS rating is different to Lr
+    		if collectionSettings.PS2LrRating and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  ~= ifnil(ratingPS, 0) then
+    			ratingChanged = true
+    			nChanges = nChanges + 1  
+    			resultText = resultText ..  string.format(" rating changed from %d to %d,", ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0))
+    			writeLogfile(3, string.format("Get ratings: %s - rating changed from %d to %d\n", 
+    										photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0)))
+    		end
+    
+    		if collectionSettings.tagsDownload then
+    			keywordNamesAdd, keywordNamesRemove, keywordsRemove = PSLrUtilities.getModifiedKeywords(srcPhoto, tagsPS)
+    			
+    			if (#keywordNamesAdd > 0) or (#keywordNamesRemove > 0) then
+    				tagsChanged = true
+    				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove 
+    				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: %s,", table.concat(keywordNamesAdd, ',')) end
+    				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: %s,", table.concat(keywordNamesRemove, ',')) end
+    				writeLogfile(3, string.format("Get ratings: %s - tags to add: %s, tags to remove: %s\n", 
+    										photoInfo.remoteId, table.concat(keywordNamesAdd, ','), table.concat(keywordNamesRemove, ',')))
+    			end
+    			
+    		end
+    		-- if anything changed in PhotoStation, change value in Lr
+    		if  captionChanged or labelChanged or ratingChanged or tagsChanged then
         		catalog:withWriteAccessDo( 
-        			'ResetEdited',
+        			'SetCaptionLabelRating',
         			function(context)
-        				photoInfo.publishedPhoto:setEditedFlag(false)
+        				if captionChanged	then photoInfo.photo:setRawMetadata('caption', captionPS) end
+        				if labelChanged		then photoInfo.photo:setRawMetadata('colorNameForLabel', labelPS) end
+        				if ratingChanged	then photoInfo.photo:setRawMetadata('rating', ratingPS) end
+        				if #keywordNamesAdd > 0 then
+        					PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
+        				end
+        				if #keywordsRemove > 0 then
+        					PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
+        				end    				
         			end,
         			{timeout=5}
         		)
-        	end
-		end 
-	
-		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
-
+    
+    			-- reset "Edited" flag in Lr
+    			if not wasEdited then
+    				writeLogfile(4, string.format("Get ratings: %s - resetting Edited Flag\n", photoInfo.remoteId))
+    			
+            		catalog:withWriteAccessDo( 
+            			'ResetEdited',
+            			function(context)
+            				photoInfo.publishedPhoto:setEditedFlag(false)
+            			end,
+            			{timeout=5}
+            		)
+            	end
+    			writeLogfile(2, string.format("Get ratings: %s - %s changes done.\n", photoInfo.remoteId, resultText))
+    		else
+    			writeLogfile(2, string.format("Get ratings: %s - no changes.\n", photoInfo.remoteId, resultText))
+    		end 
+		end -- not skip Photo
+			
    		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, numPhotos) 						    
+   		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
 	end 
 	progressScope:done()
+
+	local timeUsed 	= LrDate.currentTime() - startTime
+	local picPerSec = nProcessed / timeUsed
+	local message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
+					string.format("Got %d changed ratings/tags/labels for  %d of %d pics in %d seconds (%.1f pics/sec).", 
+					nChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+
+	showFinalMessage("PhotoStation Upload: Get ratings done", message, "info")
 
 	return true
 end
