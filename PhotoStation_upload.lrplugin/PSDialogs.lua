@@ -216,7 +216,7 @@ function PSDialogs.UploadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/CaptionUpload=Caption (always uploaded)",
+				title = LOC "$$$/PSUpload/ExportDialog/CaptionUpload=Decription (always uploaded)",
 				value = true,
 				enabled = false,
 			},
@@ -311,8 +311,8 @@ function PSDialogs.DownloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/CaptionDownload=Caption",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/CaptionDownloadTT=Download caption from PhotoStation",
+				title = LOC "$$$/PSUpload/ExportDialog/CaptionDownload=Description",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/CaptionDownloadTT=Download description (caption) from PhotoStation",
 				value = bind 'captionDownload',
 			},
 		},

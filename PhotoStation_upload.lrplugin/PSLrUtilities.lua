@@ -335,7 +335,7 @@ function PSLrUtilities.getModifiedKeywords(srcPhoto, tagList)
 	for i = 1, #tagList do
 		local found = false 
 		
-		for j = 1, #tagList do
+		for j = 1, #keywords do
 			if keywords[j]:getName() == tagList[i] then
 				found = true
 				break

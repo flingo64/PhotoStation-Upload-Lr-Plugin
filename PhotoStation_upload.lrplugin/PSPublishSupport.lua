@@ -1185,7 +1185,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
 		
 		if tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
-			writeLogfile(2, string.format("Get ratings: %s - too young, skipped\n", photoInfo.remoteId))
+			writeLogfile(2, string.format("Get ratings: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
 			skipPhoto = true 
 		else 
     		writeLogfile(4, string.format("Get ratings: %s - wasEdited %s\n", photoInfo.remoteId, tostring(wasEdited)))
@@ -1248,9 +1248,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		if ifnil(captionPS, '') ~= ifnil(srcPhoto:getFormattedMetadata('caption'), '') then
     			captionChanged = true
     			nChanges = nChanges + 1
-    			resultText = resultText ..  string.format(" caption changed from %s to %s,", ifnil(srcPhoto:getFormattedMetadata('caption'), '<Nil>'), ifnil(captionPS, '<Nil>'))
-    			writeLogfile(3, string.format("Get ratings: %s - caption changed from %s to %s\n", 
-    											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('caption'), '<Nil>'), ifnil(captionPS, '<Nil>')))
+    			resultText = resultText ..  string.format(" caption changed from '%s' to '%s',", ifnil(srcPhoto:getFormattedMetadata('caption'), ''), ifnil(captionPS, ''))
+    			writeLogfile(3, string.format("Get ratings: %s - caption changed from '%s' to '%s'\n", 
+    											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('caption'), ''), ifnil(captionPS, '')))
     		end
     
     		-- check if PS label is different to Lr
@@ -1277,8 +1277,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			if (#keywordNamesAdd > 0) or (#keywordNamesRemove > 0) then
     				tagsChanged = true
     				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove 
-    				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: %s,", table.concat(keywordNamesAdd, ',')) end
-    				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: %s,", table.concat(keywordNamesRemove, ',')) end
+    				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, ',')) end
+    				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: '%s',", table.concat(keywordNamesRemove, ',')) end
     				writeLogfile(3, string.format("Get ratings: %s - tags to add: %s, tags to remove: %s\n", 
     										photoInfo.remoteId, table.concat(keywordNamesAdd, ','), table.concat(keywordNamesRemove, ',')))
     			end
@@ -1289,9 +1289,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		catalog:withWriteAccessDo( 
         			'SetCaptionLabelRating',
         			function(context)
-        				if captionChanged	then photoInfo.photo:setRawMetadata('caption', captionPS) end
-        				if labelChanged		then photoInfo.photo:setRawMetadata('colorNameForLabel', labelPS) end
-        				if ratingChanged	then photoInfo.photo:setRawMetadata('rating', ratingPS) end
+        				if captionChanged	then srcPhoto:setRawMetadata('caption', captionPS) end
+        				if labelChanged		then srcPhoto:setRawMetadata('colorNameForLabel', labelPS) end
+        				if ratingChanged	then srcPhoto:setRawMetadata('rating', ratingPS) end
         				if #keywordNamesAdd > 0 then
         					PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
         				end
@@ -1328,7 +1328,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
 	local message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
-					string.format("Got %d changed ratings/tags/labels for  %d of %d pics in %d seconds (%.1f pics/sec).", 
+					string.format("Got %d modified descriptions/labels/ratings/tags for  %d of %d pics in %d seconds (%.1f pics/sec).", 
 					nChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 
 	showFinalMessage("PhotoStation Upload: Get ratings done", message, "info")
