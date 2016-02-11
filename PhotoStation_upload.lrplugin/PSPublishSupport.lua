@@ -405,21 +405,18 @@ end
 local function updateCollectionStatus( collectionSettings )
 	
 	local message = nil
+--	local albumPath = PSLrUtilities.getCollectionUploadPath(collectionSettings)
+	
 	
 	repeat
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 		
-		if collectionSettings.copyTree and not validateDirectory(nil, collectionSettings.srcRoot) then
+		if collectionSettings.copyTree and not PSDialogs.validateDirectory(nil, collectionSettings.srcRoot) then
 			message = LOC "$$$/PSUpload/CollectionDialog/Messages/EnterSubPath=Enter a source path"
 			break
 		end
 				
-		if not collectionSettings.copyTree and collectionSettings.publishMode == 'CheckMoved' then
-			message = LOC ("$$$/PSUpload/CollectionDialog/CheckMovedNotNeeded=CheckMoved not supported if not mirror tree copy.\n")
-			break
-		end
-
 		-- Exif translation start
 		-- downloading translated tags makes only sense if we upload them also, otherwise they would dissappear after re-publish
 		if not collectionSettings.exifXlatFaceRegions 	then collectionSettings.PS2LrFaces = false end
@@ -573,39 +570,17 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 
     		f:spacer { height = 10, },
     
-            PSDialogs.UploadOptionsView(f, collectionSettings),
+            PSDialogs.uploadOptionsView(f, collectionSettings),
  
  	  		f:spacer { height = 10, },
     
-            PSDialogs.DownloadOptionsView(f, collectionSettings),
+            PSDialogs.downloadOptionsView(f, collectionSettings),
  
  	  		f:spacer { height = 10, },
     
  
-    		f:row {
-    			alignment = 'left',
-    			fill_horizontal = 1,
-    
-    			f:static_text {
-    				title = LOC "$$$/PSUpload/CollectionSettings/PublishMode=Publish Mode:",
-    				alignment = 'right',
-    				width = share 'labelWidth',
-    			},
-    
-    			f:popup_menu {
-    				tooltip = LOC "$$$/PSUpload/CollectionSettings/PublishModeTT=How to publish",
-    				value = bind 'publishMode',
-    				alignment = 'left',
-    				fill_horizontal = 1,
-    				items = {
-    					{ title	= 'Ask me later',																value 	= 'Ask' },
-    					{ title	= 'Normal',																		value 	= 'Publish' },
-    					{ title	= 'CheckExisting: Set Unpublished to Published if existing in PhotoStation.',	value 	= 'CheckExisting' },
-    					{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
-    				},
-    			},
-			}, -- row
-	
+            PSDialogs.publishModeView(f, collectionSettings),
+
     		f:spacer { height = 10, },
     		
     		f:row {

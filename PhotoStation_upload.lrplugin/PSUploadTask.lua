@@ -408,7 +408,13 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 	local nPhotos = #publishedPhotos
 	local nProcessed = 0
 	local nMoved = 0 
-
+	
+	local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
+	if not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
+		writeLogfile(2, "CheckMoved: Makes no sense on flat copy albums.\n")
+		return nPhotos, nPhotos, nMoved
+	end
+	
 	-- Set progress title.
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1

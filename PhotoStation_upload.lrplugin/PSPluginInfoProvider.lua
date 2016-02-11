@@ -48,35 +48,6 @@ local pluginInfoProvider = {}
 
 
 -- TODO: Uploader program path should be a plugin setting, not an export/publish setting
--- validatePSUploadProgPath: 
---[[	check if a given path points to the root directory of the Synology PhotoStation Uploader tool 
-		we require the following converters that ship with the Uploader:
-			- ImageMagick/convert(.exe)
-			- ffmpeg/ffpmeg(.exe)
-			- ffpmpeg/qt-faststart(.exe)
-local function validatePSUploadProgPath( view, path )
-	local convertprog = 'convert'
-	local ffmpegprog = 'ffmpeg'
-	local qtfstartprog = 'qt-faststart'
-	if getProgExt() then
-		local progExt = getProgExt()
-		convertprog = LrPathUtils.addExtension(convertprog, progExt)
-		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
-		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
-	end
-	
-	if LrFileUtils.exists(path) ~= 'directory' 
-	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ImageMagick'), convertprog))
-	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), ffmpegprog)) 
-	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), qtfstartprog)) then
-		return false, path
-	end
-
-	return true, LrPathUtils.standardizePath(path)
-end
-]]
-
--- TODO: Uploader program path should be a plugin setting, not an export/publish setting
 
 -- updatePluginStatus: do some sanity check on dialog settings
 --[[
@@ -88,7 +59,7 @@ local function updatePluginStatus( propertyTable )
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 		
-		if not validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
+		if not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
 			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Enter the installation path (base) of the Synology PhotoStation Uploader or Synology Assistant"
 			break
 		end
@@ -221,7 +192,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 					value = bind 'PSUploaderPath',
 					tooltip = LOC "$$$/PSUpload/PluginDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader.",
 					truncation = 'middle',
-					validate = validatePSUploadProgPath,
+					validate = PSDialogs.validatePSUploadProgPath,
 					immediate = true,
 					fill_horizontal = 1,
 				},

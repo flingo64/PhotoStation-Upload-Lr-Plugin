@@ -509,6 +509,7 @@ function promptForMissingSettings(exportParams, operation)
 	local needDstRoot = not exportParams.storeDstRoot
 	local needPublishMode = false
 	local needLoglevel = false
+	local isAskForMissingParams = true
 
 	if operation == 'ProcessRenderedPhotos' and ifnil(exportParams.publishMode, 'Ask') == 'Ask' then
 		exportParams.publishMode = 'Publish'
@@ -547,7 +548,6 @@ function promptForMissingSettings(exportParams, operation)
 				tooltip = LOC "$$$/PSUpload/ExportDialog/USERNAMETT=Enter the username for PhotoStation access.",
 				truncation = 'middle',
 				immediate = true,
---				width = share 'labelWidth',
 				width_in_chars = 16,
 				fill_horizontal = 1,
 			},
@@ -573,64 +573,7 @@ function promptForMissingSettings(exportParams, operation)
 		},
 	}
 
-	local dstRootView = f:view {
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/DstRoot=Target Album:",
-				alignment = 'right',
-				width = share 'labelWidth',
-			},
-
-			f:edit_field {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
-				value = bind( "dstRoot" ),
-				width_in_chars = 16,
-				fill_horizontal = 1,
-			},
-		}, 
-		
-		f:spacer {	height = 5, },
-
-		f:row {
-			f:checkbox {
-				title = LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
-				alignment = 'left',
-				value = bind( "createDstRoot" ),
-			},
-		},
-	}
-
-	local publishModeItems
-	
-	if exportParams.copyTree then
-		publishModeItems = {
-			{ title	= 'Normal',																		value 	= 'Publish' },
-			{ title	= 'CheckExisting: Set Unpublished to Published if existing in PhotoStation.',	value 	= 'CheckExisting' },
-			{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
-		}
-	else
-		publishModeItems = {
-			{ title	= 'Normal',																		value 	= 'Publish' },
-			{ title	= 'CheckExisting: Set Unpublished to Published if existing in PhotoStation.',	value 	= 'CheckExisting' },
-		}
-	end
-	
-	local publishModeView = f:view {
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/PublishMode=Publish Mode:",
-				alignment = 'right',
-				width = share 'labelWidth'
-			},
-			f:popup_menu {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PublishModeTT=How to publish",
-				value = bind 'publishMode',
-				alignment = 'left',
-				items = publishModeItems,
-			},
-		},
-	}
-	
+--[[
 	local loglevelView = f:view {
 		f:row {
 			f:static_text {
@@ -654,6 +597,8 @@ function promptForMissingSettings(exportParams, operation)
 			},
 		},
 	}
+]]
+
 	-- Create the contents for the dialog.
 	local c = f:view {
 		bind_to_object = exportParams,
@@ -662,11 +607,11 @@ function promptForMissingSettings(exportParams, operation)
 		f:spacer {	height = 10, },
 		conditionalItem(needPw, passwdView), 
 		f:spacer {	height = 10, },
-		conditionalItem(needDstRoot, dstRootView), 
+		conditionalItem(needDstRoot, 	 PSDialogs.dstRootView(f, exportParams, isAskForMissingParams)), 
 		f:spacer {	height = 10, },
-		conditionalItem(needPublishMode, publishModeView), 
+		conditionalItem(needPublishMode, PSDialogs.publishModeView(f, exportParams, isAskForMissingParams)), 
 		f:spacer {	height = 10, },
-		conditionalItem(needLoglevel, loglevelView), 
+		conditionalItem(needLoglevel, 	 PSDialogs.loglevelView(f, exportParams, isAskForMissingParams)), 
 	}
 
 	local result = LrDialogs.presentModalDialog {
