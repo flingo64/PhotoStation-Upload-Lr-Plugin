@@ -1,7 +1,25 @@
 --[[----------------------------------------------------------------------------
 
-PSUploadExportDialogSections.lua
-Export dialog customization for Lightroom Photo StatLr
+PSDialogs.lua
+Dialogs and validations for Photo StatLr
+	- validatePort
+	- validateDirectory
+	- validateProgram
+	- validatePSUploadProgPath
+	
+	- psUploaderProgView
+	- exiftoolProgView
+	
+	- targetPhotoStationView
+	- thumbnailOptionsView
+	- videoOptionsView
+	- dstRootView
+	- targetAlbumView
+	- uploadOptionsView
+	- downloadOptionsView
+	- publishModeView
+	- loglevelView 
+		
 Copyright(c) 2015, Martin Messmer
 
 This file is part of Photo StatLr - Lightroom plugin.
