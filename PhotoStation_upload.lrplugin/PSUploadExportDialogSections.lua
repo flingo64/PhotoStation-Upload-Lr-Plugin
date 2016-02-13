@@ -43,6 +43,7 @@ local LrBinding		= import 'LrBinding'
 local LrView 		= import 'LrView'
 local LrPathUtils 	= import 'LrPathUtils'
 local LrFileUtils	= import 'LrFileUtils'
+local LrPrefs	 	= import 'LrPrefs'
 local LrShell 		= import 'LrShell'
 
 require "PSUtilities"
@@ -58,6 +59,7 @@ PSUploadExportDialogSections = {}
 
 -- updatExportStatus: do some sanity check on dialog settings
 local function updateExportStatus( propertyTable )
+	local prefs = LrPrefs.prefsForPlugin()
 	
 	local message = nil
 	
@@ -65,8 +67,8 @@ local function updateExportStatus( propertyTable )
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 		
-		if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/PSUploadPathMissing=Enter the installation path (base) of the Synology PhotoStation Uploader or Synology Assistant"
+		if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Missing or wrong Synology PhotoStation Uploader path. Fix it in Plugin Manager settings section." 
 			break
 		end
 
@@ -111,8 +113,8 @@ local function updateExportStatus( propertyTable )
 		-- Publish Service Provider end
 
 		-- Exif translation start
-		if propertyTable.exifTranslate and not PSDialogs.validateProgram( _, propertyTable.exiftoolprog ) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Enter path to exiftool"
+		if propertyTable.exifTranslate and not PSDialogs.validateProgram( _, prefs.exiftoolprog ) then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break
 		end
 		-- Exif translation end
@@ -144,7 +146,6 @@ end
 function PSUploadExportDialogSections.startDialog( propertyTable )
 	
 	propertyTable:addObserver( 'thumbGenerate', updateExportStatus )
-	propertyTable:addObserver( 'PSUploaderPath', updateExportStatus )
 
 	propertyTable:addObserver( 'servername', updateExportStatus )
 	propertyTable:addObserver( 'username', updateExportStatus )
@@ -153,7 +154,6 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
 
-	propertyTable:addObserver( 'exiftoolprog', updateExportStatus )
 	propertyTable:addObserver( 'exifTranslate', updateExportStatus )
 
 	propertyTable:addObserver( 'useSecondAddress', updateExportStatus )

@@ -35,8 +35,12 @@ local LrFileUtils	= import 'LrFileUtils'
 local LrPrefs		= import 'LrPrefs'
 local LrTasks		= import 'LrTasks'
 
+local bind = LrView.bind
+local share = LrView.share
+local conditionalItem = LrView.conditionalItem
 
 -- PhotoStation Upload plug-in
+require "PSDialogs"
 require "PSUtilities"
 require "PSPublishSupport"
 require "PSUploadTask"
@@ -46,11 +50,8 @@ require "PSUpdate"
 
 local pluginInfoProvider = {}
 
-
--- TODO: Uploader program path should be a plugin setting, not an export/publish setting
-
+-------------------------------------------------------------------------------
 -- updatePluginStatus: do some sanity check on dialog settings
---[[
 local function updatePluginStatus( propertyTable )
 	
 	local message = nil
@@ -59,8 +60,13 @@ local function updatePluginStatus( propertyTable )
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 		
-		if not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Enter the installation path (base) of the Synology PhotoStation Uploader or Synology Assistant"
+		if propertyTable.PSUploaderPath ~= '' and not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong Synology PhotoStation Uploader path." 
+			break
+		end
+
+		if propertyTable.exiftoolprog ~= '' and not PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong Synology PhotoStation Uploader path." 
 			break
 		end
 
@@ -77,58 +83,50 @@ local function updatePluginStatus( propertyTable )
 	end
 	
 end
-]]
--------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- pluginInfoProvider.startDialog( propertyTable )
 function pluginInfoProvider.startDialog( propertyTable )
 	local prefs = LrPrefs.prefsForPlugin()
 	
-	openLogfile(2)
+	openLogfile(4)
 	writeLogfile(4, "pluginInfoProvider.startDialog\n")
-	LrTasks.startAsyncTaskWithoutErrorHandler( PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
+	LrTasks.startAsyncTaskWithoutErrorHandler(PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
 
-	-- TODO: Uploader program path should be a plugin setting, not an export/publish setting
-	--[[ 
-	if prefs.PSUploaderPath == nil then
-		prefs.PSUploaderPath = iif(WIN_ENV, 
-						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
-						'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
+	-- local path to Synology PhotoStation Uploader: required for thumb generation an video handling
+	propertyTable.PSUploaderPath = prefs.PSUploaderPath
+	if not propertyTable.PSUploaderPath then 
+    	propertyTable.PSUploaderPath =  PSConvert.defaultInstallPath
 	end
 	
-	prefs:addObserver( 'PSUploaderPath', updatePluginStatus )
-	updatePluginStatus( prefs )
-	]]
-end
--------------------------------------------------------------------------------
+	-- exiftool program path: used  for metadata translations on upload
+	propertyTable.exiftoolprog = prefs.exiftoolprog
+	if not propertyTable.exiftoolprog then
+		propertyTable.exiftoolprog = PSExiftoolAPI.defaultInstallPath
+	end
 
+	propertyTable:addObserver('PSUploaderPath', updatePluginStatus )
+	propertyTable:addObserver('exiftoolprog', updatePluginStatus )
+
+	updatePluginStatus(propertyTable)
+end
+
+-------------------------------------------------------------------------------
+-- pluginInfoProvider.endDialog( propertyTable )
 function pluginInfoProvider.endDialog( propertyTable )
+	local prefs = LrPrefs.prefsForPlugin()
+
+	prefs.PSUploaderPath = propertyTable.PSUploaderPath
+	prefs.exiftoolprog = propertyTable.exiftoolprog
 end
 
 --------------------------------------------------------------------------------
-	
--- function pluginInfoProvider.sectionsForTopOfDialog( _, propertyTable )
+-- pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
---	local f = LrView.osFactory()
-	local bind = LrView.bind
-	local share = LrView.share
-	local conditionalItem = LrView.conditionalItem
 	local prefs = LrPrefs.prefsForPlugin()
 	local updateAvail
 	local synops
-	
-	-- TODO: Uploader program path should be a plugin setting, not an export/publish setting
-	--[[ 
-	if prefs.message == nil then
-		prefs.message = 'Settings OK'
-	end
-	
-	if prefs.PSUploaderPath == nil then
-		prefs.PSUploaderPath = iif(WIN_ENV, 
-						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
-						'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
-	end
-	]]
-	
+		
 	if prefs.updateAvailable == nil then
 		synops = ""
 		updateAvail = false
@@ -175,30 +173,10 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 	local result = {
 	
 		{
-			title = LOC "$$$/PSUpload/PluginDialog/PsSettings=PhotoStation Upload: General Settings",
+			title = LOC "$$$/PSUpload/PluginDialog/PsUploadInfo=PhotoStation Upload",
 			
 			synopsis = synops,
 
-			-- TODO: Uploader program path should be a plugin setting, not an export/publish setting
-			--[[ 
-			f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/PluginDialog/PSUPLOAD=Syno PhotoStation Uploader:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-	
-				f:edit_field {
-					value = bind 'PSUploaderPath',
-					tooltip = LOC "$$$/PSUpload/PluginDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader.",
-					truncation = 'middle',
-					validate = PSDialogs.validatePSUploadProgPath,
-					immediate = true,
-					fill_horizontal = 1,
-				},
-			},
-			]]
-			
 			conditionalItem(updateAvail, updateAvailableView),
 			conditionalItem(not updateAvail, noUpdateAvailableView),
 		},
@@ -208,17 +186,45 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 
 end
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- pluginInfoProvider.sectionsForBottomOfDialog( f, propertyTable )
+function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
+	local prefs = LrPrefs.prefsForPlugin()
+--	local synops
+	writeLogfile(4, string.format("sectionsForBottomOfDialog: props: PSUploader %s, exiftool: %s\n", propertyTable.PSUploaderPath, propertyTable.exiftoolprog))
+	propertyTable.PSUploaderPath = prefs.PSUploaderPath
+	propertyTable.exiftoolprog = prefs.exiftoolprog
 
---[[
-pluginInfoProvider.exportPresetFields = {
-		{ key = 'PSUploaderPath', default = 		-- local path to Synology PhotoStation Uploader
-					iif(WIN_ENV, 
-						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
-						'/Applications/Synology Photo Station Uploader.app/Contents/MacOS') 
-		},											
-}
-]]
+	-- local path to Synology PhotoStation Uploader: required for thumb generation an video handling
+	if ifnil(propertyTable.PSUploaderPath, '') == '' then 
+    	propertyTable.PSUploaderPath = iif(WIN_ENV, 
+    									'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
+    									'/Applications/Synology Photo Station Uploader.app/Contents/MacOS') 
+	end
+	
+	-- exiftool program path: used  for metadata translations on upload
+	if ifnil(propertyTable.exiftoolprog, '') == '' then
+		propertyTable.exiftoolprog = iif(WIN_ENV, 'C:\\\Windows\\\exiftool.exe', '/usr/local/bin/exiftool') 
+	end
+	writeLogfile(4, string.format("props: PSUploader %s, exiftool: %s\n", propertyTable.PSUploaderPath, propertyTable.exiftoolprog))
+		
+	return {
+		{
+    		title = LOC "$$$/PSUpload/PluginDialog/PsSettings=Geneneral Settings",
+    		synopsis = 'Set program paths',
+			bind_to_object = propertyTable,
+			     		
+    		f:view {
+				fill_horizontal = 1,
+				
+    			PSDialogs.psUploaderProgView(f, propertyTable),
+				PSDialogs.exiftoolProgView(f, propertyTable),
+    		}
+		}
+	}
+
+end
+
 --------------------------------------------------------------------------------
 
 return pluginInfoProvider

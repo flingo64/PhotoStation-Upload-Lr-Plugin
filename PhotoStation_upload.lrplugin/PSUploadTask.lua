@@ -409,12 +409,6 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 	local nProcessed = 0
 	local nMoved = 0 
 	
-	local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
-	if not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
-		writeLogfile(2, "CheckMoved: Makes no sense on flat copy albums.\n")
-		return nPhotos, nPhotos, nMoved
-	end
-	
 	-- Set progress title.
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
@@ -435,7 +429,15 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
 
 		-- check if backlink to the containing Published Collection must be adjusted
-		local adjustBacklink = iif(pubPhoto:getRemoteUrl() ~= tostring(publishedCollection.localIdentifier), true, false)
+		if string.match(ifnil(pubPhoto:getRemoteUrl(), ''), '(%d+)') ~= tostring(publishedCollection.localIdentifier) then
+   			catalog:withWriteAccessDo( 
+    				'Update Backlink',
+    				function(context)
+						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
+    				end,
+    				{timeout=5}
+    			)
+		end
 
 		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
 		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
@@ -445,7 +447,6 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 			catalog:withWriteAccessDo( 
 				'SetEdited',
 				function(context)
-					if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime())) end
 					-- mark as 'To Re-publish'
 					pubPhoto:setEditedFlag(true)
 				end,
@@ -462,7 +463,6 @@ function checkMoved(publishedCollection, exportContext, exportParams)
     			catalog:withWriteAccessDo( 
     				'SetEdited',
     				function(context)
-						if adjustBacklink then pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime())) end
 						-- mark as 'To Re-publish'
     					pubPhoto:setEditedFlag(true)
     				end,
@@ -471,17 +471,6 @@ function checkMoved(publishedCollection, exportContext, exportParams)
     			nMoved = nMoved + 1
     		else
     			writeLogfile(2, "CheckMoved(" .. localPath .. "): Not moved.\n")
-				if adjustBacklink then
-        			catalog:withWriteAccessDo( 
-        				'Add Published Collection ack link',
-        				function(context)
-    						-- adjust backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-    						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier))
-							pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime())) 
-        				end,
-        				{timeout=5}
-        			)
-				end
     		end
 		end
 		nProcessed = i
@@ -570,8 +559,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	if publishMode == "CheckMoved" then
 		-- Publish mode CheckMoved: makes no sense if not mirror tree mode
 		local nMoved
-		if not exportParams.copyTree then
-			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=PhotoStation Upload (Check Moved): No mirror tree copy, no need to check for moved pics.\n")
+		local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
+    	
+		if not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
+			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=PhotoStation Upload (Check Moved): Makes no sense on flat copy albums to check for moved pics.\n")
 		else
 			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime

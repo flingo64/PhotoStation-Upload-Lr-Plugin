@@ -47,8 +47,13 @@ local LrDate = 				import 'LrDate'
 local LrDialogs = 			import 'LrDialogs'
 local LrHttp = 				import 'LrHttp'
 local LrPathUtils = 		import 'LrPathUtils'
+local LrPrefs =				import 'LrPrefs'
 local LrProgressScope =		import 'LrProgressScope'
 local LrView = 				import 'LrView'
+
+local bind 				= LrView.bind
+local share 			= LrView.share
+local conditionalItem 	= LrView.conditionalItem
 
 require "PSDialogs"
 require "PSUtilities"
@@ -63,7 +68,8 @@ local publishServiceProvider = {}
  -- Manager dialog, and in the header shown when a published collection is selected.
  -- The icon must be in PNG format and no more than 24 pixels wide or 19 pixels tall.
 
-publishServiceProvider.small_icon = 'PhotoStation.png'
+--publishServiceProvider.small_icon = 'PhotoStation.png'
+publishServiceProvider.small_icon = 'PhotoStatLr.png'
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the behavior of the
@@ -403,7 +409,8 @@ end
 
 -- updatCollectionStatus: do some sanity checks on Published Collection dialog settings
 local function updateCollectionStatus( collectionSettings )
-	
+	local prefs = LrPrefs.prefsForPlugin()
+
 	local message = nil
 --	local albumPath = PSLrUtilities.getCollectionUploadPath(collectionSettings)
 	
@@ -423,7 +430,7 @@ local function updateCollectionStatus( collectionSettings )
 		if not collectionSettings.exifXlatLabel 		then collectionSettings.PS2LrLabel = false end
 		if not collectionSettings.exifXlatRating 		then collectionSettings.PS2LrRating = false end
 		
-		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( _, collectionSettings.exiftoolprog ) then
+		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( _, prefs.exiftoolprog ) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Enter path to exiftool"
 			break
 		end
@@ -448,9 +455,7 @@ end
  -- creates a new published collection or edits an existing one. It can add
  -- additional controls to the dialog box for editing this collection. 
 function publishServiceProvider.viewForCollectionSettings( f, publishSettings, info )
-	local bind = LrView.bind
-	local share = LrView.share
-	local conditionalItem = LrView.conditionalItem
+	local prefs = LrPrefs.prefsForPlugin()
 
 	local collectionSettings = assert( info.collectionSettings )
 
@@ -462,7 +467,6 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
 	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
 	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
-	collectionSettings:addObserver( 'exiftoolprog', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifTranslate', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifXlatFaceRegions', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifXlatLabel', updateCollectionStatus )
@@ -508,10 +512,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	end
 
 	--============= upload options ===================================
-	-- move Upload options from publish service settings to collection settings
-	if collectionSettings.exiftoolprog == nil then
-		collectionSettings.exiftoolprog = publishSettings.exiftoolprog
-	end
+--	-- move Upload options from publish service settings to collection settings
 
 	if collectionSettings.exifTranslate == nil then
 		collectionSettings.exifTranslate = publishSettings.exifTranslate
@@ -655,9 +656,6 @@ end
  -- additional controls to the dialog box for editing this collection set. 
 
 function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings, info )
-	local bind = LrView.bind
-	local share = LrView.share
-
 	local collectionSetSettings = assert( info.collectionSettings )
 
 	-- observe settings to enable/disable "Store" button
@@ -1162,7 +1160,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		if tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
 			writeLogfile(2, string.format("Get ratings: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
 			skipPhoto = true 
-		else 
+		elseif srcPhoto:getRawMetadata('isVideo') then
+			writeLogfile(2, string.format("Get ratings: %s - videos not supported, skip download.\n", photoInfo.remoteId))
+			skipPhoto = true 
+		else		 
     		writeLogfile(4, string.format("Get ratings: %s - wasEdited %s\n", photoInfo.remoteId, tostring(wasEdited)))
     		
     		-- get caption from PhotoStation

@@ -38,10 +38,11 @@ PhotoStation Upload uses the following free software to do its job:
 
 -- Lightroom API
 -- local LrFileUtils = import 'LrFileUtils'
-local LrDate = import 'LrDate'
-local LrFileUtils = import 'LrFileUtils'
-local LrPathUtils = import 'LrPathUtils'
-local LrTasks = import 'LrTasks'
+local LrDate 		= import 'LrDate'
+local LrFileUtils 	= import 'LrFileUtils'
+local LrPathUtils 	= import 'LrPathUtils'
+local LrPrefs	 	= import 'LrPrefs'
+local LrTasks 		= import 'LrTasks'
 
 require "PSUtilities"
 
@@ -49,6 +50,9 @@ require "PSUtilities"
 
 PSConvert = {}
 
+PSConvert.defaultInstallPath = iif(WIN_ENV, 
+    								'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
+    								'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
 
 -- !!! don't use local variable for settings that may differ for export sessions!
 -- only w/ "reload plug-in on each export", each export task will get its own copy of these variables
@@ -89,7 +93,9 @@ end
 ------------------------ initialize ---------------------------------------------------------------------------------
 
 -- initialize: set serverUrl, loginPath and uploadPath
-function PSConvert.initialize(PSUploaderPath)
+function PSConvert.initialize()
+	local prefs = LrPrefs.prefsForPlugin()
+	local PSUploaderPath = prefs.PSUploaderPath
 	local h = {} -- the handle
 
 	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")

@@ -71,11 +71,6 @@ exportServiceProvider.allowColorSpaces = nil -- nil equates to all color spaces
 exportServiceProvider.canExportVideo = true	-- yes, we can
 	
 exportServiceProvider.exportPresetFields = {
-		{ key = 'PSUploaderPath', default = 		-- local path to Synology PhotoStation Uploader
-					iif(WIN_ENV, 
-						'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
-						'/Applications/Synology Photo Station Uploader.app/Contents/MacOS') 
-		},											
 		-- PhotoStation parameters
 		{ key = 'proto', 			default = 'http' },	-- transport protocol for PhotoStation upload
 		{ key = 'servername', 		default = '' },		-- name/address of the PhotoStation, may include ':port' extension
@@ -95,9 +90,6 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
 
 		-- upload options / exif translation parameters
-		{ key = 'exiftoolprog',		 	default = 			-- path to exiftool
-			iif(WIN_ENV, 'C:\\\Windows\\\exiftool.exe', '/usr/local/bin/exiftool') 
-		},											
 		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
 		{ key = 'exifXlatFaceRegions',	default = true },	-- translate Lr/Picasa face regions to PS face regions
 		{ key = 'exifXlatLabel', 		default = true },	-- translate Lr label (red, green, ...) to PS keyword

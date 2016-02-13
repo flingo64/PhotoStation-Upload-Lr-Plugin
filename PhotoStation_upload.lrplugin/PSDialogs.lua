@@ -53,6 +53,7 @@ local conditionalItem 	= LrView.conditionalItem
 PSDialogs = {}
 
 --============================ validate functions ===========================================================
+
 -------------------------------------------------------------------------------
 -- validatePort: check if a string is numeric
 function PSDialogs.validatePort( view, value )
@@ -101,6 +102,7 @@ function PSDialogs.validatePSUploadProgPath(view, path)
 	local convertprog = 'convert'
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
+
 	if getProgExt() then
 		local progExt = getProgExt()
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
@@ -120,6 +122,110 @@ end
 
 
 --============================ views ===================================================================
+
+-------------------------------------------------------------------------------
+-- psUploaderProgView(f, propertyTable)
+function PSDialogs.psUploaderProgView(f, propertyTable)
+	return
+        f:group_box {
+			title	= 'Synology PhotoStation Uploader',
+			fill_horizontal = 1,
+			
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOADTT=Enter the install path of 'Synology PhotoStation Uploader', if you want to generate thumbs locally or upload videos.\n" 
+    			},
+    		},
+    
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOAD=Synology PS Uploader:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+    
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 0.8,
+    				value 			= bind 'PSUploaderPath',
+    				validate 		= PSDialogs.validatePSUploadProgPath,
+    			},
+    			
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadDef=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadDefTT=Set to Default.",
+    				alignment 		= 'right',
+    				fill_horizontal = 0.1,
+    				action 			= function()
+    					propertyTable.PSUploaderPath = PSConvert.defaultInstallPath
+    				end,
+    			},   			
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadSearchTT=Search Synology PhotoStation Uploader in Explorer/Finder.",
+    				alignment 		= 'right',
+    				fill_horizontal = 0.1,
+    				action 			= function()
+    					LrShell.revealInShell(getRootPath())
+    				end,
+    			},   			
+    		},
+    	}
+end
+
+-------------------------------------------------------------------------------
+-- exiftoolProgView(f, propertyTable)
+function PSDialogs.exiftoolProgView(f, propertyTable)
+	return
+        f:group_box {
+   			title	= 'Exiftool',
+			fill_horizontal = 1,
+    			
+    		f:row {
+    			f:static_text {
+    				title			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogTT=Enter the install path of 'exiftool', if you want to use metadata translations (face regions, color labels, ratings).\n" 
+    			},
+    		},
+    
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprog=exiftool:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+    
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 0.8,
+    				value 			= bind 'exiftoolprog',
+    				validate 		= PSDialogs.validateProgram,
+    			},
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogDef=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogDefTT=Set to default.",
+    				alignment 		= 'right',
+    				fill_horizontal = 0.1,
+    				action 			= function()
+    					propertyTable.exiftoolprog = PSExiftoolAPI.defaultInstallPath
+    				end,
+    			},   			
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogSearchTT=Search exiftool in Explorer/Finder.",
+    				alignment 		= 'right',
+    				fill_horizontal = 0.1,
+    				action 			= function()
+    					LrShell.revealInShell(getRootPath())
+    				end,
+    			},   			
+    		},
+    	}
+end
 
 -------------------------------------------------------------------------------
 -- targetPhotoStationView(f, propertyTable)
@@ -334,7 +440,7 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 					title 			= LOC "$$$/PSUpload/ExportDialog/thumbGenerate=Do thumbs:",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/thumbGenerateTT=Generate thumbs:\nUnselect only, if you want the diskstation to generate the thumbs\n" .. 
 											"or if you export to an unindexed folder and you don't need thumbs.\n" .. 
-											"This will speed up export.",
+											"This will speed up photo uploads.",
 					fill_horizontal = 1,
 					value 			= bind 'thumbGenerate',
 				},
@@ -411,26 +517,6 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 					},
 				},
 			},
-
-			f:row {
-				f:static_text {
-					title 		= LOC "$$$/PSUpload/ExportDialog/PSUPLOAD=Synology PS Uploader:",
-					alignment 	= 'right',
-					width 		= share 'labelWidth',
-					visible 	= bind 'thumbGenerate',
-				},
-	
-				f:edit_field {
-					tooltip			= LOC "$$$/PSUpload/ExportDialog/PSUPLOADTT=Enter the installation path of the Synology PhotoStation Uploader.",
-					truncation 		= 'middle',
-					immediate 		= true,
-					fill_horizontal = 1,
-					value 			= bind 'PSUploaderPath',
-					validate 		= PSDialogs.validatePSUploadProgPath,
-					visible 		= bind 'thumbGenerate',
-				},
-			},
-
 		}
 end
 
@@ -647,7 +733,6 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 	} 
 end	
 
-
 -------------------------------------------------------------------------------
 -- uploadOptionsView(f, propertyTable)
 function PSDialogs.uploadOptionsView(f, propertyTable)
@@ -705,24 +790,9 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 		}, 
 		
-		f:row {
-			f:static_text {
-				title 			= LOC "$$$/PSUpload/ExportDialog/exiftoolprog=ExifTool program:",
-				alignment 		= 'right',
-				width 			= share 'labelWidth',
-				visible 		= bind 'exifTranslate',
-			},
-
-			f:edit_field {
-				truncation 		= 'middle',
-				immediate 		= true,
-				fill_horizontal = 1,
-				value 			= bind 'exiftoolprog',
-				validate 		= PSDialogs.validateProgram,
-				visible 		= bind 'exifTranslate',
-			},
-		},
+--		PSDialogs.exiftoolProgView(f, propertyTable),
 	}
+
 end
 
 -------------------------------------------------------------------------------
@@ -870,7 +940,7 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 			
 			f:push_button {
 				title 			= LOC "$$$/PSUpload/ExportDialog/Logfile=Go to Logfile",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/Logfile=Open PhotoStation Upload Logfile in Explore/Finder.",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LogfileTT=Open PhotoStation Upload Logfile in Explorer/Finder.",
 				alignment 		= 'right',
 				fill_horizontal = 1,
 				action 			= function()

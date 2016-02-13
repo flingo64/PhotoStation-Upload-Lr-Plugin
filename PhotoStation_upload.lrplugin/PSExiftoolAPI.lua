@@ -40,7 +40,7 @@ PhotoStation Upload uses the following free software to do its job:
 local LrDate 			= import 'LrDate'
 local LrFileUtils 		= import 'LrFileUtils'
 local LrPathUtils 		= import 'LrPathUtils'
---local LrPrefs	 		= import 'LrPrefs'
+local LrPrefs	 		= import 'LrPrefs'
 local LrTasks 			= import 'LrTasks'
 --local LrView 			= import 'LrView'
 
@@ -50,11 +50,16 @@ require "PSUtilities"
 
 PSExiftoolAPI = {}
 
+PSExiftoolAPI.defaultInstallPath = iif(WIN_ENV, 
+								'C:\\\Windows\\\exiftool.exe', 
+								'/usr/local/bin/exiftool') 
+
+--========================= locals =================================================================================
+
 local noWhitespaceConversion = true	-- do not convert whitespaces to \n 
 local etConfigFile = LrPathUtils.child(_PLUGIN.path, 'PSExiftool.conf')
 
 ---------------------- sendCmd ----------------------------------------------------------------------
-
 -- function sendCmd(h, cmd, noWsConv)
 -- send a command to exiftool listener by appending the command to the commandFile
 local function sendCmd(h, cmd, noWsConv)
@@ -130,9 +135,10 @@ end
 -- function PSExiftoolAPI.open(exportParams)
 -- Start exiftool listener in background: one for each export/publish thread
 function PSExiftoolAPI.open(exportParams)
+	local prefs = LrPrefs.prefsForPlugin()
 	local h = {} -- the handle
 	
-	h.exiftool = exportParams.exiftoolprog
+	h.exiftool = prefs.exiftoolprog
 	if not LrFileUtils.exists(h.exiftool) then 
 		writeLogfile(1, "PSExiftoolAPI.open: Cannot start exifTool Listener: " .. h.exiftool .. " not found!\n")
 		return false 

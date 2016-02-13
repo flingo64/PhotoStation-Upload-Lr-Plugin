@@ -71,13 +71,14 @@ local LrDialogs 		= import 'LrDialogs'
 local LrFileUtils 		= import 'LrFileUtils'
 local LrHttp	 		= import 'LrHttp'
 local LrPathUtils 		= import 'LrPathUtils'
+local LrPrefs	 		= import 'LrPrefs'
 -- local LrProgressScope = import 'LrProgressScope'
 -- local LrShell 		= import 'LrShell'
-local LrPrefs	 		= import 'LrPrefs'
 local LrTasks 			= import 'LrTasks'
 local LrView 			= import 'LrView'
 
 require "PSLrUtilities"
+
 JSON = assert(loadfile (LrPathUtils.child(_PLUGIN.path, 'JSON.lua')))()
 
 --============================================================================--
@@ -200,7 +201,7 @@ end
 
 -- writeLogfile: always open, write, close, otherwise output will get lost in case of unexpected errors
 function writeLogfile (level, msg)
-	if level <= loglevel then
+	if level <= ifnil(loglevel, 2) then
 		local logfile = io.open(logfilename, "a")
 		logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ", " .. ifnil(loglevelname[level], tostring(level)) .. ": " .. msg)
 		io.close (logfile)
@@ -267,6 +268,16 @@ function signalSemaphore(semaName)
 end
 
 ---------------------- OS specific infos -----------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------
+-- getRootPath: get the OS specific filename of the NULL file
+function getRootPath()
+	if WIN_ENV then
+		return 'C:\\'
+	else
+		return '/'
+	end
+end
 
 ---------------------------------------------------------------------------------------
 -- getNullFilename: get the OS specific filename of the NULL file
@@ -387,7 +398,6 @@ end
 -- 	- login to PhotoStation, if required
 --	- start exiftool listener, if required
 function openSession(exportParams, publishedCollection, operation)
-
 	-- if "use secondary server" was choosen, temporarily overwrite primary address
 	writeLogfile(4, string.format("openSession: operation = %s , publishMode = %s\n", operation, exportParams.publishMode))
 	if exportParams.useSecondAddress then
@@ -436,7 +446,7 @@ function openSession(exportParams, publishedCollection, operation)
 
 	-- ConvertAPI: required if Export/Publish and thumb generation is configured
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.thumbGenerate and not exportParams.cHandle then
-			exportParams.cHandle = PSConvert.initialize(exportParams.PSUploaderPath)
+			exportParams.cHandle = PSConvert.initialize()
 	end
 
 	-- Login to PhotoStation: not required for CheckMoved
