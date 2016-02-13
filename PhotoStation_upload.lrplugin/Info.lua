@@ -52,14 +52,14 @@ return {
 
 	LrToolkitIdentifier = plugin_TkId,
 
-	LrPluginName = LOC "$$$/PSUpload/PluginName=PhotoStation Upload",
+	LrPluginName = LOC "$$$/PSUpload/PluginName=Photo StatLr",
 	
 	LrPluginInfoUrl = "https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin",
 	
 	LrPluginInfoProvider = 'PSPluginInfoProvider.lua',
 	
 	LrExportServiceProvider = {
-		title = "PhotoStation Upload",
+		title = "Photo StatLr",
 		file = 'PSExportServiceProvider.lua',
 	},
 	VERSION = { major=plugin_major, minor=plugin_minor, revision=plugin_rev, build=plugin_build, 
