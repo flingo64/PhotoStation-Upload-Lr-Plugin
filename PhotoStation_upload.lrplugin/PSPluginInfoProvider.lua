@@ -1,25 +1,25 @@
 --[[----------------------------------------------------------------------------
 
 PSPluginInfoProvider.lua
-Plugin info provider description for Lightroom PhotoStation Upload
+Plugin info provider description for Lightroom Photo StatLr
 Copyright(c) 2015, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
@@ -39,7 +39,7 @@ local bind = LrView.bind
 local share = LrView.share
 local conditionalItem = LrView.conditionalItem
 
--- PhotoStation Upload plug-in
+-- Photo StatLr plug-in
 require "PSDialogs"
 require "PSUtilities"
 require "PSPublishSupport"
@@ -61,12 +61,12 @@ local function updatePluginStatus( propertyTable )
 		-- (It only goes through once.)
 		
 		if propertyTable.PSUploaderPath ~= '' and not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong Synology PhotoStation Uploader path." 
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong Synology Photo Station Uploader path." 
 			break
 		end
 
 		if propertyTable.exiftoolprog ~= '' and not PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong Synology PhotoStation Uploader path." 
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong exiftool path." 
 			break
 		end
 
@@ -93,7 +93,7 @@ function pluginInfoProvider.startDialog( propertyTable )
 	writeLogfile(4, "pluginInfoProvider.startDialog\n")
 	LrTasks.startAsyncTaskWithoutErrorHandler(PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
 
-	-- local path to Synology PhotoStation Uploader: required for thumb generation an video handling
+	-- local path to Synology Photo Station Uploader: required for thumb generation an video handling
 	propertyTable.PSUploaderPath = prefs.PSUploaderPath
 	if not propertyTable.PSUploaderPath then 
     	propertyTable.PSUploaderPath =  PSConvert.defaultInstallPath
@@ -173,7 +173,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 	local result = {
 	
 		{
-			title = LOC "$$$/PSUpload/PluginDialog/PsUploadInfo=PhotoStation Upload",
+			title = LOC "$$$/PSUpload/PluginDialog/PsUploadInfo=Photo StatLr",
 			
 			synopsis = synops,
 
@@ -195,7 +195,7 @@ function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
 	propertyTable.PSUploaderPath = prefs.PSUploaderPath
 	propertyTable.exiftoolprog = prefs.exiftoolprog
 
-	-- local path to Synology PhotoStation Uploader: required for thumb generation an video handling
+	-- local path to Synology Photo Station Uploader: required for thumb generation an video handling
 	if ifnil(propertyTable.PSUploaderPath, '') == '' then 
     	propertyTable.PSUploaderPath = iif(WIN_ENV, 
     									'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',

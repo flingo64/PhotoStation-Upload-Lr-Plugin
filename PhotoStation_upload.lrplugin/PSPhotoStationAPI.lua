@@ -1,7 +1,7 @@
 --[[----------------------------------------------------------------------------
 
 PSPhotoStationAPI.lua
-PhotoStation Upload primitives:
+Photo Station Upload primitives:
 	- initialize
 	- getErrorMsg
 	- login
@@ -26,20 +26,20 @@ PhotoStation Upload primitives:
 	
 Copyright(c) 2016, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
 ]]
 --------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ local PSAPIerrorMsgs = {
 
 --[[ 
 getAlbumId(albumPath)
-	returns the AlbumId of a given Album path (not leading and trailing slashes) in PhotoStation
+	returns the AlbumId of a given Album path (not leading and trailing slashes) in Photo Station
 	AlbumId looks like:
 	album_<AlbumPathInHex>
 	E.g. Album Path:
@@ -123,7 +123,7 @@ end
 
 --[[ 
 getPhotoId(photoPath, isVideo)
-	returns the PhotoId of a given photo path in PhotoStation
+	returns the PhotoId of a given photo path in Photo Station
 	PhotoId looks like:
 		photo_<AlbumPathInHex>_<PhotoPathInHex> or 
 		video_<AlbumPathInHex>_<PhotoPathInHex> or
@@ -233,7 +233,7 @@ function PSPhotoStationAPI.initialize(server, personalPSOwner, serverTimeout)
 	h.serverUrl = server
 	h.serverTimeout = serverTimeout
 
-	if personalPSOwner then -- connect to Personal PhotoStation
+	if personalPSOwner then -- connect to Personal Photo Station
 		psBasePath = '/~' .. personalPSOwner .. '/photo'
 	else
 		psBasePath = '/photo'
@@ -295,11 +295,11 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- getAlbumUrl(h, albumPath)
---	returns the URL of an album in the PhotoStation
+--	returns the URL of an album in the Photo Station
 --	URL of an album in PS is:
 --		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
 --	E.g. Album Path:
---		Server: http://diskstation; Standard PhotoStation; Album Breadcrumb: Albums/Test/2007
+--		Server: http://diskstation; Standard Photo Station; Album Breadcrumb: Albums/Test/2007
 --	yields PS Photo-URL:
 --		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
 function PSPhotoStationAPI.getAlbumUrl(h, albumPath) 
@@ -328,11 +328,11 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- getPhotoUrl(h, photoPath, isVideo)
---	returns the URL of a photo/video in the PhotoStation
+--	returns the URL of a photo/video in the Photo Station
 --	URL of a photo in PS is:
 --		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>/<PhotoId>
 --	E.g. Photo Path:
---		Server: http://diskstation; Standard PhotoStation; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
+--		Server: http://diskstation; Standard Photo Station; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
 --	yields PS Photo-URL:
 --		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 function PSPhotoStationAPI.getPhotoUrl(h, photoPath, isVideo) 
@@ -406,7 +406,7 @@ local function findInCache(filename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- existsPic(dstFilename, isVideo) - check if a photo exists in PhotoStation
+-- existsPic(dstFilename, isVideo) - check if a photo exists in Photo Station
 -- 	- if directory of photo is not in cache, reloads cache w/ directory via listAlbum()
 -- 	- searches for filename in a local directory cache (findInCache())
 -- 	returns true, if filename 	

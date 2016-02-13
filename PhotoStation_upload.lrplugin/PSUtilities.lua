@@ -1,7 +1,7 @@
 --[[----------------------------------------------------------------------------
 
 PSUtilities.lua
-Utilities for Lightroom PhotoStation Upload
+Utilities for Lightroom Photo StatLr
 Copyright(c) 2015, Martin Messmer
 
 exported functions:
@@ -42,22 +42,22 @@ exported functions:
 	
 Copyright(c) 2015, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
@@ -163,7 +163,7 @@ local loglevelname = {
 
 -- getLogFilename: return the filename of the logfile
 function getLogFilename()
-	return LrPathUtils.child(tmpdir, "PhotoStationUpload.log")
+	return LrPathUtils.child(tmpdir, "PhotoStatLr.log")
 end
 
 -- getLogLogLevel: return the current loglevel
@@ -395,7 +395,7 @@ end
 -- openSession(exportParams, publishedCollection, operation)
 -- 	- copy all relevant settings into exportParams 
 -- 	- initialize all required APIs: Convert, Upload, Exiftool
--- 	- login to PhotoStation, if required
+-- 	- login to Photo Station, if required
 --	- start exiftool listener, if required
 function openSession(exportParams, publishedCollection, operation)
 	-- if "use secondary server" was choosen, temporarily overwrite primary address
@@ -449,7 +449,7 @@ function openSession(exportParams, publishedCollection, operation)
 			exportParams.cHandle = PSConvert.initialize()
 	end
 
-	-- Login to PhotoStation: not required for CheckMoved
+	-- Login to Photo Station: not required for CheckMoved
 	if exportParams.publishMode ~= 'CheckMoved' and not exportParams.uHandle then
 		local result, errorCode
 		exportParams.uHandle, errorCode = PSPhotoStationAPI.initialize(exportParams.serverUrl, 
@@ -457,7 +457,7 @@ function openSession(exportParams, publishedCollection, operation)
 														exportParams.serverTimeout)
 		if not exportParams.uHandle then
 			local errorMsg = string.format("Initialization of %s %s at\n%s\nfailed!\nReason: %s\n",
-									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
+									iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
 									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
 									exportParams.serverUrl,
 									PSPhotoStationAPI.getErrorMsg(errorCode))
@@ -468,7 +468,7 @@ function openSession(exportParams, publishedCollection, operation)
 		result, errorCode = PSPhotoStationAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
 		if not result then
 			local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
-									iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation"), 
+									iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
 									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
 									exportParams.serverUrl,
 									PSPhotoStationAPI.getErrorMsg(errorCode))
@@ -477,7 +477,7 @@ function openSession(exportParams, publishedCollection, operation)
 			return 	false, errorMsg
 					
 		end
-		writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal PhotoStation of ", "Standard PhotoStation") .. 
+		writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station") .. 
 								iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. 
 								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
@@ -548,14 +548,14 @@ function promptForMissingSettings(exportParams, operation)
 	local passwdView = f:view {
 		f:row {
 			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/USERNAME=PhotoStation Login:",
+				title = LOC "$$$/PSUpload/ExportDialog/USERNAME=Photo Station Login:",
 				alignment = 'right',
 				width = share 'labelWidth',
 			},
 
 			f:edit_field {
 				value = bind 'username',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/USERNAMETT=Enter the username for PhotoStation access.",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/USERNAMETT=Enter the username for Photo Station access.",
 				truncation = 'middle',
 				immediate = true,
 				width_in_chars = 16,
@@ -567,14 +567,14 @@ function promptForMissingSettings(exportParams, operation)
 
 		f:row {
 			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=PhotoStation Password:",
+				title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Photo Station Password:",
 				alignment = 'right',
 				width = share 'labelWidth',
 			},
 
 			f:password_field {
 				value = bind 'password',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Enter the password for PhotoStation access.",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Enter the password for Photo Station access.",
 				truncation = 'middle',
 				immediate = true,
 				width = share 'labelWidth',
@@ -625,7 +625,7 @@ function promptForMissingSettings(exportParams, operation)
 	}
 
 	local result = LrDialogs.presentModalDialog {
-			title = "PhotoStation Upload",
+			title = "Photo StatLr",
 			contents = c
 		}
 	
@@ -661,7 +661,7 @@ function showFinalMessage (title, message, msgType)
 	if updateAvail then
 		writeLogfile(2,updateNotice .. '\n')
 		if LrDialogs.promptForActionWithDoNotShow( {
-				message 		= 'PhotoStation Upload: update available',
+				message 		= 'Photo StatLr: update available',
 				info 			= updateNotice,
 				actionPrefKey 	= 'updateAvailableNote',
 				verbBtns 		= {

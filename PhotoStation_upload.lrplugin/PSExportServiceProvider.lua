@@ -1,25 +1,25 @@
 --[[----------------------------------------------------------------------------
 
 PSExportServiceProvider.lua
-Export service provider description for Lightroom PhotoStation Upload
+Export service provider description for Lightroom Photo StatLr
 Copyright(c) 2015, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
@@ -38,7 +38,7 @@ of it requires the prior written permission of Adobe.
 
 ------------------------------------------------------------------------------]]
 
--- PhotoStation Upload plug-in
+-- Photo StatLr plug-in
 require "PSUtilities"
 require "PSUploadExportDialogSections"
 require "PSPublishSupport"
@@ -71,22 +71,22 @@ exportServiceProvider.allowColorSpaces = nil -- nil equates to all color spaces
 exportServiceProvider.canExportVideo = true	-- yes, we can
 	
 exportServiceProvider.exportPresetFields = {
-		-- PhotoStation parameters
-		{ key = 'proto', 			default = 'http' },	-- transport protocol for PhotoStation upload
-		{ key = 'servername', 		default = '' },		-- name/address of the PhotoStation, may include ':port' extension
+		-- Photo Station parameters
+		{ key = 'proto', 			default = 'http' },	-- transport protocol for Photo Station upload
+		{ key = 'servername', 		default = '' },		-- name/address of the Photo Station, may include ':port' extension
 		{ key = 'serverTimeout', 	default = 10 },		-- http timeout
 		{ key = 'serverUrl', 		default = '' },		-- proto + servername
 		{ key = 'psUrl', 			default = '' },		-- serverUrl + destination album (used for synopsis)
-		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal PhotoStation
-		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal PhotoStation to upload to
-		{ key = 'username', 		default = '' },		-- account for PhotoStation upload
+		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal Photo Station
+		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Station to upload to
+		{ key = 'username', 		default = '' },		-- account for Photo Station upload
 		{ key = 'password', 		default = '' },		-- guess what...
 
 		-- target album parameters
 		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
 		{ key = 'srcRoot', 			default = '' },		-- local path to root of picture folders (only used if copyTree)
 		{ key = 'storeDstRoot', 	default = true },	-- enter destination Album in Export dialog or later
-		{ key = 'dstRoot', 			default = '' },		-- destination Album on PhotoStation: no leading or trailing slash required
+		{ key = 'dstRoot', 			default = '' },		-- destination Album on Photo Station: no leading or trailing slash required
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
 
 		-- upload options / exif translation parameters
@@ -100,11 +100,11 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'largeThumbs', 		default = true },	-- generate large thumbs or small thumbs
 		{ key = 'thumbQuality', 	default = 80 },		-- conversion quality in percent
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
-		{ key = 'isPS6', 			default = false },	-- use upload optimization for PhotoStation 6 (not THUMB_L required)
+		{ key = 'isPS6', 			default = false },	-- use upload optimization for Photo Station 6 (not THUMB_L required)
 
 		-- Album options
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
-		{ key = 'sortPhotos',		default = false },	-- sort photos in PhotoStation acc. to collection sort order 
+		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Station acc. to collection sort order 
 		
 		-- video parameters
 		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
@@ -117,8 +117,8 @@ exportServiceProvider.exportPresetFields = {
 
 		-- Secondary Server
 		{ key = 'useSecondAddress',		default = false },		-- specify a secondoray (external) server address
-		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary PhotoStation upload
-		{ key = 'servername2', 			default = '' },			-- name/address of the secondary PhotoStation, may include ':port' extension
+		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary Photo Station upload
+		{ key = 'servername2', 			default = '' },			-- name/address of the secondary Photo Station, may include ':port' extension
 		{ key = 'serverTimeout2',	 	default = 10 },			-- http timeout
 		
 		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, CheckExisting, ...

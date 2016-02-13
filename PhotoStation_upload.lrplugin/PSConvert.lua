@@ -14,22 +14,22 @@ conversion primitives:
 	- convertVideo
 Copyright(c) 2015, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
@@ -153,7 +153,7 @@ local function getRawConvParams(picExt, srcPhoto, exportFormat)
 		or picExt == 'raf'								-- Fuji
 		or (picExt == 'raw' and cMake == 'PANASONIC')	-- Panasonic 
 		or picExt == 'rw2'								-- Panasonic
---		or picExt == 'srw'								-- Samsung --> not supported by PhotoStation
+--		or picExt == 'srw'								-- Samsung --> not supported by Photo Station
 		or picExt == 'x3f'								-- Polaroid, Sigma
 	then 
 		writeLogfile(3, string.format("getRawConvParams: %s %s %s --> %s\n", picExt, cMake, exportFormat, '-e -w'));

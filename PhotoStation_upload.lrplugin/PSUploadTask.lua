@@ -1,25 +1,25 @@
 --[[----------------------------------------------------------------------------
 
 PSUploadTask.lua
-Upload photos to Synology PhotoStation via HTTP(S) WebService
+Upload photos to Synology Photo Station via HTTP(S) WebService
 Copyright(c) 2015, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
@@ -145,7 +145,7 @@ local thumbSharpening = {
 --[[
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
-	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
+	When uploading to Photo Station 6, we don't need to upload the THUMB_L
 ]]
 function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams) 
 	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedPhotoPath)))
@@ -181,7 +181,7 @@ function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportPar
 	-- exif translations	
 	or not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd)
 
-	-- wait for PhotoStation semaphore
+	-- wait for Photo Station semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	-- upload thumbnails and original file
 	or exportParams.thumbGenerate and (
@@ -216,10 +216,10 @@ end
 -----------------
 -- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
 --[[
-	generate all required thumbnails, at least one video with alternative resolution (if we don't do, PhotoStation will do)
+	generate all required thumbnails, at least one video with alternative resolution (if we don't do, Photo Station will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
-	When uploading to PhotoStation 6, we don't need to upload the THUMB_L
+	When uploading to Photo Station 6, we don't need to upload the THUMB_L
 ]]
 function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
 	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
@@ -352,7 +352,7 @@ function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportPar
 	-- generate additional video, if requested
 	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
-	-- wait for PhotoStation semaphore
+	-- wait for Photo Station semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
 	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, true) 
@@ -544,7 +544,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local sessionSuccess, reason = openSession(exportParams, publishedCollection, "ProcessRenderedPhotos")
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: processRenderedPhotos failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: processRenderedPhotos failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -562,16 +562,16 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
     	
 		if not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
-			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=PhotoStation Upload (Check Moved): Makes no sense on flat copy albums to check for moved pics.\n")
+			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=Photo StatLr (Check Moved): Makes no sense on flat copy albums to check for moved pics.\n")
 		else
 			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime
 			picPerSec = nProcessed / timeUsed
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
-							string.format("PhotoStation Upload (Check Moved): Checked %d of %d pics in %d seconds (%.1f pic/sec). Found %d moved pics.\n", 
+							string.format("Photo StatLr (Check Moved): Checked %d of %d pics in %d seconds (%.1f pic/sec). Found %d moved pics.\n", 
 							nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
 		end
-		showFinalMessage("PhotoStation CheckMoved done", message, "info")
+		showFinalMessage("Photo StatLr: CheckMoved done", message, "info")
 		closeLogfile()
 		closeSession(exportParams)
 		return
@@ -582,8 +582,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
-							   and LOC( "$$$/PSUpload/Upload/Progress=Uploading ^1 photos to PhotoStation", nPhotos )
-							   or LOC "$$$/PSUpload/Upload/Progress/One=Uploading one photo to PhotoStation",
+							   and LOC( "$$$/PSUpload/Upload/Progress=Uploading ^1 photos to Photo Station", nPhotos )
+							   or LOC "$$$/PSUpload/Upload/Progress/One=Uploading one photo to Photo Station",
 					}
 
 	writeLogfile(2, "--------------------------------------------------------------------\n")
@@ -651,7 +651,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
 					if publishMode == 'Publish' and not PSPhotoStationAPI.deletePic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
-						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check PhotoStation permissions!\n')
+						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
     					table.insert( failures, srcFilename )
 						skipPhoto = true 					
 					else
@@ -666,7 +666,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- continue w/ next photo
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
-				-- check if photo already in PhotoStation
+				-- check if photo already in Photo Station
 --				local foundPhoto = PSFileStationAPI.existsPic(exportParams.fHandle, publishedPhotoId)
 				local foundPhoto = PSPhotoStationAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
@@ -752,7 +752,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	
 	if #failures > 0 then
 		message = LOC ("$$$/PSUpload/Upload/Errors/SomeFileFailed=" .. 
-						string.format("PhotoStation Upload: Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
+						string.format("Photo StatLr: Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
 						nProcessed, nPhotos, timeUsed, timePerPic, #failures))
 		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Go to Logfile", "Never mind")
 		if action == "ok" then
@@ -761,14 +761,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	else
 		if publishMode == 'CheckExisting' then
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckExistOK=" .. 
-							 string.format("PhotoStation Upload (Check Existing): Checked %d of %d files in %d seconds (%.1f pics/sec). %d already there, %d need export.", 
+							 string.format("Photo StatLr (Check Existing): Checked %d of %d files in %d seconds (%.1f pics/sec). %d already there, %d need export.", 
 											nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nNotCopied, nNeedCopy))
 		else
 			message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=" ..
-							 string.format("PhotoStation Upload: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
+							 string.format("Photo StatLr: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
 											nProcessed, nPhotos, timeUsed + 0.5, timePerPic))
 		end
-		showFinalMessage("PhotoStation Upload done", message, "info")
+		showFinalMessage("Photo StatLr done", message, "info")
 		closeLogfile()
 	end
 end

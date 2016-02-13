@@ -1,25 +1,25 @@
 --[[----------------------------------------------------------------------------
 
 PSPublishSupport.lua
-Publish support for Lightroom PhotoStation Upload
+Publish support for Lightroom Photo StatLr
 Copyright(c) 2015, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
@@ -165,8 +165,6 @@ function publishServiceProvider.getCollectionBehaviorInfo( publishSettings )
 		defaultCollectionName = LOC "$$$/PSPublish/DefaultCollectionName/Collection=Default Collection",
 		defaultCollectionCanBeDeleted = true,
 		canAddCollection = true,
---		maxCollectionSetDepth = 0,
-			-- Collection sets are not supported through the PhotoStation Upload plug-in.
 	}
 	
 end
@@ -175,7 +173,7 @@ end
 --- When set to the string "disable", the "Go to Published Collection" context-menu item
  -- is disabled (dimmed) for this publish service.
 
-publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSPublish/TitleForGoToPublishedCollection=Show in PhotoStation"
+publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSPublish/TitleForGoToPublishedCollection=Show in Photo Station"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses
@@ -189,7 +187,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 	albumPath = PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
 	
 	if PSLrUtilities.isDynamicAlbumPath(albumPath)then 
-		showFinalMessage("PhotoStation Upload: GoToPublishedCollection failed!", "Cannot open dynamic album path: '" .. albumPath .. "'", "critical")
+		showFinalMessage("Photo StatLr: GoToPublishedCollection failed!", "Cannot open dynamic album path: '" .. albumPath .. "'", "critical")
 		closeLogfile()
 		return
 	end
@@ -198,7 +196,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 	local sessionSuccess, reason = openSession(publishSettings, info.publishedCollection, 'GoToPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: GoToPublishedCollection failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: GoToPublishedCollection failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -214,7 +212,7 @@ end
  -- "Go to Published Photo" context-menu item, allowing you to use something more appropriate to
  -- your service. Set to the special value "disable" to disable (dim) the menu item for this service. 
 
-publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForGoToPublishedCollection=Show in PhotoStation"
+publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForGoToPublishedCollection=Show in Photo Station"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses the
@@ -230,7 +228,7 @@ function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 	local sessionSuccess, reason = openSession(publishSettings, nil, 'GoToPublishedPhoto')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: goToPublishedPhoto failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: goToPublishedPhoto failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -244,7 +242,7 @@ end
 --- (optional) This plug-in defined callback function is called when the user creates
  -- a new publish service via the Publish Manager dialog. It allows your plug-in
  -- to perform additional initialization.
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.didCreateNewPublishService( publishSettings, info )
 end
@@ -255,7 +253,7 @@ end
 --- (optional) This plug-in defined callback function is called when the user creates
  -- a new publish service via the Publish Manager dialog. It allows your plug-in
  -- to perform additional initialization.
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.didUpdatePublishService( publishSettings, info )
 end
@@ -268,7 +266,7 @@ end
  -- It provides an opportunity for you to customize the confirmation dialog.
  -- @return (string) 'cancel', 'delete', or nil (to allow Lightroom's default
  -- dialog to be shown instead)
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.shouldDeletePublishService( publishSettings, info )
 end
@@ -280,7 +278,7 @@ end
  -- has confirmed the deletion of the publish service from Lightroom.
  -- It provides a final opportunity for	you to remove private data
  -- immediately before the publish service is removed from the Lightroom catalog.
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.willDeletePublishService( publishSettings, info )
 end
@@ -294,7 +292,7 @@ end
  -- confirmation dialog.
  -- @return (string) "ignore", "cancel", "delete", or nil
  -- (If you return nil, Lightroom's default dialog will be displayed.)
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 ]]--
 
 function publishServiceProvider.shouldDeletePublishedCollection( publishSettings, info )
@@ -333,7 +331,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'DeletePhotosFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: Delete photos failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: Delete photos failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -362,7 +360,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 		_ = PSPhotoStationAPI.deleteEmptyAlbums(publishSettings.uHandle, collectionPath, albumsDeleted, photosLeft)
 		
 		if #albumsDeleted > 0 then
-			writeLogfile(2, string.format("PhotoStation Upload: Delete photos:\n\tDeleted Albums:\n\t\t%s\n",
+			writeLogfile(2, string.format("Photo StatLr: Delete photos:\n\tDeleted Albums:\n\t\t%s\n",
 										table.concat(albumsDeleted, "\n\t\t")))
 		end
 	end										
@@ -373,7 +371,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 					string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n", 
 					nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 
-	showFinalMessage("PhotoStation Upload: Delete photos done", message, "info")
+	showFinalMessage("Photo StatLr: Delete photos done", message, "info")
 	closeLogfile()
 
 end
@@ -613,10 +611,10 @@ end
 --- (optional) This plug-in defined callback function is called when the user
  -- closes the dialog for creating a new published collection or editing an existing
  -- one. 
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.endDialogForCollectionSettings( publishSettings, info )
-	-- not used for PhotoStation Upload plug-in
+	-- not used for Photo StatLr plug-in
 end
 
 --]]
@@ -671,7 +669,7 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 	end
 
 	return f:group_box {
-		title = "PhotoStation Upload Settings",  -- this should be localized via LOC
+		title = "Photo StatLr Settings",  -- this should be localized via LOC
 --		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSetSettings ),
@@ -688,7 +686,7 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 				},
 
 				f:edit_field {
-					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in PhotoStation)",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in Photo Station)",
 					value = bind 'baseDir',
 					truncation = 'middle',
 					immediate = true,
@@ -715,10 +713,10 @@ end
 --- (optional) This plug-in defined callback function is called when the user
  -- closes the dialog for creating a new published collection set or editing an existing
  -- one. 
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.endDialogForCollectionSetSettings( publishSettings, info )
-	-- not used for PhotoStation Upload plug-in
+	-- not used for Photo StatLr plug-in
 end
 
 --]]
@@ -728,7 +726,7 @@ end
  -- has changed the per-collection set settings defined via the <code>viewForCollectionSetSettings</code>
  -- callback. It is your opportunity to update settings on your web service to
  -- match the new settings.
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.updateCollectionSetSettings( publishSettings, info )
 end
@@ -739,7 +737,7 @@ end
 --- (optional) This plug-in defined callback function is called when new or updated
  -- photos are about to be published to the service. It allows you to specify whether
  -- the user-specified sort order should be followed as-is or reversed.
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.shouldReverseSequenceForPublishedCollection( publishSettings, collectionInfo )
 
@@ -775,7 +773,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'ImposeSortOrderOnPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: Sort Photos in Album failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: Sort Photos in Album failed!", reason, "critical")
 		end
 		closeLogfile(publishSettings)
 		return false
@@ -792,7 +790,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	
 	PSPhotoStationAPI.sortPics(publishSettings.uHandle, albumPath, remoteIdSequence)
 
-	showFinalMessage("PhotoStation Upload: Sort Photos in Album done", "Sort Photos in Album done.", "info")
+	showFinalMessage("Photo StatLr: Sort Photos in Album done", "Sort Photos in Album done.", "info")
 
 	closeLogfile(publishSettings)
 
@@ -802,7 +800,7 @@ end
 -------------------------------------------------------------------------------
 --- This plug-in defined callback function is called when the user attempts to change the name
  -- of a collection, to validate that the new name is acceptable for this service.
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.validatePublishedCollectionName( proposedName )
 	return true
@@ -837,7 +835,7 @@ end
  -- published collection via the Publish Services panel user interface. This is
  -- your plug-in's opportunity to make the corresponding change on the service.
 
---[[ Not used for PhotoStation Upload plug-in.
+--[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.reparentPublishedCollection( publishSettings, info )
 end
@@ -857,7 +855,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	local sessionSuccess, reason = openSession(publishSettings, info.publishedCollection, 'DeletePublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: deletePublishedCollection failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: deletePublishedCollection failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -923,10 +921,10 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
 	local message = LOC ("$$$/PSUpload/Upload/Errors/DeletePublishedColletion=" .. 
-					string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n%d albums deleted, %d photos left in PhotoStation, Target Album was %sdeleted.", 
+					string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n%d albums deleted, %d photos left in Photo Station, Target Album was %sdeleted.", 
 					nProcessed, nPhotos, timeUsed + 0.5, picPerSec, #albumsDeleted, #photosLeft, iif(albumDeleted, "", "not ")))
 
-	showFinalMessage("PhotoStation Upload: DeletePublishedCollection done", message, "info")
+	showFinalMessage("Photo StatLr: DeletePublishedCollection done", message, "info")
 	closeLogfile()
 	
 end
@@ -971,7 +969,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
-		showFinalMessage("PhotoStation Upload: Get comments failed!", 'Cannot sync comments due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get comments failed!", 'Cannot sync comments due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end
@@ -979,7 +977,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	-- the remoteUrl contains the local collection identifier
 	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(string.match(arrayOfPhotoInfo[1].url, '(%d+)')))
 	if not publishedCollection then
-		showFinalMessage("PhotoStation Upload: Get comments failed!", 'Cannot sync comments due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get comments failed!", 'Cannot sync comments due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end	
@@ -997,7 +995,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetCommentsFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: Get comments failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: Get comments failed!", reason, "critical")
 		else
 			writeLogfile(2, string.format("Get comments: canceled by user\n"))
 			publishSettings.operationCanceled = true
@@ -1054,7 +1052,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 					string.format("Got %d comments for  %d of %d pics in %d seconds (%.1f pics/sec).", 
 					nComments, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 
-	showFinalMessage("PhotoStation Upload: Get comments done", message, "info")
+	showFinalMessage("Photo StatLr: Get comments done", message, "info")
 	return true
 end
 
@@ -1096,7 +1094,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
-		showFinalMessage("PhotoStation Upload: Get ratings failed!", 'Cannot sync ratings due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end
@@ -1104,7 +1102,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	-- the remoteUrl contains the local collection identifier
 	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(string.match(arrayOfPhotoInfo[1].url, '(%d+)')))
 	if not publishedCollection then
-		showFinalMessage("PhotoStation Upload: Get ratings failed!", 'Cannot sync ratings due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
 		closeLogfile()
 		return
 	end	
@@ -1123,7 +1121,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetRatingsFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: Get ratings failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: Get ratings failed!", reason, "critical")
 		else
 			writeLogfile(2, string.format("Get ratings: canceled by user\n"))
 			publishSettings.operationCanceled = true
@@ -1166,7 +1164,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		else		 
     		writeLogfile(4, string.format("Get ratings: %s - wasEdited %s\n", photoInfo.remoteId, tostring(wasEdited)))
     		
-    		-- get caption from PhotoStation
+    		-- get caption from Photo Station
     		if collectionSettings.captionDownload then
     			photoExifs = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
         		if photoExifs and #photoExifs > 0 then
@@ -1180,7 +1178,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		end
     		end
     		
-    		-- get tags and translated tags (rating, label, faces) from PhotoStation and check if different from corresponding value in Lr
+    		-- get tags and translated tags (rating, label, faces) from Photo Station and check if different from corresponding value in Lr
     		if collectionSettings.tagsDownload then
     			photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
     		
@@ -1260,7 +1258,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			end
     			
     		end
-    		-- if anything changed in PhotoStation, change value in Lr
+    		-- if anything changed in Photo Station, change value in Lr
     		if  captionChanged or labelChanged or ratingChanged or tagsChanged then
         		catalog:withWriteAccessDo( 
         			'SetCaptionLabelRating',
@@ -1307,7 +1305,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 					string.format("Got %d modified descriptions/labels/ratings/tags for  %d of %d pics in %d seconds (%.1f pics/sec).", 
 					nChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 
-	showFinalMessage("PhotoStation Upload: Get ratings done", message, "info")
+	showFinalMessage("Photo StatLr: Get ratings done", message, "info")
 
 	return true
 end
@@ -1340,7 +1338,7 @@ end
 	local sessionSuccess, reason = openSession(publishSettings, nil, 'AddCommentToPublishedPhoto')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("PhotoStation Upload: AddCommentToPublishedPhoto failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: AddCommentToPublishedPhoto failed!", reason, "critical")
 		end
 		closeLogfile()
 		return false

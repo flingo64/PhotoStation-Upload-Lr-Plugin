@@ -1,25 +1,25 @@
 --[[----------------------------------------------------------------------------
 
 PSDialogs.lua
-Export dialog customization for Lightroom PhotoStation Upload
+Export dialog customization for Lightroom Photo StatLr
 Copyright(c) 2015, Martin Messmer
 
-This file is part of PhotoStation Upload - Lightroom plugin.
+This file is part of Photo StatLr - Lightroom plugin.
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-PhotoStation Upload uses the following free software to do its job:
+Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
 	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
@@ -68,7 +68,7 @@ local function updateExportStatus( propertyTable )
 		-- (It only goes through once.)
 		
 		if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Missing or wrong Synology PhotoStation Uploader path. Fix it in Plugin Manager settings section." 
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 			break
 		end
 
@@ -88,11 +88,11 @@ local function updateExportStatus( propertyTable )
 		end
 				
 		if propertyTable.usePersonalPS and (propertyTable.personalPSOwner == "" or propertyTable.personalPSOwner == nil ) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterPersPSUser=Enter the owner of the Personal PhotoStation to upload to"
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterPersPSUser=Enter the owner of the Personal Photo Station to upload to"
 			break
 		end
 
-		-- Check file format: PSD not supported by PhotoStation, DNG only supported w/ embedded full-size jpg preview
+		-- Check file format: PSD not supported by Photo Station, DNG only supported w/ embedded full-size jpg preview
 		if (propertyTable.LR_format == 'PSD') or  (propertyTable.LR_format == 'DNG' and ifnil(propertyTable.LR_DNG_previewSize, '') ~= 'large') then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/FileFormatNoSupp=File format not supported! Select: [JPEG], [TIFF], [DNG w/ full-size JPEG preview] or [Original]."
 			break
@@ -185,11 +185,11 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 	local result = {
 	
 		{
-			title = LOC "$$$/PSUpload/ExportDialog/PsSettings=PhotoStation Server",
+			title = LOC "$$$/PSUpload/ExportDialog/PsSettings=Photo Station",
 			
 			synopsis = bind { key = 'psUrl', object = propertyTable },
 
-			-- ================== Target PhotoStation =================================================================
+			-- ================== Target Photo Station =================================================================
 
 			PSDialogs.targetPhotoStationView(f, propertyTable),
 
