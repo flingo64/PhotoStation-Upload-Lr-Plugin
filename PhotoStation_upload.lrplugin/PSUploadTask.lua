@@ -70,7 +70,7 @@ PSUploadTask = {}
 --	create each folder recursively if not already created
 -- 	store created directories in dirsCreated
 -- 	return created dstDir or nil on error
-function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
+local function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
 	writeLogfile(4, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
 
 	-- sanitize srcRoot: avoid trailing slash and backslash
@@ -147,7 +147,7 @@ local thumbSharpening = {
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
 ]]
-function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams) 
+local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams) 
 	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedPhotoPath)))
 	local picExt = 'jpg'
 	local picDir = LrPathUtils.parent(renderedPhotoPath)
@@ -221,7 +221,7 @@ end
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
 ]]
-function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
+local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
 	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
 	local vidExtOrg = LrPathUtils.extension(renderedVideoPath)
 	local picDir = LrPathUtils.parent(renderedVideoPath)
@@ -394,14 +394,14 @@ end
 
 --------------------------------------------------------------------------------
 
--- checkMoved(publishedCollection, exportContext, exportParams)
--- check all photos in a collection if locally moved
+-- checkLocal(publishedCollection, exportContext, exportParams, publishMode)
+-- check all photos in a collection locally, if moved or if is old collection type
 -- all moved photos get status "to be re-published"
 -- return:
 -- 		nPhotos		- # of photos in collection
 --		nProcessed 	- # of photos checked
 --		nMoved		- # of photos found to be moved
-function checkMoved(publishedCollection, exportContext, exportParams)
+local function checkLocal(publishedCollection, exportContext, exportParams, publishMode)
 --	local exportParams = exportContext.propertyTable
 	local catalog = LrApplication.activeCatalog()
 	local publishedPhotos = publishedCollection:getPublishedPhotos() 
@@ -412,8 +412,8 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 	-- Set progress title.
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
-							and LOC( "$$$/PSUpload/Upload/Progress=Checking ^1 photos for movement", nPhotos )
-							or LOC "$$$/PSUpload/Upload/Progress/One=Checking one photo for movement",
+							and LOC( "$$$/PSUpload/Upload/Progress=Checking ^1 photos", nPhotos )
+							or LOC "$$$/PSUpload/Upload/Progress/One=Checking one photo",
 						renderPortion = 1 / nPhotos,
 					}
 					
@@ -429,50 +429,56 @@ function checkMoved(publishedCollection, exportContext, exportParams)
 		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
 
 		-- check if backlink to the containing Published Collection must be adjusted
-		if string.match(ifnil(pubPhoto:getRemoteUrl(), ''), '(%d+)') ~= tostring(publishedCollection.localIdentifier) then
-   			catalog:withWriteAccessDo( 
-    				'Update Backlink',
-    				function(context)
-						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
-    				end,
-    				{timeout=5}
-    			)
-		end
-
-		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
-		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
-					
-		if skipPhoto then
- 			writeLogfile(2, string.format("CheckMoved(%s): Skip photo due to unknown target album %s\n", srcPhotoPath, dstRoot))
-			catalog:withWriteAccessDo( 
-				'SetEdited',
-				function(context)
-					-- mark as 'To Re-publish'
-					pubPhoto:setEditedFlag(true)
-				end,
-				{timeout=5}
-    		)
-    		nMoved = nMoved + 1
-    	else
-    		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
-    		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
-    		-- ignore extension: might be different 
-    		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
-    			writeLogfile(2, "CheckMoved(" .. localPath .. "): Must be moved at target from " .. publishedPath .. 
-    							" to " .. remotePath .. ", edited= " .. tostring(edited) .. "\n")
+		if publishMode == 'Convert' then
+			if string.match(ifnil(pubPhoto:getRemoteUrl(), ''), '(%d+)') ~= tostring(publishedCollection.localIdentifier) then
+       			nMoved = nMoved + 1
+       			catalog:withWriteAccessDo( 
+        				'Update Backlink',
+        				function(context)
+    						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
+        				end,
+        				{timeout=5}
+        			)
+       			writeLogfile(2, "Convert(" .. pubPhoto:getRemoteId() .. "): converted to new format.\n")
+			else
+    			writeLogfile(2, "Convert(" .. pubPhoto:getRemoteId() .. "): already converted.\n")
+			end
+		else -- CheckMoved
+    		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
+    		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
+    					
+    		if skipPhoto then
+     			writeLogfile(2, string.format("CheckMoved(%s): Skip photo due to unknown target album %s\n", srcPhotoPath, dstRoot))
     			catalog:withWriteAccessDo( 
     				'SetEdited',
     				function(context)
-						-- mark as 'To Re-publish'
+    					-- mark as 'To Re-publish'
     					pubPhoto:setEditedFlag(true)
     				end,
     				{timeout=5}
-    			)
-    			nMoved = nMoved + 1
-    		else
-    			writeLogfile(2, "CheckMoved(" .. localPath .. "): Not moved.\n")
+        		)
+        		nMoved = nMoved + 1
+        	else
+        		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
+        		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
+        		-- ignore extension: might be different 
+        		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
+        			writeLogfile(2, "CheckMoved(" .. localPath .. "): Must be moved at target from " .. publishedPath .. 
+        							" to " .. remotePath .. ", edited= " .. tostring(edited) .. "\n")
+        			catalog:withWriteAccessDo( 
+        				'SetEdited',
+        				function(context)
+    						-- mark as 'To Re-publish'
+        					pubPhoto:setEditedFlag(true)
+        				end,
+        				{timeout=5}
+        			)
+        			nMoved = nMoved + 1
+        		else
+        			writeLogfile(2, "CheckMoved(" .. localPath .. "): Not moved.\n")
+        		end
     		end
-		end
+   		end
 		nProcessed = i
 		progressScope:setPortionComplete(nProcessed, nPhotos)
 	end 
@@ -556,22 +562,21 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	local startTime = LrDate.currentTime()
 
-	if publishMode == "CheckMoved" then
-		-- Publish mode CheckMoved: makes no sense if not mirror tree mode
+	if publishMode == "CheckMoved" or publishMode == "Convert" then
 		local nMoved
 		local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
     	
-		if not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
+		if publishMode == "CheckMoved" and not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=Photo StatLr (Check Moved): Makes no sense on flat copy albums to check for moved pics.\n")
 		else
-			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
+			nPhotos, nProcessed, nMoved = checkLocal(publishedCollection, exportContext, exportParams, publishMode)
 			timeUsed = 	LrDate.currentTime() - startTime
 			picPerSec = nProcessed / timeUsed
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
-							string.format("Photo StatLr (Check Moved): Checked %d of %d pics in %d seconds (%.1f pic/sec). Found %d moved pics.\n", 
-							nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
+							string.format("Photo StatLr (%s): Checked %d of %d pics in %d seconds (%.1f pic/sec). %d pics %s.\n", 
+											publishMode, nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved, iif(publishMode == 'CheckMoved', 'moved', 'converted')))
 		end
-		showFinalMessage("Photo StatLr: CheckMoved done", message, "info")
+		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 		closeSession(exportParams)
 		return
@@ -768,7 +773,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 							 string.format("Photo StatLr: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
 											nProcessed, nPhotos, timeUsed + 0.5, timePerPic))
 		end
-		showFinalMessage("Photo StatLr done", message, "info")
+		showFinalMessage("Photo StatLr: Photo upload done", message, "info")
 		closeLogfile()
 	end
 end
