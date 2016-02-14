@@ -860,7 +860,12 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		closeLogfile()
 		return
 	end
-
+	
+	if info.publishedCollection:type() == 'LrPublishedCollectionSet' then
+		writeLogfile(2, "deletePublishedCollection: Published Collection Set - nothing to do.\n")
+		return
+	end
+	
 	writeLogfile(3, "deletePublishedCollection: starting\n")
 	local publishedPhotos = info.publishedCollection:getPublishedPhotos() 
 	local startTime = LrDate.currentTime()
@@ -969,7 +974,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
-		showFinalMessage("Photo StatLr: Get comments failed!", 'Cannot sync comments due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get comments failed!", 'Cannot sync comments on old-style collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
 	end
@@ -977,7 +982,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	-- the remoteUrl contains the local collection identifier
 	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(string.match(arrayOfPhotoInfo[1].url, '(%d+)')))
 	if not publishedCollection then
-		showFinalMessage("Photo StatLr: Get comments failed!", 'Cannot sync comments due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get comments failed!", 'Cannot sync comments on corrupted collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
 	end	
@@ -1094,7 +1099,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
-		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings due to missing back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings on old-style collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
 	end
@@ -1102,7 +1107,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	-- the remoteUrl contains the local collection identifier
 	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(string.match(arrayOfPhotoInfo[1].url, '(%d+)')))
 	if not publishedCollection then
-		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings due to broken back link to Published Collection.\nPlease re-publish all photo of this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings on corrupted collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
 	end	
