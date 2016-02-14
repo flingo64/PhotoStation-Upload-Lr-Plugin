@@ -131,7 +131,7 @@ local function updateExportStatus( propertyTable )
 		propertyTable.message = message
 		propertyTable.hasError = true
 		propertyTable.hasNoError = false
-		propertyTable.LR_cantExportBecause = message
+		propertyTable.LR_cantExportBecause = 'Booo!! ' .. message
 	else
 		propertyTable.message = nil
 		propertyTable.hasError = false
@@ -169,6 +169,22 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 end
 
 -------------------------------------------------------------------------------
+-- function PSUploadExportDialogSections.sectionsForTopOfDialog( _, propertyTable )
+function PSUploadExportDialogSections.sectionsForTopOfDialog( f, propertyTable )
+	return 	{
+		{
+			title = LOC "$$$/PSUpload/ExportDialog/PsHeader=Photo StatLr",
+    		synopsis = "Yeah, but they can't put a moon on a man!",
+    		
+    		-- ================== Photo StatLr header ==================================================================
+
+   			PSDialogs.photoStatLrHeaderView(f, propertyTable),	
+    
+		}
+	}	
+end
+
+-------------------------------------------------------------------------------
 -- function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTable )
 function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTable )
 
@@ -189,6 +205,21 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			
 			synopsis = bind { key = 'psUrl', object = propertyTable },
 
+
+--[[
+			-- ================== Photo StatLr header ==================================================================
+
+			f:row {
+				fill_horizontal = 1,
+
+    			f:spacer {
+    				fill_horizontal = 1,
+    			},
+			
+				PSDialogs.photoStatLrView(f, propertyTable),	
+			}, 
+]]
+			
 			-- ================== Target Photo Station =================================================================
 
 			PSDialogs.targetPhotoStationView(f, propertyTable),

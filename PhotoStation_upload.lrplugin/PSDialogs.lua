@@ -143,6 +143,164 @@ end
 --============================ views ===================================================================
 
 -------------------------------------------------------------------------------
+-- photoStatLrView(f, propertyTable)
+function PSDialogs.photoStatLrSmallView(f, propertyTable)
+	return 
+  		f:picture {
+			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
+			width		= 160,
+			height		= 115,
+			alignment	= 'right',
+		}
+end
+
+-------------------------------------------------------------------------------
+-- photoStatLrView(f, propertyTable)
+function PSDialogs.photoStatLrView(f, propertyTable)
+	return 
+  		f:picture {
+			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
+			width		= 250,
+			height		= 179,
+			alignment	= 'right',
+		}
+end
+
+-------------------------------------------------------------------------------
+-- photoStatLrHeaderView(f, propertyTable)
+function PSDialogs.photoStatLrHeaderView(f, propertyTable)
+	return
+		f:row {
+   			fill_horizontal = 1,
+
+    		f:column {
+    			fill_horizontal = 0.5,
+    
+				f:row {
+					f:static_text {
+    					title 			= LOC "$$$/PSUpload/ExportDialog/PaidNothing=S: We got our money's worth tonight.\nW: But we paid nothing.\nS: That's what we got!\n",
+    					font			= '<system/bold>', 
+					},
+				},
+				
+				f:row {
+					f:static_text {
+    					title 			= LOC "$$$/PSUpload/ExportDialog/WorthIt=Martin: Well, if you disagree with Mr. S. and find this software helpful,\n" .. 
+    												"I would be most happy if you donate for a good cause.\n" .. 
+    												"Here are my favourite charity projects:\n",
+					},
+				},
+				
+				f:row {
+					f:static_text {
+    					title 			= PSUpdate.donationUrl .. '\n\n',
+    					tooltip			= 'Click to open in Browser',
+    					font			= '<system/bold>', 
+        				alignment		= 'center',
+		    			fill_horizontal = 1,
+        				mouse_down		= function()
+       						LrHttp.openUrlInBrowser(PSUpdate.donationUrl)
+        				end,
+					},
+				},
+				
+				f:row {
+        			f:push_button {
+        				title 			= LOC "$$$/PSUpload/ExportDialog/Donate=Double or nothing, next week's show?",
+        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DonateTT=If you find this software helpful, why don't you donate for a good cause...",
+        				alignment 		= 'center',
+    					font			= '<system/bold>', 
+        				fill_horizontal = 1,
+        				action 			= function()
+       						LrHttp.openUrlInBrowser(PSUpdate.donationUrl)
+        				end,
+        			},   			
+				
+				},
+				
+    		},
+    		
+			f:spacer {
+    			fill_horizontal = 0.1,
+			},
+
+    		f:column {
+    			fill_horizontal = 0.4,
+    			alignment	= 'right',
+    			PSDialogs.photoStatLrView(f, propertyTable),	
+    		}, 
+		}
+end
+
+-------------------------------------------------------------------------------
+-- collectionHeaderView(f, propertyTable)
+function PSDialogs.collectionHeaderView(f, propertyTable)
+	return 
+		f:view {
+    		f:row {
+    			fill_hoizontal = 1,
+    			
+    			f:column {
+    				PSDialogs.photoStatLrSmallView(f, propertyTable),
+    				fill_hoizontal = 0.4,
+    			},
+    			
+    			f:column {
+    				fill_hoizontal = 0.6,
+    				f:row {
+            			f:static_text {
+            				title 		= LOC "$$$/PSUpload/ExportDialog/CollectionSettings1=Why would he want to remember this?\n\n",
+            				alignment 	= 'center',
+        					font		= '<system/bold>', 
+            			},
+            		},
+            		
+    				f:row {
+            			f:static_text {
+            				title = LOC "$$$/PSUpload/ExportDialog/CollectionSettings2=Collection settings",
+            				alignment = 'center',
+            			},
+    				},
+    			},
+    		},
+    	}
+end
+	
+-------------------------------------------------------------------------------
+-- missingParamsHeaderView(f, propertyTable, operation)
+function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
+	return 
+		f:view {
+    		f:row {
+    			fill_hoizontal = 1,
+    			
+    			f:column {
+    				PSDialogs.photoStatLrSmallView(f, propertyTable),
+    				fill_hoizontal = 0.4,
+    			},
+    			
+    			f:column {
+    				fill_hoizontal = 0.6,
+    				f:row {
+            			f:static_text {
+            				title 		= LOC "$$$/PSUpload/ExportDialog/EnterMissing1=If you had half a mind, you wouldn't be here!\n\n",
+            				alignment 	= 'left',
+        					font		= '<system/bold>', 
+            			},
+            		},
+            		
+    				f:row {
+            			f:static_text {
+            				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing2=Please enter missing parameters for: \n\n" .. operation,
+            				alignment = 'left',
+            			},
+    				},
+    			},
+    		},
+    	}
+end
+	
+-------------------------------------------------------------------------------
 -- psUploaderProgView(f, propertyTable)
 function PSDialogs.psUploaderProgView(f, propertyTable)
 	return
@@ -986,6 +1144,6 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 				action 			= function()
 					LrShell.revealInShell(getLogFilename())
 				end,
-			},
-		} 
+			},    		
+    	}
 end

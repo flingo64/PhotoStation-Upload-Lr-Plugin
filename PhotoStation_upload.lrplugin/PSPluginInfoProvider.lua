@@ -128,24 +128,24 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 	local synops
 		
 	if prefs.updateAvailable == nil then
-		synops = ""
+		synops = "You plan to like this show?"
 		updateAvail = false
 	elseif prefs.updateAvailable == '' or prefs.updateAvailable == pluginVersion then
-		synops = LOC "$$$/PSUpload/PluginDialog/NOUPDATE=Plugin is up-to-date"
+		synops = LOC "$$$/PSUpload/PluginDialog/NOUPDATE=Nothing, just thought I'd mention it: Plugin is up-to-date"
 		updateAvail = false
 	else
-		synops = LOC "$$$/PSUpload/PluginDialog/UPDATE=" .. "Version " .. prefs.updateAvailable ..  " available!"
+		synops = LOC "$$$/PSUpload/PluginDialog/UPDATE=This is a very moving moment: " .. "Version " .. prefs.updateAvailable ..  " available!"
 		updateAvail = true
 	end 
 	
 	local noUpdateAvailableView = f:view {
 		fill_horizontal = 1,
 		
-		f:row {
+		f:column {
 			f:static_text {
-				title = synops,
-				alignment = 'right',
-				width = share 'labelWidth'
+				title 		= synops,
+				alignment 	= 'right',
+--				width 		= share 'labelWidth'
 			},
 		},
 	}
@@ -155,15 +155,17 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 		
 		f:row {
 			f:static_text {
+		fill_horizontal = 1,
 				title = synops,
-				alignment = 'right',
-				width = share 'labelWidth'
+				alignment = 'left',
+				fill_horizontal = 0.6,
 			},
 
 			f:push_button {
 				title = LOC "$$$/PSUpload/PluginDialog/GetUpdate=Go to Update URL",
 				tooltip = LOC "$$$/PSUpload/PluginDialog/Logfile=Open Update URL in browser",
 				alignment = 'right',
+				fill_horizontal = 0.4,
 				action = function()
 					LrHttp.openUrlInBrowser(prefs.downloadUrl)
 				end,
@@ -176,9 +178,16 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 			title = LOC "$$$/PSUpload/PluginDialog/PsUploadInfo=Photo StatLr",
 			
 			synopsis = synops,
-
-			conditionalItem(updateAvail, updateAvailableView),
-			conditionalItem(not updateAvail, noUpdateAvailableView),
+			f:row {
+				fill_horizontal = 1,
+				
+				conditionalItem(updateAvail, updateAvailableView),
+				conditionalItem(not updateAvail, noUpdateAvailableView),
+			},
+							
+			f:row {
+				PSDialogs.photoStatLrHeaderView(f, propertyTable),
+    		},
 		},
 	}
 	

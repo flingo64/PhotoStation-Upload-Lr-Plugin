@@ -41,10 +41,8 @@ require "PSUtilities"
 
 PSUpdate = {}
 
--- we can store some variables in 'global' local variables safely:
--- each export task will get its own copy of these variables
-
-local serverUrl='http://messmer-online.de/LrPSUploadCheckForUpdate.php'
+PSUpdate.updateCheckUrl='http://messmer-online.de/LrPSUploadCheckForUpdate.php'
+PSUpdate.donationUrl='http://messmer-online.de/'
 
 ---------------------------------------------------------------------------------------------------------
 
@@ -174,8 +172,8 @@ function sendCheckUpdate(checkUpdateRequest)
 		},
 	}
 
---	writeLogfile(4, "sendCheckUpdate: LrHttp.post(" .. serverUrl .. "-->" .. checkUpdateRequest .. ")\n")
-	local respBody, respHeaders = LrHttp.post(serverUrl, checkUpdateRequest, postHeaders, 'POST', 5, string.len(checkUpdateRequest))
+--	writeLogfile(4, "sendCheckUpdate: LrHttp.post(" .. PSUpdate.updateCheckUrl .. "-->" .. checkUpdateRequest .. ")\n")
+	local respBody, respHeaders = LrHttp.post(PSUpdate.updateCheckUrl, checkUpdateRequest, postHeaders, 'POST', 5, string.len(checkUpdateRequest))
 	
 	if not respBody then
 		if respHeaders then

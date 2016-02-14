@@ -429,7 +429,7 @@ local function updateCollectionStatus( collectionSettings )
 		if not collectionSettings.exifXlatRating 		then collectionSettings.PS2LrRating = false end
 		
 		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( _, prefs.exiftoolprog ) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Enter path to exiftool"
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break
 		end
 		-- Exif translation end
@@ -438,7 +438,7 @@ local function updateCollectionStatus( collectionSettings )
 	
 	if message then
 		collectionSettings.hasError = true
-		collectionSettings.message = message
+		collectionSettings.message = 'Booo!! ' .. message
 		collectionSettings.LR_canSaveCollection = false
 	else
 		collectionSettings.hasError = false
@@ -564,7 +564,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	f:column {
     		fill_horizontal = 1,
     		spacing = f:label_spacing(),
-
+			PSDialogs.collectionHeaderView(f, collectionSettings),
+			
 			PSDialogs.targetAlbumView(f, collectionSettings),
 
     		f:spacer { height = 10, },

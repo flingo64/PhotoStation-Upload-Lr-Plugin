@@ -438,5 +438,8 @@ Photo StatLr uses the following phantastic free software to do its job:
 - qt-faststart(.exe), 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 - JSON.lua				see: http://regex.info/blog/lua/json (by Jeffrey Friedl)
 - exiftool(.exe)		see: http://www.sno.phy.queensu.ca/~phil/exiftool/ (by Phil Harvey)
-
+ 
 Thanks to all you folks providing these real valuable software gems. This plugin would be nothing without it!
+
+Thanks for the amazing, astounding, boooor-ing quotes from:
+http://www.imdb.com/character/ch0000704/quotes ;-)

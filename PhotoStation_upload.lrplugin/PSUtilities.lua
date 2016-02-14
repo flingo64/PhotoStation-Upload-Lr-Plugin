@@ -536,15 +536,6 @@ function promptForMissingSettings(exportParams, operation)
 		return "ok"
 	end
 	
-	local headerView = f:view {
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing= Please enter missing parameters for: '" .. operation .. "'",
-				alignment = 'left',
-			},
-		},
-	}
-	
 	local passwdView = f:view {
 		f:row {
 			f:static_text {
@@ -583,37 +574,11 @@ function promptForMissingSettings(exportParams, operation)
 		},
 	}
 
---[[
-	local loglevelView = f:view {
-		f:row {
-			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/LOGLEVEL=Loglevel:",
-				alignment = 'right',
-				width = share 'labelWidth'
-			},
-
-			f:popup_menu {
-				title = LOC "$$$/PSUpload/ExportDialog/LOGLEVEL=Loglevel:",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/LOGLEVELTT=The level of log details",
-				value = bind 'logLevel',
-				fill_horizontal = 0, 
-				items = {
-					{ title	= 'Nothing',		value 	= 0 },
-					{ title	= 'Errors',			value 	= 1 },
-					{ title	= 'Normal',			value 	= 2 },
-					{ title	= 'Trace',			value 	= 3 },
-					{ title	= 'Debug',			value 	= 4 },
-				},
-			},
-		},
-	}
-]]
-
 	-- Create the contents for the dialog.
 	local c = f:view {
 		bind_to_object = exportParams,
 
-		headerView, 
+		PSDialogs.missingParamsHeaderView(f, exportParams, operation), 
 		f:spacer {	height = 10, },
 		conditionalItem(needPw, passwdView), 
 		f:spacer {	height = 10, },
@@ -645,17 +610,17 @@ function showFinalMessage (title, message, msgType)
 	local updateNotice
 	
 	if ifnil(prefs.updateAvailable, '') ~= '' and ifnil(prefs.updateAvailable, '') ~= pluginVersion then
-		updateNotice = 'Version ' .. prefs.updateAvailable .. ' available!\n'
+		updateNotice = 'This is a very moving moment: Version ' .. prefs.updateAvailable .. ' available!\n'
 		updateAvail = true
 	end
 	
 	writeLogfile(2, title .. ": " .. message .. '\n')
 
 	if msgType == 'critical' then 
-		LrDialogs.message(title, message, msgType)
+		LrDialogs.message(title, 'Booo!! ' .. message, msgType)
 	elseif appVersion.major >= 5 then
 		-- showBezel not supported in Lr4 and below  
-		LrDialogs.showBezel(message, 10)
+		LrDialogs.showBezel('Boooor-ing! ' .. message, 10)
 	end
 	
 	if updateAvail then

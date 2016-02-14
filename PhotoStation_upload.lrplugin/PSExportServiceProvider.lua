@@ -125,6 +125,7 @@ exportServiceProvider.exportPresetFields = {
 }
 
 exportServiceProvider.startDialog = PSUploadExportDialogSections.startDialog
+exportServiceProvider.sectionsForTopOfDialog = PSUploadExportDialogSections.sectionsForTopOfDialog
 exportServiceProvider.sectionsForBottomOfDialog = PSUploadExportDialogSections.sectionsForBottomOfDialog
 	
 exportServiceProvider.updateExportSettings = PSUploadTask.updateExportSettings
