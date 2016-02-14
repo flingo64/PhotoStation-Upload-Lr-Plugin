@@ -100,7 +100,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'largeThumbs', 		default = true },	-- generate large thumbs or small thumbs
 		{ key = 'thumbQuality', 	default = 80 },		-- conversion quality in percent
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
-		{ key = 'isPS6', 			default = false },	-- use upload optimization for Photo Station 6 (not THUMB_L required)
+		{ key = 'isPS6', 			default = true },	-- use upload optimization for Photo Station 6 (not THUMB_L required)
 
 		-- Album options
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
