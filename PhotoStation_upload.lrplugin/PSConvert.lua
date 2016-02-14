@@ -50,6 +50,7 @@ require "PSUtilities"
 
 PSConvert = {}
 
+PSConvert.downloadUrl = 'https://www.synology.com/support/download' 
 PSConvert.defaultInstallPath = iif(WIN_ENV, 
     								'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
     								'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
