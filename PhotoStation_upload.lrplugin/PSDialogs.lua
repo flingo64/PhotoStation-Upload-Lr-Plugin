@@ -53,10 +53,11 @@ of it requires the prior written permission of Adobe.
 
 -- Lightroom SDK
 local LrBinding		= import 'LrBinding'
-local LrView 		= import 'LrView'
-local LrPathUtils 	= import 'LrPathUtils'
 local LrFileUtils	= import 'LrFileUtils'
+local LrHttp 		= import 'LrHttp'
+local LrPathUtils 	= import 'LrPathUtils'
 local LrShell 		= import 'LrShell'
+local LrView 		= import 'LrView'
 
 require "PSUtilities"
 
@@ -151,7 +152,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 			
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOADTT=Enter the install path of 'Synology Photo Station Uploader', if you want to generate thumbs locally or upload videos.\n" 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOADTT=Enter the path where 'Synology Photo Station Uploader' is installed. Required, if you want to generate thumbs locally or upload videos.\n" 
     			},
     		},
     
@@ -165,7 +166,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
-    				fill_horizontal = 0.8,
+    				fill_horizontal = 0.7,
     				value 			= bind 'PSUploaderPath',
     				validate 		= PSDialogs.validatePSUploadProgPath,
     			},
@@ -189,6 +190,16 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     					LrShell.revealInShell(getRootPath())
     				end,
     			},   			
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadWeb=Download",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadWebTT=Search Synology Photo Station Uploader in Web.",
+    				alignment 		= 'right',
+    				fill_horizontal = 0.1,
+    				action 			= function()
+   						LrHttp.openUrlInBrowser(PSConvert.downloadUrl)
+    				end,
+    			},   			
     		},
     	}
 end
@@ -203,7 +214,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			
     		f:row {
     			f:static_text {
-    				title			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogTT=Enter the install path of 'exiftool', if you want to use metadata translations (face regions, color labels, ratings).\n" 
+    				title			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogTT=Enter the path where 'exiftool' is installed. Required, if you want to use metadata translations (face regions, color labels, ratings).\n" 
     			},
     		},
     
@@ -217,7 +228,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
-    				fill_horizontal = 0.8,
+    				fill_horizontal = 0.7,
     				value 			= bind 'exiftoolprog',
     				validate 		= PSDialogs.validateProgram,
     			},
@@ -239,6 +250,16 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     				fill_horizontal = 0.1,
     				action 			= function()
     					LrShell.revealInShell(getRootPath())
+    				end,
+    			},   			
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogWeb=Download",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogWebTT=Search exiftool in the Web.",
+    				alignment 		= 'right',
+    				fill_horizontal = 0.1,
+    				action 			= function()
+   						LrHttp.openUrlInBrowser(PSExiftoolAPI.downloadUrl)
     				end,
     			},   			
     		},
@@ -893,6 +914,7 @@ function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 		{ title	= 'Normal',																		value 	= 'Publish' },
 		{ title	= 'CheckExisting: Set Unpublished to Published if existing in Photo Station.',	value 	= 'CheckExisting' },
 		{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
+		{ title	= 'Convert: Convert collection to current version.',							value 	= 'Convert' },
 	}
 	
 	if isAskForMissingParams then
