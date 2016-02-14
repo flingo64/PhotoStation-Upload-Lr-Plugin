@@ -174,7 +174,7 @@ function sendCheckUpdate(checkUpdateRequest)
 		},
 	}
 
-	writeLogfile(4, "sendCheckUpdate: LrHttp.post(" .. serverUrl .. "-->" .. checkUpdateRequest .. ")\n")
+--	writeLogfile(4, "sendCheckUpdate: LrHttp.post(" .. serverUrl .. "-->" .. checkUpdateRequest .. ")\n")
 	local respBody, respHeaders = LrHttp.post(serverUrl, checkUpdateRequest, postHeaders, 'POST', 5, string.len(checkUpdateRequest))
 	
 	if not respBody then

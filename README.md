@@ -1,7 +1,8 @@
-PhotoStation Upload (Lightroom plugin)
+Photo StatLr (Lightroom plugin)
 ======================================
-Version 4.0.x<br>
-__[Important note for updating from V3.0.0 ... V3.5.x to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+Version 5.0.x<br>
+__[Important note for updating to V3.6.x and above] (https://github.com/flingo64/Photo Station-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+__[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
 [FAQs] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
 Forum threads: 
@@ -12,9 +13,12 @@ Copyright(c) 2016, Martin Messmer<br>
 
 Overview
 =========
-PhotoStation Upload is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "PhotoStation Upload" and a new Export target also called "PhotoStation Upload" to the "Export" dialog. Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology PhotoStation. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.
+Photo StatLr (formerly called PhotoStation Upload)is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "Photo StatLr" and a new Export target also called "Photo StatLr" to the "Export" dialog. 
+Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.<br>
+Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature which will download comments and ratings from Photo Station to the Lightroom Comments panel (Library mode: bottom right panel).
+Besides that Photo StatLr can do a real two-way synchronization of various metadata, including descriptions/captions, tags/keywords, color labels and ratings. 
 
-This plugin uses the same converters and the same upload API as the official "Synology PhotoStation Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target PhotoStation by protocol (http/https) and servename (IP@, hostname, FQDN). For some of the publish functions the plugin also needs access to the FileStation Web-API, which is also http(s)-based but uses a different port (the admin port) and probably a different account.
+This plugin uses the same converters and the same upload API as the official "Synology Photo Station Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target Photo Station by protocol (http/https) and servename (IP@, hostname, FQDN).
 
 Requirements
 =============
@@ -30,20 +34,20 @@ Requirements
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
-	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3
-* Synology PhotoStation:
-	PhotoStation 6 (tested)
-* For local Thumbnail generation: Synology PhotoStation Uploader, required components:
+	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4
+* Synology Photo Station:
+	Photo Station 6 (tested)
+* For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
 	- ImageMagick/convert.exe
 	- ImageMagick/dcraw.exe
 	- ffmpeg/ffmpeg.exe
 	- ffmpeg/qt-faststart.exe
-* For Exif Data Translation (e.g Lr/Picasa Face Detecton, Star Rating):
+* For Metatdata translations (e.g Lr/Picasa face regions, ratings and color labels):
 	- exiftool: Version 10.0.2.0 (tested) and later should be fine
 	
 Installation
 =============
-- install Synology PhotoStation Uploader, if not already done
+- install Synology Photo Station Uploader, if not already done
 - install exiftool (see credits below), if not already done<br>
   Under Windows, __don't use "Run this program as administrator"__ setting!
 - unzip the downloaded archive
@@ -57,53 +61,55 @@ Description
 
 Export vs. Publish Service - general remarks
 ---------------------------------------------
-Exporting in Lightroom is a simple one-time processe: you define the photos to export by selecting the photos or folders to export in library view and then choose "Export". Lightroom does not keep track of exports, thus if you want to re-export changed or added photos or remove deleted photos form the target (e.g. a PhotoStation album) later, you will have to keep track yourself for those changes, addtions or deletions.
+Exporting in Lightroom is a simple one-time processe: you define the photos to export by selecting the photos or folders to export in library view and then choose "Export". 
+Lightroom does not keep track of exports, thus if you want to re-export changed or added photos or remove deleted photos form the target (e.g. a Photo Station album) later, you will have to keep track yourself for those changes, addtions or deletions.
 
-Publishing in Lightroom on the other hand is meant for synchonizing local photo collections with a remote target (e.g. a PhotoStation album). To publish a photo collection you have to do two things:
+Publishing in Lightroom on the other hand is meant for synchonizing local photo collections with a remote target (e.g. a Photo Station album). To publish a photo collection you have to do two things:
 
 - define the settings for the Publish Service
 - define the Published Collection and the settings for that Published Collection
 
-As soon as you've done this, Lightroom will keep track of which photo from the collection has to been published, needs to be re-published (when it was modified locally) or deleted. Besides that basic functions, some publish services can also re-import certain infos such as tags, comments or ratings back from the publish target.
+As soon as you've done this, Lightroom will keep track of which photo from the collection has to been published, needs to be re-published (when it was modified locally) or deleted. 
+Besides that basic functions, some publish services can also re-import certain infos such as tags, comments or ratings back from the publish target.
 
-Export vs. Publish Service - PhotoStation Upload
+Export vs. Publish Service - Photo StatLr
 -------------------------------------------------
-The main functionality of PhotoStation Upload is basicly the same in Export and in Publish mode: uploading pictures/videos to a Synology PhotoStation. On top of this the Publish mode also implements the basic publishing function, so that Lr can keep track of added, modified and deleted photos/videos. 
+The main functionality of Photo StatLr is basicly the same in Export and in Publish mode: uploading pictures/videos to a Synology Photo Station. 
+On top of this the Publish mode also implements the basic publishing function, so that Lr can keep track of added, modified and deleted photos/videos.<br>
+As of V5.0.0 Photo StatLr also supports downloading of certain metadata, so that changes to photos in Photo Station can be synched back to Lightroom. 
 
-Due to the different handling of exporting and publishing in Lightroom the Export and the Publish dialog of PhotoStation Upload have some but not all of their settings in common. 
+Due to the different handling of exporting and publishing in Lightroom the Export and the Publish dialog of Photo StatLr have some but not all of their settings in common. 
 
 The Export dialog includes settings for:
 
-a) the installation path of the Synology<br>
-b) the target PhotoStation (server, login, Standard/Personal PhotoStation)<br>
-c) target Album within the target PhotoStation and Upload method<br>
-d) quality parameters for thumbs and additional videos<br>
+a) the target Photo Station (server, login, Standard/Personal Photo Station)<br>
+b) target Album within the target Photo Station and Upload method<br>
+c) quality parameters for thumbs and additional videos<br>
 
 The Publish dialog on the other hand includes settings for:
 
-a) the installation path of the Synology<br>
-b) the target PhotoStation (server, login, Standard/Personal PhotoStation)<br>
-c) -- no --<br>
-d) quality parameters for thumbs and additional videos<br>
+a) the target Photo Station (server, login, Standard/Personal Photo Station)<br>
+b) -- no --<br>
+c) quality parameters for thumbs and additional videos<br>
 
-The Album settings ( c) ) are not stored within the Publish settings but within the Published Collections settings. Therefore, you don't need to define a different Publish Service for each Published Collection you want to publish. In most cases you will only have one Publish Service definition and a bunch of Published Collections below it. An additional Publish Service definition is only required, if you want to upload to a different PhotoStation or if you want to use different upload quality settings.
+The Album settings ( b) ) are not stored within the Publish settings but within the Published Collections settings. Therefore, you don't need to define a different Publish Service for each Published Collection you want to publish. In most cases you will only have one Publish Service definition and a bunch of Published Collections below it. An additional Publish Service definition is only required, if you want to upload to a different Photo Station or if you want to use different upload quality settings.
 
 Export Funtionality
 --------------------
-- Upload to the __Standard PhotoStation__ or to a __Personal PhotoStation__<br>
-(make sure the Personal PhotoStation feature is enabled for the given Personal Station owner)
+- Upload to the __Standard Photo Station__ or to a __Personal Photo Station__<br>
+(make sure the Personal Photo Station feature is enabled for the given Personal Station owner)
 - Definition of a __secondary server address__<br>
-You may want to publish to your PhotoStation from at home or via the Internet. 
+You may want to publish to your Photo Station from at home or via the Internet. 
 Therefore, the Export/Publish Service dialog lets you define two server addresses, with one of them being active. 
 This eases the consistent definition of the Export/Publish settings for both access paths.  
 
 - __Two different upload methods__:
 	- __Flat Upload__:<br> 
-	  This method uploads all selected pictures/videos to a named Album (use the folder name, not the Album name) on the PhotoStation
-	  The named Album may exist on the PhotoStation or may be created during export
+	  This method uploads all selected pictures/videos to a named Album (use the folder name, not the Album name) on the Photo Station
+	  The named Album may exist on the Photo Station or may be created during export
 	  The root Album is defined by an empty string. In general, Albums are specified by "\<folder\>{/\<folder\>}" (no leading or trailing slashes required)
 	- __Tree Mirror Upload__:<br> 
-	  This method preserves the directory path of each photo/video relative to a given local base path on the PhotoStation below a named target Album.
+	  This method preserves the directory path of each photo/video relative to a given local base path on the Photo Station below a named target Album.
 	  All directories within the source path of the picture/video will be created recursively.
 	  The directory tree is mirrored relative to a given local base path. Example:<br>
 	  Local base path:	C:\users\john\pictures<br>
@@ -114,8 +120,8 @@ This eases the consistent definition of the Export/Publish settings for both acc
 
 - __Dynamic Target Album__ definition by using  __metadata placeholders__:<br>
 	Metadata placeholders are evaluated for each uploaded photo/video, so that the actual target album may be different for each individual photo/video.
-	Metadata placeholders can be used to define a metadata-based PhotoStation album layout, which is completely independent of the local directory layout.
-	Metadata placeholders can also be used to define a PhotoStation album layout, which is identical to an existing Collection Set hierarchy.
+	Metadata placeholders can be used to define a metadata-based Photo Station album layout, which is completely independent of the local directory layout.
+	Metadata placeholders can also be used to define a Photo Station album layout, which is identical to an existing Collection Set hierarchy.
 	Metadata placeholders look like:<br>
 	  - {Date %Y}
 	  - {Date %Y-%m-%d}
@@ -125,20 +131,20 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {LrCC:name}<br>
   To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-target-album-definitions) 
 
-- __Photo-plus-Thumbnail Upload__ (default) for faster PhotoStation fill-up and to minimize load on the diskstation  
+- __Photo-plus-Thumbnail Upload__ (default) for faster Photo Station fill-up and to minimize load on the diskstation  
 
 - __Photo-only Upload__ (optional) for a faster Upload:<br>
 	This upload option makes sense, when you have a fast diskstation and you want the diskstation to do the thumbnail generation. 
 	It also makes sense to upload w/ Photo-only option when you don't need the thumbnails on the diskstation (e.g. upload photos for backup purpose) and you upload to an un-indexed folder, so that no thumb conversion will be done on the diskstation. 
 	Important note: It is not possible to keep already uploaded thumbs and just upload the photo itself. When you use the photo-only option, any belonging, already existing thumb on the diskstation will be removed! (Sorry, I wish I could do better)  
 
-- __Optimize the upload for PhotoStation 6__ by not generating/uploading the THUMB_L thumbnail.
+- __Optimize the upload for Photo Station 6__ by not generating/uploading the THUMB_L thumbnail.
 
 - __Upload of original or processed videos and accompanying videos with a lower resolution__
 
 - __Different video rotation options:__<br>
 	- __Hard-rotation for soft-rotated videos__ for better player compatibility:<br>
-	  Soft-rotated videos (portrait videos) are typically stored as as landscape video marked w/ a rotation flag in the mpeg header. Most player do not support this kind of rotation, so you will see the video unrotated / landscape. 	  PhotoStation supports soft-rotated videos only by generating an additional hard-rotated flash-video.  This may be OK for small videos, but overloads the DiskStation CPU for a period of time.  Thus, it is more desirable to hard-rotate the videos on the PC before uploading.<br>
+	  Soft-rotated videos (portrait videos) are typically stored as as landscape video marked w/ a rotation flag in the mpeg header. Most player do not support this kind of rotation, so you will see the video unrotated / landscape. 	  Photo Station supports soft-rotated videos only by generating an additional hard-rotated flash-video.  This may be OK for small videos, but overloads the DiskStation CPU for a period of time.  Thus, it is more desirable to hard-rotate the videos on the PC before uploading.<br>
 	  Hard-rotated videos with (then) potrait orientation work well in VLC, but not at all in MS Media Player. So, if you intend to use MS Media Player, you should stay with the soft-rotated video to see at least a mis-rotated video. 	In all other cases hard-rotation is probably more feasable for you.
 	- __Soft-rotation or Hard-rotation for "meta-rotated" videos__:<br>
 	  If you have older (e.g. .mov or .avi) __mis-rotated videos__ (like I have lots of from my children's first video experiments), these videos typically have __no rotation indication in the video header__. Thus, the described hard-rotation support won't work for those videos.<br> 
@@ -155,9 +161,10 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	Most cameras support RAW+JPG output, where both files have the same basename, but different extensions (e.g. .rw2 and -jpg). If for any reason you wish to upload processed versions of both files, both files would map to the same upload filename (*.jpg) and
 	thus override each others during upload. To circumvent this collision, this option will rename all non-jpg files to <orig-filename><orig-extension>.jpg.   
 
-- __Exif Metadata translation:__<br>
-	- Translation of Face regions generated by __Lr or Picasa face detection__ to PhotoStation Person tags<br>
-	- Translation of __Star Rating (* to *****)__  to PhotoStation General tags<br>
+- __Metadata translations on upload:__<br>
+	- Translation of __Face regions__ generated by Lr or Picasa face detection to Photo Station Person tags<br>
+	- Translation of __Star Rating (* to *****)__  to Photo Station General tags<br>
+	- Translation of __Color Label (yellow, red, etc.)__  to Photo Station General tags(+yellow, +red, etc.) <br>
 
 
 Publish Functionality:
@@ -165,14 +172,14 @@ Publish Functionality:
 
 - All Export Functions are Supported in Publish mode
 
-- __Support for Published Collections and Published Smart Collections__ 
+- Support for __Published Collections and Published Smart Collections__ 
 
-- __Support for Published Collection Sets__
+- Support for __Published Collection Sets__
  
 - __Different Publish options__ (Published Collection dialog):
 
 	- __Normal__:<br>
- 	  publish unpublished photos to target Album in target PhotoStation
+ 	  publish unpublished photos to target Album in target Photo Station
 	- __Check Existing__:<br>
   	  Unpublished photos will not be published, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   	  This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the defined target but not through the newly defined Published Collection (e.g. via Export).
@@ -182,25 +189,35 @@ Publish Functionality:
 	  Check if any photo within a Published Collection has moved locally and if so, mark them to 're-publish'
 	  If your Published Collection is to be tree-mirrored to the target Album, it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
 	  Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature. To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
-	  Check Moved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the PhotoStation involved.<br>
-  
-- Impose __sort order of photos in Lr Published Collections__ in PhotoStation:<br>
-	Sort order is only supported on Flat Uploads
+	  Check Moved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the Photo Station involved.<br>
+	- __Convert__:<br>
+	  This mode is used to convert photos in a an old-style (e.g. \<5.0.0) Published Collection to Published Collection which supports comments and ratings (v.5.0.0 and above)<br>
+- Impose __sort order of photos in Lr Published Collections__ in Photo Station:<br>
+	Sort order is only supported on Flat Collections
 
 - __Deletion of published photos__, when deleted locally (from Collection or Library)
 
 - __Deletion of complete Published Collections__
 
-- __Deletion of empty PhotoStation Albums__ after deletion of published photos or complete Published Collections
+- __Deletion of empty Photo Station Albums__ after deletion of published photos or complete Published Collections
 
-- No support for re-import of comments or ratings
+- Support for re-import of __Comments and Ratings__
+
+- __Download and two-way sync of various metadata__:<br>
+	- general tags
+	- description/caption
+ 
+- __Metadata translations on download:__<br>
+	- Translation of __Person tags__ in Photo Station  to Lr face regions<br>
+	- Translation of __Star Rating tags (* to *****)__  to Lr rating <br>
+	- Translation of __Color Label tags (+yellow, +red, etc.)__  to Lr color label <br>
 
 Additional Funtionality
 ------------------------
 - __Checks for updates__ in background when Exporting, Publishing or opening the Plugin section in the Plugin Manager no more than once per day.
   If a new version is available, you'll get an info message after the Export/Publish and also a note in the Plugin Manager section.
   The update check will send the following information to the update server:
-	- PhotoStation Upload plugin version
+	- Photo StatLr plugin version
 	- Operating system version
 	- Lightroom version
 	- Lightroom language setting
@@ -211,6 +228,13 @@ Important note
 --------------
 Passwords entered in the export settings are not stored encrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
 
+Open issues
+============
+- issue in Photo Station: if video aspect ratio is different from video dimension 
+  (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
+  the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
+- No support for metadate upload and download for videos
+
 History
 =======
 
@@ -220,25 +244,25 @@ Version 2.2 (initial public release)
 	- support for http and https
 	- support for non-standard ports (specified by a ":portnumber" suffix in the servername setting)
 	- support for pathnames incl. blanks and non-standard characters (e.g.umlauts) (via url-encoding)
-	- uses the following PhotoStation http-based APIs:
+	- uses the following Photo Station http-based APIs:
 		- Login
 		- Create Folder
 		- Upload File
-	- supports the PhotoStation upload batching mechanism
-	- optimization for PhotoStation 6 (no need for THUM_L)
+	- supports the Photo Station upload batching mechanism
+	- optimization for Photo Station 6 (no need for THUM_L)
 
 - Folder management
 	- support for flat copy and tree copy (incl. directory creation)
 
-- Upload of Photos to PhotoStation:
+- Upload of Photos to Photo Station:
 	- upload of Lr-rendered photos
 	- generation (via ImageMagick convert) and upload of all required thumbs
 
-- Upload of Videos to PhotoStation:
+- Upload of Videos to Photo Station:
 	- upload of original or Lr-rendered videos 
 	- generation (via ffpmeg and ImageMagick convert) and upload of all required thumbs
-	- generation (via ffpmeg) and upload of a PhotoStation-playable low-res video
-	- support for "DateTimeOriginal" for videos on PhotoStation 
+	- generation (via ffpmeg) and upload of a Photo Station-playable low-res video
+	- support for "DateTimeOriginal" for videos on Photo Station 
 
 Version 2.3
 ------------
@@ -306,7 +330,7 @@ Note: thumbnail sharpening is independent of photo sharpening which may be confi
 
 Version 3.3
 ------------
-- Support for upload of TIFF and DNG file format to PhotoStation
+- Support for upload of TIFF and DNG file format to Photo Station
 - 3.3.2: Support for upload of varous RAW file formats (when uploading original photos):<br>
   3FR, ARW, CR2, DCR, DNG, ERF, MEF, MRW, NEF, ORF, PEF, RAF, RAW, RW2, SR2, X3F
 	
@@ -321,14 +345,14 @@ Publish mode 'Check Existing', photo deletion and photo movement will not be pos
 - Publish: Delete after Upload<br>
 The order or Publish tasks was rearranged, so that you may use the Publish function via Internet w/o being stopped by photos that need to be deleted, but cannot be deleted due to disabled FileStation access (see above).
 - 'Check Existing' is 4 times faster than before:<br>
-A directory read cache speeds up the check for photos in PhotoStation. The actual speed advantage is depending on how your photo collections are organized in your PhotoStation. any kind of chronological directory structure will work fine, since Lr is processing photos in chronological order. 
+A directory read cache speeds up the check for photos in Photo Station. The actual speed advantage is depending on how your photo collections are organized in your Photo Station. any kind of chronological directory structure will work fine, since Lr is processing photos in chronological order. 
 
 Version 3.5
 ------------
 - Support for Lr and Picasa face detection/recognition:<br>
 Translation of the Lr/Picasa face regions to PhotoStatio Face regions / Person tags
 - Support for star ratings ( * to ***** ): <br>
-Translation of the XMP-rating tag to PhotoStation General * tags
+Translation of the XMP-rating tag to Photo Station General * tags
 - Support for Photo-only Upload
 
 Version 3.6
@@ -346,12 +370,12 @@ Version 3.7
 - Support for __metadata placeholders__ in __target album__ definitions (Export, Published Collection, Published Collection Set):
 	- {Date \<format\>} for capture date/time (dateTimeOriginal) related metadata
 	- {LrFM:\<key\>} for any metadata supported by Lightroom SDK: LrPhoto - photo:getFormattedMetadata(key)
-- __Show in PhotoStation__ now works for Published Photos, Collections and Collection Sets.<br>
+- __Show in Photo Station__ now works for Published Photos, Collections and Collection Sets.<br>
   Will not work for Collections and Collection Sets that include metadata placeholders in the target album definition.	
-- __Standard timeout__ for PhotoStation communication (for Login, album creation) is now __configurable__ in Export/Publish dialog.
+- __Standard timeout__ for Photo Station communication (for Login, album creation) is now __configurable__ in Export/Publish dialog.
 - Timeout calculation for uploads is now calculated based on a minimum of 10 MBit/s (was 24MBit/s before).
 - Video upload:
-	- besides .mp4 files now also __.m4v__ files are handle as natively supported by PhotoStation, thus need __no conversion__.
+	- besides .mp4 files now also __.m4v__ files are handle as natively supported by Photo Station, thus need __no conversion__.
 	- any __not natively supported video format__ (e.g. .avi, .mov, .3gp) will be converted to .mp4 format and now be __uploaded in addition__ to the original video (rather than replacing the original video)
 	- Bugfix: video dimensions will always be even integers. When videos are rotated or scaled (e.g. when additional video upload is configured), it could happen the the resulting width was an odd integer, which was not supported by ffmpeg.
 	- Bugfix: thumb from video will be extracted at 00:00:00 sec for videos shorter than 4 seconds, otherwise at 00:00:03. Upload of video with duration < 1 sec failed in earlier versions due to failed thumb extraction ( at 00:00:01). 
@@ -359,9 +383,9 @@ Version 3.7
 Version 4.0
 -----------
 - __FileStation API no longer required: yeah, finally got rid of it!___
-- Support for photo __sort order__ of Published Collections in PhotoStation album on __flat uploads__
+- Support for photo __sort order__ of Published Collections in Photo Station album on __flat uploads__
 - Support for __RAW+JPG to same Album__
-- '__Delete__ Photos in Published Collection' and 'Delete Published Collection' will now __remove empty albums__ on PhotoStation
+- '__Delete__ Photos in Published Collection' and 'Delete Published Collection' will now __remove empty albums__ on Photo Station
 - Support for mirroring of local Collection Set hierarchies via metadata placeholder '{LrCC:...}'
 - __Video__ Upload will now __delete__ the video in PS __before uploading__ the new video(s):<br>
 	PhotosStation would otherwise keep old versions of the video which were uploaded before
@@ -372,32 +396,42 @@ Version 4.0
 	- Metadata placeholder {Date ..} is now more robust: will also find DateTimeDigitized and other alternative timestamps if DateTimeOriginal is missing
 	- Processed videos will now be uploaded with the correct filename extension
 
-Open issues
-============
-- issue in PhotoStation: if video aspect ratio is different from video dimension 
-  (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
-  the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
+Version 5.0
+-----------
+- Plugin renamed to __Photo StatLr__ using a new icon
+- Support for __Get Comments__ and __Get Ratings__ from Published Collection<br>
+  This requires some more data in the published photo objects, therefore published photos need to be converted once to the new format in order to support this feature
+- New Publish Mode: __Convert__ to convert published photos to V5.0 format to enable Get Comments and Get Ratings
+- Publish Mode: __CheckMoved__ is now also available for Collection with dynamic target album definitions (i.e. including metadata placeholder)
+- __Download of metadata__: description, general tags__  
+- __Download and translation of special general tags: color label, rating__
+- Configuration of __program install paths__ (Syno Uploader and exiftool) is now moved to the Plugin general settings in __Plugin Manager__ dialog
+- Error output of convert, dcraw and exiftool are now redirected to the logfile
+- Error output of JSON decoder are now redirected to the logfile instead of a message box popping up
+- Bugfixes:
+	- Adjustments for __Show in Photo Station__
+	- Fixes for __Update Check__
   
 Copyright
 ==========
 Copyright(c) 2016, Martin Messmer
 
-PhotoStation Upload is free software: you can redistribute it and/or modify
+Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-PhotoStation Upload is distributed in the hope that it will be useful,
+Photo StatLr is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with PhotoStation Upload.  If not, see <http://www.gnu.org/licenses/>.
+along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
 Credits
 =======
-PhotoStation Upload uses the following phantastic free software to do its job:
+Photo StatLr uses the following phantastic free software to do its job:
 - convert(.exe),		see: http://www.imagemagick.org/
 - dcraw(.exe),			see: https://www.cybercom.net/~dcoffin/dcraw/ (by David J. Coffin)
 - ffmpeg(.exe), 		see: https://www.ffmpeg.org/
