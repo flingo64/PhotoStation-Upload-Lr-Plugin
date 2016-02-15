@@ -100,6 +100,10 @@ function PSConvert.initialize()
 	local h = {} -- the handle
 
 	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")
+	if not PSDialogs.validatePSUploadProgPath(nil, PSUploaderPath) then
+		writeLogfile(1, "PSConvert.initialize: Bad PSUploaderPath= " .. PSUploaderPath .. "!\n")
+		return nil
+	end
 
 	local convertprog = 'convert'
 	local dcrawprog = 'dcraw'
