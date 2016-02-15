@@ -447,6 +447,7 @@ function openSession(exportParams, publishedCollection, operation)
 	-- ConvertAPI: required if Export/Publish and thumb generation is configured
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.thumbGenerate and not exportParams.cHandle then
 			exportParams.cHandle = PSConvert.initialize()
+			if not exportParams.cHandle then return false, 'Cannot initialize converters, check path for Syno Photo Station Uploader' end
 	end
 
 	-- Login to Photo Station: not required for CheckMoved
