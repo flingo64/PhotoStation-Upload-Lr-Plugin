@@ -199,7 +199,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
         				alignment		= 'center',
 		    			fill_horizontal = 1,
         				mouse_down		= function()
-       						LrHttp.openUrlInBrowser(PSUpdate.donationUrl)
+       						LrHttp.openUrlInBrowser(ifnil(prefs.supportUrl, PSUpdate.defaultSupportUrl))
         				end,
 					},
 				},
@@ -213,7 +213,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
     					font			= '<system/bold>', 
         				fill_horizontal = 1,
         				action 			= function()
-       						LrHttp.openUrlInBrowser(PSUpdate.contactUrl)
+       						LrHttp.openUrlInBrowser(ifnil(prefs.feedbackUrl, PSUpdate.defaultFeedbackUrl))
         				end,
         			},   			
 				
