@@ -193,7 +193,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				
 				f:row {
 					f:static_text {
-    					title 			= PSUpdate.donationUrl .. '\n\n',
+    					title 			= "Photo StatLr's donation website\n\n",
     					tooltip			= 'Click to open in Browser',
     					font			= '<system/bold>', 
         				alignment		= 'center',
@@ -207,12 +207,13 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				f:row {
         			f:push_button {
         				title 			= LOC "$$$/PSUpload/ExportDialog/Donate=Double or nothing, next week's show?",
-        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DonateTT=If you find this software helpful, why don't you donate for a good cause...",
+        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DonateTT=Let me know for what and how much you donated and I'll double it up to 10 Euro!\n" .. 
+        											"I trust you and you can trust me!",
         				alignment 		= 'center',
     					font			= '<system/bold>', 
         				fill_horizontal = 1,
         				action 			= function()
-       						LrHttp.openUrlInBrowser(PSUpdate.donationUrl)
+       						LrHttp.openUrlInBrowser(PSUpdate.contactUrl)
         				end,
         			},   			
 				

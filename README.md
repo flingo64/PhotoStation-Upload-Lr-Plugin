@@ -13,7 +13,7 @@ Copyright(c) 2016, Martin Messmer<br>
 
 Overview
 =========
-Photo StatLr (formerly called PhotoStation Upload)is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "Photo StatLr" and a new Export target also called "Photo StatLr" to the "Export" dialog. 
+Photo StatLr (formerly called PhotoStation Upload) is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "Photo StatLr" and a new Export target also called "Photo StatLr" to the "Export" dialog. 
 Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.<br>
 Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature which will download comments and ratings from Photo Station to the Lightroom Comments panel (Library mode: bottom right panel).
 Besides that Photo StatLr can do a real two-way synchronization of various metadata, including descriptions/captions, tags/keywords, color labels and ratings. 

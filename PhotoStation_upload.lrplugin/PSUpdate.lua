@@ -41,8 +41,9 @@ require "PSUtilities"
 
 PSUpdate = {}
 
-PSUpdate.updateCheckUrl='http://messmer-online.de/LrPSUploadCheckForUpdate.php'
-PSUpdate.donationUrl='http://messmer-online.de/'
+PSUpdate.updateCheckUrl	= 'http://messmer-online.de/LrPSUploadCheckForUpdate.php'
+PSUpdate.donationUrl	= 'http://messmer-online.de/index.php/software/11-photo-statlr'
+PSUpdate.contactUrl 	= 'http://messmer-online.de/index.php/kontakt/contact-photo-statlr'
 
 ---------------------------------------------------------------------------------------------------------
 
