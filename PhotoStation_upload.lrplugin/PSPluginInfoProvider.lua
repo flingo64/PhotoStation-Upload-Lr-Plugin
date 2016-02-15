@@ -42,8 +42,6 @@ local conditionalItem = LrView.conditionalItem
 -- Photo StatLr plug-in
 require "PSDialogs"
 require "PSUtilities"
-require "PSPublishSupport"
-require "PSUploadTask"
 require "PSUpdate"
 
 --============================================================================--

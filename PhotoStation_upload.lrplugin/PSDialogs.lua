@@ -56,10 +56,12 @@ local LrBinding		= import 'LrBinding'
 local LrFileUtils	= import 'LrFileUtils'
 local LrHttp 		= import 'LrHttp'
 local LrPathUtils 	= import 'LrPathUtils'
+local LrPrefs 		= import 'LrPrefs'
 local LrShell 		= import 'LrShell'
 local LrView 		= import 'LrView'
 
 require "PSUtilities"
+require "PSUpdate"
 
 local bind 				= LrView.bind
 local share 			= LrView.share
@@ -160,8 +162,8 @@ function PSDialogs.photoStatLrView(f, propertyTable)
 	return 
   		f:picture {
 			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
-			width		= 250,
-			height		= 179,
+			width		= 230,
+			height		= 165,
 			alignment	= 'right',
 		}
 end
@@ -169,12 +171,14 @@ end
 -------------------------------------------------------------------------------
 -- photoStatLrHeaderView(f, propertyTable)
 function PSDialogs.photoStatLrHeaderView(f, propertyTable)
+	local prefs = LrPrefs.prefsForPlugin()
+
 	return
 		f:row {
    			fill_horizontal = 1,
 
     		f:column {
-    			fill_horizontal = 0.5,
+    			fill_horizontal = 1,
     
 				f:row {
 					f:static_text {
@@ -185,15 +189,17 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				
 				f:row {
 					f:static_text {
-    					title 			= LOC "$$$/PSUpload/ExportDialog/WorthIt=Martin: Well, if you disagree with Mr. S. and find this software helpful,\n" .. 
-    												"I would be most happy if you donate for a good cause.\n" .. 
+    					title 			= LOC "$$$/PSUpload/ExportDialog/WorthIt=" .. 
+    												"Martin: Well, if you disagree with Mr. S\n" .. 
+    												"and find this software helpful,\n" .. 
+    												"I would be most happy if you donate to a good cause.\n" .. 
     												"Here are my favourite charity projects:\n",
 					},
 				},
 				
 				f:row {
 					f:static_text {
-    					title 			= "Photo StatLr's donation website\n\n",
+    					title 			= "Photo StatLr's donation website\n",
     					tooltip			= 'Click to open in Browser',
     					font			= '<system/bold>', 
         				alignment		= 'center',
@@ -205,10 +211,17 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				},
 				
 				f:row {
+					f:static_text {
+        				title 			= LOC "$$$/PSUpload/ExportDialog/Double=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
+        				alignment		= 'center',
+		    			fill_horizontal = 1,
+					},
+				},
+				
+				f:row {
         			f:push_button {
         				title 			= LOC "$$$/PSUpload/ExportDialog/Donate=Double or nothing, next week's show?",
-        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DonateTT=Let me know for what and how much you donated and I'll double it up to 10 Euro!\n" .. 
-        											"I trust you and you can trust me!",
+        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DonateTT=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
         				alignment 		= 'center',
     					font			= '<system/bold>', 
         				fill_horizontal = 1,
@@ -221,12 +234,12 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				
     		},
     		
-			f:spacer {
-    			fill_horizontal = 0.1,
+			f:spacer { 
+    			fill_horizontal = 0.1,				
 			},
-
+			
     		f:column {
-    			fill_horizontal = 0.4,
+    			fill_horizontal = 1,
     			alignment	= 'right',
     			PSDialogs.photoStatLrView(f, propertyTable),	
     		}, 
@@ -311,7 +324,9 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 			
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOADTT=Enter the path where 'Synology Photo Station Uploader' is installed. Required, if you want to generate thumbs locally or upload videos.\n" 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOAD=" .. 
+    									"Enter the path where 'Synology Photo Station Uploader' is installed.\n" .. 
+    									"Required, if you want to generate thumbs locally or upload videos.\n" 
     			},
     		},
     
@@ -325,16 +340,18 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
-    				fill_horizontal = 0.7,
+    				fill_horizontal = 1,
     				value 			= bind 'PSUploaderPath',
     				validate 		= PSDialogs.validatePSUploadProgPath,
     			},
-    			
+    		},
+    
+    		f:row {   			
      			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadDef=Default",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadDefTT=Set to Default.",
     				alignment 		= 'right',
-    				fill_horizontal = 0.1,
+    				fill_horizontal = 1,
     				action 			= function()
     					propertyTable.PSUploaderPath = PSConvert.defaultInstallPath
     				end,
@@ -344,7 +361,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadSearch=Search",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadSearchTT=Search Synology Photo Station Uploader in Explorer/Finder.",
     				alignment 		= 'right',
-    				fill_horizontal = 0.1,
+    				fill_horizontal = 1,
     				action 			= function()
     					LrShell.revealInShell(getRootPath())
     				end,
@@ -354,7 +371,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadWeb=Download",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadWebTT=Search Synology Photo Station Uploader in Web.",
     				alignment 		= 'right',
-    				fill_horizontal = 0.1,
+    				fill_horizontal = 1,
     				action 			= function()
    						LrHttp.openUrlInBrowser(PSConvert.downloadUrl)
     				end,
@@ -373,7 +390,9 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			
     		f:row {
     			f:static_text {
-    				title			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogTT=Enter the path where 'exiftool' is installed. Required, if you want to use metadata translations (face regions, color labels, ratings).\n" 
+    				title			= LOC "$$$/PSUpload/PluginDialog/exiftoolprog=" .. 
+    									"Enter the path where 'exiftool' is installed.\n" .. 
+    									"Required, if you want to use metadata translations (face regions, color labels, ratings).\n" 
     			},
     		},
     
@@ -387,16 +406,18 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
-    				fill_horizontal = 0.7,
+    				fill_horizontal = 1,
     				value 			= bind 'exiftoolprog',
     				validate 		= PSDialogs.validateProgram,
     			},
-
+    		},
+    
+    		f:row {
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogDef=Default",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogDefTT=Set to default.",
     				alignment 		= 'right',
-    				fill_horizontal = 0.1,
+    				fill_horizontal = 1,
     				action 			= function()
     					propertyTable.exiftoolprog = PSExiftoolAPI.defaultInstallPath
     				end,
@@ -406,7 +427,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogSearch=Search",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogSearchTT=Search exiftool in Explorer/Finder.",
     				alignment 		= 'right',
-    				fill_horizontal = 0.1,
+    				fill_horizontal = 1,
     				action 			= function()
     					LrShell.revealInShell(getRootPath())
     				end,
@@ -416,7 +437,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogWeb=Download",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogWebTT=Search exiftool in the Web.",
     				alignment 		= 'right',
-    				fill_horizontal = 0.1,
+    				fill_horizontal = 1,
     				action 			= function()
    						LrHttp.openUrlInBrowser(PSExiftoolAPI.downloadUrl)
     				end,
@@ -500,7 +521,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         	
         	f:row {
         		f:radio_button {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=Second Server Address:",
+        			title 			= LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=2nd Server Address:",
         			alignment 		= 'right',
         			width 			= share 'labelWidth',
         			value 			= bind 'useSecondAddress',
@@ -549,7 +570,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 
 			f:row {
 				f:radio_button {
-					title 			= LOC "$$$/PSUpload/ExportDialog/StandardPS=Standard Photo Station",
+					title 			= LOC "$$$/PSUpload/ExportDialog/StandardPS=Std Photo Station",
 					alignment 		= 'left',
 					width 			= share 'labelWidth',
 					value 			= bind 'usePersonalPS',
