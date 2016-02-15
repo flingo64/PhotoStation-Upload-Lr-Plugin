@@ -41,8 +41,8 @@ of it requires the prior written permission of Adobe.
 plugin_major = 5
 plugin_minor = 0
 plugin_rev = 0
-plugin_build = 20160214
-pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' .. plugin_rev .. '.' .. plugin_build
+plugin_build = 20160215
+pluginVersion = tostring(plugin_major) .. '.' .. tostring(plugin_minor) .. '.' .. tostring(plugin_rev) .. '.' .. tostring(plugin_build)
 plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
 
 return {
