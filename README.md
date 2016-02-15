@@ -9,6 +9,8 @@ Forum threads:
 - [English Synology forum] (http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
 - [German Synology forum] (http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
+[Support Page] (http://messmer-online.de/index.php/software/11-photo-statlr/6-photo-statlr-a-lightroom-plugin-for-synology-photo-station)<br>
+
 Copyright(c) 2016, Martin Messmer<br>
 
 Overview
