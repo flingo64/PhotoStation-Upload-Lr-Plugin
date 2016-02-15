@@ -41,9 +41,9 @@ require "PSUtilities"
 
 PSUpdate = {}
 
-PSUpdate.updateCheckUrl	= 'http://messmer-online.de/LrPSUploadCheckForUpdate.php'
-PSUpdate.donationUrl	= 'http://messmer-online.de/index.php/software/11-photo-statlr'
-PSUpdate.contactUrl 	= 'http://messmer-online.de/index.php/kontakt/contact-photo-statlr'
+PSUpdate.updateCheckUrl		= 'http://messmer-online.de/LrPSUploadCheckForUpdate.php'
+PSUpdate.defaultSupportUrl	= 'http://messmer-online.de/index.php/software/11-photo-statlr'
+PSUpdate.defaultFeedbackUrl	= 'http://messmer-online.de/index.php/kontakt/contact-photo-statlr'
 
 ---------------------------------------------------------------------------------------------------------
 
@@ -55,7 +55,6 @@ function PSUpdate.checkForUpdate()
 	local lang = LrLocalization.currentLanguage()
 	local uid = prefs.uid
 	
-		
 	writeLogfile(2, string.format("Environment: plugin: %s Lr: %s OS: %s Lang: %s\n", pluginVersion, lrVersion, osVersion, lang))
 	
 	-- reset update status, if current version matches last available update version
@@ -120,6 +119,8 @@ function PSUpdate.checkForUpdate()
 	local sec = string.match(response, '%g*sec=([%a%d]*);')
 	local latestVersion = string.match(response, '%g*latestversion=([%a%d%.]*);')
 	local downloadUrl = string.match(response, '%g*downloadurl=([%a%d%:%/%_%.%-%?]*);')
+	local supportUrl = string.match(response, '%g*supporturl=([%a%d%:%/%_%.%-%?]*);')
+	local feedbackUrl = string.match(response, '%g*feedbackurl=([%a%d%:%/%_%.%-%?]*);')
 	if uid == '0' then
 		uid = newUid
 	end
@@ -131,6 +132,8 @@ function PSUpdate.checkForUpdate()
 								", checksum(local)= " .. checksum ..
 								", latestVersion= " .. ifnil(latestVersion, '<Nil>') .. 
 								", downloadUrl= " .. ifnil(downloadUrl, '<Nil>') ..
+								", supportUrl= " .. ifnil(supportUrl, '<Nil>') ..
+								", feedbackUrl= " .. ifnil(feedbackUrl, '<Nil>') ..
 								"\n")
 								
 	if checksum ~= ifnil(sec, '') then
@@ -152,9 +155,10 @@ function PSUpdate.checkForUpdate()
 	end
 
 	if latestVersion then
-		writeLogfile(2, "  update available: " .. latestVersion .. " at " .. ifnil(downloadUrl, 'unknown URL') .. "\n")
 		prefs.updateAvailable = latestVersion
 		prefs.downloadUrl = ifnil(downloadUrl, 'unknown URL')
+		writeLogfile(2, string.format("  update available: %s\n\t\tdownloadUrl %s\n\t\tsupportUrl:  %s\n\t\tfeedbackUrl: %s\n", 
+									prefs.updateAvailable, prefs.downloadUrl, prefs.supportUrl, prefs.feedbackUrl))
 	else
 		if 	prefs.updateAvailable ~= '' then
 			LrDialogs.resetDoNotShowFlag('updateAvailableNote')
@@ -162,6 +166,8 @@ function PSUpdate.checkForUpdate()
 		prefs.updateAvailable = ''
 		prefs.downloadUrl = ''
 	end
+	prefs.supportUrl = ifnil(supportUrl, PSUpdate.defaultSupportUrl)
+	prefs.feedbackUrl = ifnil(feedbackUrl, PSUpdate.defaultFeedbackUrl)
 
 	return true
 end
