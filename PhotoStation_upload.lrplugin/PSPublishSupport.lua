@@ -428,7 +428,7 @@ local function updateCollectionStatus( collectionSettings )
 		if not collectionSettings.exifXlatLabel 		then collectionSettings.PS2LrLabel = false end
 		if not collectionSettings.exifXlatRating 		then collectionSettings.PS2LrRating = false end
 		
-		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( _, prefs.exiftoolprog ) then
+		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( nil, prefs.exiftoolprog ) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break
 		end
@@ -1257,8 +1257,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			if (#keywordNamesAdd > 0) or (#keywordNamesRemove > 0) then
     				tagsChanged = true
     				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove 
-    				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, ',')) end
-    				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: '%s',", table.concat(keywordNamesRemove, ',')) end
+    				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, "','")) end
+    				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: '%s',", table.concat(keywordNamesRemove, "','")) end
     				writeLogfile(3, string.format("Get ratings: %s - tags to add: %s, tags to remove: %s\n", 
     										photoInfo.remoteId, table.concat(keywordNamesAdd, ','), table.concat(keywordNamesRemove, ',')))
     			end

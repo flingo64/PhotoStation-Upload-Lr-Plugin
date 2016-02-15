@@ -113,7 +113,7 @@ local function updateExportStatus( propertyTable )
 		-- Publish Service Provider end
 
 		-- Exif translation start
-		if propertyTable.exifTranslate and not PSDialogs.validateProgram( _, prefs.exiftoolprog ) then
+		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break
 		end

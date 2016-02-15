@@ -145,7 +145,6 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 			f:static_text {
 				title 		= synops,
 				alignment 	= 'right',
---				width 		= share 'labelWidth'
 			},
 		},
 	}
@@ -198,25 +197,6 @@ end
 --------------------------------------------------------------------------------
 -- pluginInfoProvider.sectionsForBottomOfDialog( f, propertyTable )
 function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
-	local prefs = LrPrefs.prefsForPlugin()
---	local synops
-	writeLogfile(4, string.format("sectionsForBottomOfDialog: props: PSUploader %s, exiftool: %s\n", propertyTable.PSUploaderPath, propertyTable.exiftoolprog))
-	propertyTable.PSUploaderPath = prefs.PSUploaderPath
-	propertyTable.exiftoolprog = prefs.exiftoolprog
-
-	-- local path to Synology Photo Station Uploader: required for thumb generation an video handling
-	if ifnil(propertyTable.PSUploaderPath, '') == '' then 
-    	propertyTable.PSUploaderPath = iif(WIN_ENV, 
-    									'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
-    									'/Applications/Synology Photo Station Uploader.app/Contents/MacOS') 
-	end
-	
-	-- exiftool program path: used  for metadata translations on upload
-	if ifnil(propertyTable.exiftoolprog, '') == '' then
-		propertyTable.exiftoolprog = iif(WIN_ENV, 'C:\\\Windows\\\exiftool.exe', '/usr/local/bin/exiftool') 
-	end
-	writeLogfile(4, string.format("props: PSUploader %s, exiftool: %s\n", propertyTable.PSUploaderPath, propertyTable.exiftoolprog))
-		
 	return {
 		{
     		title = LOC "$$$/PSUpload/PluginDialog/PsSettings=Geneneral Settings",
