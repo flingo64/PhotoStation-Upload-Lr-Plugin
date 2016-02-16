@@ -1158,6 +1158,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local resultText = ''
 				
 		local wasEdited = photoInfo.publishedPhoto:getEditedFlag()
+		local needRepublish = false
 		
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
 		
@@ -1214,15 +1215,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     
     		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
     
-       		-- special handling for empty label
-       		if not labelPS then
-       			labelPS = 'none'
-       			compareLabel = 'grey'
-       		else
-       			compareLabel = labelPS
-       		end
-       		       		
-    		writeLogfile(3, string.format("Get ratings: %s - caption '%s', rating %d, label '%s', %d general tags\n", photoInfo.remoteId, ifnil(captionPS, ''), ifnil(ratingPS, 0), labelPS, #tagsPS))
+    		writeLogfile(3, string.format("Get ratings: %s - caption '%s', rating %d, label '%s', %d general tags\n", photoInfo.remoteId, ifnil(captionPS, ''), ifnil(ratingPS, 0), ifnil(labelPS, 'no color'), #tagsPS))
     		
     		-- check if PS label is different to Lr
     		if ifnil(captionPS, '') ~= ifnil(srcPhoto:getFormattedMetadata('caption'), '') then
@@ -1233,22 +1226,32 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('caption'), ''), ifnil(captionPS, '')))
     		end
     
-    		-- check if PS label is different to Lr
-    		if collectionSettings.PS2LrLabel and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= compareLabel then
+    		-- check if PS label is different to Lr, empty label will not be snyched
+    		if collectionSettings.PS2LrLabel and labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= labelPS then
     			labelChanged = true
     			nChanges = nChanges + 1  
     			resultText = resultText ..  string.format(" label changed from %s to %s,", srcPhoto:getRawMetadata('colorNameForLabel'), labelPS)
     			writeLogfile(3, string.format("Get ratings: %s - label changed from %s to %s\n", 
     										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel'), labelPS))
+    		elseif collectionSettings.PS2LrLabel and not labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= 'grey' then
+    			resultText = resultText ..  string.format(" label %s removal ignored - need republish,", srcPhoto:getRawMetadata('colorNameForLabel'))
+    			writeLogfile(3, string.format("Get ratings: %s - label %s was removed, setting photo to edited.\n", 
+    										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel')))
+    			needRepublish = true
     		end
     
-    		-- check if PS rating is different to Lr
-    		if collectionSettings.PS2LrRating and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  ~= ifnil(ratingPS, 0) then
+    		-- check if PS rating is different to Lr, empty rating will not be synched
+    		if collectionSettings.PS2LrRating and ratingPS and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  ~= ratingPS then
     			ratingChanged = true
     			nChanges = nChanges + 1  
     			resultText = resultText ..  string.format(" rating changed from %d to %d,", ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0))
     			writeLogfile(3, string.format("Get ratings: %s - rating changed from %d to %d\n", 
     										photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0)))
+    		elseif collectionSettings.PS2LrRating and not ratingPS and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  > 1 then
+    			resultText = resultText ..  string.format(" rating %d removal ignored - need republish,", ifnil(srcPhoto:getRawMetadata('rating'), 0))
+    			writeLogfile(3, string.format("Get ratings: %s - rating %d was removed, setting photo to edited.\n", 
+  											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
+    			needRepublish = true
     		end
     
     		if collectionSettings.tagsDownload then
@@ -1265,7 +1268,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			
     		end
     		-- if anything changed in Photo Station, change value in Lr
-    		if  captionChanged or labelChanged or ratingChanged or tagsChanged then
+    		if captionChanged or labelChanged or ratingChanged or tagsChanged or needRepublish then
         		catalog:withWriteAccessDo( 
         			'SetCaptionLabelRating',
         			function(context)
@@ -1277,23 +1280,29 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         				end
         				if #keywordsRemove > 0 then
         					PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
-        				end    				
+        				end
+        				
+        				if needRepublish and not wasEdited then
+            				photoInfo.publishedPhoto:setEditedFlag(true)
+--            			elseif not wasEdited then
+--	         				photoInfo.publishedPhoto:setEditedFlag(false)
+						end            			
         			end,
         			{timeout=5}
         		)
-    
-    			-- reset "Edited" flag in Lr
-    			if not wasEdited then
-    				writeLogfile(4, string.format("Get ratings: %s - resetting Edited Flag\n", photoInfo.remoteId))
-    			
+
+				if not needRepublish and not wasEdited then
+    				writeLogfile(3, string.format("Get ratings: %s - set to Published\n", photoInfo.remoteId))
+    				 
             		catalog:withWriteAccessDo( 
             			'ResetEdited',
             			function(context)
-            				photoInfo.publishedPhoto:setEditedFlag(false)
+	         				photoInfo.publishedPhoto:setEditedFlag(false)
             			end,
             			{timeout=5}
             		)
-            	end
+				end
+								    
     			writeLogfile(2, string.format("Get ratings: %s - %s changes done.\n", photoInfo.remoteId, resultText))
     		else
     			writeLogfile(2, string.format("Get ratings: %s - no changes.\n", photoInfo.remoteId, resultText))
