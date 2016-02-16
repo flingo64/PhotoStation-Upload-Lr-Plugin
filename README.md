@@ -401,15 +401,16 @@ Version 4.0
 Version 5.0
 -----------
 - Plugin renamed to __Photo StatLr__ using a new icon
-- Support for __Get Comments__ and __Get Ratings__ from Published Collection<br>
+- Added metadata translation for Lr __color labels__ to PS general tag like __'+green', '+red',__ etc.
+- Support for __Add comment__ to Published Photo and __Get Comments/Get ratings__ (optional) from Published Collection<br>
   This requires some more data in the published photo objects, therefore published photos need to be converted once to the new format in order to support this feature
-- New Publish Mode: __Convert__ to convert published photos to V5.0 format to enable Get Comments and Get Ratings
 - Publish Mode: __CheckMoved__ is now also available for Collection with dynamic target album definitions (i.e. including metadata placeholder)
+- New Publish Mode: __Convert__ to convert published photos to V5.0 format to enable Get Comments and Get Ratings
 - __Download of metadata__: description, general tags__  
 - __Download and translation of special general tags: color label, rating__
 - Configuration of __program install paths__ (Syno Uploader and exiftool) is now moved to the Plugin general settings in __Plugin Manager__ dialog
 - Error output of convert, dcraw and exiftool are now redirected to the logfile
-- Error output of JSON decoder are now redirected to the logfile instead of a message box popping up
+- Error output of JSON decoder is now redirected to the logfile instead of a message box popping up
 - Bugfixes:
 	- Adjustments for __Show in Photo Station__
 	- Fixes for __Update Check__
