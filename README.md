@@ -210,7 +210,6 @@ Publish Functionality:
 	- description/caption
  
 - __Metadata translations on download:__<br>
-	- Translation of __Person tags__ in Photo Station  to Lr face regions<br>
 	- Translation of __Star Rating tags (* to *****)__  to Lr rating <br>
 	- Translation of __Color Label tags (+yellow, +red, etc.)__  to Lr color label <br>
 
