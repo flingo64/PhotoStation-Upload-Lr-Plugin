@@ -414,6 +414,10 @@ Version 5.0
 	- Adjustments for __Show in Photo Station__
 	- Fixes for __Update Check__
   
+Version 5.1
+-----------
+- Added "Convert all photos" to General Settings in Plugin Manager section
+
 Copyright
 ==========
 Copyright(c) 2016, Martin Messmer
