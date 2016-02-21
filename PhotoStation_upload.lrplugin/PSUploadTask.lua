@@ -393,16 +393,14 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 end
 
 --------------------------------------------------------------------------------
-
--- checkLocal(publishedCollection, exportContext, exportParams, publishMode)
--- check all photos in a collection locally, if moved or if is old collection type
+-- checkMoved(publishedCollection, exportContext, exportParams)
+-- check all photos in a collection locally, if moved
 -- all moved photos get status "to be re-published"
 -- return:
 -- 		nPhotos		- # of photos in collection
 --		nProcessed 	- # of photos checked
 --		nMoved		- # of photos found to be moved
-local function checkLocal(publishedCollection, exportContext, exportParams, publishMode)
---	local exportParams = exportContext.propertyTable
+local function checkMoved(publishedCollection, exportContext, exportParams)
 	local catalog = LrApplication.activeCatalog()
 	local publishedPhotos = publishedCollection:getPublishedPhotos() 
 	local nPhotos = #publishedPhotos
@@ -428,55 +426,38 @@ local function checkLocal(publishedCollection, exportContext, exportParams, publ
 		local edited = pubPhoto:getEditedFlag()
 		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
 
-		-- check if backlink to the containing Published Collection must be adjusted
-		if publishMode == 'Convert' then
-			if string.match(ifnil(pubPhoto:getRemoteUrl(), ''), '(%d+)') ~= tostring(publishedCollection.localIdentifier) then
-       			nMoved = nMoved + 1
-       			catalog:withWriteAccessDo( 
-        				'Update Backlink',
-        				function(context)
-    						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
-        				end,
-        				{timeout=5}
-        			)
-       			writeLogfile(2, "Convert(" .. pubPhoto:getRemoteId() .. "): converted to new format.\n")
-			else
-    			writeLogfile(2, "Convert(" .. pubPhoto:getRemoteId() .. "): already converted.\n")
-			end
-		else -- CheckMoved
-    		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
-    		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
-    					
-    		if skipPhoto then
-     			writeLogfile(2, string.format("CheckMoved(%s): Skip photo due to unknown target album %s\n", srcPhotoPath, dstRoot))
+		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
+		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
+					
+		if skipPhoto then
+ 			writeLogfile(2, string.format("CheckMoved(%s): Skip photo due to unknown target album %s\n", srcPhotoPath, dstRoot))
+			catalog:withWriteAccessDo( 
+				'SetEdited',
+				function(context)
+					-- mark as 'To Re-publish'
+					pubPhoto:setEditedFlag(true)
+				end,
+				{timeout=5}
+    		)
+    		nMoved = nMoved + 1
+    	else
+    		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
+    		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
+    		-- ignore extension: might be different 
+    		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
+    			writeLogfile(2, "CheckMoved(" .. localPath .. "): Must be moved at target from " .. publishedPath .. 
+    							" to " .. remotePath .. ", edited= " .. tostring(edited) .. "\n")
     			catalog:withWriteAccessDo( 
     				'SetEdited',
     				function(context)
-    					-- mark as 'To Re-publish'
+						-- mark as 'To Re-publish'
     					pubPhoto:setEditedFlag(true)
     				end,
     				{timeout=5}
-        		)
-        		nMoved = nMoved + 1
-        	else
-        		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
-        		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
-        		-- ignore extension: might be different 
-        		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
-        			writeLogfile(2, "CheckMoved(" .. localPath .. "): Must be moved at target from " .. publishedPath .. 
-        							" to " .. remotePath .. ", edited= " .. tostring(edited) .. "\n")
-        			catalog:withWriteAccessDo( 
-        				'SetEdited',
-        				function(context)
-    						-- mark as 'To Re-publish'
-        					pubPhoto:setEditedFlag(true)
-        				end,
-        				{timeout=5}
-        			)
-        			nMoved = nMoved + 1
-        		else
-        			writeLogfile(2, "CheckMoved(" .. localPath .. "): Not moved.\n")
-        		end
+    			)
+    			nMoved = nMoved + 1
+    		else
+    			writeLogfile(2, "CheckMoved(" .. localPath .. "): Not moved.\n")
     		end
    		end
 		nProcessed = i
@@ -562,19 +543,33 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	local startTime = LrDate.currentTime()
 
-	if publishMode == "CheckMoved" or publishMode == "Convert" then
+	if publishMode == "Convert" then
+		local nConverted
+		nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(publishedCollection)
+
+    	timeUsed =  LrDate.currentTime() - startTime
+    	picPerSec = nProcessed / timeUsed
+    
+    	message = LOC ("$$$/PSUpload/PluginDialog/Conversion=" ..
+    							 string.format("Convert: Processed %d of %d photos, %d converted in %d seconds (%.1f pic/sec).", 
+    											nProcessed, nPhotos, nConverted, timeUsed + 0.5, picPerSec))
+		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
+		closeLogfile()
+		closeSession(exportParams)
+		return
+	elseif publishMode == "CheckMoved" then
 		local nMoved
 		local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
     	
-		if publishMode == "CheckMoved" and not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
+		if not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=Photo StatLr (Check Moved): Makes no sense on flat copy albums to check for moved pics.\n")
 		else
-			nPhotos, nProcessed, nMoved = checkLocal(publishedCollection, exportContext, exportParams, publishMode)
+			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime
 			picPerSec = nProcessed / timeUsed
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
-							string.format("Photo StatLr (%s): Checked %d of %d pics in %d seconds (%.1f pic/sec). %d pics %s.\n", 
-											publishMode, nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved, iif(publishMode == 'CheckMoved', 'moved', 'converted')))
+							string.format("%s: Checked %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
+											publishMode, nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
 		end
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
@@ -757,7 +752,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	
 	if #failures > 0 then
 		message = LOC ("$$$/PSUpload/Upload/Errors/SomeFileFailed=" .. 
-						string.format("Photo StatLr: Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
+						string.format("Photo Upload: Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
 						nProcessed, nPhotos, timeUsed, timePerPic, #failures))
 		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Go to Logfile", "Never mind")
 		if action == "ok" then
@@ -770,7 +765,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 											nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nNotCopied, nNeedCopy))
 		else
 			message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=" ..
-							 string.format("Photo StatLr: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
+							 string.format("Photo Upload: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
 											nProcessed, nPhotos, timeUsed + 0.5, timePerPic))
 		end
 		showFinalMessage("Photo StatLr: Photo upload done", message, "info")

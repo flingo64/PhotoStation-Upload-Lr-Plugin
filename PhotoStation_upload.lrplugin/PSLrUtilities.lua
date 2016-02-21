@@ -8,6 +8,7 @@ Lightroom utilities:
 	- getModifiedKeywords
 	- addPhotoKeywordNames
 	- removePhotoKeyword
+	- convertAllPhotos
 	
 Copyright(c) 2016, Martin Messmer
 
@@ -30,10 +31,11 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------------
 
 -- Lightroom API
-local LrApplication =	import 'LrApplication'
-local LrFileUtils = 	import 'LrFileUtils'
-local LrPathUtils = 	import 'LrPathUtils'
-local LrDate = 			import 'LrDate'
+local LrApplication 	= import 'LrApplication'
+local LrDate 			= import 'LrDate'
+local LrFileUtils 		= import 'LrFileUtils'
+local LrPathUtils 		= import 'LrPathUtils'
+local LrProgressScope 	= import 'LrProgressScope'
 
 --====== local functions =====================================================--
 
@@ -388,4 +390,152 @@ function PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
 		srcPhoto:removeKeyword(keywordsRemove[i])
 	end
 	return true
+end
+
+--------------------------------------------------------------------------------------------
+-- getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
+local function getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
+	local publishedCollections = publishedCollectionSet:getChildCollections()
+	local childPublishedCollectionSets = publishedCollectionSet:getChildCollectionSets()
+--	writeLogfile(4, string.format("getAllPublishedCollectionsFromPublishedCollection: set %s has %d collections and %d collection sets\n", 
+--									publishedCollectionSet:getName(), #publishedCollections, #childPublishedCollectionSets))
+	
+	for i = 1, #publishedCollections do
+		local publishedCollection = publishedCollections[i]
+		table.insert(allPublishedCollections, publishedCollection)
+--   		writeLogfile(4, string.format("getAllPublishedCollectionsFromPublishedCollection: published collection %s, total %d\n", publishedCollection:getName(), #allPublishedCollections))
+	end
+		
+	for i = 1, #childPublishedCollectionSets do
+		getAllPublishedCollectionsFromPublishedCollection(childPublishedCollectionSets[i], allPublishedCollections)
+	end
+end
+
+
+--------------------------------------------------------------------------------------------
+-- convertCollection(publishedCollection)
+function PSLrUtilities.convertCollection(publishedCollection)
+	local activeCatalog 	= LrApplication.activeCatalog()
+	local publishedPhotos 	= publishedCollection:getPublishedPhotos() 
+	local nPhotos 			= #publishedPhotos
+	local nConverted 		= 0
+	local nProcessed 		= 0
+	
+	-- Set progress title.
+	local progressScope = LrProgressScope( 
+								{ 	
+								 	title = LOC("$$$/PSUpload/PluginDialog/ConvColl=Converting collection '^1'", publishedCollection:getName()),
+--							 		functionContext = context 
+							 	})    
+					
+	for i = 1, nPhotos do
+		if progressScope:isCanceled() then break end
+		
+		local pubPhoto = publishedPhotos[i]
+
+		-- check if backlink to the containing Published Collection must be adjusted
+		if string.match(ifnil(pubPhoto:getRemoteUrl(), ''), '(%d+)') ~= tostring(publishedCollection.localIdentifier) then
+   			nConverted = nConverted + 1
+   			activeCatalog:withWriteAccessDo( 
+    				'Update Backlink',
+    				function(context)
+						pubPhoto:setRemoteUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
+    				end,
+    				{timeout=5}
+    			)
+   			writeLogfile(2, "Convert(" .. publishedCollection:getName() .. " - " .. pubPhoto:getRemoteId() .. "): converted to new format.\n")
+		else
+			writeLogfile(2, "Convert(" .. publishedCollection:getName() .. " - " ..  pubPhoto:getRemoteId() .. "): already converted.\n")
+		end
+		nProcessed = i
+		progressScope:setPortionComplete(nProcessed, nPhotos)
+	end 
+	progressScope:done()
+	
+	return nPhotos, nProcessed, nConverted
+end
+
+--------------------------------------------------------------------------------------------
+-- convertAllPhotosTask()
+function PSLrUtilities.convertAllPhotosTask()
+	writeLogfile(2, string.format("ConvertAllPhotosTask: starting\n"))
+	LrTasks.startAsyncTask(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
+--	LrTasks.startAsyncTaskWithoutErrorHandler(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
+	writeLogfile(2, string.format("ConvertAllPhotosTask: done\n"))
+end
+
+--------------------------------------------------------------------------------------------
+-- convertAllPhotos()
+function PSLrUtilities.convertAllPhotos()
+	writeLogfile(2, string.format("ConvertAllPhotos: starting\n"))
+	local activeCatalog = LrApplication.activeCatalog()
+--	local publishedCollections = activeCatalog:getPublishedCollections()  -- doesn't work
+	local publishServices = activeCatalog:getPublishServices(_PLUGIN.id)
+	local allPublishedCollections = {}
+	
+	if not publishServices then
+		writeLogfile(2, string.format("ConvertAllPhotos: No publish services found, done.\n"))
+		return
+	end
+	
+--	writeLogfile(2, string.format("ConvertAllPhotos: found %d publish services\n", #publishServices))
+	
+	-- first: collect all published collection
+    for i = 1, #publishServices	do
+    	local publishService = publishServices[i]
+    	local publishedCollections = publishService:getChildCollections()
+    	local publishedCollectionSets = publishService:getChildCollectionSets()   	
+    	
+--    	writeLogfile(4, string.format("ConvertAllPhotos: publish service %s has %d collections and %d collection sets\n", 
+--    									publishService:getName(), #publishedCollections, #publishedCollectionSets))
+    	
+    	-- note all immediate published collections
+    	for j = 1, #publishedCollections do
+    		local publishedCollection = publishedCollections[j]
+    		
+    		table.insert(allPublishedCollections, publishedCollection)
+--    		writeLogfile(4, string.format("ConvertAllPhotos: service %s -  published collection %s, total %d\n", publishService:getName(), publishedCollection:getName(), #allPublishedCollections))
+    	end
+    	
+    	--  note all Published Collections from all Published Collection Sets
+    	for j = 1, #publishedCollectionSets do
+    		local publishedCollectionSet = publishedCollectionSets[j]
+    		writeLogfile(2, string.format("ConvertAllPhotos: service %s -  published collection set %s\n", publishService:getName(), publishedCollectionSet:getName()))
+    		getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
+ 		end   	
+	end
+
+   	writeLogfile(2, string.format("ConvertAllPhotos: Found %d published collections in %d publish service\n", #allPublishedCollections,  #publishServices))
+	
+	local startTime = LrDate.currentTime()
+
+	-- now convert them
+	local progressScope = LrProgressScope( 
+								{ 	title = LOC("$$$/PSUpload/PluginDialog/ConvAll=Photo StatLr: Converting all collections"),
+--							 		functionContext = context 
+							 	})    
+
+	local nPhotosTotal, nProcessedTotal, nConvertedTotal = 0, 0, 0
+	
+	for i = 1, #allPublishedCollections do
+		if progressScope:isCanceled() then break end
+		
+		local nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(allPublishedCollections[i])
+	
+		nPhotosTotal  	= nPhotosTotal 		+ nPhotos
+		nProcessedTotal = nProcessedTotal 	+ nProcessed
+		nConvertedTotal = nConvertedTotal 	+ nConverted
+					
+   		progressScope:setPortionComplete(i, #allPublishedCollections) 						    
+	end 
+	progressScope:done()	
+
+	local timeUsed =  LrDate.currentTime() - startTime
+	local picPerSec = nProcessedTotal / timeUsed
+
+	local message = LOC ("$$$/PSUpload/PluginDialog/Conversion=" ..
+							 string.format("Photo StatLr: Processed %d of %d photos in %d collections, %d converted in %d seconds (%.1f pic/sec).", 
+											nProcessedTotal, nPhotosTotal, #allPublishedCollections, nConvertedTotal, timeUsed + 0.5, picPerSec))
+	showFinalMessage("Photo StatLr: Conversion done", message, "info")
+
 end

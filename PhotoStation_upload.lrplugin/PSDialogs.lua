@@ -53,6 +53,7 @@ of it requires the prior written permission of Adobe.
 
 -- Lightroom SDK
 local LrBinding		= import 'LrBinding'
+local LrDialogs		= import 'LrDialogs'
 local LrFileUtils	= import 'LrFileUtils'
 local LrHttp 		= import 'LrHttp'
 local LrPathUtils 	= import 'LrPathUtils'
@@ -378,6 +379,49 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     			},   			
     		},
     	}
+end
+
+-------------------------------------------------------------------------------
+-- convertPhotosView(f, propertyTable)
+function PSDialogs.convertPhotosView(f, propertyTable)
+	return
+        f:group_box {
+			title	= 'Convert published photos to Photo StatLr format',
+			fill_horizontal = 1,
+
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotos=" .. 
+    									"If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\n" .. 
+    									"the download options of Photo StatLr,then you have to convert the photos of\n" .. 
+    									"those Published Collections that should be configured with the download options.\n" .. 
+    									"You can convert all photos here, or you can do it for individual Published Collections\n" .. 
+    									"via publish mode 'Convert'.", 
+    				alignment 		= 'center',
+					fill_horizontal = 1,
+    			},
+    		},
+
+    		f:row {   			
+	
+				f: spacer {	fill_horizontal = 1,}, 
+				
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertAll=Convert all photos",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ConvertAllTT=Convert all published photos to new format.",
+    				alignment 		= 'center',
+    				fill_horizontal = 1,
+    				action 			= function ()
+    								propertyTable.convertAllPhotos = true
+    								LrDialogs.message('Photo StatLr', 'Conversion will start after closing the Plugin Manager dialog.', 'info')
+    								
+    				end,
+    			},   			
+
+				f: spacer {	fill_horizontal = 1,}, 
+				
+			},
+		}
 end
 
 -------------------------------------------------------------------------------

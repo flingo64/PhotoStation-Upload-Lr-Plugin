@@ -112,10 +112,16 @@ end
 -------------------------------------------------------------------------------
 -- pluginInfoProvider.endDialog( propertyTable )
 function pluginInfoProvider.endDialog( propertyTable )
+	writeLogfile(4, "pluginInfoProvider.endDialog\n")
 	local prefs = LrPrefs.prefsForPlugin()
 
 	prefs.PSUploaderPath = propertyTable.PSUploaderPath
 	prefs.exiftoolprog = propertyTable.exiftoolprog
+
+	if propertyTable.convertAllPhotos then
+		LrTasks.startAsyncTask(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
+--		LrTasks.startAsyncTaskWithoutErrorHandler(PSLrUtilities.convertAllPhotos, "ConvertAllPhotos")
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -206,6 +212,7 @@ function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
 				
     			PSDialogs.psUploaderProgView(f, propertyTable),
 				PSDialogs.exiftoolProgView(f, propertyTable),
+				PSDialogs.convertPhotosView(f, propertyTable)
     		}
 		}
 	}
