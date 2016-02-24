@@ -65,12 +65,12 @@ PSUploadTask = {}
 -----------------
 
 
--- function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
+-- function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated) 
 -- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir), 
 --	create each folder recursively if not already created
 -- 	store created directories in dirsCreated
 -- 	return created dstDir or nil on error
-local function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOnly) 
+local function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated) 
 	writeLogfile(4, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
 
 	-- sanitize srcRoot: avoid trailing slash and backslash
@@ -111,7 +111,7 @@ local function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated, readOn
 			
 			local paramParentDir
 			if parentDir == "" then paramParentDir = "/" else paramParentDir = parentDir  end  
-			if not readOnly and not PSUploadAPI.createFolder (uHandle, paramParentDir, newDir) then
+			if not PSUploadAPI.createFolder (uHandle, paramParentDir, newDir) then
 				writeLogfile(1,"Create dir - parent: " .. paramParentDir .. " newDir: " .. newDir .. " failed!\n")
 				return nil
 			end
@@ -505,7 +505,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local nNeedCopy = 0 	-- Publish / CheckExisting: num of pics that need to be copied
 	local timeUsed
 	local timePerPic, picPerSec
-	local readOnly = false
 	local publishMode
 
 	-- additionalVideo table: user selected additional video resolutions
@@ -592,7 +591,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	-- if is Publish process and publish mode is 'CheckExisting' ...
 	if publishMode == 'CheckExisting' then
 		-- remove all photos from rendering process to speed up the process
-		readOnly = true
 		for i, rendition in exportSession:renditions() do
 			rendition:skipRender()
 		end 
@@ -667,7 +665,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in Photo Station
---				local foundPhoto = PSFileStationAPI.existsPic(exportParams.fHandle, publishedPhotoId)
 				local foundPhoto = PSPhotoStationAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
 					rendition:recordPublishedPhotoId(publishedPhotoId)
@@ -678,7 +675,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				elseif foundPhoto == 'no' then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
---					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. ifnil(LrPathUtils.parent(publishedPhotoId), "/") .. '\n')
 					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. newPublishedPhotoId .. '\n')
 				else -- error
 					table.insert( failures, srcFilename )
@@ -688,7 +684,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- normal publish or export process 
 				-- check if target Album (dstRoot) should be created 
 				if exportParams.createDstRoot and dstRoot ~= '' and 
-					not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated, readOnly) then
+					not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated) then
 					table.insert( failures, srcFilename )
 					break 
 				end
@@ -703,7 +699,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					end
 				else
 					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcFilename), exportParams.srcRoot, dstRoot, 
-										dirsCreated, readOnly) 
+										dirsCreated) 
 				end
 				
 				if not dstDir then 	
@@ -711,32 +707,19 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					break 
 				end
 
-				if srcPhoto:getRawMetadata("isVideo") then
-					writeLogfile(4, pathOrMessage .. ": is video\n") 
-					if not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos) then
-						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
-						table.insert( failures, dstDir .. "/" .. renderedFilename )
-					else
-						if publishedCollection then 
-							rendition:recordPublishedPhotoId(publishedPhotoId) 
-							-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
-						end
-						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
-					end
+				if (srcPhoto:getRawMetadata("isVideo") 		and	not	uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos)) 
+				or (not srcPhoto:getRawMetadata("isVideo") 	and	not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams)) then
+					writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
+					table.insert( failures, dstDir .. "/" .. renderedFilename )
 				else
-					if not uploadPhoto(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams) then
-						writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' ..  dstDir .. '" failed!!!\n')
-						table.insert( failures, dstDir .. "/" .. renderedFilename )
-					else
-						if publishedCollection then 
-							rendition:recordPublishedPhotoId(publishedPhotoId) 
-							-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-							rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
-						end
-						writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
+					if publishedCollection then 
+						rendition:recordPublishedPhotoId(publishedPhotoId) 
+						-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
+						rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
 					end
+					writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 				end
+				
 			end
 			
 			LrFileUtils.delete( pathOrMessage )
