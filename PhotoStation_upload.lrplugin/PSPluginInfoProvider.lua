@@ -120,7 +120,6 @@ function pluginInfoProvider.endDialog( propertyTable )
 
 	if propertyTable.convertAllPhotos then
 		LrTasks.startAsyncTask(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
---		LrTasks.startAsyncTaskWithoutErrorHandler(PSLrUtilities.convertAllPhotos, "ConvertAllPhotos")
 	end
 end
 
