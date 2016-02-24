@@ -1157,19 +1157,18 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
 		local resultText = ''
 				
-		local wasEdited = photoInfo.publishedPhoto:getEditedFlag()
 		local needRepublish = false
 		
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
 		
 		if tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
 			writeLogfile(2, string.format("Get ratings: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
-			skipPhoto = true 
 		elseif srcPhoto:getRawMetadata('isVideo') then
 			writeLogfile(2, string.format("Get ratings: %s - videos not supported, skip download.\n", photoInfo.remoteId))
-			skipPhoto = true 
+		elseif photoInfo.publishedPhoto:getEditedFlag() then
+			-- do not download infos to original photo for unpublished photos, only ratings go to Comments panels
+			writeLogfile(2, string.format("Get ratings: %s - latest version not published, skip download.\n", photoInfo.remoteId))
 		else		 
-    		writeLogfile(4, string.format("Get ratings: %s - wasEdited %s\n", photoInfo.remoteId, tostring(wasEdited)))
     		
     		-- get caption from Photo Station
     		if collectionSettings.captionDownload then
@@ -1282,16 +1281,14 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         					PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
         				end
         				
-        				if needRepublish and not wasEdited then
+        				if needRepublish then
             				photoInfo.publishedPhoto:setEditedFlag(true)
---            			elseif not wasEdited then
---	         				photoInfo.publishedPhoto:setEditedFlag(false)
 						end            			
         			end,
         			{timeout=5}
         		)
 
-				if not needRepublish and not wasEdited then
+				if not needRepublish then
     				writeLogfile(3, string.format("Get ratings: %s - set to Published\n", photoInfo.remoteId))
     				 
             		catalog:withWriteAccessDo( 
