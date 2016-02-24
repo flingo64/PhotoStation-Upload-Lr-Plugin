@@ -73,7 +73,7 @@ local LrHttp	 		= import 'LrHttp'
 local LrPathUtils 		= import 'LrPathUtils'
 local LrPrefs	 		= import 'LrPrefs'
 -- local LrProgressScope = import 'LrProgressScope'
--- local LrShell 		= import 'LrShell'
+local LrShell 			= import 'LrShell'
 local LrTasks 			= import 'LrTasks'
 local LrView 			= import 'LrView'
 
@@ -618,7 +618,11 @@ function showFinalMessage (title, message, msgType)
 	writeLogfile(2, title .. ": " .. message .. '\n')
 
 	if msgType == 'critical' then 
-		LrDialogs.message(title, 'Booo!! ' .. message, msgType)
+--		LrDialogs.message(title, 'Booo!! ' .. message, msgType)
+		local action = LrDialogs.confirm(title, 'Booo!! ' .. message, "Go to Logfile", "Never mind")
+		if action == "ok" then
+			LrShell.revealInShell(getLogFilename())
+		end	
 	elseif appVersion.major >= 5 then
 		-- showBezel not supported in Lr4 and below  
 		LrDialogs.showBezel('Boooor-ing! ' .. message, 10)

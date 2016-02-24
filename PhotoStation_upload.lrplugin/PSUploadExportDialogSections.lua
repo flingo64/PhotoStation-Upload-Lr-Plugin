@@ -113,6 +113,13 @@ local function updateExportStatus( propertyTable )
 		-- Publish Service Provider end
 
 		-- Exif translation start
+		
+		-- if at least one translation is activated then set exifTranslate
+		if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
+			propertyTable.exifTranslate = true
+		end
+		
+		
 		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break
@@ -154,10 +161,12 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
 
-	propertyTable:addObserver( 'exifTranslate', updateExportStatus )
-
 	propertyTable:addObserver( 'useSecondAddress', updateExportStatus )
 	propertyTable:addObserver( 'servername2', updateExportStatus )
+
+	propertyTable:addObserver( 'exifXlatFaceRegions', updateExportStatus )
+	propertyTable:addObserver( 'exifXlatLabel', updateExportStatus )
+	propertyTable:addObserver( 'exifXlatRating', updateExportStatus )
 
 	propertyTable:addObserver( 'LR_renamingTokensOn', updateExportStatus )
 	

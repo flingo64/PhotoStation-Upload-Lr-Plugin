@@ -18,6 +18,7 @@ Photo Station Upload primitives:
 	- addPhotoComments
 	- getPhotoComments
 	
+	- getPhotoInfos
 	- getPhotoExifs
 	
 	- getTags
@@ -370,7 +371,7 @@ end
 --		success: 		true, false 
 --		errorcode:		errorcode, if not success
 --		files:			array of files, if success
-function PSPhotoStationAPI.listAlbum(h, dstDir, listItems, recursive)
+function PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
 	-- recursive doesn't seem to work
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
@@ -378,7 +379,7 @@ function PSPhotoStationAPI.listAlbum(h, dstDir, listItems, recursive)
 					 'type=' .. listItems .. '&' ..   
 					 'offset=0&' .. 
 					 'limit=-1&' ..
-					 'recursive=' .. iif(recursive, 'true', 'false') .. '&'.. 
+					 'recursive=false&'.. 
 					 'additional=album_permission'
 --					 'additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location'
 
@@ -420,7 +421,7 @@ function PSPhotoStationAPI.existsPic(h, dstFilename, isVideo)
 		-- if not: refresh cach w/ folder of current photo
 		local errorCode
 		
-		psDirCache, errorCode = PSPhotoStationAPI.listAlbum(h, dstDir, 'photo,video', false)
+		psDirCache, errorCode = PSPhotoStationAPI.listAlbum(h, dstDir, 'photo,video')
 		if not psDirCache and errorCode ~= 408 then -- 408: no such file or dir
 			writeLogfile(3, string.format('existsPic: Error on listAlbum: %d\n', errorCode))
 		   	return 'error'
@@ -468,7 +469,7 @@ end
 -- returns:
 -- 		success - the Album itself can be deleted (is empty) 
 function PSPhotoStationAPI.deleteEmptyAlbums(h, albumPath, albumsDeleted, photosLeft)
-	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album', false)
+	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album')
 	local canDeleteThisAlbum = true
 		
 	for i = 1, #albumItems do
@@ -534,7 +535,7 @@ function PSPhotoStationAPI.addPhotoComment (h, dstFilename, isVideo, comment, us
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoComments (h, dstFilename) 
+-- getPhotoComments (h, dstFilename, isVideo) 
 function PSPhotoStationAPI.getPhotoComments (h, dstFilename, isVideo) 
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
@@ -549,7 +550,28 @@ function PSPhotoStationAPI.getPhotoComments (h, dstFilename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoExifs (h, dstFilename) 
+-- getPhotoInfo (h, dstFilename, isVideo) 
+-- photo infos are returned in the respective album
+function PSPhotoStationAPI.getPhotoInfo(h, dstFilename, isVideo)
+	local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
+	local photoInfos, errorCode =  PSPhotoStationAPI.listAlbum(h, dstAlbum, 'photo,video')
+	
+	if not photoInfos then return false, errorCode end 
+
+	local photoId = getPhotoId(dstFilename, isVideo)
+	for i = 1, #photoInfos do
+		if photoInfos[i].id == photoId then
+			writeLogfile(3, string.format('getPhotoInfo(%s) found infos.\n', dstFilename))
+			return photoInfos[i].info
+		end
+	end
+	
+	writeLogfile(3, string.format('getPhotoInfo(%s) found no infos.\n', dstFilename))
+	return nil
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getPhotoExifs (h, dstFilename, isVideo) 
 function PSPhotoStationAPI.getPhotoExifs (h, dstFilename, isVideo) 
 	local formData = 'method=getexif&' ..
 					 'version=1&' .. 

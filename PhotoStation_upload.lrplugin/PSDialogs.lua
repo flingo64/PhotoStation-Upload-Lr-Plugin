@@ -1003,17 +1003,48 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 		fill_horizontal = 1,
 		title = LOC "$$$/PSUpload/ExportDialog/UploadOpt=Metadata Upload Options /Translations (To Photo Station)",
 
+		conditionalItem(propertyTable.isCollection, 
+			f:row {
+    			f:checkbox {
+    				title 			= LOC "$$$/PSUpload/ExportDialog/TitleUpload=Title (always)",
+    				fill_horizontal = 1,
+    				value 			= true,
+    				enabled 		= false,
+    			},
+    
+    			f:checkbox {
+    				title 			= LOC "$$$/PSUpload/ExportDialog/CaptionUpload=Decription (always)",
+    				fill_horizontal = 1,
+    				value 			= true,
+    				enabled 		= false,
+    			},
+    
+    			f:spacer { fill_horizontal = 1,	},
+    			
+    			f:spacer { fill_horizontal = 1,	},
+    		}
+		), 
+		
 		f:row {
 			f:checkbox {
+				title 			= LOC "$$$/PSUpload/ExportDialog/TitleUpload=Keywords (always)",
+				fill_horizontal = 1,
+				value 			= true,
+				enabled 		= false,
+			},
+
+--[[
+			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/exifTranslate=Translate Tags:",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifTranslateTT=Translate Lightroom tags to Photo Station tags",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifTranslateTT=Translate Lr metadata (faces, label, rating) to Photo Station tags",
 				fill_horizontal = 1,
 				value 			= bind 'exifTranslate',
 			},
+]]
 		
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegions=Faces",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lightroom or Picasa Face Regions to Photo Station Person Tags",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lr face regions to Photo Station person tags",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatFaceRegions',
 				visible 		= bind 'exifTranslate',
@@ -1021,7 +1052,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 		
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatLabel=Color Label",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatLabelTT=Translate Lightroom color label (red, green, ...) to Photo Station General Tag '+color'",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatLabel',
 				visible 		= bind 'exifTranslate',
@@ -1029,31 +1060,24 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lightroom (XMP) rating (*stars*) to Photo Station General Tag '***'",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatRating',
 				visible 		= bind 'exifTranslate',
 			},
 		},
 		
-		f:row {
-			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/CommentsUpload=Comments (always uploaded)",
-				fill_horizontal = 1,
-				value 			= true,
-				enabled 		= false,
-			},
+		conditionalItem(propertyTable.isCollection, f:separator { fill_horizontal = 1 }),
 
-			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/CaptionUpload=Decription (always uploaded)",
-				fill_horizontal = 1,
-				value 			= true,
-				enabled 		= false,
-			},
-
-		}, 
-		
---		PSDialogs.exiftoolProgView(f, propertyTable),
+		conditionalItem(propertyTable.isCollection, f:row {
+    			f:checkbox {
+    				title 			= LOC "$$$/PSUpload/ExportDialog/CommentsUpload=Comments (always)",
+    				fill_horizontal = 1,
+    				value 			= true,
+    				enabled 		= false,
+    			},
+        	}
+		),
 	}
 
 end
@@ -1067,19 +1091,38 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/TagsDownload=Tags",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TagsDownloadTT=Download tags from Photo Station",
+				title 			= LOC "$$$/PSUpload/ExportDialog/TitleDownload=Title",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TitleDownloadTT=Download photo title from Photo Station",
+				fill_horizontal = 1,
+				value 			= bind 'titleDownload',
+			},
+
+			f:checkbox {
+				title 			= LOC "$$$/PSUpload/ExportDialog/CaptionDownload=Description",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/CaptionDownloadTT=Download photo description (caption) from Photo Station",
+				fill_horizontal = 1,
+				value 			= bind 'captionDownload',
+			},
+
+			f:spacer { fill_horizontal = 1,	},
+			
+			f:spacer { fill_horizontal = 1,	},
+		},
+
+		f:row {
+			f:checkbox {
+				title 			= LOC "$$$/PSUpload/ExportDialog/TagsDownload=Tags/Keywords",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TagsDownloadTT=Download tags from Photo Station to Lr keywords",
 				fill_horizontal = 1,
 				value 			= bind 'tagsDownload',
 			},
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrNotSupp=Faces (no support)",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrNotSuppTT=Download of faces from Photo Station not supported",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrNotSuppTT=Download of face regions from Photo Station not supported",
 				fill_horizontal = 1,
 				value 			= false,
 				enabled 		= false,
-				visible 		= bind 'tagsDownload',
 			},
 
 -- no way to set face regions in Lr
@@ -1090,44 +1133,37 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip = LOC "$$$/PSUpload/ExportDialog/PS2LrFacesTT=Translate Photo Station People Tag to Lightroom Faces",
 				value = bind 'PS2LrFaces',
 				enabled = bind 'exifXlatFaceRegions',
-				visible = bind 'tagsDownload',
 			},
 ]]
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrLabel=Color Label",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrLabelTT=Translate Photo Station General Tag '+color' to Lightroom color label (red, green, ...)",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrLabel',
 				enabled 		= bind 'exifXlatLabel',
-				visible 		= bind 'tagsDownload',
 			},
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrRating=Rating",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrRatingTT=Translate Photo Station general tag '***' to Lightroom rating",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrRatingTT=Translate Photo Station '***' general tag to Lr rating",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrRating',
 				enabled 		= bind 'exifXlatRating',
-				visible 		= bind 'tagsDownload',
 			},
 		},
+		
+		f:separator { fill_horizontal = 1 },
 		
 		f:row {
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/CommentsDownload=Comments",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/commentsDownloadTT=Download comments from Photo Station",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/commentsDownloadTT=Download photo comments from Photo Station to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'commentsDownload',
 			},
-
-			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/CaptionDownload=Description",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/CaptionDownloadTT=Download description (caption) from Photo Station",
-				fill_horizontal = 1,
-				value 			= bind 'captionDownload',
-			},
 		},
 	}
+
 end
 
 -------------------------------------------------------------------------------
@@ -1198,9 +1234,7 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 				value 			= bind 'logLevel',
 			},
 			
-			f:spacer {
-				fill_horizontal = 1,
-			},
+			f:spacer { fill_horizontal = 1,	},
 			
 			f:push_button {
 				title 			= LOC "$$$/PSUpload/ExportDialog/Logfile=Go to Logfile",
