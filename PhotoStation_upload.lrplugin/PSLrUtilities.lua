@@ -445,7 +445,11 @@ function PSLrUtilities.convertCollection(publishedCollection)
     			)
    			writeLogfile(2, "Convert(" .. publishedCollection:getName() .. " - " .. pubPhoto:getRemoteId() .. "): converted to new format.\n")
 		else
-			writeLogfile(2, "Convert(" .. publishedCollection:getName() .. " - " ..  pubPhoto:getRemoteId() .. "): already converted.\n")
+			writeLogfile(2, string.format("Convert( %s - %s): already converted, lastEdited %s, lastPublished %s.\n", 
+											publishedCollection:getName(), pubPhoto:getRemoteId(),
+											LrDate.timeToUserFormat(pubPhoto:getPhoto():getRawMetadata('lastEditTime'), 			'%Y-%m-%d %H:%M:%S', false), 
+											LrDate.timeToUserFormat(tonumber(string.match(pubPhoto:getRemoteUrl(), '%d+/(%d+)')), 	'%Y-%m-%d %H:%M:%S', false)
+										))
 		end
 		nProcessed = i
 		progressScope:setPortionComplete(nProcessed, nPhotos)
@@ -453,15 +457,6 @@ function PSLrUtilities.convertCollection(publishedCollection)
 	progressScope:done()
 	
 	return nPhotos, nProcessed, nConverted
-end
-
---------------------------------------------------------------------------------------------
--- convertAllPhotosTask()
-function PSLrUtilities.convertAllPhotosTask()
-	writeLogfile(2, string.format("ConvertAllPhotosTask: starting\n"))
-	LrTasks.startAsyncTask(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
---	LrTasks.startAsyncTaskWithoutErrorHandler(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
-	writeLogfile(2, string.format("ConvertAllPhotosTask: done\n"))
 end
 
 --------------------------------------------------------------------------------------------
