@@ -368,8 +368,6 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
 	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
 	or 							   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
---	or (exportParams.exifXlatLabel 
---			and not PSPhotoStationAPI.replaceLabelPhotoTag(exportParams.uHandle, dstDir .. '/' .. vid_Replace_Filename, true, '+' .. string.sub(srcPhoto:getRawMetadata('colorNameForLabel'),1,1)))
 	then 
 		signalSemaphore("PhotoStation")
 		retcode = false
@@ -707,11 +705,47 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					break 
 				end
 
-				if (srcPhoto:getRawMetadata("isVideo") 		and	not	uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos)) 
+				if (srcPhoto:getRawMetadata("isVideo") 		and	not	uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos))
 				or (not srcPhoto:getRawMetadata("isVideo") 	and	not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams)) then
 					writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, dstDir .. "/" .. renderedFilename )
 				else
+				
+					if srcPhoto:getRawMetadata("isVideo") 
+						and ( 	ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= ''
+							 or ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= ''
+							 or ifnil(srcPhoto:getFormattedMetadata("keywordTags"), '') ~= ''		
+							 or	(exportParams.exifXlatLabel and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey')
+							 or	(exportParams.exifXlatRating and ifnil(srcPhoto:getRawMetadata("rating"), 0) ~= 0)
+							)
+					then
+						local dstFilename = dstDir .. '/'.. renderedFilename
+						local photoThere, maxWait = false, 30
+						local _, keywordNamesAdd, _ = PSLrUtilities.getModifiedKeywords(srcPhoto, {})
+						writeLogfile(3, string.format("Metadata Upload for %s found keywords: %s '\n", dstFilename, table.concat(keywordNamesAdd, "','")))
+
+						while not photoThere and maxWait > 0 do
+							if not PSPhotoStationAPI.getPhotoInfo(exportParams.uHandle, dstFilename, true) then
+								LrTasks.sleep(1)
+								maxWait = maxWait - 1
+							else
+								photoThere = true
+							end
+						end
+						
+						if (not photoThere
+							 or	(exportParams.exifXlatLabel 
+								and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', '+' .. srcPhoto:getRawMetadata('colorNameForLabel'))) 
+							 or	(exportParams.exifXlatRating 
+								and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', tostring(ifnil(srcPhoto:getRawMetadata('rating'), 0))))
+							 or	(#keywordNamesAdd > 0  
+								and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
+							) 
+						then
+							writeLogfile(1, 'Metadata Upload for "' .. renderedFilename .. '" failed!!!\n')
+						end								
+					end
+					
 					if publishedCollection then 
 						rendition:recordPublishedPhotoId(publishedPhotoId) 
 						-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua

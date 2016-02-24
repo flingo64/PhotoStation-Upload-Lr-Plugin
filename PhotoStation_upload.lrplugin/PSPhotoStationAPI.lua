@@ -175,7 +175,7 @@ local function callSynoAPI (h, synoAPI, formData)
 	if synoAPI == 'SYNO.PhotoStation.Auth' then
 		writeLogfile(4, "callSynoAPI: LrHttp.post(" .. h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path .. ",...)\n")
 	else
-		writeLogfile(4, "callSynoAPI: LrHttp.post(" .. h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path .. ", " .. formData .. "\n")
+		writeLogfile(4, string.format("callSynoAPI: LrHttp.post(%s%s%s, api=%s&%s\n", h.serverUrl, h.psWebAPI, h.apiInfo[synoAPI].path, synoAPI, formData))
 	end
 	
 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path, postBody, postHeaders, 'POST', h.serverTimeout, string.len(postBody))
@@ -686,6 +686,21 @@ function PSPhotoStationAPI.createAndAddPhotoTag(h, dstFilename, isVideo, type, n
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- createAndAddPhotoTagList (h, dstFilename, isVideo, type, tagList) 
+-- create and add a list of new tags (general,people,geo) to a photo
+function PSPhotoStationAPI.createAndAddPhotoTagList(h, dstFilename, isVideo, type, tagList)
+	
+	for i = 1, #tagList do
+		if not PSPhotoStationAPI.createAndAddPhotoTag(h, dstFilename, isVideo, type, tagList[i]) then
+			return false
+		end
+	end
+	 
+	writeLogfile(3, string.format('createAndAddPhotoTagList(%s) returns OK.\n', dstFilename))
+	return true	
+end
+
+---------------------------------------------------------------------------------------------------------
 -- replaceLabelPhotoTag (h, dstFilename, isVideo, name) 
 -- replace a label tag in a photo
 -- TODO read existing tags, photoTags and delete any existing label tag
@@ -693,6 +708,7 @@ function PSPhotoStationAPI.replaceLabelPhotoTag(h, dstFilename, isVideo, name)
 	local tagId = PSPhotoStationAPI.createTag(h, 'desc', name)
 	
 	if not tagId or not PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, 'desc', tagId) then
+		writeLogfile(3, string.format('replaceLabelPhotoTag(%s) returns error.\n', dstFilename))
 		return false
 	end
 	 
