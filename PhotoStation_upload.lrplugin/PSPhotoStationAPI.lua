@@ -24,6 +24,10 @@ Photo Station Upload primitives:
 	- getTags
 	- getPhotoTags
 	
+	- editPhoto
+	
+	- rating2Stars
+	
 	
 Copyright(c) 2016, Martin Messmer
 
@@ -681,7 +685,7 @@ function PSPhotoStationAPI.createAndAddPhotoTag(h, dstFilename, isVideo, type, n
 		return false
 	end
 	 
-	writeLogfile(3, string.format('createAndAddPhotoTag(%s) returns OK.\n', dstFilename))
+	writeLogfile(3, string.format('createAndAddPhotoTag(%s, %s, %s) returns OK.\n', dstFilename, type, name))
 	return true	
 end
 
@@ -701,17 +705,24 @@ function PSPhotoStationAPI.createAndAddPhotoTagList(h, dstFilename, isVideo, typ
 end
 
 ---------------------------------------------------------------------------------------------------------
--- replaceLabelPhotoTag (h, dstFilename, isVideo, name) 
--- replace a label tag in a photo
--- TODO read existing tags, photoTags and delete any existing label tag
-function PSPhotoStationAPI.replaceLabelPhotoTag(h, dstFilename, isVideo, name)
-	local tagId = PSPhotoStationAPI.createTag(h, 'desc', name)
+-- editPhoto (h, dstFilename, isVideo, field, value) 
+-- edit specific metadata field of a photo
+function PSPhotoStationAPI.editPhoto(h, dstFilename, isVideo, field, value)
+	local formData = 'method=edit&' ..
+					 'version=1&' .. 
+					 field .. '=' .. value .. '&' .. 
+					 'id=' .. getPhotoId(dstFilename, isVideo) 
+
+	local success, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
 	
-	if not tagId or not PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, 'desc', tagId) then
-		writeLogfile(3, string.format('replaceLabelPhotoTag(%s) returns error.\n', dstFilename))
-		return false
-	end
-	 
-	writeLogfile(3, string.format('replaceLabelPhotoTag(%s) returns OK.\n', dstFilename))
-	return true	
+	if not success then return false, errorCode end 
+
+	writeLogfile(3, string.format('editPhoto(%s, %s = %s) returns OK.\n', dstFilename, field, value))
+	return true
+end
+
+---------------------------------------------------------------------------------------------------------
+-- rating2Stars (h, dstFilename, isVideo, field, value) 
+function PSPhotoStationAPI.rating2Stars(rating)
+	return string.rep ('*', rating)
 end

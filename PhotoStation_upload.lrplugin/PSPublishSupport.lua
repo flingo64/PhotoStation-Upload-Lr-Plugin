@@ -1177,8 +1177,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 			writeLogfile(2, string.format("Get metadata: %s - latest version not published, skip download.\n", photoInfo.remoteId))
 		elseif tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
 			writeLogfile(2, string.format("Get metadata: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
-		elseif srcPhoto:getRawMetadata('isVideo') then
-			writeLogfile(2, string.format("Get metadata: %s - videos not supported, skip download.\n", photoInfo.remoteId))
+--		elseif srcPhoto:getRawMetadata('isVideo') then
+--			writeLogfile(2, string.format("Get metadata: %s - videos not supported, skip download.\n", photoInfo.remoteId))
 		else		 
     		
     		------------------------------------------------------------------------------------------------------
