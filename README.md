@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 5.1.x<br>
+Version 5.2.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/Photo Station-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -18,7 +18,7 @@ Overview
 Photo StatLr (formerly called PhotoStation Upload) is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "Photo StatLr" and a new Export target also called "Photo StatLr" to the "Export" dialog. 
 Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.<br>
 Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature which will download comments and ratings from Photo Station to the Lightroom Comments panel (Library mode: bottom right panel).
-Besides that Photo StatLr can do a real two-way synchronization of various metadata, including descriptions/captions, tags/keywords, color labels and ratings. 
+Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label and rating. 
 
 This plugin uses the same converters and the same upload API as the official "Synology Photo Station Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target Photo Station by protocol (http/https) and servename (IP@, hostname, FQDN).
 
@@ -205,9 +205,9 @@ Publish Functionality:
 
 - Support for re-import of __Comments and Ratings__
 
-- __Download and two-way sync of various metadata__:<br>
+- __Download and two-way sync of various metadata__ for photos and videos:<br>
+	- title/description/caption
 	- general tags
-	- description/caption
  
 - __Metadata translations on download:__<br>
 	- Translation of __Star Rating tags (* to *****)__  to Lr rating <br>
@@ -234,7 +234,6 @@ Open issues
 - issue in Photo Station: if video aspect ratio is different from video dimension 
   (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
   the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
-- No support for metadate upload and download for videos
 
 History
 =======
@@ -417,6 +416,12 @@ Version 5.0
 Version 5.1
 -----------
 - Added "Convert all photos" to General Settings in Plugin Manager section
+
+Version 5.2
+-----------
+- __Download of title__
+- Support for __metadata__ upload and download for __videos__  
+- Introduced a strict '__Do not delete metadata__ in Lr when downloading from Photo Station__' policy 
 
 Copyright
 ==========
