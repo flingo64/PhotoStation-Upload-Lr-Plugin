@@ -388,22 +388,32 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	return retcode
 end
 
+--------------------------------------------------------------------------------
+-- ackRendition(rendition, publishedPhotoId, pubCollectionId)
+local function ackRendition(rendition, publishedPhotoId, publishedCollectionId)
+	rendition:recordPublishedPhotoId(publishedPhotoId) 
+	-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
+	rendition:recordPublishedPhotoUrl(tostring(publishedCollectionId) .. '/' .. tostring(LrDate.currentTime()))
+	return true
+end
+
 -----------------
--- noteVideoUpload(videosUploaded, srcPhoto, dstFilename)
-local function noteVideoUpload(videosUploaded, srcPhoto, dstFilename)
+-- noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollectionId)
+local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollectionId)
 	local videoUploaded = {}
 	
-	writeLogfile(2, string.format("noteVideoUpload(%s)\n", dstFilename))
-	videoUploaded.srcPhoto = srcPhoto
-	videoUploaded.dstFilename = dstFilename
+	writeLogfile(2, string.format("noteVideoUpload(%s)\n", publishedPhotoId))
+	videoUploaded.rendition = rendition
+	videoUploaded.publishedPhotoId = publishedPhotoId
+	videoUploaded.publishedCollectionId = publishedCollectionId
 	table.insert(videosUploaded, videoUploaded)
 	
 	return true
 end
 -----------------
--- uploadVideoMetadata(videosUploaded, exportParams) 
+-- uploadVideoMetadata(videosUploaded, exportParams, failures) 
 -- upload metadata for videos just uploaded
-local function uploadVideoMetadata(videosUploaded, exportParams)
+local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 	local catalog = LrApplication.activeCatalog()
 	local nVideos =  #videosUploaded
 	local nProcessed 		= 0 
@@ -415,8 +425,11 @@ local function uploadVideoMetadata(videosUploaded, exportParams)
 --							 		functionContext = context 
 							 	})    
 	for i = 1, #videosUploaded do
-		local srcPhoto 		= videosUploaded[i].srcPhoto
-		local dstFilename 	= videosUploaded[i].dstFilename
+		local videoUploaded 			= videosUploaded[i]
+		local rendition 				= videoUploaded.rendition
+		local srcPhoto 					= rendition.photo
+		local dstFilename 				= videoUploaded.publishedPhotoId
+		local publishedCollectionId 	= videoUploaded.publishedCollectionId  
 		
 		if (	ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= ''
 			or 	ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= ''
@@ -451,14 +464,10 @@ local function uploadVideoMetadata(videosUploaded, exportParams)
 					and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
 				) 
 			then
+				table.insert(failures, srcPhoto:getRawMetadata("path"))
 				writeLogfile(1, 'Metadata Upload for "' .. dstFilename .. '" failed!!!\n')
---[[
-				catalog:withWriteAccessDo( 
-            			'SetEdited',
-            			function(context) publishedPhoto:setEditedFlag(true) end,
-            			{timeout=5}
-            		)
-]]				
+			else
+				ackRendition(rendition, dstFilename, publishedCollectionId)
 			end								
 		end
    		nProcessed = nProcessed + 1
@@ -546,7 +555,6 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
 end			
 
 --------------------------------------------------------------------------------
-
 -- PSUploadTask.updateExportSettings(exportParams)
 -- This plug-in defined callback function is called at the beginning
 -- of each export and publish session before the rendition objects are generated.
@@ -745,9 +753,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- check if photo already in Photo Station
 				local foundPhoto = PSPhotoStationAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
+					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
+--[[
 					rendition:recordPublishedPhotoId(publishedPhotoId)
 					-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
 					rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
+]]
 					nNotCopied = nNotCopied + 1
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', LrPathUtils.leafName(localPath), publishedPhotoId))
 				elseif foundPhoto == 'no' then
@@ -787,33 +798,31 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 				if (srcPhoto:getRawMetadata("isVideo") 		
 					and	(	not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos)
---						 or not noteVideoUpload(videosUploaded, srcPhoto, dstDir .. '/' .. renderedFilename) 
-						 or not noteVideoUpload(videosUploaded, srcPhoto, publishedPhotoId) 
+						-- upload of metadata to just uploaded videos must wait until PS has registered it 
+						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
+						 or not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollection.localIdentifier) 
 						)	
 					)
-				or (not srcPhoto:getRawMetadata("isVideo") 
-					and not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams)
+				or (	not srcPhoto:getRawMetadata("isVideo") 
+					and (
+							not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams)
+						 or 	(publishedCollection and not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
+						)
 					)
 				then
 					writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
-					table.insert( failures, dstDir .. "/" .. renderedFilename )
+					table.insert( failures, srcFilename )
 				else
-				
-					if publishedCollection then 
-						rendition:recordPublishedPhotoId(publishedPhotoId) 
-						-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-						rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
-					end
 					writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 				end
-				
 			end
 			
 			LrFileUtils.delete( pathOrMessage )
 		end
 	end
 
-	if #videosUploaded > 0 then uploadVideoMetadata(videosUploaded, exportParams) end
+	-- deferred metadata upload
+	if #videosUploaded > 0 then uploadVideoMetadata(videosUploaded, exportParams, failures) end
 	
 	writeLogfile(2,"--------------------------------------------------------------------\n")
 	closeSession(exportParams)
