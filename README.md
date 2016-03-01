@@ -421,7 +421,7 @@ Version 5.1
 
 Version 5.2
 -----------
-- __Download of title__
+- Download of __title__
 - Support for __metadata__ upload and download for __videos__  
 - Introduced a strict '__Do not delete metadata__ in Lr when downloading from Photo Station__' policy 
 
