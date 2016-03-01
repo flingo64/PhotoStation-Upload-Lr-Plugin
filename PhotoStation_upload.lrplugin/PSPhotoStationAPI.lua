@@ -91,6 +91,7 @@ local PSAPIerrorMsgs = {
 	[419] = 'Illegal file name',
 	[420] = 'Illegal file name on FAT filesystem',
 	[421] = 'Device or resource busy',
+	[467] = 'No such tag',
 	[470] = 'No such file',
 	[599] = 'No such task No such task of the file operation',
 	[1001]  = 'Http error: no response body, no response header',
@@ -614,6 +615,7 @@ function PSPhotoStationAPI.getTags(h, type)
 					 'version=1&' .. 
 					 'type=' .. type .. '&' .. 
 --					 'additional=info&' .. 
+					 'offset=0&' ..  
 					 'limit=-1' 
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Tag', formData)
@@ -677,14 +679,28 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- createAndAddPhotoTag (h, dstFilename, isVideo, type, name) 
--- create and add a new tag (general,people,geo) to a photo
+-- create and add a new tag (desc,people,geo) to a photo
 function PSPhotoStationAPI.createAndAddPhotoTag(h, dstFilename, isVideo, type, name)
-	local tagId = PSPhotoStationAPI.createTag(h, type, name)
-	
-	if not tagId or not PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId) then
-		return false
+	local tagId = PSPhotoStationAPI.cacheFindTag(h, type, name)
+	if not tagId then 
+		tagId = PSPhotoStationAPI.createTag(h, type, name)
+		PSPhotoStationAPI.cacheUpdateTag(h, type)
 	end
-	 
+		
+	
+	if not tagId then return false end
+	
+	local photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId)
+	
+	if not photoTagIds and errorCode == 467 then
+		-- tag was deleted, cache wasn't up to date
+		tagId = PSPhotoStationAPI.createTag(h, type, name)
+		PSPhotoStationAPI.cacheUpdateTag(h, type)
+	 	photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId)
+	end 
+	
+	if not photoTagIds then return false end
+	
 	writeLogfile(3, string.format('createAndAddPhotoTag(%s, %s, %s) returns OK.\n', dstFilename, type, name))
 	return true	
 end
@@ -726,3 +742,41 @@ end
 function PSPhotoStationAPI.rating2Stars(rating)
 	return string.rep ('*', rating)
 end
+
+-- ======================= Photo Station caching functions ==============================================
+
+local psAllTags = {
+	['desc']	= {},
+	['person']	= {},
+	['geo']		= {},
+}
+
+---------------------------------------------------------------------------------------------------------
+-- PSPhotoStationAPI.cacheFindTag(h, type, name) 
+function PSPhotoStationAPI.cacheFindTag(h, type, name)
+	local tagsOfType = psAllTags[type]
+
+	if (#tagsOfType == 0) and not PSPhotoStationAPI.cacheUpdateTag(h, type) then
+		return nil 
+	end
+	tagsOfType = psAllTags[type]
+	
+	for i = 1, #tagsOfType do
+		if tagsOfType[i].name == name then 
+			writeLogfile(3, string.format('cacheFindTag(%s, %s) found  %s.\n', type, name, tagsOfType[i].id))
+			return tagsOfType[i].id 
+		end
+	end
+
+	writeLogfile(3, string.format('cacheFindTag(%s, %s) not found.\n', type, name))
+	return nil
+end
+
+---------------------------------------------------------------------------------------------------------
+-- PSPhotoStationAPI.cacheUpdateTag(h, type) 
+function PSPhotoStationAPI.cacheUpdateTag(h, type)
+	writeLogfile(3, string.format('cacheUpdateTag(%s).\n', type))
+	psAllTags[type] = PSPhotoStationAPI.getTags(h, type)
+	return psAllTags[type]
+end
+
