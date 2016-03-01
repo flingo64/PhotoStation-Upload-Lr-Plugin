@@ -203,6 +203,8 @@ Publish Functionality:
 
 - __Deletion of empty Photo Station Albums__ after deletion of published photos or complete Published Collections
 
+Download / Sync Functionality:
+-------------------------------
 - Support for re-import of __Comments and Ratings__
 
 - __Download and two-way sync of various metadata__ for photos and videos:<br>
