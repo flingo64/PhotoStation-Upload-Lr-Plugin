@@ -1047,7 +1047,6 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lr face regions to Photo Station person tags",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatFaceRegions',
-				visible 		= bind 'exifTranslate',
 			},
 		
 			f:checkbox {
@@ -1055,7 +1054,6 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatLabel',
-				visible 		= bind 'exifTranslate',
 			},
 
 			f:checkbox {
@@ -1063,7 +1061,6 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatRating',
-				visible 		= bind 'exifTranslate',
 			},
 		},
 		

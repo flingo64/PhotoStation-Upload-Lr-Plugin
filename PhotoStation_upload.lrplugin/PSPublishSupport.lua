@@ -428,6 +428,11 @@ local function updateCollectionStatus( collectionSettings )
 			collectionSettings.exifTranslate = true
 		end
 		
+		-- if no translation is activated then set exifTranslate to off
+		if not (collectionSettings.exifXlatFaceRegions or collectionSettings.exifXlatLabel or collectionSettings.exifXlatRating) then
+			collectionSettings.exifTranslate = false
+		end
+		
 		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( nil, prefs.exiftoolprog ) then
 			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break

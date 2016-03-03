@@ -179,7 +179,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	)
 	
 	-- exif translations	
-	or not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd)
+	or (exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
 
 	-- wait for Photo Station semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
