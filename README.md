@@ -214,6 +214,8 @@ Download / Sync Functionality:
 - __Metadata translations on download:__<br>
 	- Translation of __Star Rating tags (* to *****)__  to Lr rating <br>
 	- Translation of __Color Label tags (+yellow, +red, etc.)__  to Lr color label <br>
+	
+- For more detail, please read the [Wiki article] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Some-words-on-the-two-way-sync-of-metadata)
 
 Additional Funtionality
 ------------------------
