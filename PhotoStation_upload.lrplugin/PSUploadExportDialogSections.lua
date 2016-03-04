@@ -120,8 +120,8 @@ local function updateExportStatus( propertyTable )
 		end
 		
 		-- if no translation is activated then set exifTranslate to off
-		if not (collectionSettings.exifXlatFaceRegions or collectionSettings.exifXlatLabel or collectionSettings.exifXlatRating) then
-			collectionSettings.exifTranslate = false
+		if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
+			propertyTable.exifTranslate = false
 		end
 				
 		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
