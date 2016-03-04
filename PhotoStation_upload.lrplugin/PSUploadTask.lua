@@ -402,7 +402,7 @@ end
 local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollectionId)
 	local videoUploaded = {}
 	
-	writeLogfile(2, string.format("noteVideoUpload(%s)\n", publishedPhotoId))
+	writeLogfile(3, string.format("noteVideoUpload(%s)\n", publishedPhotoId))
 	videoUploaded.rendition = rendition
 	videoUploaded.publishedPhotoId = publishedPhotoId
 	videoUploaded.publishedCollectionId = publishedCollectionId
@@ -468,7 +468,9 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 				writeLogfile(1, 'Metadata Upload for "' .. dstFilename .. '" failed!!!\n')
 			else
 				ackRendition(rendition, dstFilename, publishedCollectionId)
-			end								
+			end
+		else -- no metadata to update
+			ackRendition(rendition, dstFilename, publishedCollectionId)										
 		end
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nVideos) 						    
