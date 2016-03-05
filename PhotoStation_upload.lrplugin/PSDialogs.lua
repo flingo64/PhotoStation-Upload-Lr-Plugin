@@ -306,8 +306,16 @@ function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
             		
     				f:row {
             			f:static_text {
-            				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing2=Please enter missing parameters for: \n\n" .. operation,
+            				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing2=Please enter missing parameters for:\n\n",
             				alignment = 'left',
+            			},
+    				},
+
+    				f:row {
+            			f:static_text {
+            				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing3=" .. operation,
+            				alignment = 'left',
+        					font		= '<system/bold>', 
             			},
     				},
     			},
