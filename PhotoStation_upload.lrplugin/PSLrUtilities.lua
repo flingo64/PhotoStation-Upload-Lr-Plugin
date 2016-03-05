@@ -340,8 +340,8 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 	local previousAlbum, currentAlbum = nil, albumCheckList
 	
 	while currentAlbum do
-		if currentAlbum.albumPath == albumPath then 
-			writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): already in list\n", albumPath))
+		if string.find(currentAlbum.albumPath, albumPath, 1, false) == 1 then 
+			writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
 			return albumCheckList
 		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
 			newAlbum.next = currentAlbum
