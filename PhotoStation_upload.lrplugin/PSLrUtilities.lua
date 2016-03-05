@@ -175,7 +175,7 @@ function PSLrUtilities.getCollectionPath(collection)
 	end
 	writeLogfile(4, "getCollectionPath() returns " .. collectionPath .. "\n")
 	
-	return collectionPath
+	return normalizeDirname(collectionPath)
 end
 
 
@@ -205,7 +205,7 @@ function PSLrUtilities.getCollectionUploadPath(publishedCollection)
 	end
 	writeLogfile(4, "getCollectionUploadPath() returns " .. ifnil(collectionPath, '<Nil>') .. "\n")
 	
-	return collectionPath
+	return normalizeDirname(collectionPath)
 end
 
 ---------------------- isDynamicAlbumPath --------------------------------------------------
@@ -320,6 +320,55 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 	
 	return normalizeDirname(path)
 end 
+
+--------------------------------------------------------------------------------------------
+-- noteAlbumForCheckEmpty(photoPath)
+-- Note the album of a photo in the albumCheckList
+-- make sure, each album exists only once and the albumCheckList is sorted by pathname length desc (longest pathnames first)
+function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
+	local albumPath, _ = string.match(photoPath , '(.+)\/([^\/]+)')
+	if not albumPath then 
+		-- photo in root
+		writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): root will not be noted.\n", photoPath))
+		return albumCheckList 	
+	end
+	local albumPathLength = string.len(albumPath)
+	
+	local newAlbum = {}
+	newAlbum.albumPath	= albumPath
+	
+	local previousAlbum, currentAlbum = nil, albumCheckList
+	
+	while currentAlbum do
+		if currentAlbum.albumPath == albumPath then 
+			writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): already in list\n", albumPath))
+			return albumCheckList
+		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
+			newAlbum.next = currentAlbum
+			if previousAlbum then
+				previousAlbum.next = newAlbum
+			else		 
+				albumCheckList = newAlbum 
+			end
+			writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): insert before %s\n", albumPath, currentAlbum.albumPath))
+			return albumCheckList
+		else
+			previousAlbum = currentAlbum
+			currentAlbum = currentAlbum.next			
+		end
+	end
+	
+	newAlbum.next		= nil
+	if not previousAlbum then 
+		writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): insert as first in list\n", albumPath))
+		albumCheckList 		= newAlbum
+	else
+		previousAlbum.next	= newAlbum
+		writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): insert as last in list\n", albumPath))
+	end
+		
+	return albumCheckList	
+end
 
 --------------------------------------------------------------------------------------------
 -- getModifiedKeywords(srcPhoto, tagList)

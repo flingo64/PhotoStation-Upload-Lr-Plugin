@@ -340,10 +340,12 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	local startTime = LrDate.currentTime()
 	local nPhotos = #arrayOfPhotoIds
 	local nProcessed = 0 
-
+	local albumsForCheckEmpty
+	
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
 		if PSPhotoStationAPI.deletePic (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, photoId .. ': successfully deleted.\n')
+			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, photoId)
 			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
 		else
@@ -351,25 +353,19 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 		end
 	end
 
-	local collectionPath =  PSLrUtilities.getCollectionUploadPath(publishedCollection)
+	local nDeletedAlbums = 0 
+	local currentAlbum = albumsForCheckEmpty
 	
-	local albumsDeleted = {}
-	local photosLeft = {}
-	
-	if not PSLrUtilities.isDynamicAlbumPath(collectionPath) then
-		_ = PSPhotoStationAPI.deleteEmptyAlbums(publishSettings.uHandle, collectionPath, albumsDeleted, photosLeft)
-		
-		if #albumsDeleted > 0 then
-			writeLogfile(2, string.format("Photo StatLr: Delete photos:\n\tDeleted Albums:\n\t\t%s\n",
-										table.concat(albumsDeleted, "\n\t\t")))
-		end
-	end										
+	while currentAlbum do
+		nDeletedAlbums = nDeletedAlbums + PSPhotoStationAPI.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
+		currentAlbum = currentAlbum.next
+	end
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
 	local message = LOC ("$$$/PSUpload/Upload/Errors/DeletePhotosFromPublishedCollection=" .. 
-					string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n", 
-					nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+					string.format("Deleted %d of %d pics and %d empty albums in %d seconds (%.1f pics/sec).\n", 
+					nProcessed, nPhotos, nDeletedAlbums, timeUsed + 0.5, picPerSec))
 
 	showFinalMessage("Photo StatLr: Delete photos done", message, "info")
 	closeLogfile()
@@ -770,15 +766,15 @@ publishServiceProvider.supportsCustomSortOrder = true
  -- is set to "User Order." Your plug-in should ensure that the photos are displayed
  -- in the designated sequence on the service.
 function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSettings, info, remoteIdSequence )
+	openLogfile(publishSettings.logLevel)
+	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n")
+
 	-- get publishedCollections: 
 	--   remoteCollectionId is the only collectionId we have here, so it must be equal to localCollectionId to retrieve the publishedCollection!!!
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
 	local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
 
 	-- make sure logfile is opened
-	openLogfile(publishSettings.logLevel)
-
-	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n")
 
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'ImposeSortOrderOnPublishedCollection')
@@ -890,7 +886,9 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 --								functionContext = context,
 						 }) 
 						
+	local albumsForCheckEmpty
 	local canceled = false
+
 	for i = 1, nPhotos do
 		if progressScope:isCanceled() then 
 			canceled = true
@@ -906,39 +904,28 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		if PSPhotoStationAPI.deletePic(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
 			writeLogfile(2, publishedPath .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
+			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPath)
 		else
 			writeLogfile(1, publishedPath .. ': deletion failed!\n')
 		end
 		progressScope:setPortionComplete(nProcessed, nPhotos)
 	end 
 		
-	local collectionPath =  PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
+	local nDeletedAlbums = 0 
+	local currentAlbum = albumsForCheckEmpty
 	
-	local albumsDeleted = {}
-	local photosLeft = {}
-	local albumDeleted = false
-	
-	if not canceled and not PSLrUtilities.isDynamicAlbumPath(collectionPath) then
-		local canDeleteAlbum = PSPhotoStationAPI.deleteEmptyAlbums(publishSettings.uHandle, collectionPath, albumsDeleted, photosLeft)
-		
-		writeLogfile(2, string.format("DeletePublishedCollection --> can delete this album: %s\n\tDeleted Albums:\n\t\t%s\n\tPhotos left:\n\t\t%s\n",
-										canDeleteAlbum, 
-										table.concat(albumsDeleted, "\n\t\t"),
-										table.concat(photosLeft, "\n\t\t")))
-										
-		-- only delete root dir of publish collection, if empty and album creation is allowed in settings 
-		if canDeleteAlbum and publishSettings.createDstRoot then
-			albumDeleted = PSPhotoStationAPI.deleteAlbum(publishSettings.uHandle, collectionPath)
-		end
+	while currentAlbum do
+		nDeletedAlbums = nDeletedAlbums + PSPhotoStationAPI.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
+		currentAlbum = currentAlbum.next
 	end
-
+	
 	progressScope:done()
 	
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
 	local message = LOC ("$$$/PSUpload/Upload/Errors/DeletePublishedColletion=" .. 
-					string.format("Deleted %d of %d pics in %d seconds (%.1f pics/sec).\n%d albums deleted, %d photos left in Photo Station, Target Album was %sdeleted.", 
-					nProcessed, nPhotos, timeUsed + 0.5, picPerSec, #albumsDeleted, #photosLeft, iif(albumDeleted, "", "not ")))
+					string.format("Deleted %d of %d pics and %d empty albums in %d seconds (%.1f pics/sec).\n", 
+					nProcessed, nPhotos, nDeletedAlbums, timeUsed + 0.5, picPerSec))
 
 	showFinalMessage("Photo StatLr: DeletePublishedCollection done", message, "info")
 	closeLogfile()

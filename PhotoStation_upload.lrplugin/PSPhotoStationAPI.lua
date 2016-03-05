@@ -468,33 +468,6 @@ function PSPhotoStationAPI.deleteAlbum (h, albumPath)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- deleteEmptyAlbums (h, albumPath, albumsDeleted, photosLeft) 
--- deletes recursively all empty albums below albumPath.
--- fills albumsDeleted and photosLeft 
--- returns:
--- 		success - the Album itself can be deleted (is empty) 
-function PSPhotoStationAPI.deleteEmptyAlbums(h, albumPath, albumsDeleted, photosLeft)
-	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album')
-	local canDeleteThisAlbum = true
-		
-	for i = 1, #albumItems do
-		local itemPath = albumPath .. '/' .. albumItems[i].info.name
-		if albumItems[i].type ~= 'album' then
-			table.insert(photosLeft, itemPath) 
-			canDeleteThisAlbum = false
-		else 
-			if PSPhotoStationAPI.deleteEmptyAlbums(h, itemPath, albumsDeleted, photosLeft) then
-				PSPhotoStationAPI.deleteAlbum (h, itemPath)
-				table.insert(albumsDeleted, itemPath) 
-			else
-				canDeleteThisAlbum = false
-			end
-		end
-	end
-	return canDeleteThisAlbum
-end
-
----------------------------------------------------------------------------------------------------------
 -- sortPics (h, albumPath, sortedPhotos) 
 function PSPhotoStationAPI.sortPics (h, albumPath, sortedPhotos) 
 	local formData = 'method=arrangeitem&' ..
@@ -780,3 +753,65 @@ function PSPhotoStationAPI.cacheUpdateTag(h, type)
 	return psAllTags[type]
 end
 
+
+---------------------------------------------------------------------------------------------------------
+-- deleteAllEmptyAlbums (h, albumPath, albumsDeleted, photosLeft) 
+-- deletes recursively all empty albums below albumPath.
+-- fills albumsDeleted and photosLeft 
+-- returns:
+-- 		success - the Album itself can be deleted (is empty) 
+
+--[[
+function PSPhotoStationAPI.deleteAllEmptyAlbums(h, albumPath, albumsDeleted, photosLeft)
+	writeLogfile(3, string.format('deleteEmptyAlbums(%s): starting\n', albumPath))
+	
+	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album')
+	local canDeleteThisAlbum = true
+		
+	for i = 1, #albumItems do
+		local itemPath = albumPath .. '/' .. albumItems[i].info.name
+		if albumItems[i].type ~= 'album' then
+			table.insert(photosLeft, itemPath) 
+			canDeleteThisAlbum = false
+		else 
+			if PSPhotoStationAPI.deleteAllEmptyAlbums(h, itemPath, albumsDeleted, photosLeft) then
+				PSPhotoStationAPI.deleteAlbum (h, itemPath)
+				table.insert(albumsDeleted, itemPath) 
+			else
+				canDeleteThisAlbum = false
+			end
+		end
+	end
+	writeLogfile(3, string.format('deleteAllEmptyAlbums(%s): returns canDelete %s\n', albumPath, tostring(canDeleteThisAlbum)))
+	return canDeleteThisAlbum
+end
+]]
+
+---------------------------------------------------------------------------------------------------------
+-- PhotoStation.deleteEmptyAlbumAndParents(h, albumPath)
+-- delete an album and all its parents as long as they are empty
+-- return count of deleted albums
+function PSPhotoStationAPI.deleteEmptyAlbumAndParents(h, albumPath)
+	local nDeletedAlbums = 0
+	local currentAlbumPath
+	
+	currentAlbumPath = albumPath
+	while currentAlbumPath do
+		local photoInfos, errorCode =  PSPhotoStationAPI.listAlbum(h, currentAlbumPath, 'photo,video,album')
+
+    	-- if not existing or not empty or delete fails, we are ready
+    	if 		not photoInfos 
+    		or 	#photoInfos > 0 
+    		or not PSPhotoStationAPI.deleteAlbum (h, currentAlbumPath) 
+    	then 
+    		writeLogfile(3, string.format('deleteEmptyAlbumAndParents(%s) not deleted.\n', currentAlbumPath))
+    		return nDeletedAlbums 
+    	end
+	
+   		writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) was empty: deleted.\n', currentAlbumPath))
+		nDeletedAlbums = nDeletedAlbums + 1
+		currentAlbumPath = string.match(currentAlbumPath , '(.+)\/[^\/]+')
+	end
+	
+	return nDeletedAlbums 
+end
