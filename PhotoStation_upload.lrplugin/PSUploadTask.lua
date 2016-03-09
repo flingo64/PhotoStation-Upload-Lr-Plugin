@@ -249,18 +249,26 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		MOBILE =	{ height = 240,		filename = vid_MOB_Filename },
 	}
 	
-	-- get video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
+	-- there is no way to identify whether the video is exported as original or rendered
+	-- --> get both video infos 
+	-- get original video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
+	local vOrgInfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto:getRawMetadata('path'))
+	-- get rendered video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
 	local vinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, renderedVideoPath)
-	if not vinfo then
+	if not (vinfo and vOrgInfo) then
 		return false
 	end
 	
+	-- restore the capture time for the rendered video
+	vinfo.srcDateTime = vOrgInfo.srcDateTime
+--[[	
 	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
 	-- overwrite the ffmpeg DateTimeOrig 
 	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	if isOrigDateTime or not vinfo.srcDateTime then
 		vinfo.srcDateTime = metaDateTime
 	end
+]]
 	
 	-- get the real dimension: may be different from dimension if dar is set
 	-- dimension: NNNxMMM
@@ -756,11 +764,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				local foundPhoto = PSPhotoStationAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
---[[
-					rendition:recordPublishedPhotoId(publishedPhotoId)
-					-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
-					rendition:recordPublishedPhotoUrl(tostring(publishedCollection.localIdentifier) .. '/' .. tostring(LrDate.currentTime()))
-]]
 					nNotCopied = nNotCopied + 1
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', LrPathUtils.leafName(localPath), publishedPhotoId))
 				elseif foundPhoto == 'no' then
