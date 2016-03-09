@@ -172,7 +172,7 @@ function getLogLevel()
 end
 
 -- changeLoglevel: change the loglevel (after promptForMissingSettings)
-function changeLoglevel (level)
+function changeLogLevel (level)
 	loglevel = level
 end
 
@@ -408,9 +408,11 @@ function openSession(exportParams, publishedCollection, operation)
 		exportParams.serverUrl = exportParams.proto .. "://" .. exportParams.servername
 	end
 	
+	local collectionSettings
+	
 	-- if is Publish process, temporarily overwrite exportParams w/ CollectionSettings for Target Album
 	if publishedCollection and publishedCollection:type() == 'LrPublishedCollection' then
-    	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
+    	collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
 		writeLogfile(4, "openSession: copy collection settings\n")
     	
     	exportParams.storeDstRoot 	= true			-- dstRoot must be set in a Published Collection
@@ -484,7 +486,10 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- exiftool: required if Export/Publish and and any exif translation was selected
-	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate and not exportParams.eHandle then 
+	if 	(	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
+		 or	(operation == 'GetRatingsFromPublishedCollection' and collectionSettings and collectionSettings.PS2LrFaces)
+		)
+	and not exportParams.eHandle then 
 		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
 		return iif(exportParams.eHandle, true, false), "Cannot start exiftool!" 
 	end
@@ -596,7 +601,7 @@ function promptForMissingSettings(exportParams, operation)
 		}
 	
 	if result == 'ok' and needLoglevel then
-		changeLoglevel(exportParams.logLevel)
+		changeLogLevel(exportParams.logLevel)
 	end
 	
 	return result
