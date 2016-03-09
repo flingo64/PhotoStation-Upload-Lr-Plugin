@@ -240,3 +240,101 @@ function PSExiftoolAPI.doExifTranslations(h, photoFilename, additionalCmd)
 	return true
 end
 
+----------------------------------------------------------------------------------
+-- function queryLrFaceRegionList(h, photoFilename)
+-- query <mwg-rs:RegionList> elements: Picasa and Lr store detected face regions here
+function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
+	if not sendCmd(h, "-XMP-mwg-rs:RegionAreaH -XMP-mwg-rs:RegionAreaW -XMP-mwg-rs:RegionAreaX -XMP-mwg-rs:RegionAreaY ".. 
+					  "-XMP-mwg-rs:RegionName -XMP-mwg-rs:RegionType")
+	or not sendCmd(h, photoFilename, noWhitespaceConversion)
+	then
+		return nil
+	end  
+
+	local queryResults = executeCmds(h) 
+
+	if not queryResults then
+		writeLogfile(3, "PSExiftoolAPI.queryLrFaceRegionList: execute query data failed\n")
+		return nil
+	end
+	
+	-- Face Region translations ---------
+	local foundFaceRegions = false
+	local personTags = {}
+	local sep = ', '
+	
+	local personTagHs 	= parseResponse(queryResults, 'Region Area H', sep)	
+	local personTagWs 	= parseResponse(queryResults, 'Region Area W', sep)	
+	local personTagXs 	= parseResponse(queryResults, 'Region Area X', sep)	
+	local personTagYs 	= parseResponse(queryResults, 'Region Area Y', sep)	
+	local personTagTypes	= parseResponse(queryResults, 'Region Type', sep)
+	local personTagNames	= parseResponse(queryResults, 'Region Name', sep)		
+
+	if personTagHs and personTagWs and personTagXs and personTagYs then
+		for i = 1, #personTagHs do
+			if not personTagTypes or ifnil(personTagTypes[i], 'Face') == 'Face' then
+				foundFaceRegions = true
+				local personTag = {}
+				
+				personTag.xCenter 	= personTagXs[i]  
+				personTag.yCenter 	= personTagYs[i]
+				personTag.width 	= personTagWs[i]
+				personTag.height 	= personTagHs[i]
+				if personTagNames then personTag.name = personTagNames[i] end
+				
+				personTags[i] = personTag 
+				
+				writeLogfile(3, string.format("PSExiftoolAPI.queryLrFaceRegionList: found %s %f, %f, %f, %f\n", 
+												personTags[i].name,
+												personTags[i].xCenter,
+												personTags[i].yCenter,
+												personTags[i].width,
+												personTags[i].height	
+											))
+			else
+				writeLogfile(3, "PSExiftoolAPI.doExifTranslations: found non-face area: " .. personTagTypes[i] .. "\n")
+			end						
+		end
+	end
+	
+	return personTags
+end
+
+----------------------------------------------------------------------------------
+-- setLrFaceRegionList(h, photoFilename, personTags)
+-- set <mwg-rs:RegionList> elements: Picasa and Lr store detected face regions here
+function PSExiftoolAPI.setLrFaceRegionList(h, photoFilename, personTags)
+	local personTagNames, personTagTypes, personTagRotations, personTagXs, personTagYs, personTagWs, personTagHs = '', '', '', '', '', '', ''
+	local separator = ';'
+	
+	for i = 1, #personTags do
+		local sep = iif(i == 1, '', separator)
+		personTagNames = personTagNames .. sep .. personTags[i].name
+		personTagTypes = personTagTypes .. sep .. 'Face'
+		personTagRotations = personTagRotations .. sep .. '0'
+		personTagXs = personTagXs .. sep .. tostring(personTags[i].x + (personTags[i].width / 2))
+		personTagYs = personTagYs .. sep .. tostring(personTags[i].y + (personTags[i].height / 2))
+		personTagWs = personTagWs .. sep .. tostring(personTags[i].width)
+		personTagHs = personTagHs .. sep .. tostring(personTags[i].height)
+	end
+
+	local oldloglevel = getLogLevel()
+	changeLogLevel(4)
+	if not 	sendCmd(h, "-sep ".. separator) 
+	or not	sendCmd(h, 
+					"-XMP-mwg-rs:RegionName="		.. personTagNames .. " " ..
+					"-XMP-mwg-rs:RegionType="		.. personTagTypes .. " " ..
+					"-XMP-mwg-rs:RegionRotation="	.. personTagRotations .. " " ..
+					"-XMP-mwg-rs:RegionAreaX=" 		.. personTagXs .. " " ..
+					"-XMP-mwg-rs:RegionAreaY="		.. personTagYs .. " " ..
+					"-XMP-mwg-rs:RegionAreaW="		.. personTagWs .. " " ..
+					"-XMP-mwg-rs:RegionAreaH="		.. personTagHs .. " "
+				)
+	or not sendCmd(h, photoFilename, noWhitespaceConversion)
+	then
+		return nil
+	end  
+
+	return executeCmds(h)
+end
+
