@@ -538,12 +538,9 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.tagsDownload = false
 	end
 
-	-- missing Lr support for setting face regions
---[[
 	if collectionSettings.PS2LrFaces == nil then
 		collectionSettings.PS2LrFaces = false
 	end
-]]
 
 	if collectionSettings.PS2LrLabel == nil then
 		collectionSettings.PS2LrLabel = false
@@ -1115,7 +1112,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	if 		not collectionSettings.titleDownload 
 		and not collectionSettings.captionDownload 
 		and not collectionSettings.tagsDownload 
---		and not collectionSettings.PS2LrFaces 
+		and not collectionSettings.PS2LrFaces 
 		and not collectionSettings.PS2LrLabel 
 		and not collectionSettings.PS2LrRating 
 	then
@@ -1157,7 +1154,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local ratingPS, 	ratingChanged
 		local labelPS,		labelChanged
 		local tagsPS, 		tagsChanged = {}
+		local facesPS, 		facesChanged = {}
 		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
+		local facesAdd, facesRemove
 		local resultText = ''
 				
 		local needRepublish = false
@@ -1169,8 +1168,6 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 			writeLogfile(2, string.format("Get metadata: %s - latest version not published, skip download.\n", photoInfo.remoteId))
 		elseif tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
 			writeLogfile(2, string.format("Get metadata: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
---		elseif srcPhoto:getRawMetadata('isVideo') then
---			writeLogfile(2, string.format("Get metadata: %s - videos not supported, skip download.\n", photoInfo.remoteId))
 		else		 
     		
     		------------------------------------------------------------------------------------------------------
@@ -1190,6 +1187,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
     		-- get tags and translated tags (rating, label) from Photo Station if configured
     		if 		collectionSettings.tagsDownload
+    			or  collectionSettings.PS2LrFaces 
     			or  collectionSettings.PS2LrLabel 
     			or  collectionSettings.PS2LrRating 
     		then
@@ -1202,8 +1200,12 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     					local photoTag = photoTags[i]
     					writeLogfile(4, string.format("Get metadata: found tag type %s name %s\n", photoTag.type, photoTag.name))
     					
+        				-- a people tag has a face region in additional.info structure
+        				if collectionSettings.PS2LrFaces and photoTag.type == 'people' then
+    						table.insert(facesPS, photoTag.additional.info)
+        				
         				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
-    					if collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '%+(%a+)') then
+    					elseif collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '%+(%a+)') then
     						labelPS = string.match(string.lower(photoTag.name), '%+(%a+)')
     
        					-- ratings look like general tag '*', '**', ... '*****'
@@ -1221,8 +1223,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     
     		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
     
-    		writeLogfile(3, string.format("Get metadata: %s - title %s caption '%s', rating %d, label '%s', %d general tags\n", 
-    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), ifnil(ratingPS, 0), ifnil(labelPS, ''), #tagsPS))
+    		writeLogfile(3, string.format("Get metadata: %s - title %s caption '%s', rating %d, label '%s', %d general tags, %d faces\n", 
+    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), ifnil(ratingPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
 
     		------------------------------------------------------------------------------------------------------
 			if collectionSettings.titleDownload then
@@ -1302,11 +1304,12 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     
     		------------------------------------------------------------------------------------------------------
     		if collectionSettings.tagsDownload then
-    			-- get delta list: which keywords werer added and removed
+    			-- get delta list: which keywords were added and removed
     			keywordNamesAdd, keywordNamesRemove, keywordsRemove = PSLrUtilities.getModifiedKeywords(srcPhoto, tagsPS)
     			
     			-- allow updata of keywords only if keyword were added or changed, not if keywords were removed 
-    			if (#keywordNamesAdd > 0) or (#keywordNamesRemove > 0) and (#keywordNamesAdd >= #keywordNamesRemove) then
+    			if (#keywordNamesAdd > 0) 
+    			or ((#keywordNamesRemove > 0) and (#keywordNamesAdd >= #keywordNamesRemove)) then
     				tagsChanged = true
     				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove 
     				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, "','")) end
@@ -1317,6 +1320,32 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			resultText = resultText ..  string.format(" keywords %s removal ignored,", table.concat(keywordNamesRemove, "','"))
         			writeLogfile(3, string.format("Get metadata: %s - keywords %s were removed, setting photo to edited.\n", 
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
+        			needRepublish = true
+        			nRejectedChanges = nRejectedChanges + 1        		
+    			end
+    		end
+    		
+    		------------------------------------------------------------------------------------------------------
+    		if collectionSettings.PS2LrFaces then
+    			-- get delta list: which person tags were added and removed
+				local facesLr = PSExiftoolAPI.queryLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'))
+    			facesAdd, facesRemove = PSLrUtilities.getModifiedPersonTags(facesLr, facesPS)
+       			writeLogfile(3, string.format("Get metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
+      											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
+    			
+    			-- allow updata of faces only if faces were added or changed, not if faces were removed 
+    			if (#facesAdd > 0) 
+    			or ((#facesRemove > 0) and (#facesAdd >= #facesRemove)) then
+    				facesChanged = true
+    				nChanges = nChanges + #facesAdd + #facesRemove 
+    				if #facesAdd > 0 then resultText = resultText ..  string.format(" faces to add: '%s',", table.concat(facesAdd, "','")) end
+    				if #facesRemove > 0 then resultText = resultText ..  string.format(" faces to remove: '%s',", table.concat(facesRemove, "','")) end
+    				writeLogfile(3, string.format("Get metadata: %s - faces to add: %s, faces to remove: %s\n", 
+    										photoInfo.remoteId, table.concat(facesAdd, ','), table.concat(facesRemove, ',')))
+				elseif #facesAdd < #facesRemove then
+        			resultText = resultText ..  string.format(" faces %s removal ignored,", table.concat(facesRemove, "','"))
+        			writeLogfile(3, string.format("Get metadata: %s - faces %s were removed, setting photo to edited.\n", 
+      											photoInfo.remoteId, table.concat(facesRemove, "','")))
         			needRepublish = true
         			nRejectedChanges = nRejectedChanges + 1        		
     			end
@@ -1358,13 +1387,20 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     																iif(needRepublish, ', Re-publish needed', '')))
     		else
     			writeLogfile(2, string.format("Get metadata: %s - no changes.\n", photoInfo.remoteId, resultText))
-    		end 
+    		end
+    		
+    		if facesChanged then 
+    			-- overwrite all existing face regions in local photo
+	    		PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'), facesPS)
+	    	end  
 		end -- not skip Photo
 			
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
 	end 
 	progressScope:done()
+
+	closeSession(publishSettings)
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
