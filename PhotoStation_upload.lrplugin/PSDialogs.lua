@@ -1123,23 +1123,13 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrNotSupp=Faces (no support)",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrNotSuppTT=Download of face regions from Photo Station not supported",
-				fill_horizontal = 1,
-				value 			= false,
-				enabled 		= false,
-			},
-
--- no way to set face regions in Lr
---[[
-			f:checkbox {
 				fill_horizontal = 1,
 				title = LOC "$$$/PSUpload/ExportDialog/PS2LrFaces=Faces",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PS2LrFacesTT=Translate Photo Station People Tag to Lightroom Faces",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/PS2LrFacesTT=Translate Photo Station People Tags to Lightroom Faces",
 				value = bind 'PS2LrFaces',
 				enabled = bind 'exifXlatFaceRegions',
 			},
-]]
+
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrLabel=Color Label",
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
