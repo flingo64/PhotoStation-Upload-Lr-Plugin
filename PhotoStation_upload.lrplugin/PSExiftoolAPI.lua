@@ -9,6 +9,8 @@ exports:
 	- close
 	
 	- doExifTranslations
+	- queryLrFaceRegionList
+	- setLrFaceRegionList
 	
 Copyright(c) 2015, Martin Messmer
 
