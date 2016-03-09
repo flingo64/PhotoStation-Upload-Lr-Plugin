@@ -5,6 +5,7 @@ Lightroom utilities:
 	- getCollectionPath
 	- getCollectionUploadPath
 	- evaluateAlbumPath
+	- getModifiedPersonTags
 	- getModifiedKeywords
 	- addPhotoKeywordNames
 	- removePhotoKeyword
@@ -55,7 +56,7 @@ end
 ------------- getDateTimeOriginal -------------------------------------------------------------------
 -- getDateTimeOriginal(srcPhoto)
 -- get the DateTimeOriginal (capture date) of a photo or whatever comes close to it
--- tries various methods to get the info including Lr metadata, exiftool (if enabled), file infos
+-- tries various methods to get the info including Lr metadata, file infos
 -- returns a unix timestamp and a boolean indicating if we found a real DateTimeOrig
 function PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	local srcDateTime = nil
@@ -371,11 +372,56 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 end
 
 --------------------------------------------------------------------------------------------
+-- getModifiedPersonTags(facesLr, facesPS)
+-- checks the person tag list of a photo against a list of person tags
+-- returns:
+-- 		- a list of person tag names to be added (in facesPS, but not in facesLr)
+-- 		- a list of person tag names to be removed (in facesLr, but not in facesPS)
+function PSLrUtilities.getModifiedPersonTags(facesLr, facesPS)
+	local facesAdd, facesRemove = {}, {}
+	local nAdd, nRemove = 0, 0
+	
+	-- look for faces to be added
+	for i = 1, #facesPS do
+		local found = false 
+		
+		for j = 1, #facesLr do
+			if facesPS[i].name == facesLr[j].name then
+				found = true
+				break
+			end
+		end
+		if not found then
+			nAdd = nAdd + 1
+			facesAdd[nAdd] = facesPS[i].name 
+		end
+	end
+					
+	-- look for faces to be removed
+	for i = 1, #facesLr do
+		local found = false 
+		
+		for j = 1, #facesPS do
+			if facesLr[i].name == facesPS[j].name then
+				found = true
+				break
+			end
+		end
+		if not found then
+			nRemove = nRemove + 1
+			facesRemove[nRemove] = facesLr[i].name  
+		end
+	end
+					
+	return facesAdd, facesRemove
+end
+
+--------------------------------------------------------------------------------------------
 -- getModifiedKeywords(srcPhoto, tagList)
--- checks the keyword list of a photo against a list keywords
+-- checks the keyword list of a photo against a list of keywords
 -- returns:
 -- 		- a list of keyword names to be added (in keyword list, but not in photo's keyword list)
--- 		- a list of keyword namesto be removed (in photo's keyword list, but not in keyword list)
+-- 		- a list of keyword names to be removed (in photo's keyword list, but not in keyword list)
 -- 		- a list of keyword to be removed (in photo's keyword list, but not in keyword list)
 function PSLrUtilities.getModifiedKeywords(srcPhoto, tagList)
 	local keywords = srcPhoto:getRawMetadata("keywords")
@@ -417,7 +463,6 @@ function PSLrUtilities.getModifiedKeywords(srcPhoto, tagList)
 					
 	return keywordNamesAdd, keywordNamesRemove, keywordsRemove
 end
-
 
 --------------------------------------------------------------------------------------------
 -- addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
