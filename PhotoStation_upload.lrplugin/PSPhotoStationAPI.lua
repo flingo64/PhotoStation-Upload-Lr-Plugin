@@ -564,23 +564,6 @@ function PSPhotoStationAPI.getPhotoExifs (h, dstFilename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoTags (h, dstFilename, isVideo) 
--- get table of tags (general,people,geo) of a photo
-function PSPhotoStationAPI.getPhotoTags(h, dstFilename, isVideo)
-	local formData = 'method=list&' ..
-					 'version=1&' .. 
-					 'type=people,geo,desc&' .. 
-					 'id=' .. getPhotoId(dstFilename, isVideo) 
-
-	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
-	
-	if not respArray then return false, errorCode end 
-
-	writeLogfile(3, string.format('getPhotoTags(%s) returns %d tags.\n', dstFilename, #respArray.data.tags))
-	return respArray.data.tags
-end
-
----------------------------------------------------------------------------------------------------------
 -- getTags (h, type) 
 -- get table of tagId/tagString mappings or given type: desc, people, geo
 function PSPhotoStationAPI.getTags(h, type)
@@ -623,6 +606,7 @@ function PSPhotoStationAPI.getPhotoTags(h, dstFilename, isVideo)
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
 					 'type=people,geo,desc&' .. 
+					 'additional=info&' ..
 					 'id=' .. getPhotoId(dstFilename, isVideo) 
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
