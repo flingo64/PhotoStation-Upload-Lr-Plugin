@@ -320,8 +320,6 @@ function PSExiftoolAPI.setLrFaceRegionList(h, photoFilename, personTags)
 		personTagHs = personTagHs .. sep .. tostring(personTags[i].height)
 	end
 
-	local oldloglevel = getLogLevel()
-	changeLogLevel(4)
 	if not 	sendCmd(h, "-sep ".. separator) 
 	or not	sendCmd(h, 
 					"-XMP-mwg-rs:RegionName="		.. personTagNames .. " " ..
