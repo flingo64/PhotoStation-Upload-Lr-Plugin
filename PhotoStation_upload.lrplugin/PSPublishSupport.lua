@@ -538,6 +538,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.tagsDownload = false
 	end
 
+	if collectionSettings.locationDownload == nil then
+		collectionSettings.locationDownload = false
+	end
+
 	if collectionSettings.PS2LrFaces == nil then
 		collectionSettings.PS2LrFaces = false
 	end
@@ -1111,6 +1115,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
 	if 		not collectionSettings.titleDownload 
 		and not collectionSettings.captionDownload 
+		and not collectionSettings.locationDownload 
 		and not collectionSettings.tagsDownload 
 		and not collectionSettings.PS2LrFaces 
 		and not collectionSettings.PS2LrLabel 
@@ -1149,16 +1154,18 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
 		local srcPhoto 		= photoInfo.photo
 
-		local titlePS, 		titleChanged
+		local titlePS,		titleChanged
 		local captionPS, 	captionChanged
+		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }		-- GPS data from photo or from user tagging 
 		local ratingPS, 	ratingChanged
 		local labelPS,		labelChanged
 		local tagsPS, 		tagsChanged = {}
-		local facesPS, 		facesChanged = {}
+		local facesPS, 			facesChanged = {}
 		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
 		local facesAdd, facesRemove
 		local resultText = ''
-				
+		
+		
 		local needRepublish = false
 		
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
@@ -1171,22 +1178,27 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		else		 
     		
     		------------------------------------------------------------------------------------------------------
-
     		-- get caption from Photo Station
+
     		if 		collectionSettings.titleDownload 
     			or  collectionSettings.captionDownload 
+    			or  collectionSettings.locationDownload 
     		then
     			local photoInfo = PSPhotoStationAPI.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
         		if photoInfo then
         			if collectionSettings.titleDownload 	then titlePS = photoInfo.title end 
         			if collectionSettings.captionDownload	then captionPS = photoInfo.description end 
+        			if collectionSettings.locationDownload	then 
+        				gpsPS.latitude	= tonumber(ifnil(photoInfo.lat, '0'))
+        				gpsPS.longitude	= tonumber(ifnil(photoInfo.lng, '0'))
+        			end
         		end
     		end
     		
     		------------------------------------------------------------------------------------------------------
-
     		-- get tags and translated tags (rating, label) from Photo Station if configured
     		if 		collectionSettings.tagsDownload
+    			or  collectionSettings.locationDownload 
     			or  collectionSettings.PS2LrFaces 
     			or  collectionSettings.PS2LrLabel 
     			or  collectionSettings.PS2LrRating 
@@ -1213,23 +1225,60 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     						ratingPS = math.min(string.len(photoTag.name), 5)
     					
     					-- any other general tag is taken as-is
-    					elseif photoTag.type == 'desc' then
+    					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, '%+(%a+)') and not string.match(photoTag.name, '([%*]+)') then
     						table.insert(tagsPS, photoTag.name)
-    					end -- if rating or label
-        			end -- for
+    					
+    					-- geo tag as added by a user, overwrites photo gps data from exif if existing
+    					elseif collectionSettings.locationDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
+            				gpsPS.latitude	= tonumber(ifnil(photoTag.additional.info.lat, 0))
+            				gpsPS.longitude	= tonumber(ifnil(photoTag.additional.info.lng, 0))
+    					end 
+        			end
         		end
         					
     		end
-    
+
     		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
     
-    		writeLogfile(3, string.format("Get metadata: %s - title %s caption '%s', rating %d, label '%s', %d general tags, %d faces\n", 
-    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), ifnil(ratingPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
+    		writeLogfile(3, string.format("Get metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d, label '%s', %d general tags, %d faces\n", 
+    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude),
+    							ifnil(ratingPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
+
+    		------------------------------------------------------------------------------------------------------
+    		-- title can be stored in two places in PS: in title tag (when entered by PS user) and in exif 'Object Name' (when set by Lr)
+   			-- title tag overwrites exif tag, get Object Name only, if no title tag was found
+
+    		if 	collectionSettings.titleDownload 
+    		and (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
+				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+				if exifsPS then 
+					local namePS = findInArray(exifsPS, 'label', 'Object Name', 'value')
+					if namePS then 
+						writeLogfile(3, string.format("Get metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
+						titlePS = namePS 
+					end
+				end
+			end
+
 
     		------------------------------------------------------------------------------------------------------
 			if collectionSettings.titleDownload then
-        		-- check if PS title is not empty, is not the Default PS title (filename) and is different to Lr
         		local defaultTitlePS = LrPathUtils.removeExtension(LrPathUtils.leafName(photoInfo.remoteId))
+
+	    		-- title can be stored in two places in PS: in title tag (when entered by PS user) and in exif 'Object Name' (when set by Lr)
+   				-- title tag overwrites exif tag, get Object Name only, if no title was found
+        		if (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
+    				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+    				if exifsPS then 
+    					local namePS = findInArray(exifsPS, 'label', 'Object Name', 'value')
+    					if namePS then 
+    						writeLogfile(3, string.format("Get metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
+    						titlePS = namePS 
+    					end
+    				end
+    			end
+    			
+        		-- check if PS title is not empty, is not the Default PS title (filename) and is different to Lr
         		if titlePS and titlePS ~= '' and titlePS ~= defaultTitlePS and titlePS ~= ifnil(srcPhoto:getFormattedMetadata('title'), '') then
         			titleChanged = true
         			nChanges = nChanges + 1
@@ -1237,6 +1286,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         												ifnil(srcPhoto:getFormattedMetadata('title'), ''), titlePS)
         			writeLogfile(3, string.format("Get metadata: %s - title changed from '%s' to '%s'\n", 
         											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('title'), ''), titlePS))
+        											
         		elseif (not titlePS or titlePS == '' or titlePS == defaultTitlePS) and ifnil(srcPhoto:getFormattedMetadata('title'), '') ~= '' then
         			resultText = resultText ..  string.format(" title %s removal ignored,", srcPhoto:getFormattedMetadata('title'))
         			writeLogfile(3, string.format("Get metadata: %s - title %s was removed, setting photo to edited.\n", 
@@ -1260,6 +1310,36 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			resultText = resultText ..  string.format(" caption %s removal ignored,", srcPhoto:getFormattedMetadata('caption'))
         			writeLogfile(3, string.format("Get metadata: %s - caption %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('caption')))
+        			needRepublish = true        		
+        			nRejectedChanges = nRejectedChanges + 1        		
+        		end
+    		end
+    
+    		------------------------------------------------------------------------------------------------------
+			if collectionSettings.locationDownload then
+        		-- check if PS location is not empty and is different to Lr
+        		local gpsLr = srcPhoto:getRawMetadata('gps')
+        		if not gpsLr then gpsLr = { latitude = 0, longitude = 0 } end  
+        		gpsLr.latitude = ifnil(gpsLr.latitude, 0)	
+        		gpsLr.longitude = ifnil(gpsLr.longitude, 0)	
+
+        		if 	(gpsPS.latitude ~= 0 or gpsPS.longitude ~= 0) 
+        		and (math.abs(gpsPS.latitude - gpsLr.latitude) > 0.00001 or math.abs(gpsPS.longitude - gpsLr.longitude) > 0.00001) then
+        			gpsChanged = true
+        			nChanges = nChanges + 1
+        			resultText = resultText ..  string.format(" location changed from '%s/%s' to '%s/%s',", 
+        												tostring(gpsLr.latitude), tostring(gpsLr.longitude),
+        												tostring(gpsPS.latitude), tostring(gpsPS.longitude))
+        			writeLogfile(3, string.format("Get metadata: %s - location changed from '%s/%s' to '%s/%s'\n", 
+        											photoInfo.remoteId, 
+       												tostring(gpsLr.latitude), tostring(gpsLr.longitude),
+       												tostring(gpsPS.latitude), tostring(gpsPS.longitude)))
+
+        		elseif	(gpsPS.latitude == 0 and  gpsPS.longitude == 0) 
+        		and 	(gpsLr.latitude ~= 0 or gpsLr.longitude ~= 0) then
+        			resultText = resultText ..  string.format(" location removal ignored,")
+        			writeLogfile(3, string.format("Get metadata: %s - location was removed, setting photo to edited.\n", 
+        										photoInfo.remoteId))
         			needRepublish = true        		
         			nRejectedChanges = nRejectedChanges + 1        		
         		end
@@ -1354,12 +1434,13 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		------------------------------------------------------------------------------------------------------
 
     		-- if anything changed in Photo Station, change value in Lr
-    		if titleChanged or captionChanged or labelChanged or ratingChanged or tagsChanged or needRepublish then
+    		if titleChanged or captionChanged or gpsChanged or labelChanged or ratingChanged or tagsChanged or needRepublish then
         		catalog:withWriteAccessDo( 
         			'SetCaptionLabelRating',
         			function(context)
         				if titleChanged			then srcPhoto:setRawMetadata('title', titlePS) end
         				if captionChanged		then srcPhoto:setRawMetadata('caption', captionPS) end
+        				if gpsChanged			then srcPhoto:setRawMetadata('gps', gpsPS) end
         				if labelChanged			then srcPhoto:setRawMetadata('colorNameForLabel', labelPS) end
         				if ratingChanged		then srcPhoto:setRawMetadata('rating', ratingPS) end
         				if tagsChanged and 
