@@ -993,7 +993,7 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 				f:checkbox {
 					title 			= LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in Photo Station according to sort order of Published Collection.\n" ..
-											"Note: Sorting is not possible for dynamic Target Albums (including metadata placeholders)\n",
+											"Note: Sorting is only possible for collections with 'Sort: Custom Order' when uploading to a flat album.\n",
 					alignment 		= 'left',
 					fill_horizontal = 1,
 					value 			= bind 'sortPhotos',
@@ -1027,8 +1027,13 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     				enabled 		= false,
     			},
     
-    			f:spacer { fill_horizontal = 1,	},
-    			
+    			f:checkbox {
+    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationUpload=Location (always)",
+    				fill_horizontal = 1,
+    				value 			= true,
+    				enabled 		= false,
+    			},
+    
     			f:spacer { fill_horizontal = 1,	},
     		}
 		), 
@@ -1097,7 +1102,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		f:row {
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/TitleDownload=Title",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TitleDownloadTT=Download photo title from Photo Station",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TitleDownloadTT=Download photo title tag from Photo Station",
 				fill_horizontal = 1,
 				value 			= bind 'titleDownload',
 			},
@@ -1109,7 +1114,12 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				value 			= bind 'captionDownload',
 			},
 
-			f:spacer { fill_horizontal = 1,	},
+			f:checkbox {
+				title 			= LOC "$$$/PSUpload/ExportDialog/GeoDownload=Location",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/GeoDownloadTT=Download geo location from Photo Station (Location Tag)",
+				fill_horizontal = 1,
+				value 			= bind 'locationDownload',
+			},
 			
 			f:spacer { fill_horizontal = 1,	},
 		},
@@ -1125,7 +1135,9 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 			f:checkbox {
 				fill_horizontal = 1,
 				title = LOC "$$$/PSUpload/ExportDialog/PS2LrFaces=Faces",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PS2LrFacesTT=Translate Photo Station People Tags to Lightroom Faces",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/PS2LrFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\n" .. 
+								"Note: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n" ..
+								"!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
 				value = bind 'PS2LrFaces',
 				enabled = bind 'exifXlatFaceRegions',
 			},
