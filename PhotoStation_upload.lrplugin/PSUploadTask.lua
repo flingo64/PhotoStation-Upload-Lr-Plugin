@@ -183,6 +183,10 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 
 	-- wait for Photo Station semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
+
+	-- delete old before uploading new
+	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, false) 
+	
 	-- upload thumbnails and original file
 	or exportParams.thumbGenerate and (
 		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
@@ -261,14 +265,12 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	
 	-- restore the capture time for the rendered video
 	vinfo.srcDateTime = vOrgInfo.srcDateTime
---[[	
 	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
 	-- overwrite the ffmpeg DateTimeOrig 
 	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	if isOrigDateTime or not vinfo.srcDateTime then
 		vinfo.srcDateTime = metaDateTime
 	end
-]]
 	
 	-- get the real dimension: may be different from dimension if dar is set
 	-- dimension: NNNxMMM
@@ -361,6 +363,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	-- wait for Photo Station semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
+	-- delete old before uploading new
 	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, true) 
 
 	or exportParams.thumbGenerate and (
@@ -448,7 +451,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			local photoThere 
 			local maxWait = 30
 			local _, keywordNamesAdd, _ = PSLrUtilities.getModifiedKeywords(srcPhoto, {})
-			writeLogfile(2, string.format("Metadata Upload for %s found keywords: %s '\n", dstFilename, table.concat(keywordNamesAdd, "','")))
+			writeLogfile(2, string.format("Metadata Upload for %s found keywords: '%s'\n", dstFilename, table.concat(keywordNamesAdd, "','")))
 
 			while not photoThere and maxWait > 0 do
 				if not PSPhotoStationAPI.getPhotoInfo(exportParams.uHandle, dstFilename, true) then
@@ -470,14 +473,14 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 					and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', PSPhotoStationAPI.rating2Stars(srcPhoto:getRawMetadata("rating"))))
 				 or	(#keywordNamesAdd > 0  
 					and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
+				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))										
 				) 
 			then
 				table.insert(failures, srcPhoto:getRawMetadata("path"))
 				writeLogfile(1, 'Metadata Upload for "' .. dstFilename .. '" failed!!!\n')
-			else
-				ackRendition(rendition, dstFilename, publishedCollectionId)
 			end
-		else -- no metadata to update
+		elseif publishedCollectionId then
+			-- no metadata to update, ack rendition if publish anyway
 			ackRendition(rendition, dstFilename, publishedCollectionId)										
 		end
    		nProcessed = nProcessed + 1
@@ -805,7 +808,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					and	(	not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos)
 						-- upload of metadata to just uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
-						 or not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollection.localIdentifier) 
+						 or (    publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollection.localIdentifier)) 
+						 or (not publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, nil)) 
 						)	
 					)
 				or (	not srcPhoto:getRawMetadata("isVideo") 
