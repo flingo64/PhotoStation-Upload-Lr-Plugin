@@ -13,7 +13,8 @@ exported functions:
 	- iif
 	- split
 	- trim
-	
+	- findInArray
+		
 	- getNullFilename
 	- getProgExt
 	
@@ -140,6 +141,16 @@ function trim(s)
   return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
 end
 
+function findInArray(array, indexField, indexValue, valueField)
+	if not array then return nil end
+	
+	for i = 1, #array do
+		if array[i][indexField] == indexValue then return array[i][valueField] end
+	end
+	
+	return nil
+end
+
 ----------------------- logging ---------------------------------------------------------
 -- we can store some variables in 'global' local variables safely:
 -- each export task will get its own copy of these variables
@@ -202,9 +213,12 @@ end
 -- writeLogfile: always open, write, close, otherwise output will get lost in case of unexpected errors
 function writeLogfile (level, msg)
 	if level <= ifnil(loglevel, 2) then
-		local logfile = io.open(logfilename, "a")
-		logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ", " .. ifnil(loglevelname[level], tostring(level)) .. ": " .. msg)
-		io.close (logfile)
+--		local logfile = io.open(logfilename, "a")
+		local logfile = io.open(getLogFilename(), "a")
+--		if logfile then
+			logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ", " .. ifnil(loglevelname[level], tostring(level)) .. ": " .. msg)
+			io.close (logfile)
+--		end
 	end
 end
 
@@ -399,7 +413,7 @@ end
 --	- start exiftool listener, if required
 function openSession(exportParams, publishedCollection, operation)
 	-- if "use secondary server" was choosen, temporarily overwrite primary address
-	writeLogfile(4, string.format("openSession: operation = %s , publishMode = %s\n", operation, exportParams.publishMode))
+	writeLogfile(4, string.format("openSession: operation = %s, publishMode = %s\n", operation, exportParams.publishMode))
 	if exportParams.useSecondAddress then
 		writeLogfile(4, "openSession: copy second server parameters\n")
 		exportParams.proto = exportParams.proto2
