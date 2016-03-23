@@ -156,6 +156,8 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	local thmb_M_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
+	local title_Filename  = iif(ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
+							LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
 	local srcDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	local exifXlatLabelCmd = iif(exportParams.exifXlatLabel and not string.find('none,grey', string.lower(srcPhoto:getRawMetadata('colorNameForLabel'))), "-XMP:Subject+=" .. '+' .. srcPhoto:getRawMetadata('colorNameForLabel'), nil)
 	local retcode
@@ -178,6 +180,9 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 								'120x120>^',   thmb_S_Filename) )
 	)
 	
+	-- if photo has a title: generate a title file  	
+	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
+
 	-- exif translations	
 	or (exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
 
@@ -185,7 +190,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	or not waitSemaphore("PhotoStation", dstFilename)
 
 	-- delete old before uploading new
-	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, false) 
+--	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, false) 
 	
 	-- upload thumbnails and original file
 	or exportParams.thumbGenerate and (
@@ -195,6 +200,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
 		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
+	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
 	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, renderedPhotoPath, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST')
 	then
 		signalSemaphore("PhotoStation")
@@ -210,6 +216,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 		LrFileUtils.delete(thmb_S_Filename)
 		if not exportParams.isPS6 then LrFileUtils.delete(thmb_L_Filename) end
 		LrFileUtils.delete(thmb_XL_Filename)
+		if title_Filename then LrFileUtils.delete(title_Filename) end
 	end
 	
 	return retcode
@@ -239,6 +246,8 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	local vid_LOW_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt))	--  360p
 	local vid_MED_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MED', vidExt))	--  720p
 	local vid_HIGH_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))	-- 1080p
+	local title_Filename  	= iif(ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
+							  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
 	local realDimension
 	local retcode
 	local convKeyOrig, convKeyAdd
@@ -360,6 +369,9 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	-- generate additional video, if requested
 	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
+	-- if photo has a title: generate a title file  	
+	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
+
 	-- wait for Photo Station semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
@@ -376,6 +388,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	) 
 	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
 	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
+	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
 	or 							   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
 		signalSemaphore("PhotoStation")
@@ -394,6 +407,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
     	LrFileUtils.delete(thmb_XL_Filename)
     	LrFileUtils.delete(vid_Orig_Filename)
     	if vid_Add_Filename then LrFileUtils.delete(vid_Add_Filename) end
+		if title_Filename then LrFileUtils.delete(title_Filename) end
 	end
 	
 	return retcode
@@ -442,9 +456,9 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		local dstFilename 				= videoUploaded.publishedPhotoId
 		local publishedCollectionId 	= videoUploaded.publishedCollectionId  
 		
-		if (	ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= ''
-			or 	ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= ''
+		if (	ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= ''
 			or 	ifnil(srcPhoto:getFormattedMetadata("keywordTags"), '') ~= ''		
+			or	srcPhoto:getRawMetadata("gps")
 			or	(exportParams.exifXlatLabel and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey')
 			or	(exportParams.exifXlatRating and ifnil(srcPhoto:getRawMetadata("rating"), 0) ~= 0)
 		) then
@@ -463,8 +477,8 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			end
 			
 			if (not photoThere
-				 or (ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '' 	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, 'title', srcPhoto:getFormattedMetadata("title")))
 				 or (ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= '' 	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, 'description', srcPhoto:getFormattedMetadata("caption")))
+-- TODO: upload locaton as geo tag
 				 or	(exportParams.exifXlatLabel 
 				 	and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey'
 					and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', '+' .. srcPhoto:getRawMetadata('colorNameForLabel'))) 
