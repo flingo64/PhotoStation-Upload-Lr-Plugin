@@ -12,7 +12,10 @@ conversion primitives:
 	- getConvertKey
 	- videoIsNativePSFormat
 	- convertVideo
-Copyright(c) 2015, Martin Messmer
+
+	- writeTitleFile
+	
+Copyright(c) 2016, Martin Messmer
 
 This file is part of Photo StatLr - Lightroom plugin.
 
@@ -580,28 +583,18 @@ function PSConvert.convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, d
 	return true
 end
 
----------------------- Exiftool functions ----------------------------------------------------------
---[[
-function exiftoolGetDateTimeOrg(srcFilename)
-	-- returns DateTimeOriginal / creation_time retrieved via exiftool as Cocoa timestamp
-	local outfile = LrFileUtils.chooseUniqueFileName(LrPathUtils.child(tmpdir, "exifDateTime.txt"))
-	local cmdline 
-	
-	if exiftool then
-		cmdline = '"' .. exiftool .. '" -s3 -d %s -datetimeoriginal ' .. srcFilename .. ' > ' .. outfile
-	else
-		return nil
+-----------------------------------------------------------
+-- PSConvert.writeTitleFile(titleFilename, title)
+-- writes a title into a file
+function PSConvert.writeTitleFile(titleFilename, title)
+	local titlefile = io.open(titleFilename, "w")
+	if titlefile then
+		titlefile:write(title)
+		io.close (titlefile)
+		return true
 	end
 	
-	writeLogfile(4,cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3,"... failed!\n")
-		return nil
-	end
-
-	local datetimeOrg = LrFileUtils.readFile( outfile )
-	LrFileUtils.delete(outfile)
+	writeLogfile(3, "PSConvert.writeTitleFile: cannot open ".. titleFilename .. "\n")
+	return false
 	
-	return LrDate.timeFromPosixDate(datetimeOrg)
 end
-]]
