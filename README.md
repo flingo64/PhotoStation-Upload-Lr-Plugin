@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 5.2.x<br>
+Version 5.3.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/Photo Station-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -18,7 +18,7 @@ Overview
 Photo StatLr (formerly called PhotoStation Upload) is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "Photo StatLr" and a new Export target also called "Photo StatLr" to the "Export" dialog. 
 Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.<br>
 Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature which will download comments and ratings from Photo Station to the Lightroom Comments panel (Library mode: bottom right panel).
-Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label and rating. 
+Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label, rating and person tags/faces regions. 
 
 This plugin uses the same converters and the same upload API as the official "Synology Photo Station Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target Photo Station by protocol (http/https) and servename (IP@, hostname, FQDN).
 
@@ -195,7 +195,7 @@ Publish Functionality:
 	- __Convert__:<br>
 	  This mode is used to convert photos in a an old-style (e.g. \<5.0.0) Published Collection to Published Collection which supports comments and ratings (v.5.0.0 and above)<br>
 - Impose __sort order of photos in Lr Published Collections__ in Photo Station:<br>
-	Sort order is only supported on Flat Collections
+	Sort order is only supported on Published Collections w/ Custom Sort Order when uploaded as Flat Copy 
 
 - __Deletion of published photos__, when deleted locally (from Collection or Library)
 
@@ -210,10 +210,9 @@ Download / Sync Functionality:
 - __Download and two-way sync of various metadata__ for photos and videos:<br>
 	- title/description/caption
 	- general tags
- 
-- __Metadata translations on download:__<br>
-	- Translation of __Star Rating tags (* to *****)__  to Lr rating <br>
+ 	- Translation of __Star Rating tags (* to *****)__  to Lr rating <br>
 	- Translation of __Color Label tags (+yellow, +red, etc.)__  to Lr color label <br>
+	- Translation of __Person tags__  to Lr face regions (requires reloading of photo metadata from file)<br>
 	
 - For more detail, please read the [Wiki article] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Some-words-on-the-two-way-sync-of-metadata)
 
@@ -426,6 +425,17 @@ Version 5.2
 - Download of __title__
 - Support for __metadata__ upload and download for __videos__  
 - Introduced a strict '__Do not delete metadata__ in Lr when downloading from Photo Station__' policy 
+
+Version 5.3
+-----------
+- Support for __person tags download__ (face regions) to original photo (requires reloading the photo in Lr)
+- Download: when Label is not selected for download,  Label tags (e.g. '+green') in PS will not be download as Lr keywords 
+- Download: when Rating is not selected for download,  rating tags (e.g. '***') in PS will not be download as Lr keywords 
+- Upload: Photo title is now also added as PS title tag on upload
+- Bugfixes:
+	- Rejected photos due to missing photo title was fixed
+	- An exception in case of exporting (not publishing) of a video was fixed
+	- An exception in case of two parallel plugin threads running was fixed 
 
 Copyright
 ==========

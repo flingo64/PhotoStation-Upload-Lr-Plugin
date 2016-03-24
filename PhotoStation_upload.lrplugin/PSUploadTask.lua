@@ -458,7 +458,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		
 		if (	ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= ''
 			or 	ifnil(srcPhoto:getFormattedMetadata("keywordTags"), '') ~= ''		
-			or	srcPhoto:getRawMetadata("gps")
+--TODO			or	srcPhoto:getRawMetadata("gps")
 			or	(exportParams.exifXlatLabel and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey')
 			or	(exportParams.exifXlatRating and ifnil(srcPhoto:getRawMetadata("rating"), 0) ~= 0)
 		) then
