@@ -42,6 +42,7 @@ Photo StatLr uses the following free software to do its job:
 local LrDate 			= import 'LrDate'
 local LrFileUtils 		= import 'LrFileUtils'
 local LrPathUtils 		= import 'LrPathUtils'
+local LrPhotoInfo		= import 'LrPhotoInfo'
 local LrPrefs	 		= import 'LrPrefs'
 local LrTasks 			= import 'LrTasks'
 --local LrView 			= import 'LrView'
@@ -167,7 +168,7 @@ function PSExiftoolAPI.open(exportParams)
         					'-config "' .. etConfigFile .. '" ' ..
         					'-stay_open True ' .. 
         					'-@ "' .. h.etCommandFile .. '" ' ..
-        					' -common_args -overwrite_original -fast2 -n -m ' ..
+        					' -common_args -charset filename=UTF8 -overwrite_original -fast2 -n -m ' ..
         					'> "'  .. h.etLogFile .. 	'" ' ..
         					'2> "' .. h.etErrLogFile .. '"' .. 
         					cmdlineQuote()
@@ -313,14 +314,20 @@ function PSExiftoolAPI.setLrFaceRegionList(h, photoFilename, personTags)
 		local sep = iif(i == 1, '', separator)
 		personTagNames = personTagNames .. sep .. personTags[i].name
 		personTagTypes = personTagTypes .. sep .. 'Face'
-		personTagRotations = personTagRotations .. sep .. '0'
-		personTagXs = personTagXs .. sep .. tostring(personTags[i].x + (personTags[i].width / 2))
-		personTagYs = personTagYs .. sep .. tostring(personTags[i].y + (personTags[i].height / 2))
-		personTagWs = personTagWs .. sep .. tostring(personTags[i].width)
-		personTagHs = personTagHs .. sep .. tostring(personTags[i].height)
+		personTagRotations = personTagRotations .. sep .. string.format("%1.5f", 0)
+		personTagXs = personTagXs .. sep .. string.format("%1.5f", personTags[i].x + (personTags[i].width / 2))
+		personTagYs = personTagYs .. sep .. string.format("%1.5f", personTags[i].y + (personTags[i].height / 2))
+		personTagWs = personTagWs .. sep .. string.format("%1.5f", personTags[i].width)
+		personTagHs = personTagHs .. sep .. string.format("%1.5f", personTags[i].height)
 	end
 
-	if not 	sendCmd(h, "-sep ".. separator) 
+	local photoInfo = LrPhotoInfo.fileAttributes(photoFilename)
+	
+	if not photoInfo
+	or not 	sendCmd(h, "-sep ".. separator)	
+	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(photoInfo.width))
+	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(photoInfo.height))
+	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsUnit=pixel") 
 	or not	sendCmd(h, 
 					"-XMP-mwg-rs:RegionName="		.. personTagNames .. " " ..
 					"-XMP-mwg-rs:RegionType="		.. personTagTypes .. " " ..
