@@ -1027,12 +1027,15 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     				enabled 		= false,
     			},
     
+--[[
     			f:checkbox {
     				title 			= LOC "$$$/PSUpload/ExportDialog/LocationUpload=Location (always)",
     				fill_horizontal = 1,
     				value 			= true,
     				enabled 		= false,
     			},
+]]
+    			f:spacer { fill_horizontal = 1,	},
     
     			f:spacer { fill_horizontal = 1,	},
     		}
@@ -1114,12 +1117,15 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				value 			= bind 'captionDownload',
 			},
 
+--[[
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/GeoDownload=Location",
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/GeoDownloadTT=Download geo location from Photo Station (Location Tag)",
 				fill_horizontal = 1,
 				value 			= bind 'locationDownload',
 			},
+]]
+			f:spacer { fill_horizontal = 1,	},
 			
 			f:spacer { fill_horizontal = 1,	},
 		},
