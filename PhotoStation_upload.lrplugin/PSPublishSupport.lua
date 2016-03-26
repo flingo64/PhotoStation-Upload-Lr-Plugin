@@ -1085,6 +1085,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local nProcessed 		= 0 
 	local nChanges 			= 0 
 	local nRejectedChanges	= 0 
+	local nFailed			= 0 
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
@@ -1479,19 +1480,23 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
             			{timeout=5}
             		)
 				end
-								    
-    			writeLogfile(2, string.format("Get metadata: %s - %s done%s.\n", photoInfo.remoteId, resultText, 
-    																iif(needRepublish, ', Re-publish needed', '')))
-    		else
-    			writeLogfile(2, string.format("Get metadata: %s - no changes.\n", photoInfo.remoteId, resultText))
     		end
     		
-    		if facesChanged then 
-    			-- overwrite all existing face regions in local photo
-	    		PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'), facesPS)
+   			-- overwrite all existing face regions in local photo
+    		if facesChanged and not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesPS) then
+   				nChanges = nChanges -(#facesAdd + #facesRemove)
+   				nFailed = nFailed + 1 
 	    	end  
 		end -- not skip Photo
 			
+		if titleChanged	or captionChanged or labelChanged or ratingChanged or tagsChanged or facesChanged then
+    		writeLogfile(2, string.format("Get metadata: %s - %s %s%s.\n", photoInfo.remoteId, resultText,
+    																iif(nFailed > 0, 'failed', 'done'), 
+    																iif(needRepublish, ', Re-publish needed', '')))
+		else
+			writeLogfile(2, string.format("Get metadata: %s - no changes.\n", photoInfo.remoteId))
+		end
+		
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
 	end 
@@ -1503,10 +1508,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local picPerSec = nProcessed / timeUsed
 	local message
 	
-	if nRejectedChanges > 0 then
+	if (nRejectedChanges > 0) or (nFailed > 0) then
 		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
-					string.format("%d added/modified and %d rejected (!!!) removed metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
-					nChanges, nRejectedChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+					string.format("%d added/modified, %d failed and %d rejected (!!!) removed metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
+					nChanges, nFailed, nRejectedChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 		showFinalMessage("Photo StatLr: Get metadata done", message, "critical")
 	else
 		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
