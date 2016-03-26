@@ -92,6 +92,7 @@ local PSAPIerrorMsgs = {
 	[420] = 'Illegal file name on FAT filesystem',
 	[421] = 'Device or resource busy',
 	[467] = 'No such tag',
+	[468] = 'Duplicate tag',
 	[470] = 'No such file',
 	[599] = 'No such task No such task of the file operation',
 	[1001]  = 'Http error: no response body, no response header',
@@ -656,7 +657,8 @@ function PSPhotoStationAPI.createAndAddPhotoTag(h, dstFilename, isVideo, type, n
 	 	photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId)
 	end 
 	
-	if not photoTagIds then return false end
+	-- errorCode 468: duplicate tag (tag already there)
+	if not photoTagIds and errorCode ~= 468 then return false end
 	
 	writeLogfile(3, string.format('createAndAddPhotoTag(%s, %s, %s) returns OK.\n', dstFilename, type, name))
 	return true	
