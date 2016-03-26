@@ -42,7 +42,6 @@ Photo StatLr uses the following free software to do its job:
 local LrDate 			= import 'LrDate'
 local LrFileUtils 		= import 'LrFileUtils'
 local LrPathUtils 		= import 'LrPathUtils'
-local LrPhotoInfo		= import 'LrPhotoInfo'
 local LrPrefs	 		= import 'LrPrefs'
 local LrTasks 			= import 'LrTasks'
 --local LrView 			= import 'LrView'
@@ -304,9 +303,10 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 end
 
 ----------------------------------------------------------------------------------
--- setLrFaceRegionList(h, photoFilename, personTags)
+-- setLrFaceRegionList(h, srcPhoto, personTags)
 -- set <mwg-rs:RegionList> elements: Picasa and Lr store detected face regions here
-function PSExiftoolAPI.setLrFaceRegionList(h, photoFilename, personTags)
+function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags)
+	local photoFilename = srcPhoto:getRawMetadata('path')
 	local personTagNames, personTagTypes, personTagRotations, personTagXs, personTagYs, personTagWs, personTagHs = '', '', '', '', '', '', ''
 	local separator = ';'
 	
@@ -321,12 +321,13 @@ function PSExiftoolAPI.setLrFaceRegionList(h, photoFilename, personTags)
 		personTagHs = personTagHs .. sep .. string.format("%1.5f", personTags[i].height)
 	end
 
-	local photoInfo = LrPhotoInfo.fileAttributes(photoFilename)
-	
-	if not photoInfo
+	local photoDimensions = srcPhoto:getRawMetadata('dimensions')
+
+	if 		PSLrUtilities.isRAW(photoFilename) 					-- currently not supported
+	or 		photoDimensions.width < photoDimensions.height		-- face regions in portrait oriented photos are not recognized by Lr  
 	or not 	sendCmd(h, "-sep ".. separator)	
-	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(photoInfo.width))
-	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(photoInfo.height))
+	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(photoDimensions.width))
+	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(photoDimensions.height))
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsUnit=pixel") 
 	or not	sendCmd(h, 
 					"-XMP-mwg-rs:RegionName="		.. personTagNames .. " " ..
@@ -339,6 +340,10 @@ function PSExiftoolAPI.setLrFaceRegionList(h, photoFilename, personTags)
 				)
 	or not sendCmd(h, photoFilename, noWhitespaceConversion)
 	then
+		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: isRAW: %s, isPortrait: %s\n", 
+					photoFilename, 
+					iif(PSLrUtilities.isRAW(photoFilename), 'yes', 'no'),  
+					iif(photoDimensions.width < photoDimensions.height, 'yes', 'false')))
 		return nil
 	end  
 
