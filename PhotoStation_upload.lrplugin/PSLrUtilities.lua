@@ -2,6 +2,9 @@
 
 PSLrUtilities.lua
 Lightroom utilities:
+	- isVideo
+	- isRAW
+	
 	- getCollectionPath
 	- getCollectionUploadPath
 	- evaluateAlbumPath
@@ -43,6 +46,15 @@ local LrProgressScope 	= import 'LrProgressScope'
 --====== global functions ====================================================--
 
 PSLrUtilities = {}
+
+---------------------- isRAW() ----------------------------------------------------------
+-- isRAW(filename)
+-- returns true if filename extension is one of the Lr supported RAW photo formats  
+function PSLrUtilities.isRAW(filename)
+	return iif(string.find('3fr,arw,cr2,dng,dcr,erf,mef,mrw,nef,orf,pef,raf,raw,rw2,srw,x3f', 
+							string.lower(LrPathUtils.extension(filename)), 1, true), 
+				true, false)
+end
 
 ---------------------- isVideo() ----------------------------------------------------------
 -- isVideo(filename)
