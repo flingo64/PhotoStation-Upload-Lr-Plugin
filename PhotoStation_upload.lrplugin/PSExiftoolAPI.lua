@@ -246,6 +246,12 @@ end
 -- function queryLrFaceRegionList(h, photoFilename)
 -- query <mwg-rs:RegionList> elements: Picasa and Lr store detected face regions here
 function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
+
+	-- if photo is RAW then get XMP info from sidecar file where Lr puts it
+	if PSLrUtilities.isRAW(photoFilename) then
+		photoFilename = LrPathUtils.replaceExtension(photoFilename, 'xmp')
+	end
+
 	if not sendCmd(h, "-XMP-mwg-rs:RegionAreaH -XMP-mwg-rs:RegionAreaW -XMP-mwg-rs:RegionAreaX -XMP-mwg-rs:RegionAreaY ".. 
 					  "-XMP-mwg-rs:RegionName -XMP-mwg-rs:RegionType")
 	or not sendCmd(h, photoFilename, noWhitespaceConversion)
@@ -323,8 +329,13 @@ function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags)
 
 	local photoDimensions = srcPhoto:getRawMetadata('dimensions')
 
-	if 		PSLrUtilities.isRAW(photoFilename) 					-- currently not supported
-	or 		photoDimensions.width < photoDimensions.height		-- face regions in portrait oriented photos are not recognized by Lr  
+	-- if photo is RAW then put XMP info to sidecar file where Lr is expecting it
+	if PSLrUtilities.isRAW(photoFilename) then
+		photoFilename = LrPathUtils.replaceExtension(photoFilename, 'xmp')
+	end
+
+--	if 		PSLrUtilities.isRAW(photoFilename) 					-- currently not supported
+	if		photoDimensions.width < photoDimensions.height		-- face regions in portrait oriented photos are not recognized by Lr  
 	or not 	sendCmd(h, "-sep ".. separator)	
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(photoDimensions.width))
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(photoDimensions.height))
