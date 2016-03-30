@@ -300,7 +300,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 												personTags[i].height	
 											))
 			else
-				writeLogfile(3, "PSExiftoolAPI.doExifTranslations: found non-face area: " .. personTagTypes[i] .. "\n")
+				writeLogfile(3, "PSExiftoolAPI.queryLrFaceRegionList: found non-face area: " .. personTagTypes[i] .. "\n")
 			end						
 		end
 	end
