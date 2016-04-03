@@ -680,13 +680,16 @@ function PSPhotoStationAPI.createAndAddPhotoTagList(h, dstFilename, isVideo, typ
 end
 
 ---------------------------------------------------------------------------------------------------------
--- editPhoto (h, dstFilename, isVideo, field, value) 
+-- editPhoto (h, dstFilename, isVideo, attrValPairs) 
 -- edit specific metadata field of a photo
-function PSPhotoStationAPI.editPhoto(h, dstFilename, isVideo, field, value)
+function PSPhotoStationAPI.editPhoto(h, dstFilename, isVideo, attrValPairs)
 	local formData = 'method=edit&' ..
 					 'version=1&' .. 
-					 field .. '=' .. value .. '&' .. 
 					 'id=' .. getPhotoId(dstFilename, isVideo) 
+
+	for i = 1, #attrValPairs do
+	 	formData = formData .. '&' .. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value 
+	end
 
 	local success, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
 	
