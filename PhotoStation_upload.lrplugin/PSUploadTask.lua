@@ -458,7 +458,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		
 		if (	ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= ''
 			or 	ifnil(srcPhoto:getFormattedMetadata("keywordTags"), '') ~= ''		
---TODO			or	srcPhoto:getRawMetadata("gps")
+			or	srcPhoto:getRawMetadata("gps")
 			or	(exportParams.exifXlatLabel and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey')
 			or	(exportParams.exifXlatRating and ifnil(srcPhoto:getRawMetadata("rating"), 0) ~= 0)
 		) then
@@ -466,6 +466,20 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			local maxWait = 30
 			local _, keywordNamesAdd, _ = PSLrUtilities.getModifiedKeywords(srcPhoto, {})
 			writeLogfile(2, string.format("Metadata Upload for %s found keywords: '%s'\n", dstFilename, table.concat(keywordNamesAdd, "','")))
+			local captionParams, gpsParams
+			
+			local captionData = srcPhoto:getFormattedMetadata("caption")
+			if ifnil(captionData, '') ~= '' then
+				captionParams = { { attribute =  'description', value = captionData } }
+			end
+
+			local gpsData = srcPhoto:getRawMetadata("gps")
+			if gpsData and gpsData.latitude and gpsData.longitude then
+				gpsParams = { 
+					{ attribute =  'gps_lat', value = gpsData.latitude },
+					{ attribute =  'gps_lng', value = gpsData.longitude } 
+				}
+			end
 
 			while not photoThere and maxWait > 0 do
 				if not PSPhotoStationAPI.getPhotoInfo(exportParams.uHandle, dstFilename, true) then
@@ -477,8 +491,8 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			end
 			
 			if (not photoThere
-				 or (ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= '' 	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, 'description', srcPhoto:getFormattedMetadata("caption")))
--- TODO: upload locaton as geo tag
+				 or (captionParams 	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, captionParams))
+				 or (gpsParams 	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, gpsParams))
 				 or	(exportParams.exifXlatLabel 
 				 	and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey'
 					and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', '+' .. srcPhoto:getRawMetadata('colorNameForLabel'))) 
