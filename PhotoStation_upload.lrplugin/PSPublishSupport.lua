@@ -1163,10 +1163,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local labelPS,		labelChanged
 		local tagsPS, 		tagsChanged = {}
 		local facesPS, 		facesChanged = {}
+		local origPhotoDimension
 		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
 		local facesAdd, facesRemove
 		local resultText = ''
-		
+		local changesRejected = 0		
 		
 		local needRepublish = false
 		
@@ -1300,6 +1301,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get metadata: %s - title %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('title')))
         			needRepublish = true
+        			changesRejected = changesRejected + 1        		
         			nRejectedChanges = nRejectedChanges + 1        		
         		end
 			end
@@ -1319,6 +1321,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get metadata: %s - caption %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('caption')))
         			needRepublish = true        		
+        			changesRejected = changesRejected + 1        		
         			nRejectedChanges = nRejectedChanges + 1        		
         		end
     		end
@@ -1350,6 +1353,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get metadata: %s - location was removed, setting photo to edited.\n", 
         										photoInfo.remoteId))
         			needRepublish = true        		
+        			changesRejected = changesRejected + 1        		
         			nRejectedChanges = nRejectedChanges + 1        		
         		end
     		end
@@ -1370,6 +1374,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get metadata: %s - label %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel')))
         			needRepublish = true
+        			changesRejected = changesRejected + 1        		
         			nRejectedChanges = nRejectedChanges + 1        		
         		end
     		end
@@ -1388,6 +1393,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get metadata: %s - rating %d was removed, setting photo to edited.\n", 
       											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
         			needRepublish = true
+        			changesRejected = changesRejected + 1        		
         			nRejectedChanges = nRejectedChanges + 1        		
         		end
     		end
@@ -1408,9 +1414,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     										photoInfo.remoteId, table.concat(keywordNamesAdd, ','), table.concat(keywordNamesRemove, ',')))
 				elseif #keywordNamesAdd < #keywordNamesRemove then
         			resultText = resultText ..  string.format(" keywords %s removal ignored,", table.concat(keywordNamesRemove, "','"))
-        			writeLogfile(3, string.format("Get metadata: %s - keywords %s were removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
+        			changesRejected = changesRejected + 1        		
         			nRejectedChanges = nRejectedChanges + 1        		
     			end
     		end
@@ -1418,12 +1425,13 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		------------------------------------------------------------------------------------------------------
     		if collectionSettings.PS2LrFaces then
     			-- get delta list: which person tags were added and removed
-				local facesLr = PSExiftoolAPI.queryLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'))
+				local facesLr
+				facesLr, origPhotoDimension = PSExiftoolAPI.queryLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'))
     			facesAdd, facesRemove = PSLrUtilities.getModifiedPersonTags(facesLr, facesPS)
        			writeLogfile(3, string.format("Get metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
       											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
     			
-    			-- allow updata of faces only if faces were added or changed, not if faces were removed 
+    			-- allow update of faces only if faces were added or changed, not if faces were removed 
     			if (#facesAdd > 0) 
     			or ((#facesRemove > 0) and (#facesAdd >= #facesRemove)) then
     				facesChanged = true
@@ -1435,10 +1443,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     										photoInfo.remoteId, table.concat(facesAdd, ','), table.concat(facesRemove, ',')))
 				elseif #facesAdd < #facesRemove then
         			resultText = resultText ..  string.format(" faces %s removal ignored,", table.concat(facesRemove, "','"))
-        			writeLogfile(3, string.format("Get metadata: %s - faces %s were removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get metadata: %s - faces %s were removed in PS, setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(facesRemove, "','")))
         			needRepublish = true
-        			nRejectedChanges = nRejectedChanges + 1        		
+        			changesRejected = changesRejected + 1        		
+        			nRejectedChanges = nRejectedChanges + 1
     			end
     		end
     		
@@ -1483,18 +1492,22 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     		
    			-- overwrite all existing face regions in local photo
-    		if facesChanged and not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesPS) then
+    		if facesChanged and not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesPS, origPhotoDimension) then
    				nChanges = nChanges -(#facesAdd + #facesRemove)
    				nFailed = nFailed + 1 
 	    	end  
 		end -- not skip Photo
 			
 		if titleChanged	or captionChanged or labelChanged or ratingChanged or tagsChanged or facesChanged then
-    		writeLogfile(2, string.format("Get metadata: %s - %s %s%s.\n", photoInfo.remoteId, resultText,
-    																iif(nFailed > 0, 'failed', 'done'), 
-    																iif(needRepublish, ', Re-publish needed', '')))
+    		writeLogfile(2, string.format("Get metadata: %s - %s %s%s%s.\n", 
+    												photoInfo.remoteId, resultText,
+    												iif(nFailed > 0, 'failed', 'done'), 
+    												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', ''),
+    												iif(needRepublish, ', Re-publish needed', '')))
 		else
-			writeLogfile(2, string.format("Get metadata: %s - no changes.\n", photoInfo.remoteId))
+			writeLogfile(2, string.format("Get metadata: %s - no changes%s.\n", 
+													photoInfo.remoteId, 
+    												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', '')))
 		end
 		
    		nProcessed = nProcessed + 1
