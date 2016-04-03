@@ -330,7 +330,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 end
 
 ----------------------------------------------------------------------------------
--- setLrFaceRegionList(h, srcPhoto, personTags)
+-- setLrFaceRegionList(h, srcPhoto, personTags, origPhotoDimension)
 -- set <mwg-rs:RegionList> elements: Picasa and Lr store detected face regions here
 function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags, origPhotoDimension)
 	local photoFilename = srcPhoto:getRawMetadata('path')
@@ -343,16 +343,22 @@ function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags, origPhotoDim
 		photoFilename = LrPathUtils.replaceExtension(photoFilename, 'xmp')
 	end
 	
-	-- adjust width and height if original photo was cropped 
-	if origPhotoDimension.hasCrop == 'True' then
-		-- HACK: Lr won't accept face regions for cropped photos
-		--[[
-		origPhotoDimension.width 	= math.floor((origPhotoDimension.cropRight - origPhotoDimension.cropLeft) * origPhotoDimension.width)
-		origPhotoDimension.height 	= math.floor((origPhotoDimension.cropBottom - origPhotoDimension.cropTop) * origPhotoDimension.height)
-		]]
-		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: cropped photos not supported!\n",	photoFilename)) 
+	if srcPhoto:getRawMetadata('isVirtualCopy') or srcPhoto:getRawMetadata('isCropped') then
+		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: %s/%s - not supported!\n",
+							photoFilename,
+							iif(srcPhoto:getRawMetadata('isVirtualCopy'), 'virtual copy', ''), 
+							iif(srcPhoto:getRawMetadata('isCropped'), 'cropped photo', ''))) 
 		return nil
 	end
+	
+	-- adjust width and height if original photo was cropped 
+	-- Not supported: Lr won't accept face regions for cropped photos
+	--[[
+	if origPhotoDimension.hasCrop == 'True' then
+		origPhotoDimension.width 	= math.floor((origPhotoDimension.cropRight - origPhotoDimension.cropLeft) * origPhotoDimension.width)
+		origPhotoDimension.height 	= math.floor((origPhotoDimension.cropBottom - origPhotoDimension.cropTop) * origPhotoDimension.height)
+	end
+	]]
 	
 	-- if orig photo is rotated, then region info (which was applied to the rotated photo) must be rotated also
 	local appDimOrgW, appDimOrgH
