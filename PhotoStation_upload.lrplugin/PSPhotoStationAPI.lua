@@ -685,17 +685,19 @@ end
 function PSPhotoStationAPI.editPhoto(h, dstFilename, isVideo, attrValPairs)
 	local formData = 'method=edit&' ..
 					 'version=1&' .. 
-					 'id=' .. getPhotoId(dstFilename, isVideo) 
+					 'id=' .. getPhotoId(dstFilename, isVideo)
+	local logMessage = ''
 
 	for i = 1, #attrValPairs do
-	 	formData = formData .. '&' .. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value 
+	 	formData = formData .. '&' 		.. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value
+	 	logMessage = logMessage .. ', ' .. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value  
 	end
 
 	local success, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
 	
 	if not success then return false, errorCode end 
 
-	writeLogfile(3, string.format('editPhoto(%s, %s = %s) returns OK.\n', dstFilename, field, value))
+	writeLogfile(3, string.format('editPhoto(%s%s) returns OK.\n', dstFilename, logMessage))
 	return true
 end
 
