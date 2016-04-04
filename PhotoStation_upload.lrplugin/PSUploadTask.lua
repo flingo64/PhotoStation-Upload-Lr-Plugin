@@ -456,31 +456,52 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		local dstFilename 				= videoUploaded.publishedPhotoId
 		local publishedCollectionId 	= videoUploaded.publishedCollectionId  
 		
-		if (	ifnil(srcPhoto:getFormattedMetadata("caption"), '') ~= ''
-			or 	ifnil(srcPhoto:getFormattedMetadata("keywordTags"), '') ~= ''		
-			or	srcPhoto:getRawMetadata("gps")
-			or	(exportParams.exifXlatLabel and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey')
-			or	(exportParams.exifXlatRating and ifnil(srcPhoto:getRawMetadata("rating"), 0) ~= 0)
-		) then
-			local photoThere 
-			local maxWait = 30
-			local _, keywordNamesAdd, _ = PSLrUtilities.getModifiedKeywords(srcPhoto, {})
-			writeLogfile(2, string.format("Metadata Upload for %s found keywords: '%s'\n", dstFilename, table.concat(keywordNamesAdd, "','")))
-			local captionParams, gpsParams
-			
-			local captionData = srcPhoto:getFormattedMetadata("caption")
-			if ifnil(captionData, '') ~= '' then
-				captionParams = { { attribute =  'description', value = captionData } }
-			end
+		-- get caption if requested
+		local captionParam
+		local captionData = srcPhoto:getFormattedMetadata("caption")
+		if ifnil(captionData, '') ~= '' then
+			captionParam = { { attribute =  'description', value = captionData } }
+		end
 
+		-- get label if requested
+		local labelParam
+		if exportParams.exifXlatLabel then
+			local labelData = srcPhoto:getRawMetadata("colorNameForLabel")
+			labelParam = iif(ifnil(labelData, 'grey') ~= 'grey', '+' .. labelData, nil)
+		end
+		
+		-- get rating if requested
+		local ratingParam
+		if exportParams.exifXlatRating then
+			local ratingData = srcPhoto:getRawMetadata("rating")
+			if ifnil(ratingData, 0) ~= 0 then
+				ratingParam =  PSPhotoStationAPI.rating2Stars(ratingData)
+			end
+		end
+		
+		-- get keywords if requested
+		local keywordNamesAdd
+		if not exportParams.LR_minimizeEmbeddedMetadata then
+			_, keywordNamesAdd, _ = PSLrUtilities.getModifiedKeywords(srcPhoto, {})
+		end
+		
+		-- get GPS if requested
+		local gpsParam
+		if not exportParams.LR_removeLocationMetadata then
 			local gpsData = srcPhoto:getRawMetadata("gps")
 			if gpsData and gpsData.latitude and gpsData.longitude then
-				gpsParams = { 
+				gpsParam = { 
 					{ attribute =  'gps_lat', value = gpsData.latitude },
 					{ attribute =  'gps_lng', value = gpsData.longitude } 
 				}
 			end
-
+		end
+				
+		-- if any metadata to add: wait for video being indexed by PS and upload metadata thereafter
+		if captionParam or labelParam or ratingParam or keywordNamesAdd or gpsParam then
+			local photoThere 
+			local maxWait = 30
+			
 			while not photoThere and maxWait > 0 do
 				if not PSPhotoStationAPI.getPhotoInfo(exportParams.uHandle, dstFilename, true) then
 					LrTasks.sleep(1)
@@ -490,22 +511,31 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 				end
 			end
 			
+			local gpsLatLong
+			if gpsParam then
+				gpsLatLong = gpsParam[1].value .. '/' .. gpsParam[2].value
+			end
+			local logMessage = string.format("Metadata Upload for '%s' -  description: '%s', label: '%s', rating: '%s' keywords: '%s', gps: '%s'", 
+								dstFilename, 
+								ifnil(captionData, ''),
+								ifnil(labelParam, ''),
+								ifnil(ratingParam, ''),
+								table.concat(ifnil(keywordNamesAdd, {}), "','"),
+								ifnil(gpsLatLong, ''))
+			
 			if (not photoThere
-				 or (captionParams 	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, captionParams))
-				 or (gpsParams 	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, gpsParams))
-				 or	(exportParams.exifXlatLabel 
-				 	and ifnil(srcPhoto:getRawMetadata("colorNameForLabel"), 'grey') ~= 'grey'
-					and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', '+' .. srcPhoto:getRawMetadata('colorNameForLabel'))) 
-				 or	(exportParams.exifXlatRating 
-				 	and ifnil(srcPhoto:getRawMetadata("rating"), 0) ~= 0
-					and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', PSPhotoStationAPI.rating2Stars(srcPhoto:getRawMetadata("rating"))))
-				 or	(#keywordNamesAdd > 0  
-					and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
-				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))										
-				) 
+				 or (captionParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, captionParam))
+				 or (gpsParam		and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, gpsParam))
+				 or	(labelParam 	and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', labelParam))
+				 or	(ratingParam 	and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', ratingParam))
+				 or	(keywordNamesAdd and #keywordNamesAdd > 0  
+									and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
+				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
 			then
 				table.insert(failures, srcPhoto:getRawMetadata("path"))
-				writeLogfile(1, 'Metadata Upload for "' .. dstFilename .. '" failed!!!\n')
+				writeLogfile(1, logMessage .. ' failed!!!\n')
+			else
+				writeLogfile(1, logMessage .. ' done\n')
 			end
 		elseif publishedCollectionId then
 			-- no metadata to update, ack rendition if publish anyway
