@@ -266,6 +266,8 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	local ffmpegReport = LrFileUtils.readFile(outfile)
 	writeLogfile(4, "ffmpeg report:\n" .. ffmpegReport)
 	
+	writeLogfile(3, string.format("ffmpegGetAdditionalInfo(%s):\n ", srcVideoFilename))
+	
 	-------------- DateTimeOriginal search for avp: 'date            : 2014-07-14T21:35:04-0700'
 	local dateCaptureString, dateCapture
 	for v in string.gmatch(ffmpegReport, "date%s+:%s+([%d%p]+T[%d%p]+)") do
@@ -279,7 +281,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 												string.sub(dateCaptureString,15,16),
 												string.sub(dateCaptureString,18,19),
 												'local') -- ignore timezone 
-		writeLogfile(4, "  ffmpeg-dateCapture: " .. LrDate.timeToUserFormat(dateCapture, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		writeLogfile(3, "	ffmpeg-dateCapture: " .. LrDate.timeToUserFormat(dateCapture, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 		dateCapture = LrDate.timeToPosixDate(dateCapture)
 		break
      end
@@ -297,7 +299,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 												string.sub(creationTimeString,15,16),
 												string.sub(creationTimeString,18,19),
 												'local')
-		writeLogfile(4, "  ffmpeg-creationTime: " .. LrDate.timeToUserFormat(creationTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		writeLogfile(3, "	ffmpeg-creationTime: " .. LrDate.timeToUserFormat(creationTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 		creationTime = LrDate.timeToPosixDate(creationTime)
 		break
      end
@@ -311,7 +313,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 		vinfo.duration = 	tonumber(string.sub(durationString,1,2)) * 3600 +
 					tonumber(string.sub(durationString,4,5)) * 60 +
 					tonumber(string.sub(durationString,7,11))
-		writeLogfile(4, string.format(" duration: %.2f\n", vinfo.duration))
+		writeLogfile(3, string.format("\tduration: %.2f\n", vinfo.duration))
      end
 	 
 	-------------- resolution: search for avp like:  -------------------------
@@ -322,7 +324,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 		vinfo.dimension = v
 		vinfo.sar = w
 		vinfo.dar = x
-		writeLogfile(4, string.format("dimension: %s vformat: %s [SAR: %s DAR: %s]\n", vinfo.dimension, vinfo.vformat, ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
+		writeLogfile(3, string.format("\tdimension: %s vformat: %s [SAR: %s DAR: %s]\n", vinfo.dimension, vinfo.vformat, ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
     end
 	 
 	-- Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080, 17474 kb/s, SAR 65536:65536 DAR 16:9, 28.66 fps, 29.67 tbr, 90k tbn, 180k tbc
@@ -331,7 +333,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 		for w, x in string.gmatch(ffmpegReport, "Video:[%s%w%(%)/]+,[%s%w]+,[%s%w]+,[%s%w/]+,%s+SAR%s+([%d:]+)%s+DAR%s+([%d:]+)") do
 			vinfo.sar = w
 			vinfo.dar = x
-			writeLogfile(4, string.format("SAR: %s, DAR: %s\n", ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
+			writeLogfile(3, string.format("\tSAR: %s, DAR: %s\n", ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
 		end
 	end
 
@@ -340,7 +342,15 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	vinfo.rotation = '0'
 	for v in string.gmatch(ffmpegReport, "rotate%s+:%s+([%d]+)") do
 		vinfo.rotation = v
-		writeLogfile(4, string.format("rotation: %s\n", vinfo.rotation))
+		writeLogfile(3, string.format("\trotation: %s\n", vinfo.rotation))
+	end
+	
+	-------------- GPS info: search for avp like:  -------------------------
+	--     location        : +52.1234+013.1234/
+	vinfo.latitude, vinfo.longitude = string.match(ffmpegReport, "location%s+:%s+([%+%-]%d+%.%d+)([%+%-]%d+%.%d+)/")
+
+	if vinfo.latitude and vinfo.longitude then
+			writeLogfile(3, string.format("\tgps: %s / %s\n", vinfo.latitude, vinfo.longitude))
 	end
 	
 	LrFileUtils.delete(outfile)
