@@ -223,14 +223,14 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 end
 
 -----------------
--- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
+-- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo, orgVideoInfo) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, Photo Station will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
 ]]
-local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo) 
+local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo, orgVideoInfo) 
 	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
 	local vidExtOrg = LrPathUtils.extension(renderedVideoPath)
 	local picDir = LrPathUtils.parent(renderedVideoPath)
@@ -264,21 +264,19 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	
 	-- there is no way to identify whether the video is exported as original or rendered
 	-- --> get both video infos 
-	-- get original video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
-	local vOrgInfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto:getRawMetadata('path'))
 	-- get rendered video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
 	local vinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, renderedVideoPath)
-	if not (vinfo and vOrgInfo) then
+	if not (vinfo and orgVideoInfo) then
 		return false
 	end
 	
 	-- restore the capture time for the rendered video
-	vinfo.srcDateTime = vOrgInfo.srcDateTime
+	vinfo.srcDateTime = orgVideoInfo.srcDateTime
 	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
 	-- overwrite the ffmpeg DateTimeOrig 
 	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	if isOrigDateTime or not vinfo.srcDateTime then
-		vinfo.srcDateTime = metaDateTime
+		vinfo.srcDatvinfo = metaDateTime
 	end
 	
 	-- get the real dimension: may be different from dimension if dar is set
@@ -423,14 +421,16 @@ local function ackRendition(rendition, publishedPhotoId, publishedCollectionId)
 end
 
 -----------------
--- noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollectionId)
-local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollectionId)
+-- noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
+local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
 	local videoUploaded = {}
 	
 	writeLogfile(3, string.format("noteVideoUpload(%s)\n", publishedPhotoId))
-	videoUploaded.rendition = rendition
-	videoUploaded.publishedPhotoId = publishedPhotoId
+	videoUploaded.rendition 			= rendition
+	videoUploaded.publishedPhotoId 		= publishedPhotoId
 	videoUploaded.publishedCollectionId = publishedCollectionId
+	videoUploaded.latitude 				= videoInfo.latitude
+	videoUploaded.longitude 			= videoInfo.longitude
 	table.insert(videosUploaded, videoUploaded)
 	
 	return true
@@ -454,7 +454,9 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		local rendition 				= videoUploaded.rendition
 		local srcPhoto 					= rendition.photo
 		local dstFilename 				= videoUploaded.publishedPhotoId
-		local publishedCollectionId 	= videoUploaded.publishedCollectionId  
+		local publishedCollectionId 	= videoUploaded.publishedCollectionId
+		local latitude					= videoUploaded.latitude
+		local longitude					= videoUploaded.longitude
 		
 		-- get caption if requested
 		local captionParam
@@ -486,6 +488,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		end
 		
 		-- get GPS if requested
+		-- may Lr GPS data has precedence over video embedded GPS data
 		local gpsParam
 		if not exportParams.LR_removeLocationMetadata then
 			local gpsData = srcPhoto:getRawMetadata("gps")
@@ -493,6 +496,11 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 				gpsParam = { 
 					{ attribute =  'gps_lat', value = gpsData.latitude },
 					{ attribute =  'gps_lng', value = gpsData.longitude } 
+				}
+			elseif latitude and longitude then 
+				gpsParam = { 
+					{ attribute =  'gps_lat', value = latitude },
+					{ attribute =  'gps_lng', value = longitude } 
 				}
 			end
 		end
@@ -862,12 +870,16 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					break 
 				end
 
-				if (srcPhoto:getRawMetadata("isVideo") 		
-					and	(	not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos)
+				local videoInfo
+				if srcPhoto:getRawMetadata("isVideo") then videoInfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto:getRawMetadata('path')) end
+				  
+				if (srcPhoto:getRawMetadata("isVideo") 	
+					and	(	not videoInfo or
+							not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos, videoInfo)
 						-- upload of metadata to just uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
-						 or (    publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, publishedCollection.localIdentifier)) 
-						 or (not publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, nil)) 
+						 or (    publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
+						 or (not publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, nil)) 
 						)	
 					)
 				or (	not srcPhoto:getRawMetadata("isVideo") 
