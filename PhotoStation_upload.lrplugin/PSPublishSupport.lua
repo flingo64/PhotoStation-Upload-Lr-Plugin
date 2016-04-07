@@ -1400,25 +1400,39 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     
     		------------------------------------------------------------------------------------------------------
     		if collectionSettings.tagsDownload then
-    			-- get delta list: which keywords were added and removed
-    			keywordNamesAdd, keywordNamesRemove, keywordsRemove = PSLrUtilities.getModifiedKeywords(srcPhoto, tagsPS)
+    			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
+				local keywordsExported = split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ', ')
+    		
+    			-- get delta lists: which keywords were added and removed
+    			keywordNamesAdd 	= getTableDiff(tagsPS, keywordsExported) 
+    			keywordNamesRemove  = getTableDiff(keywordsExported, tagsPS)
     			
-    			-- allow updata of keywords only if keyword were added or changed, not if keywords were removed 
-    			if (#keywordNamesAdd > 0) 
-    			or ((#keywordNamesRemove > 0) and (#keywordNamesAdd >= #keywordNamesRemove)) then
+    			-- get list of keyword objects to be removed: only leaf keywords can be removed, cannot remove synonyms or parent keywords 
+   				keywordsRemove 	= PSLrUtilities.getKeywordObjects(srcPhoto, keywordNamesRemove)
+    			
+    			-- allow update of keywords only if keyword were added or changed, not if keywords were removed
+    			-- compare w/ effectively removed keywords 
+    			if (#keywordNamesAdd > 0) and (#keywordNamesAdd >= #keywordsRemove) then
     				tagsChanged = true
     				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove 
     				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, "','")) end
     				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: '%s',", table.concat(keywordNamesRemove, "','")) end
-    				writeLogfile(3, string.format("Get metadata: %s - tags to add: %s, tags to remove: %s\n", 
-    										photoInfo.remoteId, table.concat(keywordNamesAdd, ','), table.concat(keywordNamesRemove, ',')))
-				elseif #keywordNamesAdd < #keywordNamesRemove then
+    				writeLogfile(3, string.format("Get metadata: %s - tags to add: '%s', tags to remove: '%s'\n", 
+    										photoInfo.remoteId, table.concat(keywordNamesAdd, "','"), table.concat(keywordNamesRemove, "','")))
+				elseif #keywordNamesAdd < #keywordsRemove then
         			resultText = resultText ..  string.format(" keywords %s removal ignored,", table.concat(keywordNamesRemove, "','"))
         			writeLogfile(3, string.format("Get metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
+        			changesRejected = changesRejected + 1
+        			nRejectedChanges = nRejectedChanges + 1
+				elseif #keywordNamesRemove > #keywordsRemove then
+        			resultText = resultText ..  string.format(" keywords to remove '%s' include synonyms or parent keyword (not allowed), removal ignored,", table.concat(keywordNamesRemove, "','"))
+        			writeLogfile(3, string.format("Get metadata: %s - keywords '%s' removed in PS include synonyms or parent keyword (not allowed), setting photo to edited (removal rejected).\n", 
+      											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
+        			needRepublish = true
         			changesRejected = changesRejected + 1        		
-        			nRejectedChanges = nRejectedChanges + 1        		
+        			nRejectedChanges = nRejectedChanges + 1
     			end
     		end
     		
@@ -1432,8 +1446,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
       											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
     			
     			-- allow update of faces only if faces were added or changed, not if faces were removed 
-    			if (#facesAdd > 0) 
-    			or ((#facesRemove > 0) and (#facesAdd >= #facesRemove)) then
+    			if (#facesAdd > 0) and (#facesAdd >= #facesRemove) then
     				facesChanged = true
     				table.insert(reloadPhotos, srcPhoto:getRawMetadata('path'))
     				nChanges = nChanges + #facesAdd + #facesRemove 
@@ -1469,17 +1482,33 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 --         				if gpsChanged			then srcPhoto:setRawMetadata('gps', gpsPS) end
         				if labelChanged			then srcPhoto:setRawMetadata('colorNameForLabel', labelPS) end
         				if ratingChanged		then srcPhoto:setRawMetadata('rating', ratingPS) end
-        				if tagsChanged and 
-        				   #keywordNamesAdd > 0 
-        										then PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd) end
-        				if tagsChanged and
-        				   #keywordsRemove  > 0	then PSLrUtilities.removePhotoKeywords (srcPhoto, keywordsRemove) end
-        				
-        				if needRepublish 		then photoInfo.publishedPhoto:setEditedFlag(true) end            			
+        				if tagsChanged then 
+        					if #keywordNamesAdd > 0 then PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd) end
+        					if #keywordsRemove  > 0	then PSLrUtilities.removePhotoKeywords (srcPhoto, keywordsRemove) end
+        				end 
+        				if needRepublish 		then photoInfo.publishedPhoto:setEditedFlag(true) end
         			end,
         			{timeout=5}
         		)
 
+   				writeLogfile(3, string.format("Get metadata: %s - changes done.\n", photoInfo.remoteId))
+				-- if keywords were updated: check if resulting Lr keyword list matches PS keyword list
+				if tagsChanged then
+        			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
+    				local keywordsForExport = split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ', ')
+        		
+        			-- get delta lists: which keywords need to be added or removed in PS
+        			local keywordNamesNeedRemoveinPS	= getTableDiff(tagsPS, keywordsForExport) 
+        			local keywordNamesNeedAddinPS 	 	= getTableDiff(keywordsForExport, tagsPS)
+        			if #keywordNamesNeedRemoveinPS > 0 or #keywordNamesNeedAddinPS > 0 then
+	    				writeLogfile(3, string.format("Get metadata: %s - must sync keywords to PS, add: '%s', remove '%s'\n", 
+	    												photoInfo.remoteId,
+	    												table.concat(keywordNamesNeedAddinPS, "','"),
+	    												table.concat(keywordNamesNeedRemoveinPS, "','")))
+        				needRepublish = true
+        			end
+				end
+				
 				if not needRepublish then
     				writeLogfile(3, string.format("Get metadata: %s - set to Published\n", photoInfo.remoteId))
     				 
@@ -1523,7 +1552,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	
 	if (nRejectedChanges > 0) or (nFailed > 0) then
 		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
-					string.format("%d added/modified, %d failed and %d rejected (!!!) removed metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
+					string.format("%d added/modified, %d failed and %d rejected removed metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
 					nChanges, nFailed, nRejectedChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 		showFinalMessage("Photo StatLr: Get metadata done", message, "critical")
 	else
