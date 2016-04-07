@@ -266,7 +266,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	local ffmpegReport = LrFileUtils.readFile(outfile)
 	writeLogfile(4, "ffmpeg report:\n" .. ffmpegReport)
 	
-	writeLogfile(3, string.format("ffmpegGetAdditionalInfo(%s):\n ", srcVideoFilename))
+	writeLogfile(3, string.format("ffmpegGetAdditionalInfo(%s):\n", srcVideoFilename))
 	
 	-------------- DateTimeOriginal search for avp: 'date            : 2014-07-14T21:35:04-0700'
 	local dateCaptureString, dateCapture
