@@ -14,6 +14,7 @@ exported functions:
 	- split
 	- trim
 	- findInArray
+	- getTableDiff
 		
 	- getNullFilename
 	- getProgExt
@@ -141,6 +142,8 @@ function trim(s)
   return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
 end
 
+--------------------------------------------------------------------------------------------
+-- findInArray(array, indexField, indexValue, valueField)
 function findInArray(array, indexField, indexValue, valueField)
 	if not array then return nil end
 	
@@ -150,6 +153,34 @@ function findInArray(array, indexField, indexValue, valueField)
 	
 	return nil
 end
+
+--------------------------------------------------------------------------------------------
+-- getTableDiff(table1, table2)
+--  returns a table of elements in table1, but not in table2 
+function getTableDiff(table1, table2)
+	local tableDiff = {}
+	local nDiff = 0
+	
+	for i = 1, #table1 do
+		local found = false 
+		
+		for j = 1, #table2 do
+			if table1[i] == table2[j] then
+				found = true
+				break
+			end
+		end
+		if not found then
+			nDiff = nDiff + 1
+			tableDiff[nDiff] = table1[i]  
+		end
+	end
+	if nDiff > 0 then 
+		writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", table.concat(table1, "','"), table.concat(table2, "','"), table.concat(tableDiff, "','")))
+	end
+	return tableDiff
+end
+
 
 ----------------------- logging ---------------------------------------------------------
 -- we can store some variables in 'global' local variables safely:
