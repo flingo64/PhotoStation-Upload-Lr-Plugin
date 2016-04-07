@@ -429,51 +429,34 @@ function PSLrUtilities.getModifiedPersonTags(facesLr, facesPS)
 end
 
 --------------------------------------------------------------------------------------------
--- getModifiedKeywords(srcPhoto, tagList)
--- checks the keyword list of a photo against a list of keywords
--- returns:
--- 		- a list of keyword names to be added (in keyword list, but not in photo's keyword list)
--- 		- a list of keyword names to be removed (in photo's keyword list, but not in keyword list)
--- 		- a list of keyword to be removed (in photo's keyword list, but not in keyword list)
-function PSLrUtilities.getModifiedKeywords(srcPhoto, tagList)
-	local keywords = srcPhoto:getRawMetadata("keywords")
-	local keywordNamesAdd, keywordNamesRemove, keywordsRemove = {}, {}, {}
-	local nAdd, nRemove = 0, 0
+-- getKeywordObjects(srcPhoto, keywordNameTable)
+-- returns the keyword objects belonging to the keywords in the keywordTable
+-- will only return exportable leaf keywords (synonyms and parent keywords are not returned)
+function PSLrUtilities.getKeywordObjects(srcPhoto, keywordNameTable)
+	-- get all leaf keywords
+	local keywords = srcPhoto:getRawMetadata("keywords")  
+	local keywordsFound, nFound = {}, 0 	
 	
-	-- look for keywords to be added
-	for i = 1, #tagList do
-		local found = false 
-		
-		for j = 1, #keywords do
-			if keywords[j]:getName() == tagList[i] then
-				found = true
-				break
-			end
-		end
-		if not found then
-			nAdd = nAdd + 1
-			keywordNamesAdd[nAdd] = tagList[i]  
-		end
-	end
-					
-	-- look for keywords to be removed
 	for i = 1, #keywords do
 		local found = false 
 		
-		for j = 1, #tagList do
-			if keywords[i]:getName() == tagList[j] then
-				found = true
-				break
-			end
-		end
-		if not found then
-			nRemove = nRemove + 1
-			keywordsRemove[nRemove] = keywords[i]  
-			keywordNamesRemove[nRemove] = keywords[i]:getName()  
+		if keywords[i]:getAttributes().includeOnExport then
+    		for j = 1, #keywordNameTable do
+    			if keywords[i]:getName() == keywordNameTable[j] then
+    				found = true
+    				break
+    			end
+    		end
+    		if found then
+    			nFound = nFound + 1
+    			keywordsFound[nFound] = keywords[i]  
+    		end
 		end
 	end
 					
-	return keywordNamesAdd, keywordNamesRemove, keywordsRemove
+	writeLogfile(3, string.format("getKeywordObjects(%s, '%s') returns %d leaf keyword object\n", 
+									srcPhoto:getRawMetadata('path'), table.concat(keywordNameTable, ','), nFound))
+	return keywordsFound
 end
 
 --------------------------------------------------------------------------------------------
