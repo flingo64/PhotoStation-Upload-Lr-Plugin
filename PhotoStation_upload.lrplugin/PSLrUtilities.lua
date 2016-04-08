@@ -463,10 +463,15 @@ end
 -- addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
 function PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
 	local activeCatalog = LrApplication.activeCatalog()
-	local keyword
 	
 	for i = 1, #keywordNamesAdd do
-		keyword = activeCatalog:createKeyword(keywordNamesAdd[i], {}, true, nil, true)
+		local keywordHierarchy = split(keywordNamesAdd[i], '|')
+		local keyword, parentKeyword = nil, nil
+		
+		for j = 1, #keywordHierarchy do
+			keyword = activeCatalog:createKeyword(keywordHierarchy[j], {}, true, parentKeyword, true)
+			parentKeyword = keyword
+		end
 		srcPhoto:addKeyword(keyword) 
 	end
 	return true
