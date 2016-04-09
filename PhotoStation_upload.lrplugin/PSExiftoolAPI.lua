@@ -116,7 +116,7 @@ local function executeCmds(h)
 		end
 		now = LrDate.currentTime()
 	end
-	writeLogfile(3, string.format("executeCmds(%s, cmd %d) got:\n%s\n", h.etLogFile, h.cmdNumber, ifnil(cmdResult, '<Nil>', cmdResult)))
+	writeLogfile(4, string.format("executeCmds(%s, cmd %d) got:\n%s\n", h.etLogFile, h.cmdNumber, ifnil(cmdResult, '<Nil>', cmdResult)))
 	return cmdResult 
 end
 
