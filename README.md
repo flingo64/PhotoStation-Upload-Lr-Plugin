@@ -448,14 +448,16 @@ Version 5.3
 
 Version 5.4
 -----------
-- Support for __GPS info upload for videos__. GPS info will be read __from Lr GPS tag__ and __from the video itself__. Videos w/ embedded GPS info (e.g __GoPro, iPhone6__) will be uploaded w/ GPS info to PS GPS tag, even though Lr does not support GPS info in videos, 
-if GPS info is also availabe in the video and in Lr (manually tagge), Lr GPS info has precedence. GPS upload will respect the metadata privacy settings in the metadata section of the Export / Publish Service dialog.
+- Support for __GPS info upload for videos__. GPS info will be read __from Lr GPS tag__ and __from the video itself__. Videos w/ embedded GPS info (e.g __GoPro, iPhone6__) will be uploaded w/ GPS info to PS GPS tag, even though Lr does not support GPS info in videos.
+If GPS info is availabe both in the video and in Lr (manually tagged), Lr GPS info has precedence.<br>
+GPS upload will respect the metadata privacy settings in the metadata section of the Export / Publish Service dialog.
 - Support for __person tags download__ is now also available __for RAW photos and rotated photos__. For RAW photos, the face region metadata are now written to the XMP side-car file (not to the RAW file itself), which is the correct place for all additional metadata. 
-Face regions for in rotated photos are now correctly back rotated-
-Face region download is not possible for virtual copies, since it would overwrite the metadata in the original photo. Face region download is also __not possible for cropped photos__ due to an import incompatibility of Lr: Lr will not accept face regions from XMP for a cropped photo which was written there by Lr itself. :-(
+Face regions for rotated photos are now correctly back rotated. 
+Face region download is not possible for virtual copies, since it would overwrite the metadata in the original photo.<br> Face region download is also __not possible for cropped photos__ due to an import incompatibility of Lr: Lr will not accept face regions from XMP for a cropped photo which was written there by Lr itself. :-(
 - Sync PS general tags w/ __Lr keyword hierarchies and synonyms__
 - Respect __"Include on Export"__ setting for Lr keywords when synching with PS general tags
-- Support for __adding hierarchical keywords from PS__: use '|' as delimiter for keywords, e.g. 'animal|bird|eagle'  
+- Support for __adding hierarchical keywords from PS__:<br>
+Use '|' as delimiter for keywords, e.g. 'animal|bird|eagle'
    
 
 Copyright
