@@ -13,7 +13,9 @@ exported functions:
 	- iif
 	- split
 	- trim
-	- findInArray
+	
+	- findInTable
+	- getTableExtract
 	- getTableDiff
 		
 	- getNullFilename
@@ -143,8 +145,8 @@ function trim(s)
 end
 
 --------------------------------------------------------------------------------------------
--- findInArray(array, indexField, indexValue, valueField)
-function findInArray(array, indexField, indexValue, valueField)
+-- findInTable(array, indexField, indexValue, valueField)
+function findInTable(array, indexField, indexValue, valueField)
 	if not array then return nil end
 	
 	for i = 1, #array do
@@ -152,6 +154,19 @@ function findInArray(array, indexField, indexValue, valueField)
 	end
 	
 	return nil
+end
+
+--------------------------------------------------------------------------------------------
+-- getTableExtract(table, tableField)
+--  returns a table with the elements 'tableField' of table 
+function getTableExtract(table, tableField)
+	local tableExtract = {}
+	
+	for i = 1, #table do
+		tableExtract[i] = table[i][tableField]
+	end
+
+	return tableExtract
 end
 
 --------------------------------------------------------------------------------------------
@@ -172,7 +187,7 @@ function getTableDiff(table1, table2)
 		end
 		if not found then
 			nDiff = nDiff + 1
-			tableDiff[nDiff] = table1[i]  
+			tableDiff[nDiff] = table1[i]
 		end
 	end
 	if nDiff > 0 then 
