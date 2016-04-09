@@ -5,13 +5,22 @@ Lightroom utilities:
 	- isVideo
 	- isRAW
 	
+	- getDateTimeOriginal
+	
+	- getPublishPath
 	- getCollectionPath
 	- getCollectionUploadPath
+	
+	- isDynamicAlbumPath
 	- evaluateAlbumPath
-	- getModifiedPersonTags
-	- getModifiedKeywords
+
+	- noteAlbumForCheckEmpty
+	
+	- getKeywordObjects
 	- addPhotoKeywordNames
 	- removePhotoKeyword
+
+	- convertCollection
 	- convertAllPhotos
 	
 Copyright(c) 2016, Martin Messmer
@@ -384,51 +393,6 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 end
 
 --------------------------------------------------------------------------------------------
--- getModifiedPersonTags(facesLr, facesPS)
--- checks the person tag list of a photo against a list of person tags
--- returns:
--- 		- a list of person tag names to be added (in facesPS, but not in facesLr)
--- 		- a list of person tag names to be removed (in facesLr, but not in facesPS)
-function PSLrUtilities.getModifiedPersonTags(facesLr, facesPS)
-	local facesAdd, facesRemove = {}, {}
-	local nAdd, nRemove = 0, 0
-	
-	-- look for faces to be added
-	for i = 1, #facesPS do
-		local found = false 
-		
-		for j = 1, #facesLr do
-			if facesPS[i].name == facesLr[j].name then
-				found = true
-				break
-			end
-		end
-		if not found then
-			nAdd = nAdd + 1
-			facesAdd[nAdd] = facesPS[i].name 
-		end
-	end
-					
-	-- look for faces to be removed
-	for i = 1, #facesLr do
-		local found = false 
-		
-		for j = 1, #facesPS do
-			if facesLr[i].name == facesPS[j].name then
-				found = true
-				break
-			end
-		end
-		if not found then
-			nRemove = nRemove + 1
-			facesRemove[nRemove] = facesLr[i].name  
-		end
-	end
-					
-	return facesAdd, facesRemove
-end
-
---------------------------------------------------------------------------------------------
 -- getKeywordObjects(srcPhoto, keywordNameTable)
 -- returns the keyword objects belonging to the keywords in the keywordTable
 -- will only return exportable leaf keywords (synonyms and parent keywords are not returned)
@@ -461,6 +425,8 @@ end
 
 --------------------------------------------------------------------------------------------
 -- addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
+-- create (if not existing) list of keyword hierarchies and add it to a photo. 
+-- keyword hierarchies look like: '{parentKeyword|}keyword
 function PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
 	local activeCatalog = LrApplication.activeCatalog()
 	
@@ -486,6 +452,8 @@ function PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
 	return true
 end
 
+
+--[[
 --------------------------------------------------------------------------------------------
 -- getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
 local function getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
@@ -504,7 +472,7 @@ local function getAllPublishedCollectionsFromPublishedCollection(publishedCollec
 		getAllPublishedCollectionsFromPublishedCollection(childPublishedCollectionSets[i], allPublishedCollections)
 	end
 end
-
+]]
 
 --------------------------------------------------------------------------------------------
 -- convertCollection(publishedCollection)
