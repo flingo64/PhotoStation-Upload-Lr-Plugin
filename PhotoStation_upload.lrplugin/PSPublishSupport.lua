@@ -1261,7 +1261,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		and (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
 				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
 				if exifsPS then 
-					local namePS = findInArray(exifsPS, 'label', 'Object Name', 'value')
+					local namePS = findInTable(exifsPS, 'label', 'Object Name', 'value')
 					if namePS then 
 						writeLogfile(3, string.format("Get metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
 						titlePS = namePS 
@@ -1279,7 +1279,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		if (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
     				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
     				if exifsPS then 
-    					local namePS = findInArray(exifsPS, 'label', 'Object Name', 'value')
+    					local namePS = findInTable(exifsPS, 'label', 'Object Name', 'value')
     					if namePS then 
     						writeLogfile(3, string.format("Get metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
     						titlePS = namePS 
@@ -1438,10 +1438,15 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		
     		------------------------------------------------------------------------------------------------------
     		if collectionSettings.PS2LrFaces then
-    			-- get delta list: which person tags were added and removed
+				-- get face regions in local photo
 				local facesLr
 				facesLr, origPhotoDimension = PSExiftoolAPI.queryLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'))
-    			facesAdd, facesRemove = PSLrUtilities.getModifiedPersonTags(facesLr, facesPS)
+
+    			-- get delta list: which person tags were added and removed
+				local faceNamesLr = getTableExtract(facesLr, 'name')
+				local faceNamesPS = getTableExtract(facesPS, 'name')
+    			facesAdd 	= getTableDiff(faceNamesPS, faceNamesLr)
+    			facesRemove = getTableDiff(faceNamesLr, faceNamesPS)
        			writeLogfile(3, string.format("Get metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
       											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
     			
@@ -1492,7 +1497,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		)
 
    				writeLogfile(3, string.format("Get metadata: %s - changes done.\n", photoInfo.remoteId))
-				-- if keywords were updated: check if resulting Lr keyword list matches PS keyword list
+				-- if keywords were updated: check if resulting Lr keyword list matches PS keyword list (might be different due to parent keywords)
 				if tagsChanged then
         			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
     				local keywordsForExport = split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ', ')
@@ -1522,7 +1527,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		
    			-- overwrite all existing face regions in local photo
     		if facesChanged and not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesPS, origPhotoDimension) then
-   				nChanges = nChanges -(#facesAdd + #facesRemove)
+   				nChanges = nChanges - (#facesAdd + #facesRemove)
    				nFailed = nFailed + 1 
 	    	end  
 		end -- not skip Photo
