@@ -386,6 +386,9 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	) 
 	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
 	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
+	-- upload at least one mp4 file to avoid the generation of a flash video by synomediaparserd
+	or ((convKeyAdd == 'None') and not addOrigAsMp4
+	 	   						and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
 	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
 	or 							   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
@@ -443,14 +446,12 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 	local nVideos =  #videosUploaded
 	local nProcessed 		= 0 
 		
-	writeLogfile(2, string.format("uploadVideoMetadata; %d videos\n", nVideos))
+	writeLogfile(3, string.format("uploadVideoMetadata: %d videos\n", nVideos))
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
 								{ 	title = LOC( "$$$/PSPublish/UploadVideoMeta=Uploading Metadata for videos"),
 --							 		functionContext = context 
 							 	})    
---	for i = 1, #videosUploaded do
---		local videoUploaded 			= videosUploaded[i]
 	while #videosUploaded > 0 do
 		local videoUploaded 			= videosUploaded[1]
 		local rendition 				= videoUploaded.rendition
