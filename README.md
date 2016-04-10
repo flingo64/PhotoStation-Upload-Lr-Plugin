@@ -1,7 +1,7 @@
 Photo StatLr (Lightroom plugin)
 ======================================
 Version 5.4.x<br>
-__[Important note for updating to V3.6.x and above] (https://github.com/flingo64/Photo Station-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+__[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
 [FAQs] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
