@@ -491,7 +491,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		end
 		
 		-- get GPS if requested
-		-- may Lr GPS data has precedence over video embedded GPS data
+		-- Lr GPS data has precedence over video embedded GPS data
 		local gpsParam
 		if not exportParams.LR_removeLocationMetadata then
 			local gpsData = srcPhoto:getRawMetadata("gps")

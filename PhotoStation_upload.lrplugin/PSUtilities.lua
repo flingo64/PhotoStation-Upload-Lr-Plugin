@@ -291,7 +291,7 @@ function writeTableLogfile(level, tableName, printTable)
 	writeLogfile(level, '}\n')
 end
 
--- closeLogfile: do nothing
+-- closeLogfile: do nothing 
 function closeLogfile()
 --[[
 	local logfile = io.open(logfilename, "a")
