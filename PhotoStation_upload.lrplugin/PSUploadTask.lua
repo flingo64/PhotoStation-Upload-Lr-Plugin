@@ -276,7 +276,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	-- overwrite the ffmpeg DateTimeOrig 
 	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	if isOrigDateTime or not vinfo.srcDateTime then
-		vinfo.srcDatvinfo = metaDateTime
+		vinfo.srcDateTime = metaDateTime
 	end
 	
 	-- get the real dimension: may be different from dimension if dar is set
@@ -449,8 +449,10 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 								{ 	title = LOC( "$$$/PSPublish/UploadVideoMeta=Uploading Metadata for videos"),
 --							 		functionContext = context 
 							 	})    
-	for i = 1, #videosUploaded do
-		local videoUploaded 			= videosUploaded[i]
+--	for i = 1, #videosUploaded do
+--		local videoUploaded 			= videosUploaded[i]
+	while #videosUploaded > 0 do
+		local videoUploaded 			= videosUploaded[1]
 		local rendition 				= videoUploaded.rendition
 		local srcPhoto 					= rendition.photo
 		local dstFilename 				= videoUploaded.publishedPhotoId
@@ -543,12 +545,13 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 				table.insert(failures, srcPhoto:getRawMetadata("path"))
 				writeLogfile(1, logMessage .. ' failed!!!\n')
 			else
-				writeLogfile(1, logMessage .. ' done\n')
+				writeLogfile(2, logMessage .. ' done\n')
 			end
 		elseif publishedCollectionId then
 			-- no metadata to update, ack rendition if publish anyway
 			ackRendition(rendition, dstFilename, publishedCollectionId)										
 		end
+   		table.remove(videosUploaded, 1)
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nVideos) 						    
 	end 
@@ -894,6 +897,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				else
 					writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
 				end
+			end
+		
+			-- do some video metadata upload in between
+			if #videosUploaded > 9 then 
+				uploadVideoMetadata(videosUploaded, exportParams, failures) 
+				videosUploaded = {}
 			end
 			
 			LrFileUtils.delete( pathOrMessage )
