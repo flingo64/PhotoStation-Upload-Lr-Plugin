@@ -291,11 +291,13 @@ function writeTableLogfile(level, tableName, printTable)
 	writeLogfile(level, '}\n')
 end
 
--- closeLogfile: write the end timestamp and time consumed
+-- closeLogfile: do nothing
 function closeLogfile()
+--[[
 	local logfile = io.open(logfilename, "a")
 	local now = LrDate.currentTime()
 	io.close (logfile)
+]]
 end
 
 ---------------------- semaphore operations -----------------------------------------
