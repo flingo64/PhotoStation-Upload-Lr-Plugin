@@ -484,7 +484,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		-- get keywords if requested
 		local keywordNamesAdd
 		if not exportParams.LR_minimizeEmbeddedMetadata then
-			_, keywordNamesAdd, _ = PSLrUtilities.getModifiedKeywords(srcPhoto, {})
+			keywordNamesAdd = split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ', ')
 		end
 		
 		-- get GPS if requested
