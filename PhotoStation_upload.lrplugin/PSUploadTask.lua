@@ -509,7 +509,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		end
 				
 		-- if any metadata to add: wait for video being indexed by PS and upload metadata thereafter
-		if captionParam or labelParam or ratingParam or keywordNamesAdd or gpsParam then
+		if captionParam or labelParam or ratingParam or (keywordNamesAdd and #keywordNamesAdd  > 0) or gpsParam then
 			local photoThere 
 			local maxWait = 30
 			
@@ -548,9 +548,12 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			else
 				writeLogfile(2, logMessage .. ' done\n')
 			end
-		elseif publishedCollectionId then
+		else
 			-- no metadata to update, ack rendition if publish anyway
-			ackRendition(rendition, dstFilename, publishedCollectionId)										
+			writeLogfile(2, string.format("Metadata Upload for '%s' -  nothing to do\n", dstFilename))
+			if publishedCollectionId then
+				ackRendition(rendition, dstFilename, publishedCollectionId)
+			end										
 		end
    		table.remove(videosUploaded, 1)
    		nProcessed = nProcessed + 1
@@ -808,8 +811,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			if skipPhoto then
 				writeLogfile(2, string.format('Skip photo: "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
 				table.insert( failures, srcFilename )
-			elseif publishMode ~= 'Export' then
-				-- publish process: generate a unique remote id for later modifications or deletions
+			elseif publishMode ~= 'Export' or srcPhoto:getRawMetadata("isVideo") then
+				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
 				-- use the relative destination pathname, so we are able to identify moved pictures
 				localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
 				
