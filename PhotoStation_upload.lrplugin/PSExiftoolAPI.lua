@@ -101,7 +101,7 @@ local function executeCmds(h)
 								string.format("{ready%04d}[\r\n]+(.*){ready%04d}", h.cmdNumber - 1, h.cmdNumber))
 								
 	
-	while not cmdResult  and (now < (startTime + 5)) do
+	while not cmdResult  and (now < (startTime + 10)) do
 		LrTasks.yield()
 		if LrFileUtils.exists(h.etLogFile) and LrFileUtils.isReadable(h.etLogFile) then 
 			local resultStrings
@@ -116,7 +116,7 @@ local function executeCmds(h)
 		end
 		now = LrDate.currentTime()
 	end
-	writeLogfile(4, string.format("executeCmds(%s, cmd %d) got:\n%s\n", h.etLogFile, h.cmdNumber, ifnil(cmdResult, '<Nil>', cmdResult)))
+	writeLogfile(3, string.format("executeCmds(%s, cmd %d) took %d secs, got:\n%s\n", h.etLogFile, h.cmdNumber, now - startTime, ifnil(cmdResult, '<Nil>', cmdResult)))
 	return cmdResult 
 end
 
