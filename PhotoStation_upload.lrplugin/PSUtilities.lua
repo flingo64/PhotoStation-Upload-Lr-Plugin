@@ -127,6 +127,9 @@ function iif(condition, thenExpr, elseExpr)
 	end
 end 
 
+--------------------------------------------------------------------------------------------
+-- split(inputstr, sep)
+-- splits a string into a table, sep must be a single character 
 function split(inputstr, sep)
 	if not inputstr then return nil end
 	 
@@ -140,30 +143,46 @@ function split(inputstr, sep)
     return t
 end
 
+--------------------------------------------------------------------------------------------
+-- trim(s)
+-- trims leading and trailing white spaces from a string
 function trim(s)
-  return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
+ 	return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
 end
 
 --------------------------------------------------------------------------------------------
--- findInTable(array, indexField, indexValue, valueField)
-function findInTable(array, indexField, indexValue, valueField)
-	if not array then return nil end
+-- trimTable(inputTable)
+-- trims leading and trailing white spaces from all strings in a table
+function trimTable(inputTable)
+	if not inputTable then return nil end
+
+	local trimmedTable = {}
+	for i = 1, #inputTable do
+		table.insert(trimmedTable, trim(inputTable[i]))
+	end
+	return trimmedTable
+end
+
+--------------------------------------------------------------------------------------------
+-- findInTable(inputTable, indexField, indexValue, valueField)
+function findInTable(inputTable, indexField, indexValue, valueField)
+	if not inputTable then return nil end
 	
-	for i = 1, #array do
-		if array[i][indexField] == indexValue then return array[i][valueField] end
+	for i = 1, #inputTable do
+		if inputTable[i][indexField] == indexValue then return inputTable[i][valueField] end
 	end
 	
 	return nil
 end
 
 --------------------------------------------------------------------------------------------
--- getTableExtract(table, tableField)
+-- getTableExtract(inputTable, tableField)
 --  returns a table with the elements 'tableField' of table 
-function getTableExtract(table, tableField)
+function getTableExtract(inputTable, tableField)
 	local tableExtract = {}
 	
-	for i = 1, #table do
-		tableExtract[i] = table[i][tableField]
+	for i = 1, #inputTable do
+		tableExtract[i] = inputTable[i][tableField]
 	end
 
 	return tableExtract
