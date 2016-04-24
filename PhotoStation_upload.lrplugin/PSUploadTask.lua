@@ -487,7 +487,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		-- get keywords if requested
 		local keywordNamesAdd
 		if not exportParams.LR_minimizeEmbeddedMetadata then
-			keywordNamesAdd = split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ', ')
+			keywordNamesAdd = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
 		end
 		
 		-- get GPS if requested

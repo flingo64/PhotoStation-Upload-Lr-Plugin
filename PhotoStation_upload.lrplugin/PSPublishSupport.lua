@@ -1401,7 +1401,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		------------------------------------------------------------------------------------------------------
     		if collectionSettings.tagsDownload then
     			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
-				local keywordsExported = split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ', ')
+				local keywordsExported = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
     		
     			-- get delta lists: which keywords were added and removed
     			keywordNamesAdd 	= getTableDiff(tagsPS, keywordsExported) 
@@ -1500,7 +1500,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				-- if keywords were updated: check if resulting Lr keyword list matches PS keyword list (might be different due to parent keywords)
 				if tagsChanged then
         			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
-    				local keywordsForExport = split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ', ')
+    				local keywordsForExport = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
         		
         			-- get delta lists: which keywords need to be added or removed in PS
         			local keywordNamesNeedRemoveinPS	= getTableDiff(tagsPS, keywordsForExport) 
