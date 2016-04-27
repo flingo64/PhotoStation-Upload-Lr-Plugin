@@ -463,7 +463,7 @@ Use '|' as delimiter for keywords, e.g. 'animal|bird|eagle'
 Version 5.5
 -----------
 - Support for __GPS info download__ for photos and videos<br>
-GPS coords can be added in Photo Station via the Location Tag panel: enter a location name / addrees and let Google look up the coords (blue pin) or position a red pin in the map view via right-click. Photo Station will write red pin coords also to the photo itself. Red pin coords have preference over blue pin coords when download GPS info. 
+GPS coords can be added in Photo Station via the Location Tag panel: enter a location name / addrees and let Google look up the coords (blue pin) or position a red pin in the map view via right-click. Photo Station will write red pin coords also to the photo itself. Red pin coords have preference over blue pin coords when downloading GPS info. 
 
 Copyright
 ==========
