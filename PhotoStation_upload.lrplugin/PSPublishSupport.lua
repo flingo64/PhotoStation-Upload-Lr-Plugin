@@ -1116,7 +1116,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
 	if 		not collectionSettings.titleDownload 
 		and not collectionSettings.captionDownload 
---		and not collectionSettings.locationDownload 
+		and not collectionSettings.locationDownload 
 		and not collectionSettings.tagsDownload 
 		and not collectionSettings.PS2LrFaces 
 		and not collectionSettings.PS2LrLabel 
@@ -1158,7 +1158,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
 		local titlePS,		titleChanged
 		local captionPS, 	captionChanged
---		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }		-- GPS data from photo or from user tagging 
+		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }		-- GPS data from photo or from location tag (second best) 
 		local ratingPS, 	ratingChanged
 		local labelPS,		labelChanged
 		local tagsPS, 		tagsChanged = {}
@@ -1185,25 +1185,30 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
     		if 		collectionSettings.titleDownload 
     			or  collectionSettings.captionDownload 
---    			or  collectionSettings.locationDownload
+    			or  collectionSettings.locationDownload
     		then
     			local photoInfo = PSPhotoStationAPI.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
         		if photoInfo then
         			if collectionSettings.titleDownload 	then titlePS = photoInfo.title end 
         			if collectionSettings.captionDownload	then captionPS = photoInfo.description end 
---[[
         			if collectionSettings.locationDownload	then 
-        				gpsPS.latitude	= tonumber(ifnil(photoInfo.lat, '0'))
-        				gpsPS.longitude	= tonumber(ifnil(photoInfo.lng, '0'))
+        				-- gps coords from photo/video: best choice for GPS
+        				if photoInfo.lat and photoInfo.lng then
+            				gpsPS.latitude	= tonumber(photoInfo.lat)
+            				gpsPS.longitude	= tonumber(photoInfo.lng)
+            			elseif photoInfo.gps and photoInfo.gps.lat and photoInfo.gps.lng then
+            				gpsPS.latitude	= tonumber(photoInfo.gps.lat)
+            				gpsPS.longitude	= tonumber(photoInfo.gps.lng)
+            			end 
         			end
-]]
         		end
     		end
     		
     		------------------------------------------------------------------------------------------------------
     		-- get tags and translated tags (rating, label) from Photo Station if configured
     		if 		collectionSettings.tagsDownload
---    			or  collectionSettings.locationDownload 
+    			-- GPS coords from locations only if no photo gps available
+    			or  (collectionSettings.locationDownload and  gpsPS.latitude == 0 and gpsPS.longitude == 0)
     			or  collectionSettings.PS2LrFaces 
     			or  collectionSettings.PS2LrLabel 
     			or  collectionSettings.PS2LrRating 
@@ -1233,12 +1238,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, '%+(%a+)') and not string.match(photoTag.name, '([%*]+)') then
     						table.insert(tagsPS, photoTag.name)
     					
---[[
-    					-- geo tag as added by a user, overwrites photo gps data from exif if existing
+    					-- gps coords belonging to a location tag 
     					elseif collectionSettings.locationDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
             				gpsPS.latitude	= tonumber(ifnil(photoTag.additional.info.lat, 0))
             				gpsPS.longitude	= tonumber(ifnil(photoTag.additional.info.lng, 0))
-]]
     					end 
         			end
         		end
@@ -1247,11 +1250,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
     		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
     
---    		writeLogfile(3, string.format("Get metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d, label '%s', %d general tags, %d faces\n", 
---   							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude),
---    							ifnil(ratingPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
-    		writeLogfile(3, string.format("Get metadata: %s - title '%s' caption '%s', rating %d, label '%s', %d general tags, %d faces\n", 
-    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), ifnil(ratingPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
+    		writeLogfile(3, string.format("Get metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d, label '%s', %d general tags, %d faces\n", 
+   							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude),
+    							ifnil(ratingPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
 
     		------------------------------------------------------------------------------------------------------
     		-- title can be stored in two places in PS: in title tag (when entered by PS user) and in exif 'Object Name' (when set by Lr)
@@ -1326,7 +1327,6 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		end
     		end
     
---[[
     		------------------------------------------------------------------------------------------------------
 			if collectionSettings.locationDownload then
         		-- check if PS location is not empty and is different to Lr
@@ -1357,7 +1357,6 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			nRejectedChanges = nRejectedChanges + 1        		
         		end
     		end
-]]    
 
     		------------------------------------------------------------------------------------------------------
     		if collectionSettings.PS2LrLabel then
@@ -1474,7 +1473,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		-- if anything changed in Photo Station, change value in Lr
     		if titleChanged 
     		or captionChanged 
---     		or gpsChanged 
+     		or gpsChanged 
     		or labelChanged 
     		or ratingChanged 
     		or tagsChanged 
@@ -1484,7 +1483,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			function(context)
         				if titleChanged			then srcPhoto:setRawMetadata('title', titlePS) end
         				if captionChanged		then srcPhoto:setRawMetadata('caption', captionPS) end
---         				if gpsChanged			then srcPhoto:setRawMetadata('gps', gpsPS) end
+         				if gpsChanged			then srcPhoto:setRawMetadata('gps', gpsPS) end
         				if labelChanged			then srcPhoto:setRawMetadata('colorNameForLabel', labelPS) end
         				if ratingChanged		then srcPhoto:setRawMetadata('rating', ratingPS) end
         				if tagsChanged then 
@@ -1532,7 +1531,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	    	end  
 		end -- not skip Photo
 			
-		if titleChanged	or captionChanged or labelChanged or ratingChanged or tagsChanged or facesChanged then
+		if titleChanged	or captionChanged or labelChanged or ratingChanged or tagsChanged or facesChanged or gpsChanged then
     		writeLogfile(2, string.format("Get metadata: %s - %s %s%s%s.\n", 
     												photoInfo.remoteId, resultText,
     												iif(nFailed > 0, 'failed', 'done'), 
