@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 5.4.x<br>
+Version 5.5.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -18,7 +18,7 @@ Overview
 Photo StatLr (formerly called PhotoStation Upload) is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "Photo StatLr" and a new Export target also called "Photo StatLr" to the "Export" dialog. 
 Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.<br>
 Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature which will download comments and ratings from Photo Station to the Lightroom Comments panel (Library mode: bottom right panel).
-Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label, rating and person tags/faces regions. 
+Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label, rating, person tags/faces regions and GPS info. 
 
 This plugin uses the same converters and the same upload API as the official "Synology Photo Station Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target Photo Station by protocol (http/https) and servename (IP@, hostname, FQDN).
 
@@ -214,6 +214,7 @@ Download / Sync Functionality:
 - __Download and two-way sync of various metadata__ for photos and videos:<br>
 	- title, description/caption
 	- general tags (Keywords)
+	- GPS info (added via Location Tag)
 	- sync PS keywords with Lr keyword hierarchies and synonyms
 	- support for adding hierachical keywords (format: {<keyword>|}keyword) from PS to Lr 
  	- Translation of __Star Rating tags (* to *****)__  to Lr rating <br>
@@ -457,8 +458,12 @@ Face region download is not possible for virtual copies, since it would overwrit
 - Sync PS general tags w/ __Lr keyword hierarchies and synonyms__
 - Respect __"Include on Export"__ setting for Lr keywords when synching with PS general tags
 - Support for __adding hierarchical keywords from PS__:<br>
-Use '|' as delimiter for keywords, e.g. 'animal|bird|eagle'
-   
+Use '|' as delimiter for keywords, e.g. 'animal|bird|eagle'  
+
+Version 5.5
+-----------
+- Support for __GPS info download__ for photos and videos
+  GPS coords can be added in Photo Station via the Location Tag panel: enter a location name / addrees and let Google look up the coords (blue pin) or position a red pin in the map view via right-click. Photo Station will write red pin coords also to the photo itself. Red pin coords have preference over blue pin coords when download GPS info. 
 
 Copyright
 ==========
