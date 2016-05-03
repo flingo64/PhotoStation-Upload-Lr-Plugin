@@ -417,6 +417,7 @@ end
 --------------------------------------------------------------------------------
 -- ackRendition(rendition, publishedPhotoId, pubCollectionId)
 local function ackRendition(rendition, publishedPhotoId, publishedCollectionId)
+	writeLogfile(4, string.format("ackRendition('%s', '%s')\n", ifnil(publishedPhotoId, 'nil'), ifnil(publishedCollectionId, 'nil')))
 	rendition:recordPublishedPhotoId(publishedPhotoId) 
 	-- store a backlink to the containing Published Collection: we need it in some hooks in PSPublishSupport.lua
 	rendition:recordPublishedPhotoUrl(tostring(publishedCollectionId) .. '/' .. tostring(LrDate.currentTime()))
@@ -816,7 +817,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- use the relative destination pathname, so we are able to identify moved pictures
 				localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
 				
-				writeLogfile(3, 'Old publishedPhotoId: ' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId: ' .. newPublishedPhotoId .. '"\n')
+--				writeLogfile(3, 'Old publishedPhotoId: ' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId: ' .. newPublishedPhotoId .. '"\n')
+				writeLogfile(3, string.format("Old publishedPhotoId: '%s', New publishedPhotoId: '%s'\n",
+				 								ifnil(publishedPhotoId, '<Nil>'), newPublishedPhotoId))
 				-- if photo was moved ... 
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
