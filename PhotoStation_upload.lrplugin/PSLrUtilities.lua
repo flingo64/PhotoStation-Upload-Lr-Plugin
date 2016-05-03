@@ -172,7 +172,7 @@ function PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams,
 		localRenderedPath = LrPathUtils.leafName(localRenderedPath)
 	end
 	remotePath = iif(dstRoot ~= '', dstRoot .. '/' .. localRenderedPath, localRenderedPath)
-	writeLogfile(3, string.format("getPublishPath(%s, %s,%s %s)\n    returns %s %s\n", 
+	writeLogfile(3, string.format("getPublishPath('%s', %s, %s, '%s')\n    returns '%s', '%s'\n", 
 					srcPhoto:getRawMetadata('path'), renderedExtension, iif(exportParams.copyTree, 'Tree', 'Flat'), dstRoot,
 					localPath, remotePath))
 	return localPath, remotePath
