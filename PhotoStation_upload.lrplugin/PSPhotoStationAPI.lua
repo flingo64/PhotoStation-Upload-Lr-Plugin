@@ -18,7 +18,7 @@ Photo Station Upload primitives:
 	- addPhotoComments
 	- getPhotoComments
 	
-	- getPhotoInfos
+	- getPhotoInfo
 	- getPhotoExifs
 	
 	- getTags

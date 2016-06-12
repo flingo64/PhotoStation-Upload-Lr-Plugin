@@ -1034,7 +1034,13 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     				enabled 		= false,
     			},
     
-    			f:spacer { fill_horizontal = 1,	},
+    			f:checkbox {
+    				title 			= LOC "$$$/PSUpload/ExportDialog/RatingUpload=Rating (always)",
+    				fill_horizontal = 1,
+    				value 			= true,
+    				enabled 		= false,
+    			},
+    
     		}
 		), 
 		
@@ -1063,15 +1069,16 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			},
 		
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatLabel=Color Label",
+				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatLabel=Color Label Tag",
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatLabel',
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag",
+				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating Tag",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag\n" .. 
+										"(useful for Photo Station version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatRating',
 			},
@@ -1121,7 +1128,14 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				value 			= bind 'locationDownload',
 			},
 
-			f:spacer { fill_horizontal = 1,	},
+			f:checkbox {
+				title 			= LOC "$$$/PSUpload/ExportDialog/RatingDownload=Rating",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LocationDownloadTT=Download rating from Photo Station\n" ..
+										"(Requires Photo Station 6.5 or later)",
+				fill_horizontal = 1,
+				value 			= bind 'ratingDownload',
+			},
+
 		},
 
 		f:row {
@@ -1143,7 +1157,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrLabel=Color Label",
+				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrLabel=Color Label Tag",
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrLabel',
@@ -1151,8 +1165,9 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrRating=Rating",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrRatingTT=Translate Photo Station '***' general tag to Lr rating",
+				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrRating=Rating Tag",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrRatingTT=Translate Photo Station '***' general tag to Lr rating\n" .. 
+										"(useful for Photo Station version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrRating',
 				enabled 		= bind 'exifXlatRating',
