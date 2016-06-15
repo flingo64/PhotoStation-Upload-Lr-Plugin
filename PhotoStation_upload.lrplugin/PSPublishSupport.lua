@@ -1264,7 +1264,6 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         					
     		end
 
---    		ratingCallback({ publishedPhoto = photoInfo, rating = ratingTagPS or 0 })
     		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
     
     		writeLogfile(3, string.format("Get metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
