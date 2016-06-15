@@ -11,6 +11,7 @@ Photo Station Upload primitives:
 	- getPhotoUrl
 
 	- listAlbum
+	- cacheListAlbum
 	- deletePic
 	- existsPic
 	- sortPics
@@ -374,9 +375,8 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- listAlbum: returns all photos/videos and optionally albums in a given album
 -- returns
---		success: 		true, false 
+--		albumItems:		table of photo infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
---		files:			array of files, if success
 function PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
 	-- recursive doesn't seem to work
 	local formData = 'method=list&' ..
@@ -398,44 +398,74 @@ function PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- directory cache for existsPic()
--- one directory will be cached at any time
-local psDirInCache = nil 	-- pathname of directory in cache
-local psDirCache = nil		-- the directory cache
-
-local function findInCache(filename, isVideo)
-	if psDirCache == nil then return false end
-	
-	for i = 1, #psDirCache do
-		if psDirCache[i].id == getPhotoId(filename, isVideo) then return true end
+-- the albumCache 
+local albumCache = {}
+local albumCacheTimeout = 60	-- 60 seconds cache time
+ 
+---------------------------------------------------------------------------------------------------------
+-- cleanupCache: remove old entries from cache
+local function cleanupCache()
+	for i = #albumCache, 1, -1 do
+		local cachedAlbum = albumCache[i]
+		if cachedAlbum.validUntil < LrDate.currentTime() then 
+			writeLogfile(3, string.format("cleanupCache(); removing %s\n", cachedAlbum.albumPath))
+			table.remove(albumCache, i)
+		end
 	end
-	return false
+end
+
+---------------------------------------------------------------------------------------------------------
+-- cacheListAlbum: returns all photos/videos and optionally albums in a given album via album cache
+-- returns
+--		albumItems:		table of photo infos, if success, otherwise nil
+--		errorcode:		errorcode, if not success
+function PSPhotoStationAPI.cacheListAlbum(h, dstDir, listItems)
+	cleanupCache()
+	
+	for i = 1, #albumCache do
+		local cachedAlbum = albumCache[i]
+		if cachedAlbum.albumPath == dstDir then 
+			return cachedAlbum.albumItems
+		end
+	end
+	
+	-- not found in cache: get it from Photo Station
+	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
+	if not albumItems then
+		writeLogfile(2, string.format('cacheListAlbum: Error on listAlbum: %d\n', errorCode))
+	   	return nil, errorCode
+	end
+	
+	local cacheEntry = {}
+	cacheEntry.albumPath = dstDir
+	cacheEntry.albumItems = albumItems
+	cacheEntry.validUntil = LrDate.currentTime() + albumCacheTimeout
+	table.insert(albumCache, 1, cacheEntry)
+	
+	writeLogfile(3, string.format("cacheListAlbum(%s): added to cache\n", dstDir))
+	
+	return albumItems
 end
 
 ---------------------------------------------------------------------------------------------------------
 -- existsPic(dstFilename, isVideo) - check if a photo exists in Photo Station
--- 	- if directory of photo is not in cache, reloads cache w/ directory via listAlbum()
--- 	- searches for filename in a local directory cache (findInCache())
 -- 	returns true, if filename 	
 function PSPhotoStationAPI.existsPic(h, dstFilename, isVideo)
 	local _, _, dstDir = string.find(dstFilename, '(.*)\/', 1, false)
 	dstDir = ifnil(dstDir, '') 
 	writeLogfile(4, string.format('existsPic: dstFilename %s --> dstDir %s\n', dstFilename, dstDir))
 	
-	-- check if folder of current photo is in cache
-	if dstDir ~= psDirInCache then
-		-- if not: refresh cach w/ folder of current photo
-		local errorCode
-		
-		psDirCache, errorCode = PSPhotoStationAPI.listAlbum(h, dstDir, 'photo,video')
-		if not psDirCache and errorCode ~= 408 then -- 408: no such file or dir
-			writeLogfile(3, string.format('existsPic: Error on listAlbum: %d\n', errorCode))
-		   	return 'error'
-		end
-		psDirInCache = dstDir
-	end 
+	local albumItems, errorCode = PSPhotoStationAPI.cacheListAlbum(h, dstDir, 'photo,video')
+	if not albumItems and errorCode ~= 408 then -- 408: no such file or dir
+		writeLogfile(3, string.format('existsPic: Error on listAlbum: %d\n', errorCode))
+	   	return 'error'
+	end
+
+	for i = 1, #albumItems do
+		if albumItems[i].id == getPhotoId(dstFilename, isVideo) then return 'yes' end
+	end
 	
-	return iif(findInCache(dstFilename, isVideo), 'yes', 'no')
+	return 'no'
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -533,7 +563,7 @@ end
 -- photo infos are returned in the respective album
 function PSPhotoStationAPI.getPhotoInfo(h, dstFilename, isVideo)
 	local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
-	local photoInfos, errorCode =  PSPhotoStationAPI.listAlbum(h, dstAlbum, 'photo,video')
+	local photoInfos, errorCode =  PSPhotoStationAPI.cacheListAlbum(h, dstAlbum, 'photo,video')
 	
 	if not photoInfos then return false, errorCode end 
 
