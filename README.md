@@ -189,7 +189,7 @@ Publish Functionality:
 	- __Check Existing__:<br>
   	  Unpublished photos will not be published, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   	  This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the defined target but not through the newly defined Published Collection (e.g. via Export).
-	  Check Existing is approx. 50 times faster (__~ 10 photos/sec__) than a Normal Publish, since no thumbnail creation and upload is required.
+	  Check Existing is approx. 50 times faster (__~ 15 photos/sec__) than a Normal Publish, since no thumbnail creation and upload is required.
   	  Note, that CheckExisting can not determine, whether the photo in the target Album is the latest version.
 	- __Check Moved__:<br>
 	  Check if any photo within a Published Collection has moved locally and if so, mark them to 're-publish'
@@ -468,7 +468,7 @@ GPS coords can be added in Photo Station via the Location Tag panel: enter a loc
 
 Version 5.6
 -----------
-- Support for __downwload of (native) rating __ for photos and videos from __Photo Station 6.5__ and above<br>
+- Support for __downwload of (native) rating__ for photos and videos from __Photo Station 6.5__ and above<br>
 - Performance improvement __(up to 10 times faster)__ for publish mode __CheckExisting__ and __download of title, caption, rating and gps__ through introduction of a local Photo Station album cache
 
 Copyright
