@@ -1202,7 +1202,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.ratingDownload
     			or  collectionSettings.locationDownload
     		then
-    			local photoInfo = PSPhotoStationAPI.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+    			local useCache = true
+    			local photoInfo = PSPhotoStationAPI.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
         		if photoInfo then
         			if collectionSettings.titleDownload 	then titlePS = photoInfo.title end 
         			if collectionSettings.captionDownload	then captionPS = photoInfo.description end 
@@ -1264,7 +1265,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         					
     		end
 
-    		ratingCallback({ publishedPhoto = photoInfo, rating = ratingPS or 0 })
+    		ratingCallback({ publishedPhoto = photoInfo, rating = iif(collectionSettings.PS2LrRating, ratingTagPS, ratingPS) or 0 })
     
     		writeLogfile(3, string.format("Get metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude),
