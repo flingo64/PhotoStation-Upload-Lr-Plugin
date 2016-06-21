@@ -515,6 +515,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	--============= upload options ===================================
 --	-- move Upload options from publish service settings to collection settings
 
+	collectionSettings.psVersion = publishSettings.psVersion
+
 	if collectionSettings.exifTranslate == nil then
 		collectionSettings.exifTranslate = publishSettings.exifTranslate
 	end
