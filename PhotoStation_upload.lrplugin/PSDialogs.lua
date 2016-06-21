@@ -519,11 +519,32 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 		{ title	= '100s',	value 	= 100 },
 	}
 
+	local versionItems = {
+        { title	= 'Photo Station 5',   value 	= 50 },
+        { title	= 'Photo Station 6',   value 	= 60 },
+        { title	= 'Photo Station 6.5', value 	= 65 },
+	}
+	
 	return
         f:group_box {
         	fill_horizontal = 1,
         	title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Target Photo Station",
         
+        	f:row {
+				f:static_text {
+					title 			= LOC "$$$/PSUpload/ExportDialog/PSVERSION=Photo Station Version:",
+					alignment 		= 'right',
+        			width 			= share 'labelWidth',
+				},
+				
+        		f:popup_menu {
+        			title 			= LOC "$$$/PSUpload/ExportDialog/PSVERSIONLIST=Version:",
+        			items 			= versionItems,
+        			value 			= bind 'psVersion',
+        		},
+        
+        	}, 
+
         	f:row {
         		f:radio_button {
         			title 			= LOC "$$$/PSUpload/ExportDialog/SERVERNAME=Server Address:",

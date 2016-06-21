@@ -476,10 +476,10 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			labelParam = iif(ifnil(labelData, 'grey') ~= 'grey', '+' .. labelData, nil)
 		end
 		
-		-- always get rating
+		-- PS6.5 and later: always get rating
 		local ratingParam
 		local ratingData = srcPhoto:getFormattedMetadata("rating")
-		if ifnil(ratingData, 0) ~= 0 then
+		if exportParams.psVersion >= 65 and ifnil(ratingData, 0) ~= 0 then
 			ratingParam = { { attribute =  'rating', value = tostring(ratingData) } }
 		end
 		
@@ -532,10 +532,11 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			if gpsParam then
 				gpsLatLong = gpsParam[1].value .. '/' .. gpsParam[2].value
 			end
-			local logMessage = string.format("Metadata Upload for '%s' -  description: '%s', label: '%s', rating: '%s' keywords: '%s', gps: '%s'", 
+			local logMessage = string.format("Metadata Upload for '%s' -  description: '%s', label: '%s', rating: '%d' ratingTag: '%s' keywords: '%s', gps: '%s'", 
 								dstFilename, 
 								ifnil(captionData, ''),
 								ifnil(labelParam, ''),
+								ifnil(ratingData, 0),
 								ifnil(ratingTagParam, ''),
 								table.concat(ifnil(keywordNamesAdd, {}), "','"),
 								ifnil(gpsLatLong, ''))

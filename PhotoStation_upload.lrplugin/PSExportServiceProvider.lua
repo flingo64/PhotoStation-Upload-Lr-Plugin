@@ -81,6 +81,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Station to upload to
 		{ key = 'username', 		default = '' },		-- account for Photo Station upload
 		{ key = 'password', 		default = '' },		-- guess what...
+		{ key = 'psVersion', 		default = 65 },		-- Photo Station version: default PS 6.5
 
 		-- target album parameters
 		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
