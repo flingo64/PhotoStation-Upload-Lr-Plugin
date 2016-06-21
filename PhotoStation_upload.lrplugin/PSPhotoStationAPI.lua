@@ -559,23 +559,28 @@ function PSPhotoStationAPI.getPhotoComments (h, dstFilename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoInfo (h, dstFilename, isVideo) 
+-- getPhotoInfo (h, dstFilename, isVideo, useCache) 
 -- photo infos are returned in the respective album
-function PSPhotoStationAPI.getPhotoInfo(h, dstFilename, isVideo)
+function PSPhotoStationAPI.getPhotoInfo(h, dstFilename, isVideo, useCache)
 	local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
-	local photoInfos, errorCode =  PSPhotoStationAPI.cacheListAlbum(h, dstAlbum, 'photo,video')
+	local photoInfos, errorCode
+	if useCache then
+		photoInfos, errorCode=  PSPhotoStationAPI.cacheListAlbum(h, dstAlbum, 'photo,video')
+	else
+		photoInfos, errorCode=  PSPhotoStationAPI.listAlbum(h, dstAlbum, 'photo,video')
+	end
 	
 	if not photoInfos then return false, errorCode end 
 
 	local photoId = getPhotoId(dstFilename, isVideo)
 	for i = 1, #photoInfos do
 		if photoInfos[i].id == photoId then
-			writeLogfile(3, string.format('getPhotoInfo(%s) found infos.\n', dstFilename))
+			writeLogfile(3, string.format('getPhotoInfo(%s, useCache %s) found infos.\n', dstFilename, useCache))
 			return photoInfos[i].info
 		end
 	end
 	
-	writeLogfile(3, string.format('getPhotoInfo(%s) found no infos.\n', dstFilename))
+	writeLogfile(3, string.format('getPhotoInfo(%s, useCache %s) found no infos.\n', dstFilename, useCache))
 	return nil
 end
 
