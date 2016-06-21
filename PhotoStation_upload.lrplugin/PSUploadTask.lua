@@ -476,13 +476,17 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			labelParam = iif(ifnil(labelData, 'grey') ~= 'grey', '+' .. labelData, nil)
 		end
 		
-		-- get rating if requested
+		-- always get rating
 		local ratingParam
-		if exportParams.exifXlatRating then
-			local ratingData = srcPhoto:getRawMetadata("rating")
-			if ifnil(ratingData, 0) ~= 0 then
-				ratingParam =  PSPhotoStationAPI.rating2Stars(ratingData)
-			end
+		local ratingData = srcPhoto:getFormattedMetadata("rating")
+		if ifnil(ratingData, 0) ~= 0 then
+			ratingParam = { { attribute =  'rating', value = tostring(ratingData) } }
+		end
+		
+		-- get ratingTag if requested
+		local ratingTagParam
+		if exportParams.exifXlatRating and ifnil(ratingData, 0) ~= 0 then
+			ratingTagParam =  PSPhotoStationAPI.rating2Stars(ratingData)
 		end
 		
 		-- get keywords if requested
@@ -510,12 +514,13 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		end
 				
 		-- if any metadata to add: wait for video being indexed by PS and upload metadata thereafter
-		if captionParam or labelParam or ratingParam or (keywordNamesAdd and #keywordNamesAdd  > 0) or gpsParam then
+		if captionParam or labelParam or ratingParam or ratingTagParam or (keywordNamesAdd and #keywordNamesAdd  > 0) or gpsParam then
 			local photoThere 
 			local maxWait = 30
 			
 			while not photoThere and maxWait > 0 do
-				if not PSPhotoStationAPI.getPhotoInfo(exportParams.uHandle, dstFilename, true) then
+				local isVideo, dontUseCache = true, false
+				if not PSPhotoStationAPI.getPhotoInfo(exportParams.uHandle, dstFilename, isVideo, dontUseCache) then
 					LrTasks.sleep(1)
 					maxWait = maxWait - 1
 				else
@@ -531,15 +536,16 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 								dstFilename, 
 								ifnil(captionData, ''),
 								ifnil(labelParam, ''),
-								ifnil(ratingParam, ''),
+								ifnil(ratingTagParam, ''),
 								table.concat(ifnil(keywordNamesAdd, {}), "','"),
 								ifnil(gpsLatLong, ''))
 			
 			if (not photoThere
 				 or (captionParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, captionParam))
 				 or (gpsParam		and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, gpsParam))
+				 or (ratingParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, ratingParam))
 				 or	(labelParam 	and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', labelParam))
-				 or	(ratingParam 	and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', ratingParam))
+				 or	(ratingTagParam and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', ratingTagParam))
 				 or	(keywordNamesAdd and #keywordNamesAdd > 0  
 									and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
 				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
