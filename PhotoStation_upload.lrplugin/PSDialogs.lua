@@ -1155,7 +1155,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 										"(Requires Photo Station 6.5 or later)",
 				fill_horizontal = 1,
 				value 			= bind 'ratingDownload',
-				enabled			= iif(propertyTable.psVersion >= 65, true, false),
+				enabled			= iif(ifnil(propertyTable.psVersion, 65) >= 65, true, false),
 			},
 
 		},
