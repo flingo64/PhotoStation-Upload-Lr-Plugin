@@ -538,6 +538,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.commentsDownload = false
 	end
 
+	if collectionSettings.titleDownload == nil then
+		collectionSettings.titleDownload = false
+	end
+
 	if collectionSettings.captionDownload == nil then
 		collectionSettings.captionDownload = false
 	end
@@ -913,7 +917,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		local pubPhoto = publishedPhotos[i]
 		local publishedPath = pubPhoto:getRemoteId()
 
-		writeLogfile(2, string.format("deletePublishedCollection: deleting %s from  %s\n ", publishedPath, info.name ))
+		writeLogfile(3, string.format("deletePublishedCollection: deleting %s from  %s\n", publishedPath, info.name ))
 
 --			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
 		if PSPhotoStationAPI.deletePic(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
