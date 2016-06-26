@@ -1084,7 +1084,8 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 		
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegions=Faces",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lr face regions to Photo Station person tags",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lr face regions to Photo Station person tags\n" .. 
+										"(useful for Photo Station version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatFaceRegions',
 			},

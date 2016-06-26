@@ -92,7 +92,7 @@ exportServiceProvider.exportPresetFields = {
 
 		-- upload options / exif translation parameters
 		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
-		{ key = 'exifXlatFaceRegions',	default = true },	-- translate Lr/Picasa face regions to PS face regions
+		{ key = 'exifXlatFaceRegions',	default = false },	-- translate Lr/Picasa face regions to PS face regions
 		{ key = 'exifXlatLabel', 		default = true },	-- translate Lr label (red, green, ...) to PS keyword
 		{ key = 'exifXlatRating', 		default = false},	-- translate Lr star rating (XMP:rating) to PS keywords
 
