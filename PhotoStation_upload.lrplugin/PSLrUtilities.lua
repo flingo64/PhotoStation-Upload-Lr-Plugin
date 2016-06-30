@@ -354,7 +354,6 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 		writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): root will not be noted.\n", photoPath))
 		return albumCheckList 	
 	end
-	local albumPathLength = string.len(albumPath)
 	
 	local newAlbum = {}
 	newAlbum.albumPath	= albumPath
@@ -362,7 +361,7 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 	local previousAlbum, currentAlbum = nil, albumCheckList
 	
 	while currentAlbum do
-		if string.find(currentAlbum.albumPath, albumPath, 1, false) == 1 then 
+		if string.find(currentAlbum.albumPath, albumPath, 1, true) == 1 then 
 			writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
 			return albumCheckList
 		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
