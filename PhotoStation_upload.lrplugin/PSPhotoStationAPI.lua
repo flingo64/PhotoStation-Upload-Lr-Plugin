@@ -469,7 +469,7 @@ function PSPhotoStationAPI.existsPic(h, dstFilename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- deletePic (h, dstFilename) 
+-- deletePic (h, dstFilename, isVideo) 
 function PSPhotoStationAPI.deletePic (h, dstFilename, isVideo) 
 	local formData = 'method=delete&' ..
 					 'version=1&' .. 
@@ -481,6 +481,25 @@ function PSPhotoStationAPI.deletePic (h, dstFilename, isVideo)
 
 	writeLogfile(3, string.format('deletePic(%s) returns OK\n', dstFilename))
 	return respArray.success
+end
+
+---------------------------------------------------------------------------------------------------------
+-- movePic (h, srcFilename, dstAlbum, isVideo) 
+function PSPhotoStationAPI.movePic(h, srcFilename, dstAlbum, isVideo)
+	local formData = 'method=copy&' ..
+					 'version=1&' ..
+					 'mode=move&' .. 
+					 'duplicate=ignore&' .. 
+					 'id=' .. getPhotoId(srcFilename, isVideo) .. '&' ..
+					 'sharepath=' .. getAlbumId(dstAlbum)
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('movePic(%s, %s) returns OK\n', srcFilename, dstAlbum))
+	return respArray.success
+
 end
 
 ---------------------------------------------------------------------------------------------------------
