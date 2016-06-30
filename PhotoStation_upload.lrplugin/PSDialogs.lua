@@ -1219,6 +1219,7 @@ function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 		{ title	= 'Normal',																		value 	= 'Publish' },
 		{ title	= 'CheckExisting: Set Unpublished to Published if existing in Photo Station.',	value 	= 'CheckExisting' },
 		{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
+		{ title	= 'Move: Move photos within Photo Station (after moving them locally).',		value 	= 'Move' },
 		{ title	= 'Convert: Convert collection to current version.',							value 	= 'Convert' },
 	}
 	

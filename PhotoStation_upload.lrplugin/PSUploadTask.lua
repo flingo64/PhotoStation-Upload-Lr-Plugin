@@ -649,6 +649,141 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
 end			
 
 --------------------------------------------------------------------------------
+-- movePhotos(publishedCollection, exportContext, exportParams)
+-- move unpublished photos within the Photo Station to the current target album, if they were moved locally
+-- photos that are already in the target album are counted as moved.
+-- photos not yet published will stay unpublished
+-- return:
+-- 		nPhotos		- # of photos in collection
+--		nProcessed 	- # of photos checked
+--		nMoved		- # of photos moved
+local function movePhotos(publishedCollection, exportContext, exportParams)
+	local exportSession = exportContext.exportSession
+	local nPhotos = exportSession:countRenditions()
+	local nProcessed = 0
+	local nMoved = 0 
+	
+	-- Set progress title.
+	local progressScope = exportContext:configureProgress {
+						title = nPhotos > 1
+							and LOC( "$$$/PSUpload/Upload/Progress=Checking ^1 photos", nPhotos )
+							or LOC "$$$/PSUpload/Upload/Progress/One=Checking one photo",
+						renderPortion = 1 / nPhotos,
+					}
+					
+	-- remove all photos from rendering process to speed up the process
+	for _, rendition in exportSession:renditions() do
+		rendition:skipRender()
+	end 
+
+	local dirsCreated = {}
+	local albumsForCheckEmpty
+	local skipPhoto = false 	-- continue flag
+
+	for _, rendition in exportContext:renditions{ stopIfCanceled = true } do
+		local publishedPhotoId = rendition.publishedPhotoId		-- only required for publishing
+		local newPublishedPhotoId = nil
+		
+		-- Wait for next photo to render.
+		local success, pathOrMessage = rendition:waitForRender()
+		
+		-- Check for cancellation again after photo has been rendered.
+		if progressScope:isCanceled() then break end
+		
+		if success then
+			writeLogfile(3, "Next photo: " .. pathOrMessage .. "\n")
+			
+			local srcPhoto = rendition.photo
+			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
+			local renderedExtension = LrPathUtils.extension(renderedFilename)
+			local srcFilename = srcPhoto:getRawMetadata("path") 
+			local dstRoot
+			local dstDir
+		
+			nProcessed = nProcessed + 1
+			skipPhoto = false
+			
+			if not publishedPhotoId then
+				writeLogfile(2, string.format('Move photo: Skipping "%s", was not yet published.\n', srcPhoto:getFormattedMetadata("fileName")))
+				skipPhoto = true
+			else
+    			-- evaluate and sanitize dstRoot: 
+    			dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
+    			
+    			-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
+    			skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
+				if skipPhoto then
+					writeLogfile(2, string.format('Move photo: Skipping "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
+					table.insert( failures, srcFilename )
+    			end
+			end
+
+			if not skipPhoto then
+				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
+				-- use the relative destination pathname, so we are able to identify moved pictures
+	   			local localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
+				
+				writeLogfile(3, string.format("Old publishedPhotoId: '%s', New publishedPhotoId: '%s'\n",
+				 								ifnil(publishedPhotoId, '<Nil>'), newPublishedPhotoId))
+				-- if photo was moved locally ... 
+				if publishedPhotoId ~= newPublishedPhotoId then
+					-- move photo within Photo Station
+					local dstDir
+
+     				-- check if target Album (dstRoot) should be created 
+    				if exportParams.createDstRoot and dstRoot ~= '' 
+    				and	not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated) then
+						writeLogfile(1, 'Move photo: Cannot create album to move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
+						skipPhoto = true 					
+    				elseif not exportParams.copyTree then    				
+    					if not dstRoot or dstRoot == '' then
+    						dstDir = '/'
+    					else
+    						dstDir = dstRoot
+    					end
+    				else
+    					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcFilename), exportParams.srcRoot, dstRoot, 
+    										dirsCreated) 
+    				end
+					
+					if not dstDir
+					or not PSPhotoStationAPI.movePic(exportParams.uHandle, publishedPhotoId, dstDir, srcPhoto:getRawMetadata('isVideo')) then
+						writeLogfile(1, 'Move photo: Cannot move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
+						skipPhoto = true 					
+					else
+						writeLogfile(2, 'Move photo: Moved photo from ' .. publishedPhotoId .. ' to ' .. newPublishedPhotoId .. '.\n')
+						albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPhotoId)
+					end
+				else 
+						writeLogfile(2, 'Move photo: No need to move photo "'  .. newPublishedPhotoId .. '".\n')
+				end
+				if not skipPhoto then
+					ackRendition(rendition, newPublishedPhotoId, publishedCollection.localIdentifier)
+					nMoved = nMoved + 1
+				end
+			end
+			LrFileUtils.delete( pathOrMessage )
+	-- 		progressScope:setPortionComplete(nProcessed, nPhotos)
+		end
+	end	
+
+	local nDeletedAlbums = 0 
+	local currentAlbum = albumsForCheckEmpty
+	
+	while currentAlbum do
+		nDeletedAlbums = nDeletedAlbums + PSPhotoStationAPI.deleteEmptyAlbumAndParents(exportParams.uHandle, currentAlbum.albumPath)
+		currentAlbum = currentAlbum.next
+	end
+	
+	writeLogfile(2, string.format("Move photo: Deleted %d empty albums.\n", nDeletedAlbums))
+	
+
+-- 	progressScope:done()
+	
+	return nPhotos, nProcessed, nMoved
+end			
+
+--------------------------------------------------------------------------------
 -- PSUploadTask.updateExportSettings(exportParams)
 -- This plug-in defined callback function is called at the beginning
 -- of each export and publish session before the rendition objects are generated.
@@ -749,6 +884,19 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 							string.format("%s: Checked %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
 											publishMode, nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
 		end
+		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
+		closeLogfile()
+		closeSession(exportParams)
+		return
+	elseif publishMode == "Move" then
+		local nMoved
+
+		nPhotos, nProcessed, nMoved = movePhotos(publishedCollection, exportContext, exportParams)
+		timeUsed = 	LrDate.currentTime() - startTime
+		picPerSec = nProcessed / timeUsed
+		message = LOC ("$$$/PSUpload/Upload/Errors/Move=" .. 
+						string.format("%s: Processed %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
+										publishMode, nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 		closeSession(exportParams)
