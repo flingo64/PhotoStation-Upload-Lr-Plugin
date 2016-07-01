@@ -183,8 +183,10 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	-- if photo has a title: generate a title file  	
 	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
 
-	-- exif translations	
-	or (exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
+	-- exif translations: avoid calling doExifTranslations() if nothing's there to translate
+	or ((exifXlatLabelCmd or exportParams.exifXlatFaceRegions or exportParams.exifXlatRating) 
+		and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
+--	or (exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
 
 	-- wait for Photo Station semaphore
 	or not waitSemaphore("PhotoStation", dstFilename)
