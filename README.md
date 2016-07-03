@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 5.6.x<br>
+Version 5.7.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -31,19 +31,19 @@ Requirements
 	- MacOS 10.7.5
 	- MacOS 10.8.5
 	- MacOS 10.9.5	
-	- MacOS 10.10.3, 10.10.4, 10.10.5 
-	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5
+	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
+	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
 	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.6
 * Synology Photo Station:
-	Photo Station 6 (tested)
+	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested)
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
-	- ImageMagick/convert.exe
-	- ImageMagick/dcraw.exe
-	- ffmpeg/ffmpeg.exe
-	- ffmpeg/qt-faststart.exe
+	- ImageMagick/convert(.exe)
+	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
+	- ffmpeg/ffmpeg(.exe)
+	- ffmpeg/qt-faststart(.exe)
 * For Metatdata translations (e.g Lr/Picasa face regions, ratings and color labels):
 	- exiftool: Version 10.0.2.0 (tested) and later should be fine
 	
@@ -182,22 +182,29 @@ Publish Functionality:
 
 - Support for __Published Collection Sets__
  
-- __Different Publish options__ (Published Collection dialog):
-
-	- __Normal__:<br>
- 	  publish unpublished photos to target Album in target Photo Station
-	- __Check Existing__:<br>
-  	  Unpublished photos will not be published, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
+- __Different Publish modes__ (Published Collection dialog):
+	- __Upload__:<br>
+ 	  Upload unpublished photos to target Album in target Photo Station. This is the expected normal publish method.
+	- __CheckExisting__:<br>
+  	  Unpublished or To re-publish photos will not be uploaded, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   	  This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the defined target but not through the newly defined Published Collection (e.g. via Export).
-	  Check Existing is approx. 50 times faster (__~ 15 photos/sec__) than a Normal Publish, since no thumbnail creation and upload is required.
+	  CheckExisting is approx. 50 times faster (__~ 15 photos/sec__) than a normal Publish, since no thumbnail creation and upload is required.
   	  Note, that CheckExisting can not determine, whether the photo in the target Album is the latest version.
-	- __Check Moved__:<br>
-	  Check if any photo within a Published Collection has moved locally and if so, mark them to 're-publish'
+	- __CheckMoved__:<br>
+	  Check if any photo within a Published Collection has moved locally and if so, mark it 'To re-publish'
 	  If your Published Collection is to be tree-mirrored to the target Album, it is important to notice when a photo was moved locally between directories, since these movements have to be propagated to the target Album (i.e., the photo has to be deleted at the target Album at its old location and re-published at the new location).
-	  Unfortunately, Lightroom will not mark moved photos for 're-publish'. Therefore, this mode is a workaround for this missing Lr feature. To use it, you have to set at least one photo to 're-publish', otherwise you won't be able to push the "Publish" button.
-	  Check Moved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the Photo Station involved.<br>
+	  Unfortunately, Lightroom will not mark moved photos for 'to Re-publish'. Therefore, this mode is a workaround for this missing Lr feature. To use it, you have to set at least one photo 'To re-publish', otherwise you won't be able to push the "Publish" button.
+	  CheckMoved is very fast (__\>100 photos/sec__) since it only checks locally whether the local path of a photo has changed in comparison to its published location. There is no communication to the Photo Station involved.<br>
+	- __MovePhotos__:<br>
+  	  Unpublished and 'To re-publish' photos will not be uploaded, but will be moved within the Photo Station in case their current upload path is different from the upload path that would apply if they would be uploaded now. This mode is good for various scenarios:<br>
+  	  a) After uploading photos to a specific target album (flat copy) you decide to change the target album for those photos<br>
+  	  b) After uploading photos using the tree copy mode you decide to move those photos locally to a different directory (you may use CheckMoved to find those photos)<br>
+  	  c) After uploading photos to a dynamic target album (using metadata placeholders) any of the referenced metadata has changed.   
+  	  Photos not yet published will remain Unpublished. The MovePhotos mode avoids re-generating and uploading of thumbs and thus is faster than a normal upload.
 	- __Convert__:<br>
 	  This mode is used to convert photos in a an old-style (e.g. \<5.0.0) Published Collection to Published Collection which supports comments and ratings (v.5.0.0 and above)<br>
+	- __Ask me later__:<br>
+	  This is not a publish mode itself but let's you postpone the publish mode decision to the point in time where the actual publish action is started (e.g. when you click the "Publish" button)<br>
 - Impose __sort order of photos in Lr Published Collections__ in Photo Station:<br>
 	Sort order is only supported on Published Collections w/ Custom Sort Order when uploaded as Flat Copy 
 
@@ -211,7 +218,7 @@ Download / Sync Functionality:
 -------------------------------
 - Support for re-import of __Comments and Ratings__
 
-- __Download and two-way sync of various metadata__ for photos and videos:<br>
+- __Download and two-way sync of various metadata__ for photos and videos:
 	- title, description/caption
 	- rating (for Photo Station 6.5 and above)
 	- general tags (Keywords)
@@ -222,6 +229,15 @@ Download / Sync Functionality:
 	- Translation of __Color Label tags (+yellow, +red, etc.)__  to Lr color label <br>
 	- Translation of __Person tags__  to Lr face regions (requires reloading of photo metadata from file)<br>
 	
+- __Different Download modes__:
+	- __Yes__:<br>
+	  Download of the configured metadata items will start immediately after a publish action or when you click "Refresh Comments".<br>
+	- __No__:<br>
+	  Download of the configured options will be suppressed. This mode is good to temporarily disable the download of the configued metadata items while keeping the download option configuration itself.<br>
+	- __Ask me later__:<br>
+	  This is not a download mode itself but let's you postpone the download mode decision to the point in time where the actual download action is started (e.g. after a publish action or when you click the "Refresh Comments" button).
+	  This mode is useful if you do not want to download metadata after every publish action, but only occasionally.<br>
+
 - For more detail, please read the [Wiki article] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Some-words-on-the-two-way-sync-of-metadata)
 
 Additional Funtionality
@@ -470,6 +486,17 @@ Version 5.6
 -----------
 - Support for __downwload of (native) rating__ for photos and videos from __Photo Station 6.5__ and above<br>
 - Performance improvement __(up to 10 times faster)__ for publish mode __CheckExisting__ and __download of title, caption, rating and gps__ through introduction of a local Photo Station album cache
+
+Version 5.7
+-----------
+- Added new publish mode "MovePhotos" to move photo remotely in the Photo Station instead of deleting the photo at the old location and re-generating thumbs and uploading the photos again
+- Addes download mode setting (Yes, No, Ask me later)
+- Bugfixes / improvements:
+	- Fixed a bug where after deleting photos from a Published Collection the DeleteEmptyAlbum routine was called multiple times for albums with a '-' in the path
+	- Avoid the call of doExifTranslations when there is nothing to translate
+	- Fixed a bug where RAW/DNG photos could not be uploaded from MacOS (due to a mis-configured program path for the dcraw tool)
+	- Raised the timeout for uploading metadata for videos from 30 sec to 60 sec
+	- Fixed an issue where one or more upload task woudl fail with an exception ("PSUtilities, 331: attempt to compare nil with number") when doing multiple upload tasks in parallel  
 
 Copyright
 ==========
