@@ -496,7 +496,7 @@ Version 5.7
 	- Avoid the call of doExifTranslations when there is nothing to translate
 	- Fixed a bug where RAW/DNG photos could not be uploaded from MacOS (due to a mis-configured program path for the dcraw tool)
 	- Raised the timeout for uploading metadata for videos from 30 sec to 60 sec
-	- Fixed an issue where one or more upload task woudl fail with an exception ("PSUtilities, 331: attempt to compare nil with number") when doing multiple upload tasks in parallel  
+	- Fixed an issue where one or more upload task would fail with an exception ("PSUtilities, 331: attempt to compare nil with number") when doing multiple upload tasks in parallel  
 
 Copyright
 ==========
