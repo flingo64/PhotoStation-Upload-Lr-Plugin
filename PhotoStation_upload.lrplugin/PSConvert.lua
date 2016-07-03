@@ -122,7 +122,9 @@ function PSConvert.initialize()
 	end
 	
 	h.conv = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
-	h.dcraw = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog)
+	h.dcraw = iif(WIN_ENV, 
+					LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
+					LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
 	h.ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
 	h.qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
 
@@ -223,7 +225,7 @@ function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, 
 			) ..
 			' 2>> "' .. iif(getLogLevel() >= 4, getLogFilename(), getNullFilename()) .. '"' 
 		cmdlineQuote()
---			) .. cmdlineQuote()
+
 	writeLogfile(3, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then
 		writeLogfile(3,cmdline .. "... failed!\n")
