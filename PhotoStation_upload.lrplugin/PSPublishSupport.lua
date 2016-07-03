@@ -570,6 +570,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		collectionSettings.PS2LrRating = false
 	end
 	
+	if collectionSettings.downloadMode == nil then
+		collectionSettings.downloadMode = 'Yes'
+	end
+	
 	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
 	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
 	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
@@ -601,10 +605,12 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     
             PSDialogs.downloadOptionsView(f, collectionSettings),
  
- 	  		f:spacer { height = 10, },
-    
+            PSDialogs.downloadModeView(f, collectionSettings),
+
+ 	  		f:spacer { height = 10, },   
  
             PSDialogs.publishModeView(f, collectionSettings),
+
 
     		f:spacer { height = 10, },
     		
@@ -1004,15 +1010,6 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end	
 	
-	if not publishedCollection:getCollectionInfoSummary().collectionSettings.commentsDownload then
-		writeLogfile(2, string.format("Get comments: comments not enabled for this collection.\n"))
-		closeLogfile()
-		return
-	end
-		
-	publishedCollectionName = publishedCollection:getName()
-	writeLogfile(2, string.format("Get comments for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
-
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetCommentsFromPublishedCollection')
 	if not sessionSuccess then
@@ -1025,6 +1022,15 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		closeLogfile()
 		return
 	end
+
+	if not publishSettings.commentsDownload then
+		writeLogfile(2, string.format("Get comments: comments not enabled for this collection.\n"))
+		closeLogfile()
+		return
+	end
+		
+	publishedCollectionName = publishedCollection:getName()
+	writeLogfile(2, string.format("Get comments for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
 
 	local startTime = LrDate.currentTime()
 
@@ -1109,12 +1115,12 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	openLogfile(publishSettings.logLevel)
 
 	if publishSettings.operationCanceled then
-		writeLogfile(2, string.format("Get metadata: canceled by user\n"))
+		writeLogfile(2, string.format("Get ratings/metadata: canceled by user\n"))
 		return
 	end
 	
 	if nPhotos == 0 then
-		writeLogfile(2, string.format("Get metadata: nothing to do.\n"))
+		writeLogfile(2, string.format("Get ratings/metadata: nothing to do.\n"))
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
@@ -1131,36 +1137,42 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		return
 	end	
 	
-	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-	if 		not collectionSettings.titleDownload 
-		and not collectionSettings.captionDownload 
-		and not collectionSettings.locationDownload 
-		and not collectionSettings.ratingDownload 
-		and not collectionSettings.tagsDownload 
-		and not collectionSettings.PS2LrFaces 
-		and not collectionSettings.PS2LrLabel 
-		and not collectionSettings.PS2LrRating 
-	then
-		writeLogfile(2, string.format("Get metadata: Metadata download is not enabled for this collection.\n"))
-		closeLogfile()
-		return
-	end
-		
-	publishedCollectionName = publishedCollection:getName()
-	writeLogfile(2, string.format("Get ratings for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
-
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetRatingsFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
 			showFinalMessage("Photo StatLr: Get ratings failed!", reason, "critical")
 		else
-			writeLogfile(2, string.format("Get metadata: canceled by user\n"))
+			writeLogfile(2, string.format("Get ratings/metadata: canceled by user\n"))
 			publishSettings.operationCanceled = true
 		end
 		closeLogfile()
 		return
 	end
+	writeLogfile(2, string.format("Get ratings/metadata: options(title: %s, caption: %s, location: %s, rating: %s, tags: %s, face xlat: %s, label xlat: %s, rating xlat: %s)\n",
+							publishSettings.titleDownload, publishSettings.captionDownload, publishSettings.locationDownload, publishSettings.ratingDownload, 
+							publishSettings.tagsDownload, publishSettings.PS2LrFaces, publishSettings.PS2LrLabel, publishSettings.PS2LrRating))
+	
+--	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
+	-- collectionSettings were copied to publishSettings during openSession()
+	local collectionSettings = publishSettings
+
+	if		not collectionSettings.titleDownload 
+		and not collectionSettings.captionDownload 
+		and not collectionSettings.locationDownload 
+		and not collectionSettings.ratingDownload 
+		and not collectionSettings.tagsDownload 
+		and not collectionSettings.PS2LrFaces 
+		and not collectionSettings.PS2LrLabel 
+		and not collectionSettings.PS2LrRating
+	then
+		writeLogfile(2, string.format("Get ratings/metadata: Metadata download is not enabled for this collection.\n"))
+		closeLogfile()
+		return
+	end
+		
+	publishedCollectionName = publishedCollection:getName()
+	writeLogfile(2, string.format("Get ratings for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
 
 	local reloadPhotos = {}
 	local startTime = LrDate.currentTime()
@@ -1195,9 +1207,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		
 		if photoInfo.publishedPhoto:getEditedFlag() then
 			-- do not download infos to original photo for unpublished photos
-			writeLogfile(2, string.format("Get metadata: %s - latest version not published, skip download.\n", photoInfo.remoteId))
+			writeLogfile(2, string.format("Get ratings/metadata: %s - latest version not published, skip download.\n", photoInfo.remoteId))
 		elseif tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
-			writeLogfile(2, string.format("Get metadata: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
+			writeLogfile(2, string.format("Get ratings/metadata: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
 		else		 
     		
     		------------------------------------------------------------------------------------------------------
@@ -1239,11 +1251,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			local photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
     		
         		if not photoTags then
-        			writeLogfile(1, string.format("Get metadata: %s failed!\n", photoInfo.remoteId))
+        			writeLogfile(1, string.format("Get ratings/metadata: %s failed!\n", photoInfo.remoteId))
         		elseif photoTags and #photoTags > 0 then
     				for i = 1, #photoTags do
     					local photoTag = photoTags[i]
-    					writeLogfile(4, string.format("Get metadata: found tag type %s name %s\n", photoTag.type, photoTag.name))
+    					writeLogfile(4, string.format("Get ratings/metadata: found tag type %s name %s\n", photoTag.type, photoTag.name))
     					
         				-- a people tag has a face region in additional.info structure
         				if collectionSettings.PS2LrFaces and photoTag.type == 'people' then
@@ -1273,26 +1285,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
     		ratingCallback({ publishedPhoto = photoInfo, rating = iif(collectionSettings.PS2LrRating, ratingTagPS, ratingPS) or 0 })
     
-    		writeLogfile(3, string.format("Get metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
+    		writeLogfile(3, string.format("Get ratings/metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude),
     							ifnil(ratingPS, 0), ifnil(ratingTagPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
-
-    		------------------------------------------------------------------------------------------------------
-    		-- title can be stored in two places in PS: in title tag (when entered by PS user) and in exif 'Object Name' (when set by Lr)
-   			-- title tag overwrites exif tag, get Object Name only, if no title tag was found
-
-    		if 	collectionSettings.titleDownload 
-    		and (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
-				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
-				if exifsPS then 
-					local namePS = findInTable(exifsPS, 'label', 'Object Name', 'value')
-					if namePS then 
-						writeLogfile(3, string.format("Get metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
-						titlePS = namePS 
-					end
-				end
-			end
-
 
     		------------------------------------------------------------------------------------------------------
 			if collectionSettings.titleDownload then
@@ -1305,7 +1300,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     				if exifsPS then 
     					local namePS = findInTable(exifsPS, 'label', 'Object Name', 'value')
     					if namePS then 
-    						writeLogfile(3, string.format("Get metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
+    						writeLogfile(3, string.format("Get ratings/metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
     						titlePS = namePS 
     					end
     				end
@@ -1317,12 +1312,12 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			nChanges = nChanges + 1
         			resultText = resultText ..  string.format(" title changed from '%s' to '%s',", 
         												ifnil(srcPhoto:getFormattedMetadata('title'), ''), titlePS)
-        			writeLogfile(3, string.format("Get metadata: %s - title changed from '%s' to '%s'\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - title changed from '%s' to '%s'\n", 
         											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('title'), ''), titlePS))
         											
         		elseif (not titlePS or titlePS == '' or titlePS == defaultTitlePS) and ifnil(srcPhoto:getFormattedMetadata('title'), '') ~= '' then
         			resultText = resultText ..  string.format(" title %s removal ignored,", srcPhoto:getFormattedMetadata('title'))
-        			writeLogfile(3, string.format("Get metadata: %s - title %s was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - title %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('title')))
         			needRepublish = true
         			changesRejected = changesRejected + 1        		
@@ -1338,11 +1333,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			nChanges = nChanges + 1
         			resultText = resultText ..  string.format(" caption changed from '%s' to '%s',", 
         												ifnil(srcPhoto:getFormattedMetadata('caption'), ''), captionPS)
-        			writeLogfile(3, string.format("Get metadata: %s - caption changed from '%s' to '%s'\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - caption changed from '%s' to '%s'\n", 
         											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('caption'), ''), captionPS))
         		elseif ifnil(captionPS, '') == '' and ifnil(srcPhoto:getFormattedMetadata('caption'), '') ~= '' then
         			resultText = resultText ..  string.format(" caption %s removal ignored,", srcPhoto:getFormattedMetadata('caption'))
-        			writeLogfile(3, string.format("Get metadata: %s - caption %s was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - caption %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('caption')))
         			needRepublish = true        		
         			changesRejected = changesRejected + 1        		
@@ -1357,11 +1352,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			ratingChanged = true
         			nChanges = nChanges + 1  
         			resultText = resultText ..  string.format(" rating changed from %d to %d,", ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0))
-        			writeLogfile(3, string.format("Get metadata: %s - rating tag changed from %d to %d\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag changed from %d to %d\n", 
         										photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0)))
         		elseif (not ratingPS or ratingPS == 0) and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  > 0 then
         			resultText = resultText ..  string.format(" rating %d removal ignored,", ifnil(srcPhoto:getRawMetadata('rating'), 0))
-        			writeLogfile(3, string.format("Get metadata: %s - rating %d was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating %d was removed, setting photo to edited.\n", 
       											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
         			needRepublish = true
         			changesRejected = changesRejected + 1        		
@@ -1384,7 +1379,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			resultText = resultText ..  string.format(" location changed from '%s/%s' to '%s/%s',", 
         												tostring(gpsLr.latitude), tostring(gpsLr.longitude),
         												tostring(gpsPS.latitude), tostring(gpsPS.longitude))
-        			writeLogfile(3, string.format("Get metadata: %s - location changed from '%s/%s' to '%s/%s'\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - location changed from '%s/%s' to '%s/%s'\n", 
         											photoInfo.remoteId, 
        												tostring(gpsLr.latitude), tostring(gpsLr.longitude),
        												tostring(gpsPS.latitude), tostring(gpsPS.longitude)))
@@ -1392,7 +1387,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		elseif	(gpsPS.latitude == 0 and  gpsPS.longitude == 0) 
         		and 	(gpsLr.latitude ~= 0 or gpsLr.longitude ~= 0) then
         			resultText = resultText ..  string.format(" location removal ignored,")
-        			writeLogfile(3, string.format("Get metadata: %s - location was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - location was removed, setting photo to edited.\n", 
         										photoInfo.remoteId))
         			needRepublish = true        		
         			changesRejected = changesRejected + 1        		
@@ -1408,11 +1403,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			nChanges = nChanges + 1  
         			resultText = resultText ..  string.format(" label changed from %s to %s,", 
         												srcPhoto:getRawMetadata('colorNameForLabel'), labelPS)
-        			writeLogfile(3, string.format("Get metadata: %s - label changed from %s to %s\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - label changed from %s to %s\n", 
         										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel'), labelPS))
         		elseif not labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= 'grey' then
         			resultText = resultText ..  string.format(" label %s removal ignored,", srcPhoto:getRawMetadata('colorNameForLabel'))
-        			writeLogfile(3, string.format("Get metadata: %s - label %s was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - label %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel')))
         			needRepublish = true
         			changesRejected = changesRejected + 1        		
@@ -1427,11 +1422,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			ratingTagChanged = true
         			nChanges = nChanges + 1  
         			resultText = resultText ..  string.format(" rating tag changed from %d to %d,", ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingTagPS, 0))
-        			writeLogfile(3, string.format("Get metadata: %s - rating tag changed from %d to %d\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag changed from %d to %d\n", 
         										photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingTagPS, 0)))
         		elseif not ratingTagPS and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  > 0 then
         			resultText = resultText ..  string.format(" rating tag %d removal ignored,", ifnil(srcPhoto:getRawMetadata('rating'), 0))
-        			writeLogfile(3, string.format("Get metadata: %s - rating tag %d was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag %d was removed, setting photo to edited.\n", 
       											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
         			needRepublish = true
         			changesRejected = changesRejected + 1        		
@@ -1458,18 +1453,18 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove 
     				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, "','")) end
     				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: '%s',", table.concat(keywordNamesRemove, "','")) end
-    				writeLogfile(3, string.format("Get metadata: %s - tags to add: '%s', tags to remove: '%s'\n", 
+    				writeLogfile(3, string.format("Get ratings/metadata: %s - tags to add: '%s', tags to remove: '%s'\n", 
     										photoInfo.remoteId, table.concat(keywordNamesAdd, "','"), table.concat(keywordNamesRemove, "','")))
 				elseif #keywordNamesAdd < #keywordsRemove then
         			resultText = resultText ..  string.format(" keywords %s removal ignored,", table.concat(keywordNamesRemove, "','"))
-        			writeLogfile(3, string.format("Get metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
         			changesRejected = changesRejected + 1
         			nRejectedChanges = nRejectedChanges + 1
 				elseif #keywordNamesRemove > #keywordsRemove then
         			resultText = resultText ..  string.format(" keywords to remove '%s' include synonyms or parent keyword (not allowed), removal ignored,", table.concat(keywordNamesRemove, "','"))
-        			writeLogfile(3, string.format("Get metadata: %s - keywords '%s' removed in PS include synonyms or parent keyword (not allowed), setting photo to edited (removal rejected).\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords '%s' removed in PS include synonyms or parent keyword (not allowed), setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
         			changesRejected = changesRejected + 1        		
@@ -1488,7 +1483,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				local faceNamesPS = getTableExtract(facesPS, 'name')
     			facesAdd 	= getTableDiff(faceNamesPS, faceNamesLr)
     			facesRemove = getTableDiff(faceNamesLr, faceNamesPS)
-       			writeLogfile(3, string.format("Get metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
+       			writeLogfile(3, string.format("Get ratings/metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
       											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
     			
     			-- allow update of faces only if faces were added or changed, not if faces were removed 
@@ -1498,11 +1493,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     				nChanges = nChanges + #facesAdd + #facesRemove 
     				if #facesAdd > 0 then resultText = resultText ..  string.format(" faces to add: '%s',", table.concat(facesAdd, "','")) end
     				if #facesRemove > 0 then resultText = resultText ..  string.format(" faces to remove: '%s',", table.concat(facesRemove, "','")) end
-    				writeLogfile(3, string.format("Get metadata: %s - faces to add: %s, faces to remove: %s\n", 
+    				writeLogfile(3, string.format("Get ratings/metadata: %s - faces to add: %s, faces to remove: %s\n", 
     										photoInfo.remoteId, table.concat(facesAdd, ','), table.concat(facesRemove, ',')))
 				elseif #facesAdd < #facesRemove then
         			resultText = resultText ..  string.format(" faces %s removal ignored,", table.concat(facesRemove, "','"))
-        			writeLogfile(3, string.format("Get metadata: %s - faces %s were removed in PS, setting photo to edited (removal rejected).\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - faces %s were removed in PS, setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(facesRemove, "','")))
         			needRepublish = true
         			changesRejected = changesRejected + 1        		
@@ -1539,7 +1534,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			{timeout=5}
         		)
 
-   				writeLogfile(3, string.format("Get metadata: %s - changes done.\n", photoInfo.remoteId))
+   				writeLogfile(3, string.format("Get ratings/metadata: %s - changes done.\n", photoInfo.remoteId))
 				-- if keywords were updated: check if resulting Lr keyword list matches PS keyword list (might be different due to parent keywords)
 				if tagsChanged then
         			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
@@ -1549,7 +1544,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			local keywordNamesNeedRemoveinPS	= getTableDiff(tagsPS, keywordsForExport) 
         			local keywordNamesNeedAddinPS 	 	= getTableDiff(keywordsForExport, tagsPS)
         			if #keywordNamesNeedRemoveinPS > 0 or #keywordNamesNeedAddinPS > 0 then
-	    				writeLogfile(3, string.format("Get metadata: %s - must sync keywords to PS, add: '%s', remove '%s'\n", 
+	    				writeLogfile(3, string.format("Get ratings/metadata: %s - must sync keywords to PS, add: '%s', remove '%s'\n", 
 	    												photoInfo.remoteId,
 	    												table.concat(keywordNamesNeedAddinPS, "','"),
 	    												table.concat(keywordNamesNeedRemoveinPS, "','")))
@@ -1558,7 +1553,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				end
 				
 				if not needRepublish then
-    				writeLogfile(3, string.format("Get metadata: %s - set to Published\n", photoInfo.remoteId))
+    				writeLogfile(3, string.format("Get ratings/metadata: %s - set to Published\n", photoInfo.remoteId))
     				 
             		catalog:withWriteAccessDo( 
             			'ResetEdited',
@@ -1576,13 +1571,13 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		end -- not skip Photo
 			
 		if titleChanged	or captionChanged or ratingChanged or labelChanged or ratingTagChanged or tagsChanged or facesChanged or gpsChanged then
-    		writeLogfile(2, string.format("Get metadata: %s - %s %s%s%s.\n", 
+    		writeLogfile(2, string.format("Get ratings/metadata: %s - %s %s%s%s.\n", 
     												photoInfo.remoteId, resultText,
     												iif(nFailed > 0, 'failed', 'done'), 
     												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', ''),
     												iif(needRepublish, ', Re-publish needed', '')))
 		else
-			writeLogfile(2, string.format("Get metadata: %s - no changes%s.\n", 
+			writeLogfile(2, string.format("Get ratings/metadata: %s - no changes%s.\n", 
 													photoInfo.remoteId, 
     												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', '')))
 		end
