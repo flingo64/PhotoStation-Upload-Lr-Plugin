@@ -328,7 +328,7 @@ function waitSemaphore(semaName, info)
 		writeLogfile(3, info .. ": waiting for semaphore " .. semaName .. "\n")
 		-- make sure we are not waiting forever for an orphaned semaphore file
 		local fileAttr = LrFileUtils.fileAttributes(semaphoreFn)
-		if fileAttr and (fileAttr.fileCreationDate < LrDate.currentTime() - 300) then
+		if fileAttr and fileAttr.fileCreationDate and (fileAttr.fileCreationDate < LrDate.currentTime() - 300) then
 			writeLogfile(3, info .. ": removing orphanded semaphore " .. semaName .. "\n")
 			signalSemaphore(semaName)
 		else
@@ -491,7 +491,7 @@ function openSession(exportParams, publishedCollection, operation)
 	
 	local collectionSettings
 	
-	-- if is Publish process, temporarily overwrite exportParams w/ CollectionSettings for Target Album
+	-- if is Publish process, temporarily overwrite exportParams w/ collectionSettings
 	if publishedCollection and publishedCollection:type() == 'LrPublishedCollection' then
     	collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
 		writeLogfile(4, "openSession: copy collection settings\n")
@@ -507,8 +507,22 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.exifXlatFaceRegions 	= collectionSettings.exifXlatFaceRegions
     	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
     	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
-    	
-		if string.find('ProcessRenderedPhotos', operation, 1, true) then
+
+		-- copy download options to exportParams during GetComments, so it will survive from GetComments to GetRatings 
+    	if operation == 'GetCommentsFromPublishedCollection' then
+        	exportParams.downloadMode	 		= collectionSettings.downloadMode
+        	exportParams.commentsDownload 		= collectionSettings.commentsDownload
+        	exportParams.titleDownload	 		= collectionSettings.titleDownload
+        	exportParams.captionDownload 		= collectionSettings.captionDownload
+        	exportParams.tagsDownload	 		= collectionSettings.tagsDownload
+        	exportParams.locationDownload 		= collectionSettings.locationDownload
+        	exportParams.ratingDownload	 		= collectionSettings.ratingDownload
+        	exportParams.PS2LrFaces	 			= collectionSettings.PS2LrFaces
+        	exportParams.PS2LrLabel	 			= collectionSettings.PS2LrLabel
+        	exportParams.PS2LrRating	 		= collectionSettings.PS2LrRating
+    	end
+
+ 		if string.find('ProcessRenderedPhotos', operation, 1, true) then
 			exportParams.publishMode 	= collectionSettings.publishMode
 		else
 			-- avoid prompt for PublishMode if operation is not ProcessRenderedPhotos
@@ -533,8 +547,10 @@ function openSession(exportParams, publishedCollection, operation)
 			if not exportParams.cHandle then return false, 'Cannot initialize converters, check path for Syno Photo Station Uploader' end
 	end
 
-	-- Login to Photo Station: not required for CheckMoved
-	if exportParams.publishMode ~= 'CheckMoved' and not exportParams.uHandle then
+	-- Login to Photo Station: not required for CheckMoved, not required on Download if Download was disabled
+	if not 	exportParams.uHandle 
+	and 	exportParams.publishMode ~= 'CheckMoved' 
+	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
 		local result, errorCode
 		exportParams.uHandle, errorCode = PSPhotoStationAPI.initialize(exportParams.serverUrl, 
 														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
@@ -605,6 +621,7 @@ function promptForMissingSettings(exportParams, operation)
 	local needPw = (ifnil(exportParams.password, "") == "")
 	local needDstRoot = not exportParams.storeDstRoot
 	local needPublishMode = false
+	local needDownloadMode = false
 	local needLoglevel = false
 	local isAskForMissingParams = true
 
@@ -613,13 +630,18 @@ function promptForMissingSettings(exportParams, operation)
 		needPublishMode = true
 	end
 		
+	if string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation, 1, true) and ifnil(exportParams.downloadMode, 'Ask') == 'Ask' then
+		exportParams.downloadMode = 'Yes'
+		needDownloadMode = true
+	end
+		
 	-- logLevel 9999 means  'Ask me later'
 	if exportParams.logLevel == 9999 then
 		exportParams.logLevel = 2 			-- Normal
 		needLoglevel = true
 	end
 	
-	if not (needPw or needDstRoot or needPublishMode or needLoglevel) then
+	if not (needPw or needDstRoot or needPublishMode or needDownloadMode or needLoglevel) then
 		return "ok"
 	end
 	
@@ -672,6 +694,8 @@ function promptForMissingSettings(exportParams, operation)
 		conditionalItem(needDstRoot, 	 PSDialogs.dstRootView(f, exportParams, isAskForMissingParams)), 
 		f:spacer {	height = 10, },
 		conditionalItem(needPublishMode, PSDialogs.publishModeView(f, exportParams, isAskForMissingParams)), 
+		f:spacer {	height = 10, },
+		conditionalItem(needDownloadMode, PSDialogs.downloadOptionsView(f, exportParams, isAskForMissingParams)), 
 		f:spacer {	height = 10, },
 		conditionalItem(needLoglevel, 	 PSDialogs.loglevelView(f, exportParams, isAskForMissingParams)), 
 	}
