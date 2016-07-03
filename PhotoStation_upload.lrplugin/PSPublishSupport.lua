@@ -1023,7 +1023,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end
 
-	if not publishSettings.commentsDownload then
+	if publishSettings.downloadMode == 'No' or not publishSettings.commentsDownload then
 		writeLogfile(2, string.format("Get comments: comments not enabled for this collection.\n"))
 		closeLogfile()
 		return
@@ -1157,7 +1157,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	-- collectionSettings were copied to publishSettings during openSession()
 	local collectionSettings = publishSettings
 
-	if		not collectionSettings.titleDownload 
+	if			collectionSettings.downloadMode == 'No' or
+		(	not collectionSettings.titleDownload 
 		and not collectionSettings.captionDownload 
 		and not collectionSettings.locationDownload 
 		and not collectionSettings.ratingDownload 
@@ -1165,6 +1166,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		and not collectionSettings.PS2LrFaces 
 		and not collectionSettings.PS2LrLabel 
 		and not collectionSettings.PS2LrRating
+	 	)
 	then
 		writeLogfile(2, string.format("Get ratings/metadata: Metadata download is not enabled for this collection.\n"))
 		closeLogfile()
