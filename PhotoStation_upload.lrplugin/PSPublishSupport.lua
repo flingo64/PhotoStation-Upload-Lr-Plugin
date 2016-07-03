@@ -228,7 +228,7 @@ function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 	local sessionSuccess, reason = openSession(publishSettings, nil, 'GoToPublishedPhoto')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("Photo StatLr: goToPublishedPhoto failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: GoToPublishedPhoto failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -887,7 +887,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	local sessionSuccess, reason = openSession(publishSettings, info.publishedCollection, 'DeletePublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("Photo StatLr: deletePublishedCollection failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: DeletePublishedCollection failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -1124,7 +1124,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		closeLogfile()
 		return
 	elseif arrayOfPhotoInfo[1].url == nil then
-		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings on old-style collection.\nPlease convert this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get ratings/metadata failed!", 'Cannot sync ratings on old-style collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
 	end
@@ -1132,7 +1132,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	-- the remoteUrl contains the local collection identifier
 	publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(tonumber(string.match(arrayOfPhotoInfo[1].url, '(%d+)')))
 	if not publishedCollection then
-		showFinalMessage("Photo StatLr: Get ratings failed!", 'Cannot sync ratings on corrupted collection.\nPlease convert this collection first!', "critical")
+		showFinalMessage("Photo StatLr: Get ratings/metadata failed!", 'Cannot sync ratings on corrupted collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
 	end	
@@ -1141,7 +1141,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetRatingsFromPublishedCollection')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("Photo StatLr: Get ratings failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: Get ratings/metadata failed!", reason, "critical")
 		else
 			writeLogfile(2, string.format("Get ratings/metadata: canceled by user\n"))
 			publishSettings.operationCanceled = true
@@ -1597,16 +1597,16 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
 					string.format("%d added/modified, %d failed and %d rejected removed metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
 					nChanges, nFailed, nRejectedChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
-		showFinalMessage("Photo StatLr: Get metadata done", message, "critical")
+		showFinalMessage("Photo StatLr: Get ratings/metadata done", message, "critical")
 	else
 		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
 					string.format("%d added/modified metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
 					nChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
 		if #reloadPhotos > 0 then
 			message = message .. string.format("\nThe following photos must be reloaded (added faces):\n%s", table.concat(reloadPhotos, '\n'))
-			showFinalMessage("Photo StatLr: Get metadata done", message, "warning")
+			showFinalMessage("Photo StatLr: Get ratings/metadata done", message, "warning")
 		else
-			showFinalMessage("Photo StatLr: Get metadata done", message, "info")
+			showFinalMessage("Photo StatLr: Get ratings/metadata done", message, "info")
 		end
 	end
 	return true

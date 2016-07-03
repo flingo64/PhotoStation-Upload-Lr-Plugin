@@ -696,7 +696,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 		if progressScope:isCanceled() then break end
 		
 		if success then
-			writeLogfile(3, "Next photo: " .. pathOrMessage .. "\n")
+			writeLogfile(3, "MovePhotos: next photo: " .. pathOrMessage .. "\n")
 			
 			local srcPhoto = rendition.photo
 			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
@@ -709,7 +709,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 			skipPhoto = false
 			
 			if not publishedPhotoId then
-				writeLogfile(2, string.format('Move photo: Skipping "%s", was not yet published.\n', srcPhoto:getFormattedMetadata("fileName")))
+				writeLogfile(2, string.format('MovePhotos: Skipping "%s", was not yet published.\n', srcPhoto:getFormattedMetadata("fileName")))
 				skipPhoto = true
 			else
     			-- evaluate and sanitize dstRoot: 
@@ -718,7 +718,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
     			-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
     			skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
 				if skipPhoto then
-					writeLogfile(2, string.format('Move photo: Skipping "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
+					writeLogfile(2, string.format('MovePhotos: Skipping "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
 					table.insert( failures, srcFilename )
     			end
 			end
@@ -733,7 +733,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 				
 				-- if photo was renamed locally ... 
 				if LrPathUtils.leafName(publishedPhotoId) ~= LrPathUtils.leafName(newPublishedPhotoId) then
-						writeLogfile(1, 'Move photo: Cannot move renamed photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
+						writeLogfile(1, 'MovePhotos: Cannot move renamed photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
 						skipPhoto = true 									
 				
 				-- if photo was moved locally ... 
@@ -744,7 +744,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
      				-- check if target Album (dstRoot) should be created 
     				if exportParams.createDstRoot and dstRoot ~= '' 
     				and	not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated) then
-						writeLogfile(1, 'Move photo: Cannot create album to move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
+						writeLogfile(1, 'MovePhotos: Cannot create album to move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
 						skipPhoto = true 					
     				elseif not exportParams.copyTree then    				
     					if not dstRoot or dstRoot == '' then
@@ -759,14 +759,14 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 					
 					if not dstDir
 					or not PSPhotoStationAPI.movePic(exportParams.uHandle, publishedPhotoId, dstDir, srcPhoto:getRawMetadata('isVideo')) then
-						writeLogfile(1, 'Move photo: Cannot move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
+						writeLogfile(1, 'MovePhotos: Cannot move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
 						skipPhoto = true 					
 					else
-						writeLogfile(2, 'Move photo: Moved photo from ' .. publishedPhotoId .. ' to ' .. newPublishedPhotoId .. '.\n')
+						writeLogfile(2, 'MovePhotos: Moved photo from ' .. publishedPhotoId .. ' to ' .. newPublishedPhotoId .. '.\n')
 						albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPhotoId)
 					end
 				else 
-						writeLogfile(2, 'Move photo: No need to move photo "'  .. newPublishedPhotoId .. '".\n')
+						writeLogfile(2, 'MovePhotos: No need to move photo "'  .. newPublishedPhotoId .. '".\n')
 				end
 				if not skipPhoto then
 					ackRendition(rendition, newPublishedPhotoId, publishedCollection.localIdentifier)
@@ -786,7 +786,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 		currentAlbum = currentAlbum.next
 	end
 	
-	writeLogfile(2, string.format("Move photo: Deleted %d empty albums.\n", nDeletedAlbums))
+	writeLogfile(2, string.format("MovePhotos: Deleted %d empty albums.\n", nDeletedAlbums))
 	
 
 -- 	progressScope:done()
@@ -855,7 +855,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local sessionSuccess, reason = openSession(exportParams, publishedCollection, "ProcessRenderedPhotos")
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("Photo StatLr: processRenderedPhotos failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: " .. publishMode .. " failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -875,7 +875,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
     	picPerSec = nProcessed / timeUsed
     
     	message = LOC ("$$$/PSUpload/PluginDialog/Conversion=" ..
-    							 string.format("Convert: Processed %d of %d photos, %d converted in %d seconds (%.1f pic/sec).", 
+    							 string.format("Processed %d of %d photos, %d converted in %d seconds (%.1f pic/sec).", 
     											nProcessed, nPhotos, nConverted, timeUsed + 0.5, picPerSec))
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
@@ -886,28 +886,28 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
     	
 		if not (exportParams.copyTree or PSLrUtilities.isDynamicAlbumPath(albumPath)) then
-			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=Photo StatLr (Check Moved): Makes no sense on flat copy albums to check for moved pics.\n")
+			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMovedNotNeeded=Photo StatLr (CheckMoved): Makes no sense on flat copy albums to check for moved pics.\n")
 		else
 			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime
 			picPerSec = nProcessed / timeUsed
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
-							string.format("%s: Checked %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
-											publishMode, nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
+							string.format("Checked %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
+											nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
 		end
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 		closeSession(exportParams)
 		return
-	elseif publishMode == "Move" then
+	elseif publishMode == "MovePhotos" then
 		local nMoved
 
 		nPhotos, nProcessed, nMoved = movePhotos(publishedCollection, exportContext, exportParams)
 		timeUsed = 	LrDate.currentTime() - startTime
 		picPerSec = nProcessed / timeUsed
 		message = LOC ("$$$/PSUpload/Upload/Errors/Move=" .. 
-						string.format("%s: Processed %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
-										publishMode, nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
+						string.format("Processed %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
+										nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 		closeSession(exportParams)
@@ -1094,7 +1094,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	
 	if #failures > 0 then
 		message = LOC ("$$$/PSUpload/Upload/Errors/SomeFileFailed=" .. 
-						string.format("Photo Upload: Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
+						string.format("Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
 						nProcessed, nPhotos, timeUsed, timePerPic, #failures))
 		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Go to Logfile", "Never mind")
 		if action == "ok" then
@@ -1103,14 +1103,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	else
 		if publishMode == 'CheckExisting' then
 			message = LOC ("$$$/PSUpload/Upload/Errors/CheckExistOK=" .. 
-							 string.format("Photo StatLr (Check Existing): Checked %d of %d files in %d seconds (%.1f pics/sec). %d already there, %d need export.", 
+							 string.format("Checked %d of %d files in %d seconds (%.1f pics/sec). %d already there, %d need export.", 
 											nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nNotCopied, nNeedCopy))
 		else
 			message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=" ..
-							 string.format("Photo Upload: Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
+							 string.format("Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
 											nProcessed, nPhotos, timeUsed + 0.5, timePerPic))
 		end
-		showFinalMessage("Photo StatLr: Photo upload done", message, "info")
+		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 	end
 end
