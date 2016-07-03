@@ -518,7 +518,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		-- if any metadata to add: wait for video being indexed by PS and upload metadata thereafter
 		if captionParam or labelParam or ratingParam or ratingTagParam or (keywordNamesAdd and #keywordNamesAdd  > 0) or gpsParam then
 			local photoThere 
-			local maxWait = 30
+			local maxWait = 60
 			
 			while not photoThere and maxWait > 0 do
 				local isVideo, dontUseCache = true, false
@@ -544,6 +544,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 								ifnil(gpsLatLong, ''))
 			
 			if (not photoThere
+				 or not waitSemaphore("PhotoStation", dstFilename)
 				 or (captionParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, captionParam))
 				 or (gpsParam		and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, gpsParam))
 				 or (ratingParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, ratingParam))
@@ -553,9 +554,11 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 									and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
 				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
 			then
+				signalSemaphore("PhotoStation")	
 				table.insert(failures, srcPhoto:getRawMetadata("path"))
 				writeLogfile(1, logMessage .. ' failed!!!\n')
 			else
+				signalSemaphore("PhotoStation")
 				writeLogfile(2, logMessage .. ' done\n')
 			end
 		else
@@ -727,8 +730,14 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 				
 				writeLogfile(3, string.format("Old publishedPhotoId: '%s', New publishedPhotoId: '%s'\n",
 				 								ifnil(publishedPhotoId, '<Nil>'), newPublishedPhotoId))
+				
+				-- if photo was renamed locally ... 
+				if LrPathUtils.leafName(publishedPhotoId) ~= LrPathUtils.leafName(newPublishedPhotoId) then
+						writeLogfile(1, 'Move photo: Cannot move renamed photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
+						skipPhoto = true 									
+				
 				-- if photo was moved locally ... 
-				if publishedPhotoId ~= newPublishedPhotoId then
+				elseif publishedPhotoId ~= newPublishedPhotoId then
 					-- move photo within Photo Station
 					local dstDir
 
@@ -1043,7 +1052,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				if (srcPhoto:getRawMetadata("isVideo") 	
 					and	(	not videoInfo or
 							not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos, videoInfo)
-						-- upload of metadata to just uploaded videos must wait until PS has registered it 
+						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
 						 or (    publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
 						 or (not publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, nil)) 
