@@ -18,6 +18,7 @@ Dialogs and validations for Photo StatLr
 	- uploadOptionsView
 	- downloadOptionsView
 	- publishModeView
+	- downloadModeView
 	- loglevelView 
 		
 Copyright(c) 2015, Martin Messmer
@@ -1125,6 +1126,8 @@ end
 -- downloadOptionsView(f, propertyTable)
 function PSDialogs.downloadOptionsView(f, propertyTable)
 	return	f:group_box {
+		bind_to_object = propertyTable,
+
 		fill_horizontal = 1,
 		title = LOC "$$$/PSUpload/ExportDialog/DownloadOpt=Metadata Download Options / Translations  (From Photo Station)",
 
@@ -1208,7 +1211,6 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 			},
 		},
 	}
-
 end
 
 -------------------------------------------------------------------------------
@@ -1217,9 +1219,9 @@ function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 	local publishModeItems = {
 		{ title	= 'Ask me later',																value 	= 'Ask' },
 		{ title	= 'Normal',																		value 	= 'Publish' },
+		{ title	= 'Move: Move photos to new album in Photo Station (after local photo move).',	value 	= 'Move' },
 		{ title	= 'CheckExisting: Set Unpublished to Published if existing in Photo Station.',	value 	= 'CheckExisting' },
 		{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',					value 	= 'CheckMoved' },
-		{ title	= 'Move: Move photos within Photo Station (after moving them locally).',		value 	= 'Move' },
 		{ title	= 'Convert: Convert collection to current version.',							value 	= 'Convert' },
 	}
 	
@@ -1244,6 +1246,40 @@ function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 				alignment 		= 'left',
 --				fill_horizontal = 1,
 				value 			= bind 'publishMode',
+			},
+		}
+end
+
+-------------------------------------------------------------------------------
+-- downloadModeView(f, propertyTable, isAskForMissingParams)
+function PSDialogs.downloadModeView(f, propertyTable, isAskForMissingParams)
+	local downloadModeItems = {
+		{ title	= 'Ask me later',	value 	= 'Ask' },
+		{ title	= 'Yes (enabled)',	value 	= 'Yes' },
+		{ title	= 'No (disabled)',	value 	= 'No'  },
+	}
+	
+	if isAskForMissingParams then
+		table.remove(downloadModeItems, 1)
+	end
+
+    return
+		f:row {
+			alignment 		= 'left',
+			fill_horizontal = 1,
+
+			f:static_text {
+				title		= LOC "$$$/PSUpload/CollectionSettings/DownloadMode=Metadata Download:",
+				alignment 	= 'right',
+				width 		= share 'labelWidth',
+			},
+
+			f:popup_menu {
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/DownloadModeTT=Enable metadata download",
+				items 			= downloadModeItems,
+				alignment 		= 'left',
+--				fill_horizontal = 1,
+				value 			= bind 'downloadMode',
 			},
 		}
 end
