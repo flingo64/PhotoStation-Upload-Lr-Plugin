@@ -1218,10 +1218,10 @@ end
 function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 	local publishModeItems = {
 		{ title	= 'Ask me later',																				value 	= 'Ask' },
-		{ title	= 'Publish (Normal photo upload)',																value 	= 'Publish' },
-		{ title	= 'MovePhotos: Move photos in Photo Station (for photos moved in Lr or changed target album).',	value 	= 'MovePhotos' },
+		{ title	= 'Upload: Normal publishing of photos',														value 	= 'Publish' },
 		{ title	= 'CheckExisting: Set Unpublished to Published if existing in Photo Station.',					value 	= 'CheckExisting' },
 		{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',									value 	= 'CheckMoved' },
+		{ title	= 'MovePhotos: Move photos in Photo Station (for photos moved in Lr or changed target album).',	value 	= 'MovePhotos' },
 		{ title	= 'Convert: Convert collection to current version.',											value 	= 'Convert' },
 	}
 	
