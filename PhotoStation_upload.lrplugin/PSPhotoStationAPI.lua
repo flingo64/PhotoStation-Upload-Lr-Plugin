@@ -12,6 +12,7 @@ Photo Station Upload primitives:
 
 	- listAlbum
 	- cacheListAlbum
+	- movePic
 	- deletePic
 	- existsPic
 	- sortPics
