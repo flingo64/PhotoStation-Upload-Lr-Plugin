@@ -452,26 +452,24 @@ function PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
 end
 
 
---[[
 --------------------------------------------------------------------------------------------
--- getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
-local function getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
+-- getAllPublishedCollectionsFromPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
+local function getAllPublishedCollectionsFromPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
 	local publishedCollections = publishedCollectionSet:getChildCollections()
 	local childPublishedCollectionSets = publishedCollectionSet:getChildCollectionSets()
---	writeLogfile(4, string.format("getAllPublishedCollectionsFromPublishedCollection: set %s has %d collections and %d collection sets\n", 
---									publishedCollectionSet:getName(), #publishedCollections, #childPublishedCollectionSets))
+	writeLogfile(3, string.format("getAllPublishedCollectionsFromPublishedCollectionSet: set %s has %d collections and %d collection sets\n", 
+									publishedCollectionSet:getName(), #publishedCollections, #childPublishedCollectionSets))
 	
 	for i = 1, #publishedCollections do
 		local publishedCollection = publishedCollections[i]
 		table.insert(allPublishedCollections, publishedCollection)
---   		writeLogfile(4, string.format("getAllPublishedCollectionsFromPublishedCollection: published collection %s, total %d\n", publishedCollection:getName(), #allPublishedCollections))
+   		writeLogfile(3, string.format("getAllPublishedCollectionsFromPublishedCollection: published collection %s, total %d\n", publishedCollection:getName(), #allPublishedCollections))
 	end
 		
 	for i = 1, #childPublishedCollectionSets do
-		getAllPublishedCollectionsFromPublishedCollection(childPublishedCollectionSets[i], allPublishedCollections)
+		getAllPublishedCollectionsFromPublishedCollectionSet(childPublishedCollectionSets[i], allPublishedCollections)
 	end
 end
-]]
 
 --------------------------------------------------------------------------------------------
 -- convertCollection(publishedCollection)
@@ -534,7 +532,7 @@ function PSLrUtilities.convertAllPhotos()
 		return
 	end
 	
---	writeLogfile(2, string.format("ConvertAllPhotos: found %d publish services\n", #publishServices))
+	writeLogfile(3, string.format("ConvertAllPhotos: found %d publish services\n", #publishServices))
 	
 	-- first: collect all published collection
     for i = 1, #publishServices	do
@@ -542,22 +540,22 @@ function PSLrUtilities.convertAllPhotos()
     	local publishedCollections = publishService:getChildCollections()
     	local publishedCollectionSets = publishService:getChildCollectionSets()   	
     	
---    	writeLogfile(4, string.format("ConvertAllPhotos: publish service %s has %d collections and %d collection sets\n", 
---    									publishService:getName(), #publishedCollections, #publishedCollectionSets))
+    	writeLogfile(3, string.format("ConvertAllPhotos: publish service %s has %d collections and %d collection sets\n", 
+    									publishService:getName(), #publishedCollections, #publishedCollectionSets))
     	
     	-- note all immediate published collections
     	for j = 1, #publishedCollections do
     		local publishedCollection = publishedCollections[j]
     		
     		table.insert(allPublishedCollections, publishedCollection)
---    		writeLogfile(4, string.format("ConvertAllPhotos: service %s -  published collection %s, total %d\n", publishService:getName(), publishedCollection:getName(), #allPublishedCollections))
+    		writeLogfile(3, string.format("ConvertAllPhotos: service %s -  published collection %s, total %d\n", publishService:getName(), publishedCollection:getName(), #allPublishedCollections))
     	end
     	
     	--  note all Published Collections from all Published Collection Sets
     	for j = 1, #publishedCollectionSets do
     		local publishedCollectionSet = publishedCollectionSets[j]
     		writeLogfile(2, string.format("ConvertAllPhotos: service %s -  published collection set %s\n", publishService:getName(), publishedCollectionSet:getName()))
-    		getAllPublishedCollectionsFromPublishedCollection(publishedCollectionSet, allPublishedCollections)
+    		getAllPublishedCollectionsFromPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
  		end   	
 	end
 
@@ -595,3 +593,4 @@ function PSLrUtilities.convertAllPhotos()
 	showFinalMessage("Photo StatLr: Conversion done", message, "info")
 
 end
+
