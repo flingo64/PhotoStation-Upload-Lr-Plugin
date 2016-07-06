@@ -163,7 +163,7 @@ function publishServiceProvider.getCollectionBehaviorInfo( publishSettings )
 
 	return {
 		defaultCollectionName = LOC "$$$/PSPublish/DefaultCollectionName/Collection=Default Collection",
-		defaultCollectionCanBeDeleted = true,
+		defaultCollectionCanBeDeleted = false,
 		canAddCollection = true,
 	}
 	
@@ -467,113 +467,60 @@ end
  -- additional controls to the dialog box for editing this collection. 
 function publishServiceProvider.viewForCollectionSettings( f, publishSettings, info )
 	local prefs = LrPrefs.prefsForPlugin()
-
 	local collectionSettings = assert( info.collectionSettings )
-
-	-- observe settings to enable/disable "Store" button
-	if collectionSettings.hasError == nil then
-		collectionSettings.hasError = false
-	end
-
-	if collectionSettings.isCollection == nil then
-		collectionSettings.isCollection = true
-	end
-
-	if collectionSettings.publishMode == nil then
-		collectionSettings.publishMode = 'Publish'
-	end
-
-	--============= Album options ===================================
-	if collectionSettings.storeDstRoot == nil then
-		collectionSettings.storeDstRoot = true
-	end
-
-	if collectionSettings.dstRoot == nil then
-		collectionSettings.dstRoot = ''
-	end
-
-	if collectionSettings.createDstRoot == nil then
-		collectionSettings.createDstRoot = false
-	end
-
-	if collectionSettings.copyTree == nil then
-		collectionSettings.copyTree = false
-	end
-
-	if collectionSettings.srcRoot == nil then
-		collectionSettings.srcRoot = ''
-	end
-
-	if collectionSettings.RAWandJPG == nil then
-		collectionSettings.RAWandJPG = false
-	end
-
-	if collectionSettings.sortPhotos == nil then
-		collectionSettings.sortPhotos = false
-	end
-
-	--============= upload options ===================================
---	-- move Upload options from publish service settings to collection settings
-
-	collectionSettings.psVersion = publishSettings.psVersion
-
-	if collectionSettings.exifTranslate == nil then
-		collectionSettings.exifTranslate = publishSettings.exifTranslate
-	end
-
-	if collectionSettings.exifXlatFaceRegions == nil then
-		collectionSettings.exifXlatFaceRegions = publishSettings.exifXlatFaceRegions
-	end
-
-	if collectionSettings.exifXlatRating == nil then
-		collectionSettings.exifXlatRating = publishSettings.exifXlatRating
-	end
-
-	if collectionSettings.exifXlatLabel == nil then
-		collectionSettings.exifXlatLabel = publishSettings.exifXlatLabel
-	end
-
-	--============= download options ===================================
-	if collectionSettings.commentsDownload == nil then
-		collectionSettings.commentsDownload = false
-	end
-
-	if collectionSettings.titleDownload == nil then
-		collectionSettings.titleDownload = false
-	end
-
-	if collectionSettings.captionDownload == nil then
-		collectionSettings.captionDownload = false
-	end
-
-	if collectionSettings.tagsDownload == nil then
-		collectionSettings.tagsDownload = false
-	end
-
-	if collectionSettings.locationDownload == nil then
-		collectionSettings.locationDownload = false
-	end
-
-	if collectionSettings.ratingDownload == nil then
-		collectionSettings.ratingDownload = false
-	end
-
-	if collectionSettings.PS2LrFaces == nil then
-		collectionSettings.PS2LrFaces = false
-	end
-
-	if collectionSettings.PS2LrLabel == nil then
-		collectionSettings.PS2LrLabel = false
-	end
-
-	if collectionSettings.PS2LrRating == nil then
-		collectionSettings.PS2LrRating = false
-	end
 	
-	if collectionSettings.downloadMode == nil then
-		collectionSettings.downloadMode = 'Yes'
-	end
+    local pluginDefaultCollectionSettings = {
+		hasError 			= false,
+		isCollection 		= true,
+		psVersion 			= publishSettings.psVersion,
+
+		storeDstRoot 		= true,
+    	dstRoot 			= '',
+    	createDstRoot		= false,
+    	copyTree			= false,
+    	srcRoot				= '',
+    
+    	RAWandJPG			= false,
+    	sortPhotos			= false,
+    
+    	exifTranslate		= publishSettings.exifTranslate,
+    	exifXlatFaceRegions	= publishSettings.exifXlatFaceRegions,
+    	exifXlatRating		= publishSettings.exifXlatRating,
+    	exifXlatLabel		= publishSettings.exifXlatLabel,
+    
+    	titleDownload		= false,
+    	captionDownload		= false,
+    	locationDownload	= false,
+    	ratingDownload		= false,
+    
+    	tagsDownload		= false,
+    	PS2LrFaces			= false,
+    	PS2LrLabel			= false,
+    	PS2LrRating			= false,
+    
+    	commentsDownload	= false,
+    
+    	publishMode 		= 'Publish',
+    	downloadMode		= 'Yes',
+    }
 	
+	-- make sure logfile is opened
+	openLogfile(publishSettings.logLevel)	
+	
+	-- if we are not the defaultCollection, find the defaultColletionSettings for initializing our settings 
+	local serviceDefaultCollectionSettings = iif(info.isDefaultCollection, nil, PSLrUtilities.getDefaultCollectionSettings(info.publishService))
+	
+	if serviceDefaultCollectionSettings then
+		writeLogfile(3,string.format("Found Default Collection for service: 1) Applying plugin defaults to Service Default Collection\n"))
+		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, serviceDefaultCollectionSettings)
+		writeLogfile(3,string.format("Found Default Collection for service: 2) Applying defaults from Service Default Collection to current collection\n"))
+		applyDefaultsIfNeededFromTo(serviceDefaultCollectionSettings, collectionSettings)
+	else
+		writeLogfile(3,string.format("Found no Default Collection for service: Applying plugin defaults to current collection\n"))
+		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, collectionSettings)
+	end
+		
+	--============= observe changes in collection setiings dialog ==============
 	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
 	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
 	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
@@ -584,7 +531,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	collectionSettings:addObserver( 'PS2LrRating', updateCollectionStatus )
 	
 	updateCollectionStatus( collectionSettings )
-		
+	
+	-- manual suggest group_box as outmost container, but nested group_boxes will get an invisible title 
+	--	f:group_box {
+	--	title		= 'Photo StatLr collection settings',
 	return f:view {
 --		size = 'small',
 		fill_horizontal = 1,
@@ -593,7 +543,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	f:column {
     		fill_horizontal = 1,
     		spacing = f:label_spacing(),
-			PSDialogs.collectionHeaderView(f, collectionSettings),
+			PSDialogs.collectionHeaderView(f, collectionSettings, info.isDefaultCollection),
 			
 			PSDialogs.targetAlbumView(f, collectionSettings),
 
@@ -610,7 +560,6 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
  	  		f:spacer { height = 10, },   
  
             PSDialogs.publishModeView(f, collectionSettings),
-
 
     		f:spacer { height = 10, },
     		

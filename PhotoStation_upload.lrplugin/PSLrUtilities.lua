@@ -594,3 +594,33 @@ function PSLrUtilities.convertAllPhotos()
 
 end
 
+--------------------------------------------------------------------------------------------
+-- getDefaultCollectionSettings(publishServiceOrCollectiomSet)
+function PSLrUtilities.getDefaultCollectionSettings(publishServiceOrCollectionSet)
+	if not publishServiceOrCollectionSet then
+		writeLogfile(1, string.format("getDefaultCollectionSettings: publishService is <nil>!\n"))
+		return nil
+	end
+	
+	local publishedCollections = publishServiceOrCollectionSet:getChildCollections()
+	local publishedCollectionSets = publishServiceOrCollectionSet:getChildCollectionSets()   	
+	
+	for i = 1, #publishedCollections do
+		local publishedCollection = publishedCollections[i]
+		if publishedCollection:getCollectionInfoSummary().isDefaultCollection then
+			writeLogfile(3, string.format("getDefaultCollectionSettings(%s): Found Default Collection '%s'\n", publishServiceOrCollectionSet:getName(), publishedCollection:getName()))
+			return publishedCollection:getCollectionInfoSummary().collectionSettings
+		else
+			writeLogfile(4, string.format("getDefaultCollectionSettings(%s): Is not Default Collection is %s\n", publishServiceOrCollectionSet:getName(), publishedCollection:getName()))
+		end
+	end
+	
+	--  defaultCollection not yet found: traverse the Collection Sets recursively
+	for i = 1, #publishedCollectionSets do
+		local defCollectionSettings = PSLrUtilities.getDefaultCollectionSettings(publishedCollectionSets[i])
+		if defCollectionSettings then return defCollectionSettings end
+	end
+	
+	writeLogfile(4, string.format("getDefaultCollectionSettings(%s): Default Collection not found\n", publishServiceOrCollectionSet:getName()))
+	return nil
+end

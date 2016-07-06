@@ -54,6 +54,7 @@ of it requires the prior written permission of Adobe.
 
 -- Lightroom SDK
 local LrBinding		= import 'LrBinding'
+local LrColor 		= import 'LrColor'
 local LrDialogs		= import 'LrDialogs'
 local LrFileUtils	= import 'LrFileUtils'
 local LrHttp 		= import 'LrHttp'
@@ -250,7 +251,7 @@ end
 
 -------------------------------------------------------------------------------
 -- collectionHeaderView(f, propertyTable)
-function PSDialogs.collectionHeaderView(f, propertyTable)
+function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection)
 	return 
 		f:view {
     		f:row {
@@ -273,8 +274,9 @@ function PSDialogs.collectionHeaderView(f, propertyTable)
             		
     				f:row {
             			f:static_text {
-            				title = LOC "$$$/PSUpload/ExportDialog/CollectionSettings2=Collection settings",
-            				alignment = 'center',
+            				title = iif(isDefaultCollection, "This is a Default Collection:\nSettings of this collection will be the default\nfor all new collections in this publish service!", ""),
+            				text_color = iif(isDefaultCollection, LrColor("red"), LrColor("black")),
+            				alignment = 'left',
             			},
     				},
     			},
