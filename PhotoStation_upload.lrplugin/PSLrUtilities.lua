@@ -604,12 +604,13 @@ function PSLrUtilities.getDefaultCollectionSettings(publishServiceOrCollectionSe
 	
 	local publishedCollections = publishServiceOrCollectionSet:getChildCollections()
 	local publishedCollectionSets = publishServiceOrCollectionSet:getChildCollectionSets()   	
+	writeLogfile(4, string.format("getDefaultCollectionSettings(%s): found %d collections and %d collection sets\n", publishServiceOrCollectionSet:getName(), #publishedCollections, #publishedCollectionSets))
 	
 	for i = 1, #publishedCollections do
 		local publishedCollection = publishedCollections[i]
 		if publishedCollection:getCollectionInfoSummary().isDefaultCollection then
 			writeLogfile(3, string.format("getDefaultCollectionSettings(%s): Found Default Collection '%s'\n", publishServiceOrCollectionSet:getName(), publishedCollection:getName()))
-			return publishedCollection:getCollectionInfoSummary().collectionSettings
+			return publishedCollection:getName(), publishedCollection:getCollectionInfoSummary().collectionSettings
 		else
 			writeLogfile(4, string.format("getDefaultCollectionSettings(%s): Is not Default Collection is %s\n", publishServiceOrCollectionSet:getName(), publishedCollection:getName()))
 		end
@@ -617,8 +618,8 @@ function PSLrUtilities.getDefaultCollectionSettings(publishServiceOrCollectionSe
 	
 	--  defaultCollection not yet found: traverse the Collection Sets recursively
 	for i = 1, #publishedCollectionSets do
-		local defCollectionSettings = PSLrUtilities.getDefaultCollectionSettings(publishedCollectionSets[i])
-		if defCollectionSettings then return defCollectionSettings end
+		local defCollectionName, defCollectionSettings = PSLrUtilities.getDefaultCollectionSettings(publishedCollectionSets[i])
+		if defCollectionSettings then return defCollectionName, defCollectionSettings end
 	end
 	
 	writeLogfile(4, string.format("getDefaultCollectionSettings(%s): Default Collection not found\n", publishServiceOrCollectionSet:getName()))
