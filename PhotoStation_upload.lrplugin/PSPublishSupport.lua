@@ -508,12 +508,15 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	openLogfile(publishSettings.logLevel)	
 	
 	-- if we are not the defaultCollection, find the defaultColletionSettings for initializing our settings 
-	local serviceDefaultCollectionSettings = iif(info.isDefaultCollection, nil, PSLrUtilities.getDefaultCollectionSettings(info.publishService))
+	local serviceDefaultCollectionName, serviceDefaultCollectionSettings 
+	if not info.isDefaultCollection then
+		serviceDefaultCollectionName, serviceDefaultCollectionSettings = PSLrUtilities.getDefaultCollectionSettings(info.publishService)
+	end
 	
 	if serviceDefaultCollectionSettings then
-		writeLogfile(3,string.format("Found Default Collection for service: 1) Applying plugin defaults to Service Default Collection\n"))
+		writeLogfile(3,string.format("Found Default Collection '%s' for service: Applying plugin defaults to Service Default Collection\n", serviceDefaultCollectionName))
 		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, serviceDefaultCollectionSettings)
-		writeLogfile(3,string.format("Found Default Collection for service: 2) Applying defaults from Service Default Collection to current collection\n"))
+		writeLogfile(3,string.format("Applying defaults from Service Default Collection to current collection\n"))
 		applyDefaultsIfNeededFromTo(serviceDefaultCollectionSettings, collectionSettings)
 	else
 		writeLogfile(3,string.format("Found no Default Collection for service: Applying plugin defaults to current collection\n"))
@@ -543,7 +546,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	f:column {
     		fill_horizontal = 1,
     		spacing = f:label_spacing(),
-			PSDialogs.collectionHeaderView(f, collectionSettings, info.isDefaultCollection),
+			PSDialogs.collectionHeaderView(f, collectionSettings, info.isDefaultCollection, serviceDefaultCollectionName),
 			
 			PSDialogs.targetAlbumView(f, collectionSettings),
 
