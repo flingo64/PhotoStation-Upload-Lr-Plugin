@@ -250,8 +250,18 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 end
 
 -------------------------------------------------------------------------------
--- collectionHeaderView(f, propertyTable)
-function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection)
+-- collectionHeaderView(f, propertyTable, isDefaultCollection, defCollectionName)
+function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection, defCollectionName)
+	local dialogCaptionText
+	
+	if isDefaultCollection then
+		dialogCaptionText = "This is the Default Collection for this Service:\nSettings of this Collection will be the default\nfor all new collections within in this Service!"
+	elseif defCollectionName then
+		dialogCaptionText = "Note:\tTo change the default settings for\n\tnew Collections within this Service,\n\tedit the Default Collection\n\t'" .. defCollectionName .."'."
+	else
+		dialogCaptionText = ""
+	end
+	
 	return 
 		f:view {
     		f:row {
@@ -274,9 +284,10 @@ function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection)
             		
     				f:row {
             			f:static_text {
-            				title = iif(isDefaultCollection, "This is a Default Collection:\nSettings of this collection will be the default\nfor all new collections in this publish service!", ""),
-            				text_color = iif(isDefaultCollection, LrColor("red"), LrColor("black")),
-            				alignment = 'left',
+            				title 		= dialogCaptionText,
+            				text_color	= iif(isDefaultCollection, LrColor("red"), LrColor("black")),
+        					font		= iif(defCollectionName, '<system/small>', '<system>'), 
+            				alignment	= 'left',
             			},
     				},
     			},
