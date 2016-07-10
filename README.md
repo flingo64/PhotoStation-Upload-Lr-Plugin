@@ -214,6 +214,14 @@ Publish Functionality:
 
 - __Deletion of empty Photo Station Albums__ after deletion of published photos or complete Published Collections
 
+- Settings of a __Default Collection__ will serve as default for new Published Collection within the same Publish Service<br> 
+  Using the Default Collection you can define your own collection setting defaults instead of using the plugin's defaults.<br> 
+  __Note:__ When you create a new Photo StarLr Publish Service Lr will create a first Published Collection called "Default Collection". The Default collection is typically shown in italics.
+  You may rename the Default Collection and use it for normal publishing. 
+  Default Collections in Publish Services created with Photo StatLr __before v5.8.0__ however will __not__ be shown in __italics__ and may have been __moved__ to a Collection Set or even have been __removed__ completely. 
+  To identify the Default Collection, just edit an existing Published Collection: the name of the Default Collection will be shown in the header section of the dialog.
+  If the Default Collection has been removed before (this was possible in Photo StatLr befor v5.8.0) there is no way to create a new Default Collection for that Publish Service.     
+
 Download / Sync Functionality:
 -------------------------------
 - Support for re-import of __Comments and Ratings__
@@ -497,6 +505,11 @@ Version 5.7
 	- Fixed a bug where RAW/DNG photos could not be uploaded from MacOS (due to a mis-configured program path for the dcraw tool)
 	- Raised the timeout for uploading metadata for videos from 30 sec to 60 sec
 	- Fixed an issue where one or more upload task would fail with an exception ("PSUtilities, 331: attempt to compare nil with number") when doing multiple upload tasks in parallel  
+
+Version 5.8
+-----------
+- Added __Default Collection__ handling: the Default Collection now serves as template for all new Published (Smart) Collections within the same Publish Service.  
+- Bugfix for "Convert all photos": This bug was introduced in V5.4.0
 
 Copyright
 ==========
