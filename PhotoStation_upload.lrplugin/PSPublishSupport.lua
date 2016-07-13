@@ -305,12 +305,8 @@ end
  -- published through your service. It provides an opportunity for you to customize
  -- the confirmation dialog.
 function publishServiceProvider.shouldDeletePhotosFromServiceOnDeleteFromCatalog( publishSettings, nPhotos )
-	if nPhotos < 10 then
-		return "delete"
-	else
-		-- ask the user for confirmation
-		return nil
-	end
+	-- ask the user for confirmation
+	return nil
 end
 
 
