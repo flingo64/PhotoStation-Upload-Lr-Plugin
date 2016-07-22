@@ -528,6 +528,7 @@ function openSession(exportParams, publishedCollection, operation)
         	exportParams.captionDownload 		= collectionSettings.captionDownload
         	exportParams.tagsDownload	 		= collectionSettings.tagsDownload
         	exportParams.locationDownload 		= collectionSettings.locationDownload
+        	exportParams.locationTagDownload	= collectionSettings.locationTagDownload
         	exportParams.ratingDownload	 		= collectionSettings.ratingDownload
         	exportParams.PS2LrFaces	 			= collectionSettings.PS2LrFaces
         	exportParams.PS2LrLabel	 			= collectionSettings.PS2LrLabel

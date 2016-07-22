@@ -443,6 +443,9 @@ local function updateCollectionStatus( collectionSettings )
 			break
 		end
 		
+		-- location tag download (blue pin): only possible if location download is enabled
+		if not collectionSettings.locationDownload then  collectionSettings.locationTagDownload = false end
+		 
 	until true
 	
 	if message then
@@ -487,6 +490,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	titleDownload		= false,
     	captionDownload		= false,
     	locationDownload	= false,
+    	locationTagDownload	= false,
     	ratingDownload		= false,
     
     	tagsDownload		= false,
@@ -526,6 +530,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	collectionSettings:addObserver( 'exifXlatFaceRegions', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifXlatLabel', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifXlatRating', updateCollectionStatus )
+	collectionSettings:addObserver( 'locationDownload', updateCollectionStatus )
 	collectionSettings:addObserver( 'ratingDownload', updateCollectionStatus )
 	collectionSettings:addObserver( 'PS2LrRating', updateCollectionStatus )
 	
@@ -1097,8 +1102,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		closeLogfile()
 		return
 	end
-	writeLogfile(2, string.format("Get ratings/metadata: options(title: %s, caption: %s, location: %s, rating: %s, tags: %s, face xlat: %s, label xlat: %s, rating xlat: %s)\n",
-							publishSettings.titleDownload, publishSettings.captionDownload, publishSettings.locationDownload, publishSettings.ratingDownload, 
+	writeLogfile(2, string.format("Get ratings/metadata: options(title: %s, caption: %s, location: %s, locationTag: %s rating: %s, tags: %s, face xlat: %s, label xlat: %s, rating xlat: %s)\n",
+							publishSettings.titleDownload, publishSettings.captionDownload, publishSettings.locationDownload, publishSettings.locationTagDownload, publishSettings.ratingDownload, 
 							publishSettings.tagsDownload, publishSettings.PS2LrFaces, publishSettings.PS2LrLabel, publishSettings.PS2LrRating))
 	
 --	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
@@ -1109,6 +1114,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		(	not collectionSettings.titleDownload 
 		and not collectionSettings.captionDownload 
 		and not collectionSettings.locationDownload 
+		and not collectionSettings.locationTagDownload 
 		and not collectionSettings.ratingDownload 
 		and not collectionSettings.tagsDownload 
 		and not collectionSettings.PS2LrFaces 
@@ -1163,7 +1169,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		else		 
     		
     		------------------------------------------------------------------------------------------------------
-    		-- get title and caption from Photo Station
+    		-- get title, caption, rating, location from Photo Station (via album list API)
 
     		if 		collectionSettings.titleDownload 
     			or  collectionSettings.captionDownload 
@@ -1171,29 +1177,40 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.locationDownload
     		then
     			local useCache = true
-    			local photoInfo = PSPhotoStationAPI.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
-        		if photoInfo then
-        			if collectionSettings.titleDownload 	then titlePS = photoInfo.title end 
-        			if collectionSettings.captionDownload	then captionPS = photoInfo.description end 
-        			if collectionSettings.ratingDownload	then ratingPS = tonumber(photoInfo.rating) end 
+    			local psPhotoInfo, psPhotoAdditional = PSPhotoStationAPI.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
+        		if psPhotoInfo then
+        			if collectionSettings.titleDownload 	then titlePS = psPhotoInfo.title end 
+        			if collectionSettings.captionDownload	then captionPS = psPhotoInfo.description end 
+        			if collectionSettings.ratingDownload	then ratingPS = tonumber(psPhotoInfo.rating) end 
         			if collectionSettings.locationDownload	then 
         				-- gps coords from photo/video: best choice for GPS
-        				if photoInfo.lat and photoInfo.lng then
-            				gpsPS.latitude	= tonumber(photoInfo.lat)
-            				gpsPS.longitude	= tonumber(photoInfo.lng)
-            			elseif photoInfo.gps and photoInfo.gps.lat and photoInfo.gps.lng then
-            				gpsPS.latitude	= tonumber(photoInfo.gps.lat)
-            				gpsPS.longitude	= tonumber(photoInfo.gps.lng)
+        				if psPhotoInfo.lat and psPhotoInfo.lng then
+            				gpsPS.latitude	= tonumber(psPhotoInfo.lat)
+            				gpsPS.longitude	= tonumber(psPhotoInfo.lng)
+            				gpsPS.type		= 'red'
+
+            			-- psPhotoInfo.gps: GPS info of videos is stored her
+            			elseif psPhotoInfo.gps and psPhotoInfo.gps.lat and psPhotoInfo.gps.lng then
+            				gpsPS.latitude	= tonumber(psPhotoInfo.gps.lat)
+            				gpsPS.longitude	= tonumber(psPhotoInfo.gps.lng)
+            				gpsPS.type		= 'red'
+            			
+            			-- psPhotoAdditional.photo_exif.gps: should be identical to psPhotoInfo
+            			elseif 	psPhotoAdditional and psPhotoAdditional.photo_exif and psPhotoAdditional.photo_exif.gps 
+            				and psPhotoAdditional.photo_exif.gps.lat and psPhotoAdditional.photo_exif.gps.lng then
+            				gpsPS.latitude	= tonumber(psPhotoAdditional.photo_exif.gps.lat)
+            				gpsPS.longitude	= tonumber(psPhotoAdditional.photo_exif.gps.lng)
+            				gpsPS.type		= 'red'
             			end 
         			end
         		end
     		end
     		
     		------------------------------------------------------------------------------------------------------
-    		-- get tags and translated tags (rating, label) from Photo Station if configured
+    		-- get tags and translated tags (rating, label) from Photo Station if configured (via photo_tag API)
     		if 		collectionSettings.tagsDownload
     			-- GPS coords from locations only if no photo gps available
-    			or  (collectionSettings.locationDownload and  gpsPS.latitude == 0 and gpsPS.longitude == 0)
+    			or  (collectionSettings.locationTagDownload and  gpsPS.latitude == 0 and gpsPS.longitude == 0)
     			or  collectionSettings.PS2LrFaces 
     			or  collectionSettings.PS2LrLabel 
     			or  collectionSettings.PS2LrRating 
@@ -1224,9 +1241,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     						table.insert(tagsPS, photoTag.name)
     					
     					-- gps coords belonging to a location tag 
-    					elseif collectionSettings.locationDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
+    					elseif collectionSettings.locationTagDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
             				gpsPS.latitude	= tonumber(ifnil(photoTag.additional.info.lat, 0))
             				gpsPS.longitude	= tonumber(ifnil(photoTag.additional.info.lng, 0))
+            				gpsPS.type		= 'blue'
     					end 
         			end
         		end
@@ -1235,8 +1253,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
     		ratingCallback({ publishedPhoto = photoInfo, rating = iif(collectionSettings.PS2LrRating, ratingTagPS, ratingPS) or 0 })
     
-    		writeLogfile(3, string.format("Get ratings/metadata: %s - title '%s' caption '%s', location '%s/%s' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
-   							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude),
+    		writeLogfile(3, string.format("Get ratings/metadata: %s - title '%s' caption '%s', location '%s/%s (%s)' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
+   							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude), ifnil(gpsPS.type, ''),
     							ifnil(ratingPS, 0), ifnil(ratingTagPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
 
     		------------------------------------------------------------------------------------------------------

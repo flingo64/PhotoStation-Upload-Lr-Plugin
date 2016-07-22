@@ -1063,7 +1063,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			},
     
     			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationUpload=Location (always)",
+    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationUpload=GPS (always)",
     				fill_horizontal = 1,
     				value 			= true,
     				enabled 		= false,
@@ -1159,12 +1159,21 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				value 			= bind 'captionDownload',
 			},
 
-			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/LocationDownload=Location",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LocationDownloadTT=Download GPS info from Photo Station",
-				fill_horizontal = 1,
-				value 			= bind 'locationDownload',
-			},
+			f:row {
+    			fill_horizontal = 1,
+    			f:checkbox {
+    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationDownload=GPS (red)",
+    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LocationDownloadTT=Download GPS info of the photo (red pin) from Photo Station",
+    				value 			= bind 'locationDownload',
+    			},
+    			f:checkbox {
+    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationTagDownload=GPS (blue)",
+    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LocationTagDownloadTT=Download GPS info of the photo's location tag (blue pin) from Photo Station.\n" ..
+    										"Red pin has preference over blue pin. Download of blue pin GPS takes significantly more time!",
+    				value 			= bind 'locationTagDownload',
+    				enabled			= bind 'locationDownload',
+    			},
+    		},
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/RatingDownload=Rating",

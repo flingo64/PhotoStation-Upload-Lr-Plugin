@@ -387,7 +387,7 @@ function PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
 					 'offset=0&' .. 
 					 'limit=-1&' ..
 					 'recursive=false&'.. 
-					 'additional=album_permission'
+					 'additional=album_permission,photo_exif'
 --					 'additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location'
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
@@ -596,7 +596,7 @@ function PSPhotoStationAPI.getPhotoInfo(h, dstFilename, isVideo, useCache)
 	for i = 1, #photoInfos do
 		if photoInfos[i].id == photoId then
 			writeLogfile(3, string.format('getPhotoInfo(%s, useCache %s) found infos.\n', dstFilename, useCache))
-			return photoInfos[i].info
+			return photoInfos[i].info, photoInfos[i].additional
 		end
 	end
 	
