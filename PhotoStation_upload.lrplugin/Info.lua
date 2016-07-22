@@ -40,8 +40,8 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 plugin_major = 5
 plugin_minor =8
-plugin_rev = 1
-plugin_build = 20160715
+plugin_rev = 2
+plugin_build = 20160722
 pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' ..plugin_rev .. '.' .. plugin_build
 plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
 
@@ -54,7 +54,7 @@ return {
 
 	LrPluginName = LOC "$$$/PSUpload/PluginName=Photo StatLr",
 	
-	LrPluginInfoUrl = "https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin",
+	LrPluginInfoUrl = "http://messmer-online.de/index.php/software/11-photo-statlr",
 	
 	LrPluginInfoProvider = 'PSPluginInfoProvider.lua',
 	
