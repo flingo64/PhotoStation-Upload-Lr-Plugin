@@ -1189,7 +1189,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
             				gpsPS.longitude	= tonumber(psPhotoInfo.lng)
             				gpsPS.type		= 'red'
 
-            			-- psPhotoInfo.gps: GPS info of videos is stored her
+            			-- psPhotoInfo.gps: GPS info of videos is stored here
             			elseif psPhotoInfo.gps and psPhotoInfo.gps.lat and psPhotoInfo.gps.lng then
             				gpsPS.latitude	= tonumber(psPhotoInfo.gps.lat)
             				gpsPS.longitude	= tonumber(psPhotoInfo.gps.lng)
