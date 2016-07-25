@@ -1007,11 +1007,11 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
     
     				table.insert( commentList, {
-    								commentId = comment.id,
+    								commentId = string.match(comment.id, 'comment_(%d+)'),
     								commentText = comment.comment,
     								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
-	   								username = comment.name,
-	  								realname = comment.email,
+	   								username = ifnil(comment.email, ''),
+	  								realname = ifnil(comment.name, ''),
 --    								url = PSPhotoStationAPI.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
     							} )
     			end			
@@ -1251,7 +1251,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         					
     		end
 
-    		ratingCallback({ publishedPhoto = photoInfo, rating = iif(collectionSettings.PS2LrRating, ratingTagPS, ratingPS) or 0 })
+    		if collectionSettings.ratingDownload or collectionSettings.PS2LrRating then 
+    			ratingCallback({ publishedPhoto = photoInfo, rating = iif(collectionSettings.PS2LrRating, ratingTagPS, ratingPS) or 0 })
+    		end
     
     		writeLogfile(3, string.format("Get ratings/metadata: %s - title '%s' caption '%s', location '%s/%s (%s)' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude), ifnil(gpsPS.type, ''),
