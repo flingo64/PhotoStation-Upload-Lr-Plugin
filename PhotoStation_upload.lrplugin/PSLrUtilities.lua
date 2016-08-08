@@ -292,14 +292,15 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
     			end
     			
     			local metadataString = iif(ifnil(srcPhotoFMetadata[metadataName], '') ~= '', srcPhotoFMetadata[metadataName], ifnil(dataDefault, ''))
+    			local metadataStringExtracted = metadataString
     			if metadataString ~= '?' then 
     				if metadataPattern then
-    					metadataString = string.match(metadataString, metadataPattern)
+    					metadataStringExtracted = string.match(metadataString, metadataPattern)
     				end 
-    				metadataString = mkLegalFilename(metadataString) 
+    				metadataStringExtracted = mkLegalFilename(metadataStringExtracted) 
     			end
-    			writeLogfile(3, string.format("evaluatePathOrFilename: key %s substring pattern %s --> %s \n", ifnil(metadataName, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataString)) 
-    			return metadataString
+    			writeLogfile(3, string.format("evaluatePathOrFilename: %s = %s, pattern %s --> %s\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
+    			return metadataStringExtracted
     		end);
 	end
 	
@@ -316,7 +317,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 		path = string.gsub (path, '({LrCC:[^}]*})', function(contCollParam)
 				local dataTypeAndFilter, dataDefault = string.match(contCollParam, '{LrCC:(.*)|(.*)}')
 				if not dataTypeAndFilter then
-					local dataTypeAndFilter = string.match(contCollParam, '{LrCC:(.*)}')
+					dataTypeAndFilter = string.match(contCollParam, '{LrCC:(.*)}')
 				end
 				local dataType, dataFilter = string.match(dataTypeAndFilter, '(%w+)%s+(.*)')
 				if not dataType then
