@@ -89,6 +89,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'storeDstRoot', 	default = true },	-- enter destination Album in Export dialog or later
 		{ key = 'dstRoot', 			default = '' },		-- destination Album on Photo Station: no leading or trailing slash required
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
+		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Station acc. to collection sort order 
 
 		-- upload options / exif translation parameters
 		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
@@ -103,10 +104,11 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
 		{ key = 'isPS6', 			default = true },	-- use upload optimization for Photo Station 6 (not THUMB_L required)
 
-		-- Album options
+		-- target filename parameters
+		{ key = 'renameDstFile',	default = false },	-- rename photo when uploading 
+		{ key = 'dstFilename',		default = '' },		-- rename photo to this filename (containing placeholders) 
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
-		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Station acc. to collection sort order 
-		
+
 		-- video parameters
 		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
 		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUM res videos
