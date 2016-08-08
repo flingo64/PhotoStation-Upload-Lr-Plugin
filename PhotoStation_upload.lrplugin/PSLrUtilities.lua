@@ -12,7 +12,7 @@ Lightroom utilities:
 	- getCollectionUploadPath
 	
 	- isDynamicAlbumPath
-	- evaluateAlbumPath
+	- evaluatePathOrFilename
 
 	- noteAlbumForCheckEmpty
 	
@@ -134,48 +134,47 @@ function PSLrUtilities.getDateTimeOriginal(srcPhoto)
 end
 
 ---------------------- Get Publish Path --------------------------------------------------
--- function getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot) 
+-- function getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot) 
 -- 	return relative local path of the srcPhoto and destination path of the rendered photo: remotePath = dstRoot + (localpath - srcRoot), 
 --	returns:
--- 		localPath - relative local path as unix-path
--- 		remotePath - absolute remote path as unix-path
-function PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
-	local srcPhotoPath = srcPhoto:getRawMetadata('path')
-	local srcPhotoExtension = LrPathUtils.extension(srcPhotoPath)
-	local localRenderedPath
-	local localPath
-	local remotePath
+-- 		localRelativePath 	- relative local path as unix-path
+-- 		remoteAbsPath 		- absolute remote path as unix-path
+function PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot)
+	local srcPhotoPath 			= srcPhoto:getRawMetadata('path')
+	local srcPhotoDir 			= LrPathUtils.parent(srcPhotoPath)
+	local srcPhotoExtension 	= LrPathUtils.extension(srcPhotoPath)
+	
+	local localRenderedPath 	= LrPathUtils.child(srcPhotoDir, dstFilename)
+	local renderedExtension 	= LrPathUtils.extension(dstFilename)
+	
+	local localRelativePath
+	local remoteAbsPath
 
-	-- if is virtual copy: add last three characters of photoId as suffix to filename
+	-- if is virtual copy: add copyName as suffix to filename (to make the filename unique)
 	if srcPhoto:getRawMetadata('isVirtualCopy') then
-		srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '-' .. string.sub(srcPhoto:getRawMetadata('uuid'), -3), 
-												srcPhotoExtension)
-		writeLogfile(3, 'isVirtualCopy: new srcPhotoPath is: ' .. srcPhotoPath .. '"\n')				
+		localRenderedPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(localRenderedPath) .. '-' .. srcPhoto:getFormattedMetadata('copyName'), 
+												renderedExtension)
+		writeLogfile(3, 'isVirtualCopy: new localRenderedPath is: ' .. localRenderedPath .. '"\n')				
 	end
 
-	-- check if extension of rendered photo is different from original photo
+	-- if original and rendered photo extensions are different and 'RAW+JPG to same album' is set, ...
 	if not srcPhoto:getRawMetadata("isVideo") and exportParams.RAWandJPG and (string.lower(srcPhotoExtension) ~= string.lower(renderedExtension)) then
-		-- if original and rendered photo extensions are different, use rendered photo extension
-		-- optionally append original extension to photoname (e.g. '_rw2.jpg')
-		srcPhotoPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(srcPhotoPath) .. '_' .. srcPhotoExtension, renderedExtension)
+		-- then append original extension to photoname (e.g. '_rw2.jpg')
+		localRenderedPath = LrPathUtils.addExtension(
+								LrPathUtils.removeExtension(localRenderedPath) .. '_' .. srcPhotoExtension, renderedExtension)
+		writeLogfile(3, 'different extentions and RAW+JPG set: new localRenderedPath is: ' .. localRenderedPath .. '"\n')				
 	end
-	-- Source and rendered photo w/ same extension, pay attention to uppe/lowercase setting of 				
-	srcPhotoPath = LrPathUtils.replaceExtension(srcPhotoPath, renderedExtension)
-		
-	localRenderedPath = srcPhotoPath
-			
+
 	if exportParams.copyTree then
-		localPath = 		string.gsub(LrPathUtils.makeRelative(srcPhotoPath, exportParams.srcRoot), "\\", "/")
-		localRenderedPath = string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
+		localRelativePath =	string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
 	else
-		localPath = 		LrPathUtils.leafName(srcPhotoPath)
-		localRenderedPath = LrPathUtils.leafName(localRenderedPath)
+		localRelativePath =	LrPathUtils.leafName(localRenderedPath)
 	end
-	remotePath = iif(dstRoot ~= '', dstRoot .. '/' .. localRenderedPath, localRenderedPath)
+	remoteAbsPath = iif(dstRoot ~= '', dstRoot .. '/' .. localRelativePath, localRelativePath)
 	writeLogfile(3, string.format("getPublishPath('%s', %s, %s, '%s')\n    returns '%s', '%s'\n", 
 					srcPhoto:getRawMetadata('path'), renderedExtension, iif(exportParams.copyTree, 'Tree', 'Flat'), dstRoot,
-					localPath, remotePath))
-	return localPath, remotePath
+					localRelativePath, remoteAbsPath))
+	return localRelativePath, remoteAbsPath
 end
 
 ---------------------- getCollectionPath --------------------------------------------------
@@ -241,17 +240,23 @@ function PSLrUtilities.isDynamicAlbumPath(path)
 end
 
 --------------------------------------------------------------------------------------------
--- evaluateAlbumPath(path, srcPhoto)
+-- evaluatePathOrFilename(path, srcPhoto, type)
 -- 	Substitute metadata placeholders by actual values from the photo and sanitize a given directory path.
 --	Metadata placeholders look in general like: {<category>:<type> <options>|<defaultValue_or_mandatory>}
 --	'?' stands for mandatory, no default available. 
 --	- unrecognized placeholders will be left unchanged, they might be intended path components
 --	- undefined mandatory metadata will be substituted by ?
 --	- undefined optional metadata will be substituted by their default or '' if no default
-function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
+function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 
 	if (not path or not string.find(path, "{", 1, true)) then
 		return normalizeDirname(path)
+	end
+
+	if 	type == 'filename' 
+	and (string.find(path, "/", 1, true) or string.find(path, "\\", 1, true)) then
+		writeLogfile(3, string.format("evaluatePathOrFilename: filenane %s must not contain / or \\ \n", path)) 
+		return '?'
 	end
 
 	-- get capture date, if required
@@ -266,7 +271,7 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 				end
 				local dateString = LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), dateFormat, false)
 				
-				writeLogfile(3, string.format("evaluateAlbumPath: date format %s --> %s\n", ifnil(dateFormat, '<Nil>'), ifnil(dateString, '<Nil>'))) 
+				writeLogfile(3, string.format("evaluatePathOrFilename: date format %s --> %s\n", ifnil(dateFormat, '<Nil>'), ifnil(dateString, '<Nil>'))) 
 				return iif(ifnil(dateString, '') ~= '',  dateString, ifnil(dataDefault, '')) 
 			end);
 	end
@@ -277,13 +282,23 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 
     	-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}, only string, number or boolean type allowed
     	path = string.gsub (path, '({LrFM:[^}]*})', function(metadataParam)
-    			local metadataName, dataDefault = string.match(metadataParam, "{LrFM:(.*)|(.*)}")
-    			if not metadataName then
-    				metadataName = string.match(metadataParam, "{LrFM:(.*)}")
+    			local metadataNameAndPattern, dataDefault = string.match(metadataParam, "{LrFM:(.*)|(.*)}")
+    			if not metadataNameAndPattern then
+    				metadataNameAndPattern = string.match(metadataParam, "{LrFM:(.*)}")
     			end
+    			local metadataName, metadataPattern = string.match(metadataNameAndPattern, "(%w+)%s+(.*)")
+    			if not metadataName then
+    				metadataName = metadataNameAndPattern
+    			end
+    			
     			local metadataString = iif(ifnil(srcPhotoFMetadata[metadataName], '') ~= '', srcPhotoFMetadata[metadataName], ifnil(dataDefault, ''))
-    			if metadataString ~= '?' then metadataString = mkLegalFilename(metadataString) end
-    			writeLogfile(3, string.format("evaluateAlbumPath: key %s --> %s \n", ifnil(metadataName, '<Nil>'), metadataString)) 
+    			if metadataString ~= '?' then 
+    				if metadataPattern then
+    					metadataString = string.match(metadataString, metadataPattern)
+    				end 
+    				metadataString = mkLegalFilename(metadataString) 
+    			end
+    			writeLogfile(3, string.format("evaluatePathOrFilename: key %s substring pattern %s --> %s \n", ifnil(metadataName, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataString)) 
     			return metadataString
     		end);
 	end
@@ -299,23 +314,24 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 		
 		-- substitute Lr contained collection name or path: {LrCC:<name>|<path> <filter>}
 		path = string.gsub (path, '({LrCC:[^}]*})', function(contCollParam)
-				local dataType, dataFilter, dataDefault = string.match(contCollParam, '{LrCC:(%w+)%s*(.*)|(.*)}')
-				if not dataType then
-					dataType, dataFilter = string.match(contCollParam, '{LrCC:(%w+)%s*(.*)}')
+				local dataTypeAndFilter, dataDefault = string.match(contCollParam, '{LrCC:(.*)|(.*)}')
+				if not dataTypeAndFilter then
+					local dataTypeAndFilter = string.match(contCollParam, '{LrCC:(.*)}')
 				end
+				local dataType, dataFilter = string.match(dataTypeAndFilter, '(%w+)%s+(.*)')
 				if not dataType then
-					dataType = string.match(contCollParam, '{LrCC:(%w+)}')
+					dataType = dataTypeAndFilter
 				end
 
--- 				writeLogfile(4, string.format("evaluateAlbumPath: %s: type %s filter %s\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataFilter, '<Nil>'))) 
+-- 				writeLogfile(4, string.format("evaluatePathOrFilename: %s: type %s filter %s\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataFilter, '<Nil>'))) 
 				
 				if not dataType or not string.find('name,path', dataType, 1, true) then 
-					writeLogfile(3, string.format("evaluateAlbumPath:  %s: type %s not valid  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
+					writeLogfile(3, string.format("evaluatePathOrFilename:  %s: type %s not valid  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
 					return contCollParam 
 				end
 				
 				if not containedCollectionPath or not containedCollectionPath[1] then
-					writeLogfile(4, string.format("evaluateAlbumPath:  %s: no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
+					writeLogfile(4, string.format("evaluatePathOrFilename:  %s: no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
 					return ifnil(dataDefault,'')  
 				end
 				
@@ -331,11 +347,11 @@ function PSLrUtilities.evaluateAlbumPath(path, srcPhoto)
 					end
 				
 					if not dataFilter or string.match(dataString, dataFilter) then
-						writeLogfile(3, string.format("evaluateAlbumPath: %s  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataString, ''))) 
+						writeLogfile(3, string.format("evaluatePathOrFilename: %s  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataString, ''))) 
 						return ifnil(dataString, '')
 					end 
 				end
-				writeLogfile(3, string.format("evaluateAlbumPath:  %s: no match  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
+				writeLogfile(3, string.format("evaluatePathOrFilename:  %s: no match  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
 				return ifnil(dataDefault,'')  
 			end);
 	end
