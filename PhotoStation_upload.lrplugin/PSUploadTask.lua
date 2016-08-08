@@ -605,17 +605,16 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
 		
 		local pubPhoto = publishedPhotos[i]
 		local srcPhoto = pubPhoto:getPhoto()
-		local srcPhotoPath = srcPhoto:getRawMetadata('path')
+		local srcPath = srcPhoto:getRawMetadata('path')
 		local publishedPath = ifnil(pubPhoto:getRemoteId(), '<Nil>')
-		local renderedExtension = ifnil(LrPathUtils.extension(publishedPath), 'nil')
 		local edited = pubPhoto:getEditedFlag()
-		local dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
+		local dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
 
 		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
 		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
 					
 		if skipPhoto then
- 			writeLogfile(2, string.format("CheckMoved(%s): Skip photo due to unknown target album %s\n", srcPhotoPath, dstRoot))
+ 			writeLogfile(2, string.format("CheckMoved(%s): Skip photo due to unknown target album %s\n", srcPath, dstRoot))
 			catalog:withWriteAccessDo( 
 				'SetEdited',
 				function(context)
@@ -626,10 +625,10 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
     		)
     		nMoved = nMoved + 1
     	else
-    		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
-    		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPhotoPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
-    		-- ignore extension: might be different 
-    		if LrPathUtils.removeExtension(remotePath) ~= LrPathUtils.removeExtension(publishedPath) then
+    		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, LrPathUtils.leafName(publishedPath), exportParams, dstRoot)
+    		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
+    		-- ignore leafname: might be different due to renaming options 
+    		if LrPathUtils.parent(remotePath) ~= LrPathUtils.parent(publishedPath) then
     			writeLogfile(2, "CheckMoved(" .. localPath .. "): Must be moved at target from " .. publishedPath .. 
     							" to " .. remotePath .. ", edited= " .. tostring(edited) .. "\n")
     			catalog:withWriteAccessDo( 
@@ -699,12 +698,14 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 			writeLogfile(3, "MovePhotos: next photo: " .. pathOrMessage .. "\n")
 			
 			local srcPhoto = rendition.photo
+			local srcPath = srcPhoto:getRawMetadata("path") 
+			local srcFilename = LrPathUtils.leafName(srcPath)
 			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
 			local renderedExtension = LrPathUtils.extension(renderedFilename)
-			local srcFilename = srcPhoto:getRawMetadata("path") 
 			local dstRoot
 			local dstDir
-		
+			local dstFilename
+					
 			nProcessed = nProcessed + 1
 			skipPhoto = false
 			
@@ -713,20 +714,31 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 				skipPhoto = true
 			else
     			-- evaluate and sanitize dstRoot: 
-    			dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
+    			dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
+
+    			-- file renaming: 
+    			--	if not Photo StatLr renaming
+    			--		if Export: 	use renderedFilename (Lr renaming options may have been turned on)
+    			--		else:		use srcFilename
+    			--	else: apply Photo StatLr renaming 
+    			dstFilename =	iif(not exportParams.renameDstFile, 
+    							iif(publishMode == 'Export', 			
+    									renderedFilename, 
+    									srcFilename),
+    									PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename'))
+       			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
     			
     			-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
-    			skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
+    			skipPhoto = iif(string.find(dstRoot, '?', 1, true) or string.find(dstFilename, '?', 1, true), true, false)
 				if skipPhoto then
 					writeLogfile(2, string.format('MovePhotos: Skipping "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
-					table.insert( failures, srcFilename )
     			end
 			end
 
 			if not skipPhoto then
 				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
 				-- use the relative destination pathname, so we are able to identify moved pictures
-	   			local localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
+	    		local localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot)
 				
 				writeLogfile(3, string.format("Old publishedPhotoId: '%s', New publishedPhotoId: '%s'\n",
 				 								ifnil(publishedPhotoId, '<Nil>'), newPublishedPhotoId))
@@ -753,7 +765,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
     						dstDir = dstRoot
     					end
     				else
-    					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcFilename), exportParams.srcRoot, dstRoot, 
+    					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcPath), exportParams.srcRoot, dstRoot, 
     										dirsCreated) 
     				end
 					
@@ -855,7 +867,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local sessionSuccess, reason = openSession(exportParams, publishedCollection, "ProcessRenderedPhotos")
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
-			showFinalMessage("Photo StatLr: " .. publishMode .. " failed!", reason, "critical")
+			showFinalMessage("Photo StatLr: " .. exportParams.publishMode .. " failed!", reason, "critical")
 		end
 		closeLogfile()
 		return
@@ -954,34 +966,48 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		if success then
 			writeLogfile(3, "Next photo: " .. pathOrMessage .. "\n")
 			
-			local srcPhoto = rendition.photo
-			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
+			local srcPhoto 			= rendition.photo
+			local srcPath 			= srcPhoto:getRawMetadata("path") 
+			local srcFilename 		= LrPathUtils.leafName(srcPath) 
+			local renderedFilename 	= LrPathUtils.leafName(pathOrMessage)
 			local renderedExtension = LrPathUtils.extension(renderedFilename)
-			local srcFilename = srcPhoto:getRawMetadata("path") 
 			local dstRoot
 			local dstDir
-		
+			local dstFilename
+			
 			nProcessed = nProcessed + 1
 			
 			-- evaluate and sanitize dstRoot: 
 			--   substitute metadata tokens
 			--   replace \ by /, remove leading and trailings slashes
-			dstRoot = PSLrUtilities.evaluateAlbumPath(exportParams.dstRoot, srcPhoto)
-			
+			dstRoot = 		PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
+
+			-- file renaming: 
+			--	if not Photo StatLr renaming
+			--		if Export: 	use renderedFilename (Lr renaming options may have been turned on)
+			--		else:		use srcFilename
+			--	else: apply Photo StatLr renaming 
+			dstFilename =	iif(not exportParams.renameDstFile, 
+							iif(publishMode == 'Export', 			
+									renderedFilename, 
+									srcFilename),
+									PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename'))
+   			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
+																			
 			-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
-			skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
+   			skipPhoto = iif(string.find(dstRoot, '?', 1, true) or string.find(dstFilename, '?', 1, true), true, false)
 			
-			writeLogfile(4, string.format("  sanitized dstRoot: %s\n", dstRoot))
+			writeLogfile(4, string.format("  sanitized dstRoot: %s, dstFilename %s\n", dstRoot, dstFilename))
 			
 			local localPath, newPublishedPhotoId
 			
 			if skipPhoto then
 				writeLogfile(2, string.format('Skip photo: "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
-				table.insert( failures, srcFilename )
+				table.insert( failures, srcPath )
 			elseif publishMode ~= 'Export' or srcPhoto:getRawMetadata("isVideo") then
 				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
 				-- use the relative destination pathname, so we are able to identify moved pictures
-				localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, renderedExtension, exportParams, dstRoot)
+	    		localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot)
 				
 --				writeLogfile(3, 'Old publishedPhotoId: ' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId: ' .. newPublishedPhotoId .. '"\n')
 				writeLogfile(3, string.format("Old publishedPhotoId: '%s', New publishedPhotoId: '%s'\n",
@@ -991,14 +1017,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					-- remove photo at old location
 					if publishMode == 'Publish' and not PSPhotoStationAPI.deletePic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
 						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
-    					table.insert( failures, srcFilename )
+    					table.insert( failures, srcPath )
 						skipPhoto = true 					
 					else
 						writeLogfile(2, iif(publishMode == 'Publish', 'Deleting', 'CheckExisting: Would delete') .. ' remote photo at old path: ' .. publishedPhotoId .. '\n')							
 					end
 				end
 				publishedPhotoId = newPublishedPhotoId
-				renderedFilename = LrPathUtils.leafName(publishedPhotoId)
+				dstFilename = LrPathUtils.leafName(publishedPhotoId)
 			end
 			
 			if skipPhoto then
@@ -1016,7 +1042,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					nNeedCopy = nNeedCopy + 1
 					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. newPublishedPhotoId .. '\n')
 				else -- error
-					table.insert( failures, srcFilename )
+					table.insert( failures, srcPath )
 					break 
 				end	
 			elseif publishMode == 'Export' or publishMode == 'Publish' then
@@ -1024,7 +1050,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- check if target Album (dstRoot) should be created 
 				if exportParams.createDstRoot and dstRoot ~= '' and 
 					not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated) then
-					table.insert( failures, srcFilename )
+					table.insert( failures, srcPath )
 					break 
 				end
 			
@@ -1037,12 +1063,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						dstDir = dstRoot
 					end
 				else
-					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcFilename), exportParams.srcRoot, dstRoot, 
+					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcPath), exportParams.srcRoot, dstRoot, 
 										dirsCreated) 
 				end
 				
 				if not dstDir then 	
-					table.insert( failures, srcFilename )
+					table.insert( failures, srcPath )
 					break 
 				end
 
@@ -1051,7 +1077,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				  
 				if (srcPhoto:getRawMetadata("isVideo") 	
 					and	(	not videoInfo or
-							not uploadVideo(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams, additionalVideos, videoInfo)
+							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, additionalVideos, videoInfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
 						 or (    publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
@@ -1060,15 +1086,15 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					)
 				or (	not srcPhoto:getRawMetadata("isVideo") 
 					and (
-							not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, renderedFilename, exportParams)
+							not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams)
 						 or 	(publishedCollection and not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
 						)
 					)
 				then
-					writeLogfile(1, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" failed!!!\n')
-					table.insert( failures, srcFilename )
+					writeLogfile(1, 'Upload of "' .. dstFilename .. '" to "' .. dstDir .. '" failed!!!\n')
+					table.insert( failures, srcPath )
 				else
-					writeLogfile(2, 'Upload of "' .. renderedFilename .. '" to "' .. dstDir .. '" done\n')
+					writeLogfile(2, 'Upload of "' .. dstFilename .. '" to "' .. dstDir .. '" done\n')
 				end
 			end
 		
