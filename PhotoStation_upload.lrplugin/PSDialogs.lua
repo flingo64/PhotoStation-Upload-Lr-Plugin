@@ -81,10 +81,7 @@ PSDialogs = {}
 -------------------------------------------------------------------------------
 -- validatePort: check if a string is numeric
 function PSDialogs.validatePort( view, value )
-	local message = nil
-	
 	if string.match(value, '(%d+)') ~= value then 
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/PortNotNumeric=Port must be numeric value."
 		return false, value
 	end
 	
@@ -94,10 +91,7 @@ end
 -------------------------------------------------------------------------------
 -- validateDirectory: check if a given path points to a local directory
 function PSDialogs.validateDirectory( view, path )
-	local message = nil
-	
 	if LrFileUtils.exists(path) ~= 'directory' then 
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/SrcDirNoExist=Local path is not an existing directory."
 		return false, path
 	end
 	
@@ -147,14 +141,11 @@ end
 -------------------------------------------------------------------------------
 -- validateMetadataPlaceholder: check if a given strings includes metadata placeholders
 function PSDialogs.validateMetadataPlaceholder( view, string )
-	local message = nil
-	
 	-- validate at least one metadata placeholders:
 	-- check up to 3 balanced '{', '}' 
 	if	not string.match(string, '^[^{}]*%b{}[^{}]*$')  
 	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*$') 
 	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*%b{}.*$') then 
-		message = LOC "$$$/PSUpload/ExportDialog/Messages/NoValidPlaceholder=This is not a valid metadata placeholder."
 		return false, string
 	end
 	
