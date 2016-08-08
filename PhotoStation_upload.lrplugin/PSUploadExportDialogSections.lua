@@ -98,10 +98,22 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 
+		-- renaming: either Lr or plugin renaming can be active
+		if not propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn and propertyTable.renameDstFile then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenameOption=Use either Lr File Renaming or Photo StatLr File Renaming, not both!"
+			break
+		end
+
+		-- renaming: renaming dstFilename must contain at least one metadata placeholder
+		if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
+			break
+		end
+
 		-- Publish Servic Provider start
 
 		if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenameNoSupp= File renaming option not supported in Publish mode!"
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
 			break
 		end
 
@@ -172,7 +184,11 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'exifXlatLabel', updateExportStatus )
 	propertyTable:addObserver( 'exifXlatRating', updateExportStatus )
 
+	propertyTable:addObserver( 'renameDstFile', updateExportStatus )
+	propertyTable:addObserver( 'dstFilename', updateExportStatus )
+
 	propertyTable:addObserver( 'LR_renamingTokensOn', updateExportStatus )
+	propertyTable:addObserver( 'LR_tokens', updateExportStatus )
 	
 	propertyTable:addObserver( 'LR_format', updateExportStatus )
 	propertyTable:addObserver( 'LR_DNG_previewSize', updateExportStatus )
@@ -233,7 +249,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			}, 
 ]]
 			
-			-- ================== Target Photo Station =================================================================
+			-- ================== Target Photo Station ==========================================================
 
 			PSDialogs.targetPhotoStationView(f, propertyTable),
 
@@ -241,7 +257,11 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			
 			conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.targetAlbumView(f, propertyTable)),
 			
-			-- ================== Thumbnail Options ================================================
+			-- ================== Phote renaming options======== ===============================================
+			
+			conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.photoNamingView(f, propertyTable)),
+			
+			-- ================== Thumbnail Options =============================================================
 
 			PSDialogs.thumbnailOptionsView(f, propertyTable),
 
@@ -249,11 +269,11 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 
 			PSDialogs.videoOptionsView(f, propertyTable),
 
-            -- ================== Upload Options ============================================================
+            -- ================== Upload Options ================================================================
             
             conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.uploadOptionsView(f, propertyTable)),
 
-			-- ================== Log Options =================================================================
+			-- ================== Log Options ===================================================================
 
 			PSDialogs.loglevelView(f, propertyTable),
 		},
