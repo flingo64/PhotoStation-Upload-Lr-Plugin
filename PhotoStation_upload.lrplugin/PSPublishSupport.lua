@@ -550,7 +550,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	--	f:group_box {
 	--	title		= 'Photo StatLr collection settings',
 	return f:view {
---		size = 'small',
+		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSettings ),
 		
@@ -561,26 +561,16 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 			
 			PSDialogs.targetAlbumView(f, collectionSettings),
 
-    		f:spacer { height = 10, },
-    
 			PSDialogs.photoNamingView(f, collectionSettings),
-
-    		f:spacer { height = 10, },
 
             PSDialogs.uploadOptionsView(f, collectionSettings),
  
- 	  		f:spacer { height = 10, },
-    
             PSDialogs.downloadOptionsView(f, collectionSettings),
  
             PSDialogs.downloadModeView(f, collectionSettings),
 
- 	  		f:spacer { height = 10, },   
- 
             PSDialogs.publishModeView(f, collectionSettings),
 
-    		f:spacer { height = 10, },
-    		
     		f:row {
     			alignment = 'left',
     
