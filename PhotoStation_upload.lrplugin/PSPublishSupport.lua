@@ -414,6 +414,12 @@ local function updateCollectionStatus( collectionSettings )
 			break
 		end
 				
+		-- renaming: renaming dstFilename must contain at least one metadata placeholder
+		if collectionSettings.renameDstFile  and not PSDialogs.validateMetadataPlaceholder(nil, collectionSettings.dstFilename) then 
+			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
+			break
+		end
+
 		-- Exif translation start
 		-- if at least one translation is activated then set exifTranslate
 		if collectionSettings.exifXlatFaceRegions or collectionSettings.exifXlatLabel or collectionSettings.exifXlatRating then
@@ -479,6 +485,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	copyTree			= false,
     	srcRoot				= '',
     
+    	renameDstFile		= false,
+    	dstFilename			= '',
     	RAWandJPG			= false,
     	sortPhotos			= false,
     
@@ -505,7 +513,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     }
 	
 	-- make sure logfile is opened
-	openLogfile(publishSettings.logLevel)	
+	openLogfile(iif(publishSettings.logLevel == 9999, 2, publishSettings.logLevel))	
 	
 	-- if we are not the defaultCollection, find the defaultColletionSettings for initializing our settings 
 	local serviceDefaultCollectionName, serviceDefaultCollectionSettings 
@@ -514,12 +522,12 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	end
 	
 	if serviceDefaultCollectionSettings then
-		writeLogfile(3,string.format("Found Default Collection '%s' for service: Applying plugin defaults to Service Default Collection\n", serviceDefaultCollectionName))
+		writeLogfile(3,string.format("Found Default Collection '%s' for service: Applying plugin defaults to unitialized values of Service Default Collection\n", serviceDefaultCollectionName))
 		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, serviceDefaultCollectionSettings)
-		writeLogfile(3,string.format("Applying defaults from Service Default Collection to current collection\n"))
+		writeLogfile(3,string.format("Applying defaults from Service Default Collection to unitialized values of current collection\n"))
 		applyDefaultsIfNeededFromTo(serviceDefaultCollectionSettings, collectionSettings)
 	else
-		writeLogfile(3,string.format("Found no Default Collection for service: Applying plugin defaults to current collection\n"))
+		writeLogfile(3,string.format("Found no Default Collection for service: Applying plugin defaults to unitialized values of current collection\n"))
 		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, collectionSettings)
 	end
 		
@@ -527,6 +535,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
 	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
 	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
+	collectionSettings:addObserver( 'renameDstFile', updateCollectionStatus )
+	collectionSettings:addObserver( 'dstFilename', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifXlatFaceRegions', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifXlatLabel', updateCollectionStatus )
 	collectionSettings:addObserver( 'exifXlatRating', updateCollectionStatus )
@@ -553,6 +563,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 
     		f:spacer { height = 10, },
     
+			PSDialogs.photoNamingView(f, collectionSettings),
+
+    		f:spacer { height = 10, },
+
             PSDialogs.uploadOptionsView(f, collectionSettings),
  
  	  		f:spacer { height = 10, },
