@@ -513,6 +513,8 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.createDstRoot 	= collectionSettings.createDstRoot
     	exportParams.copyTree 		= collectionSettings.copyTree
     	exportParams.srcRoot 		= collectionSettings.srcRoot
+    	exportParams.renameDstFile	= collectionSettings.renameDstFile
+    	exportParams.dstFilename	= collectionSettings.dstFilename
     	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
     	exportParams.sortPhotos 	= collectionSettings.sortPhotos
     	exportParams.exifTranslate 			= collectionSettings.exifTranslate
