@@ -144,6 +144,22 @@ function PSDialogs.validatePSUploadProgPath(view, path)
 	return true, LrPathUtils.standardizePath(path)
 end
 
+-------------------------------------------------------------------------------
+-- validateMetadataPlaceholder: check if a given strings includes metadata placeholders
+function PSDialogs.validateMetadataPlaceholder( view, string )
+	local message = nil
+	
+	-- validate at least one metadata placeholders:
+	-- check up to 3 balanced '{', '}' 
+	if	not string.match(string, '^[^{}]*%b{}[^{}]*$')  
+	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*$') 
+	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*%b{}.*$') then 
+		message = LOC "$$$/PSUpload/ExportDialog/Messages/NoValidPlaceholder=This is not a valid metadata placeholder."
+		return false, string
+	end
+	
+	return true, string
+end
 
 --============================ views ===================================================================
 
@@ -947,9 +963,9 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n" .. 
 									"(may be different from the Album name shown in Photo Station)",
 				truncation 		= 'middle',
-				width_in_chars 	= 16,
+--				width_in_chars 	= 16,
 				immediate 		= true,
-				fill_horizontal = 1,
+				fill_horizontal = 0.9,
 				value 			= bind 'dstRoot',
 				enabled 		= iif(isAskForMissingParams, true, bind 'storeDstRoot'),
 				visible 		= iif(isAskForMissingParams, true, bind 'storeDstRoot'),
@@ -958,7 +974,7 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
 				alignment 		= 'left',
-				fill_horizontal = 1,
+				fill_horizontal = 0.1,
 				value 			= bind 'createDstRoot',
 				enabled 		= iif(isAskForMissingParams, true, bind 'storeDstRoot'),
 				visible 		= iif(isAskForMissingParams, true, bind 'storeDstRoot'),
@@ -1011,20 +1027,7 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 				},
 			},
 
-			f:separator { fill_horizontal = 1 },
-
 			f:row {
-				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
-											"Note: All Non-JPEG photos will be renamed in Photo Station to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
-											"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
-											"IMG-001.JPG --> IMG-001.JPG",
-					alignment 		= 'left',
-					fill_horizontal = 1,
-					value 			= bind 'RAWandJPG',
-				},
-
 				f:checkbox {
 					title 			= LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in Photo Station according to sort order of Published Collection.\n" ..
@@ -1035,9 +1038,57 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 					enabled 		= negativeOfKey 'copyTree',
 				},	
 			},
+
 		},
+		
 	} 
 end	
+
+-------------------------------------------------------------------------------
+-- photoNamingView(f, propertyTable)
+--
+function PSDialogs.photoNamingView(f, propertyTable)
+	return f:view {
+		fill_horizontal = 1,
+		f:group_box {
+			title 			= LOC "$$$/PSUpload/ExportDialog/TargetPhoto=Target Photo Naming options",
+			fill_horizontal = 1,
+
+			f:row {
+				f:checkbox {
+    				title 		= LOC "$$$/PSUpload/ExportDialog/RenamePhoto=Rename Photos To:",
+    				tooltip 	= LOC "$$$/PSUpload/ExportDialog/RenamePhotoTT=Define a target filename pattern",
+    				alignment 	= 'right',
+    				width 		= share 		'labelWidth',
+    				value 		= bind 			'renameDstFile',
+--    				enabled 	= negativeOfKey 'LR_renamingTokensOn'
+				},
+
+    			f:edit_field {
+    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter filename renaming pattern for target photo filename.\nMust include at least one metadata placeholder!",
+    				truncation 		= 'middle',
+    				immediate 		= true,
+					validate 		= PSDialogs.validateMetadataPlaceholder,
+    				fill_horizontal = 0.9,
+    				value 			= bind 'dstFilename',
+    				enabled 		= bind 'renameDstFile',
+    				visible 		= bind 'renameDstFile',
+    			},
+
+				f:checkbox {
+					title 			= LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\n" ..
+											"Note: All Non-JPEG photos will be renamed in Photo Station to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\n" ..
+											"IMG-001.RW2 --> IMG-001_RW2.JPG\n" .. 
+											"IMG-001.JPG --> IMG-001.JPG",
+					alignment 		= 'left',
+					fill_horizontal = 0.1,
+					value 			= bind 'RAWandJPG',
+				},
+			},
+		},
+	}
+end
 
 -------------------------------------------------------------------------------
 -- uploadOptionsView(f, propertyTable)
