@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 5.8.x<br>
+Version 5.9.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -132,6 +132,9 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {LrCC:path ^Yearly Collections}
 	  - {LrCC:name}<br>
   To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-target-album-definitions) 
+
+- __Rename photos__ in target album using __metadata placehoders__:<br>
+     Rename photos to a unique naming schema in the target album 
 
 - __Photo-plus-Thumbnail Upload__ (default) for faster Photo Station fill-up and to minimize load on the diskstation  
 
@@ -510,6 +513,16 @@ Version 5.8
 -----------
 - Added __Default Collection__ handling: the Default Collection now serves as template for all new Published (Smart) Collections within the same Publish Service.  
 - Bugfix for "Convert all photos": This bug was introduced in V5.4.0
+
+Version 5.9
+-----------
+- Added __Rename Photos To__ to achieve a unique naming schema for photos in the target album.<br>
+  This also allows to merge photos with same names from different sub folder into a single target album.    
+- Extended metadata placeholders of type {LrFM:key} to include an extract pattern:<br>
+  __{LrFM:key \<extractPattern\>}__<br>
+  The extract pattern (a Lua regex pattern which optional captures) allows to extract specific parts from the given metadata key
+- Change the automatic renaming of virtual copies in the target album:<br>
+  Before virtual copies got a suffix of the last 3 digits of the photo UUID, now they get the copy name as suffix    
 
 Copyright
 ==========
