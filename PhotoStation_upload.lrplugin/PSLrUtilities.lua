@@ -280,7 +280,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 	if string.find(path, "{LrFM:", 1, true) then
 		local srcPhotoFMetadata = srcPhoto:getFormattedMetadata()
 
-    	-- substitute Lr Formatted Metadata tokens: {LrFM:<metadataName>}, only string, number or boolean type allowed
+    	-- substitute Lr Formatted Metadata tokens: {LrFM:<key>} or {LrFM:<key> <extract pattern>}, only string, number or boolean type allowed
     	path = string.gsub (path, '({LrFM:[^}]*})', function(metadataParam)
     			local metadataNameAndPattern, dataDefault = string.match(metadataParam, "{LrFM:(.*)|(.*)}")
     			if not metadataNameAndPattern then
@@ -299,8 +299,38 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
     				end 
     				metadataStringExtracted = mkLegalFilename(metadataStringExtracted) 
     			end
-    			writeLogfile(3, string.format("evaluatePathOrFilename: %s = %s, pattern %s --> %s\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
+    			writeLogfile(3, string.format("evaluatePathOrFilename: LrFM:%s = %s, pattern %s --> %s\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
     			return metadataStringExtracted
+    		end);
+	end
+	
+	-- get pathname, if required
+	if string.find(path, "{Path:", 1, true) then
+		local srcPhotoPath = srcPhoto:getRawMetadata('path')
+
+    	-- substitute Pathname tokens: {Path:<level>} or {Path:<key> <extract pattern>}to the (extract of the) <level>st subdir name of the path 
+    	path = string.gsub (path, '({Path:[^}]*})', function(pathParam)
+    			local pathLevelAndPattern, dataDefault = string.match(pathParam, "{Path:(.*)|(.*)}")
+    			if not pathLevelAndPattern then
+    				pathLevelAndPattern = string.match(pathParam, "{Path:(.*)}")
+    			end
+    			local pathLevel, pathPattern = string.match(pathLevelAndPattern, "(%d+)%s+(.*)")
+    			if not pathLevel then
+    				pathLevel = pathLevelAndPattern
+    			end
+    			pathLevel = tonumber(pathLevel)
+    			
+    			local pathDirnames = split(normalizeDirname(srcPhotoPath), '/')
+    			local pathLevelString = iif(pathDirnames and pathLevel < #pathDirnames and ifnil(pathDirnames[pathLevel], '') ~= '', pathDirnames[pathLevel], ifnil(dataDefault, ''))
+    			local pathLevelExtracted = pathLevelString
+    			if pathLevelString ~= '?' then 
+    				if pathPattern then
+    					pathLevelExtracted = string.match(pathLevelString, pathPattern)
+    				end 
+    				pathLevelExtracted = mkLegalFilename(pathLevelExtracted) 
+    			end
+    			writeLogfile(3, string.format("evaluatePathOrFilename: {Path %d}('%s') = %s, pattern %s --> %s\n", pathLevel, srcPhotoPath, ifnil(pathLevelString, '<Nil>'), ifnil(pathPattern, '<Nil>'), pathLevelExtracted)) 
+    			return pathLevelExtracted
     		end);
 	end
 	
