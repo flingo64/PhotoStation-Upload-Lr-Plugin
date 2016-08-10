@@ -527,7 +527,7 @@ Version 5.9
 
 Version 5.10
 ------------
-- Added metadata placeholder __{Path:\<level\> \<extract pattern\>}__ to retrieve the (extract of the) <level>st directory name of the photo's pathname.<br>
+- Added metadata placeholder __{Path:\<level\> \<extract pattern\>}__ to retrieve the (extract of the) \<level\>st directory name of the photo's pathname.<br>
 
 Copyright
 ==========
