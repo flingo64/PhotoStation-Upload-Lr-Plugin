@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 5.9.x<br>
+Version 5.10.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -129,6 +129,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {Date %Y-%m-%d}
 	  - {LrFM:cameraModel}
 	  - {LrFM:isoRating}
+	  - {Path:5}
 	  - {LrCC:path ^Yearly Collections}
 	  - {LrCC:name}<br>
   To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-target-album-definitions) 
@@ -523,6 +524,10 @@ Version 5.9
   The extract pattern (a Lua regex pattern which optional captures) allows to extract specific parts from the given metadata key
 - Change the automatic renaming of virtual copies in the target album:<br>
   Before virtual copies got a suffix of the last 3 digits of the photo UUID, now they get the copy name as suffix    
+
+Version 5.10
+------------
+- Added metadata placeholder __{Path:<level> <extract pattern>}__ to retrieve the (extract of the) <level>st directory name of the photo's pathname.<br>
 
 Copyright
 ==========
