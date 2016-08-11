@@ -109,7 +109,7 @@ publishServiceProvider.titleForPublishedCollection_standalone = LOC "$$$/PSPubli
  -- the published collection set, such as "Create ^1" or "Rename ^1".</p>
  -- <p>If not provided, Lightroom uses the default name, "Published Collection Set." </p>
 	
-publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSPublish/TitleForPublishedCollection=Published Collection Set"
+publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSPublish/TitleForPublishedCollectionSet=Published Collection Set"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -122,7 +122,7 @@ publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSPublish/Title
  -- <p>If not provided, Lightroom uses the value of
  -- <code>titleForPublishedCollectionSet</code> instead.</p>
 
-publishServiceProvider.titleForPublishedCollectionSet_standalone = LOC "$$$/PSPublish/TitleForPublishedCollection/Standalone=Published Collection Set"
+publishServiceProvider.titleForPublishedCollectionSet_standalone = LOC "$$$/PSPublish/TitleForPublishedCollectionSet/Standalone=Published Collection Set"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published

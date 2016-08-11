@@ -1123,7 +1123,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 		
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/TitleUpload=Keywords (always)",
+				title 			= LOC "$$$/PSUpload/ExportDialog/KeywordUpload=Keywords (always)",
 				fill_horizontal = 1,
 				value 			= true,
 				enabled 		= false,
