@@ -291,13 +291,19 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
     				metadataName = metadataNameAndPattern
     			end
     			
-    			local metadataString = iif(ifnil(srcPhotoFMetadata[metadataName], '') ~= '', srcPhotoFMetadata[metadataName], ifnil(dataDefault, ''))
+    			local metadataString = ifnil(srcPhotoFMetadata[metadataName], '')
     			local metadataStringExtracted = metadataString
-    			if metadataString ~= '?' then 
+    			if metadataString == '' then
+    				metadataStringExtracted = ifnil(dataDefault, '')
+    			else
     				if metadataPattern then
     					metadataStringExtracted = string.match(metadataString, metadataPattern)
     				end 
-    				metadataStringExtracted = mkLegalFilename(metadataStringExtracted) 
+					if not metadataStringExtracted then 
+  						metadataStringExtracted = ifnil(dataDefault, '')
+    				else
+    					metadataStringExtracted = mkLegalFilename(metadataStringExtracted)
+    				end 
     			end
     			writeLogfile(3, string.format("evaluatePathOrFilename: LrFM:%s = %s, pattern %s --> %s\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
     			return metadataStringExtracted
@@ -321,13 +327,19 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
     			pathLevel = tonumber(pathLevel)
     			
     			local pathDirnames = split(normalizeDirname(srcPhotoPath), '/')
-    			local pathLevelString = iif(pathDirnames and pathLevel < #pathDirnames and ifnil(pathDirnames[pathLevel], '') ~= '', pathDirnames[pathLevel], ifnil(dataDefault, ''))
+    			local pathLevelString = iif(pathDirnames and pathLevel < #pathDirnames and ifnil(pathDirnames[pathLevel], '') ~= '', pathDirnames[pathLevel], '')
     			local pathLevelExtracted = pathLevelString
-    			if pathLevelString ~= '?' then 
+    			if pathLevelString == '' then 
+    				pathLevelExtracted = ifnil(dataDefault, '')
+    			else
     				if pathPattern then
     					pathLevelExtracted = string.match(pathLevelString, pathPattern)
     				end 
-    				pathLevelExtracted = mkLegalFilename(pathLevelExtracted) 
+  					if not pathLevelExtracted then 
+  						pathLevelExtracted = ifnil(dataDefault, '')
+    				else
+    					pathLevelExtracted = mkLegalFilename(pathLevelExtracted)
+    				end 
     			end
     			writeLogfile(3, string.format("evaluatePathOrFilename: {Path %d}('%s') = %s, pattern %s --> %s\n", pathLevel, srcPhotoPath, ifnil(pathLevelString, '<Nil>'), ifnil(pathPattern, '<Nil>'), pathLevelExtracted)) 
     			return pathLevelExtracted
@@ -354,7 +366,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 					dataType = dataTypeAndFilter
 				end
 
--- 				writeLogfile(4, string.format("evaluatePathOrFilename: %s: type %s filter %s\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataFilter, '<Nil>'))) 
+ 				writeLogfile(4, string.format("evaluatePathOrFilename: %s: type %s filter %s\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataFilter, '<Nil>'))) 
 				
 				if not dataType or not string.find('name,path', dataType, 1, true) then 
 					writeLogfile(3, string.format("evaluatePathOrFilename:  %s: type %s not valid  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
