@@ -334,7 +334,7 @@ function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
 
     				f:row {
             			f:static_text {
-            				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing3=" .. operation,
+            				title = operation,
             				alignment = 'left',
         					font		= '<system/bold>', 
             			},
@@ -354,7 +354,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 			
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOAD=" .. 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOADDescription=" .. 
     									"Enter the path where 'Synology Photo Station Uploader' is installed.\n" .. 
     									"Required, if you want to generate thumbs locally or upload videos.\n" 
     			},
@@ -602,8 +602,8 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			},
         
         			f:popup_menu {
-        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\n".. 
-        									"use higher value (>= 40s), if you experience problems due to disks in standby mode",
+        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\n" .. 
+        									"Use higher value (>= 40s), if you experience problems due to disks in standby mode",
         				items 			= timeoutItems,
         				alignment 		= 'left',
         				fill_horizontal = 1,
@@ -623,7 +623,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         		},
         
         		f:popup_menu {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/PROTOCOL2=Protocol:",
+        			title 			= LOC "$$$/PSUpload/ExportDialog/PROTOCOL=Protocol:",
         			items			= protocolItems,
         			value 			= bind 'proto2',
         			enabled 		= bind 'useSecondAddress',
@@ -951,8 +951,7 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 			),
 
 			f:edit_field {
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n" .. 
-									"(may be different from the Album name shown in Photo Station)",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in Photo Station)",
 				truncation 		= 'middle',
 --				width_in_chars 	= 16,
 				immediate 		= true,
@@ -1007,7 +1006,7 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 				},
 
 				f:edit_field {
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=Enter the local path that is the root of the directory tree you want to mirror below the Target Album.",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/CopyTreeBaseTT=Enter the local path that is the root of the directory tree you want to mirror below the Target Album.",
 					truncation 		= 'middle',
 					immediate 		= true,
 					fill_horizontal = 1,
@@ -1022,7 +1021,7 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 				f:checkbox {
 					title 			= LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in Photo Station according to sort order of Published Collection.\n" ..
-											"Note: Sorting is only possible for collections with 'Sort: Custom Order' when uploading to a flat album.\n",
+											"Note: Sorting is only possible for collections with 'Sort: Custom Order' when uploading to a flat album.",
 					alignment 		= 'left',
 					fill_horizontal = 1,
 					value 			= bind 'sortPhotos',
@@ -1056,7 +1055,7 @@ function PSDialogs.photoNamingView(f, propertyTable)
 				},
 
     			f:edit_field {
-    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter filename renaming pattern for target photo filename.\nMust include at least one metadata placeholder!",
+    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/RenamePhotoPatternTT=Enter filename renaming pattern for target photo filename.\nMust include at least one metadata placeholder!",
     				truncation 		= 'middle',
     				immediate 		= true,
 					validate 		= PSDialogs.validateMetadataPlaceholder,
@@ -1219,7 +1218,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/ExportDialog/RatingDownload=Rating",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LocationDownloadTT=Download rating from Photo Station\n" ..
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/RatingDownloadTT=Download rating from Photo Station\n" ..
 										"(Requires Photo Station 6.5 or later)",
 				fill_horizontal = 1,
 				value 			= bind 'ratingDownload',
