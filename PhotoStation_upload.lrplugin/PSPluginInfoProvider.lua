@@ -59,12 +59,12 @@ local function updatePluginStatus( propertyTable )
 		-- (It only goes through once.)
 		
 		if propertyTable.PSUploaderPath ~= '' and not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong Synology Photo Station Uploader path." 
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 			break
 		end
 
 		if propertyTable.exiftoolprog ~= '' and not PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Wrong exiftool path." 
+			message = LOC "$$$/PSUpload/PluginDialog/Messages/ExifToolPathMissing=Wrong exiftool path." 
 			break
 		end
 
@@ -137,7 +137,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 		synops = LOC "$$$/PSUpload/PluginDialog/NOUPDATE=Nothing, just thought I'd mention it: Plugin is up-to-date"
 		updateAvail = false
 	else
-		synops = LOC "$$$/PSUpload/PluginDialog/UPDATE=This is a very moving moment: " .. "Version " .. prefs.updateAvailable ..  " available!"
+		synops = LOC("$$$/PSUpload/PluginDialog/UPDATE=This is a very moving moment: Version ^1 is available!", prefs.updateAvailable)
 		updateAvail = true
 	end 
 	
