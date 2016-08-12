@@ -212,7 +212,7 @@ end
  -- "Go to Published Photo" context-menu item, allowing you to use something more appropriate to
  -- your service. Set to the special value "disable" to disable (dim) the menu item for this service. 
 
-publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForGoToPublishedCollection=Show in Photo Station"
+publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForGoToPublishedPhoto=Show in Photo Station"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses the
