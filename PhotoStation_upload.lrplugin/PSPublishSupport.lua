@@ -87,7 +87,7 @@ publishServiceProvider.small_icon = 'PhotoStatLr.png'
  -- the published collection, such as "Create ^1" or "Rename ^1".</p>
  -- <p>If not provided, Lightroom uses the default name, "Published Collection." </p>
 	
-publishServiceProvider.titleForPublishedCollection = LOC "$$$/PSPublish/TitleForPublishedCollection=Published Collection"
+publishServiceProvider.titleForPublishedCollection = LOC "$$$/PSUpload/TitleForPublishedCollection=Published Collection"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -100,7 +100,7 @@ publishServiceProvider.titleForPublishedCollection = LOC "$$$/PSPublish/TitleFor
  -- <p>If not provided, Lightroom uses the value of
  -- <code>titleForPublishedCollection</code> instead.</p>
 
-publishServiceProvider.titleForPublishedCollection_standalone = LOC "$$$/PSPublish/TitleForPublishedCollection/Standalone=Published Collection"
+publishServiceProvider.titleForPublishedCollection_standalone = LOC "$$$/PSUpload/TitleForPublishedCollection/Standalone=Published Collection"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -109,7 +109,7 @@ publishServiceProvider.titleForPublishedCollection_standalone = LOC "$$$/PSPubli
  -- the published collection set, such as "Create ^1" or "Rename ^1".</p>
  -- <p>If not provided, Lightroom uses the default name, "Published Collection Set." </p>
 	
-publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSPublish/TitleForPublishedCollectionSet=Published Collection Set"
+publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSUpload/TitleForPublishedCollectionSet=Published Collection Set"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -122,7 +122,7 @@ publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSPublish/Title
  -- <p>If not provided, Lightroom uses the value of
  -- <code>titleForPublishedCollectionSet</code> instead.</p>
 
-publishServiceProvider.titleForPublishedCollectionSet_standalone = LOC "$$$/PSPublish/TitleForPublishedCollectionSet/Standalone=Published Collection Set"
+publishServiceProvider.titleForPublishedCollectionSet_standalone = LOC "$$$/PSUpload/TitleForPublishedCollectionSet/Standalone=Published Collection Set"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -131,7 +131,7 @@ publishServiceProvider.titleForPublishedCollectionSet_standalone = LOC "$$$/PSPu
  -- the published smart collection, such as "Create ^1" or "Rename ^1".</p>
  -- <p>If not provided, Lightroom uses the default name, "Published Smart Collection." </p>
 
-publishServiceProvider.titleForPublishedSmartCollection = LOC "$$$/PSPublish/TitleForPublishedSmartCollection=Published Smart Collection"
+publishServiceProvider.titleForPublishedSmartCollection = LOC "$$$/PSUpload/TitleForPublishedSmartCollection=Published Smart Collection"
 
 --------------------------------------------------------------------------------
 --- (optional, string) Plug-in defined value customizes the name of a published
@@ -144,7 +144,7 @@ publishServiceProvider.titleForPublishedSmartCollection = LOC "$$$/PSPublish/Tit
  -- <p>If not provided, Lightroom uses the value of
  -- <code>titleForPublishedSmartCollectionSet</code> instead.</p>
 
-publishServiceProvider.titleForPublishedSmartCollection_standalone = LOC "$$$/PSPublish/TitleForPublishedSmartCollection/Standalone=Published Smart Collection"
+publishServiceProvider.titleForPublishedSmartCollection_standalone = LOC "$$$/PSUpload/TitleForPublishedSmartCollection/Standalone=Published Smart Collection"
 
 --------------------------------------------------------------------------------
 -- This (optional) plug-in defined callback function is called when publishing has been initiated, 
@@ -162,7 +162,7 @@ end
 function publishServiceProvider.getCollectionBehaviorInfo( publishSettings )
 
 	return {
-		defaultCollectionName = LOC "$$$/PSPublish/DefaultCollectionName/Collection=Default Collection",
+		defaultCollectionName = LOC "$$$/PSUpload/DefaultCollectionName/Collection=Default Collection",
 		defaultCollectionCanBeDeleted = false,
 		canAddCollection = true,
 	}
@@ -173,7 +173,7 @@ end
 --- When set to the string "disable", the "Go to Published Collection" context-menu item
  -- is disabled (dimmed) for this publish service.
 
-publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSPublish/TitleForGoToPublishedCollection=Show in Photo Station"
+publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSUpload/TitleForGoToPublishedCollection=Show in Photo Station"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses
@@ -212,7 +212,7 @@ end
  -- "Go to Published Photo" context-menu item, allowing you to use something more appropriate to
  -- your service. Set to the special value "disable" to disable (dim) the menu item for this service. 
 
-publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSPublish/TitleForGoToPublishedPhoto=Show in Photo Station"
+publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSUpload/TitleForGoToPublishedPhoto=Show in Photo Station"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses the
@@ -359,9 +359,8 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/Upload/Errors/DeletePhotosFromPublishedCollection=" .. 
-					string.format("Deleted %d of %d pics and %d empty albums in %d seconds (%.1f pics/sec).\n", 
-					nProcessed, nPhotos, nDeletedAlbums, timeUsed + 0.5, picPerSec))
+	local message = LOC ("$$$/PSUpload/Bezel/DeletePhotosFromPublishedCollection=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
+					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 
 	showFinalMessage("Photo StatLr: Delete photos done", message, "info")
 	closeLogfile()
@@ -864,7 +863,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	writeLogfile(2, string.format("deletePublishedCollection: deleting %d published photos from collection %s\n", nPhotos, info.name ))
 
 	local progressScope = LrProgressScope ( {
-							title = LOC( "$$$/PSPublish/DeletingCollectionAndContents=Deleting collection ^[^1^]", info.name ),
+							title = LOC( "$$$/PSUpload/DeletingCollectionAndContents=Deleting collection ^[^1^]", info.name ),
 --								functionContext = context,
 						 }) 
 						
@@ -905,9 +904,8 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/Upload/Errors/DeletePublishedColletion=" .. 
-					string.format("Deleted %d of %d pics and %d empty albums in %d seconds (%.1f pics/sec).\n", 
-					nProcessed, nPhotos, nDeletedAlbums, timeUsed + 0.5, picPerSec))
+	local message = LOC ("$$$/PSUpload/Bezel/DeletePublishedColletion=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
+					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f",timeUsed + 0.5), string.fromat("%.1f",picPerSec))
 
 	showFinalMessage("Photo StatLr: DeletePublishedCollection done", message, "info")
 	closeLogfile()
@@ -992,7 +990,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local startTime = LrDate.currentTime()
 
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSPublish/GetCommentsFromPublishedCollection=Downloading comments for collection ^[^1^]", publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/GetCommentsFromPublishedCollection=Downloading comments for collection ^[^1^]", publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
@@ -1033,9 +1031,8 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/Upload/Errors/GetCommentsFromPublishedCollection=" .. 
-					string.format("Got %d comments for  %d of %d pics in %d seconds (%.1f pics/sec).", 
-					nComments, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+	local message = LOC ("$$$/PSUpload/Bezel/GetCommentsFromPublishedCollection=Got ^1 comments for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
+					nComments, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 
 	showFinalMessage("Photo StatLr: Get comments done", message, "info")
 	return true
@@ -1049,7 +1046,7 @@ end
 	-- @name publishServiceProvider.titleForPhotoRating
 	-- @class property
 
-publishServiceProvider.titleForPhotoRating = LOC "$$$/PSPublish/TitleForPhotoRating=Photo Rating"
+publishServiceProvider.titleForPhotoRating = LOC "$$$/PSUpload/TitleForPhotoRating=Photo Rating"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called (if supplied)
@@ -1139,7 +1136,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSPublish/GetRatingsFromPublishedCollection=Downloading ratings for collection ^[^1^]", publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/GetRatingsFromPublishedCollection=Downloading ratings for collection ^[^1^]", publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
@@ -1568,14 +1565,12 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local message
 	
 	if (nRejectedChanges > 0) or (nFailed > 0) then
-		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
-					string.format("%d added/modified, %d failed and %d rejected removed metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
-					nChanges, nFailed, nRejectedChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=^1 added/modified, ^2 failed and ^3 rejected removed metadata items for ^4 of ^5 pics in ^6 seconds (^7 pics/sec).", 
+					nChanges, nFailed, nRejectedChanges, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 		showFinalMessage("Photo StatLr: Get ratings/metadata done", message, "critical")
 	else
-		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=" .. 
-					string.format("%d added/modified metadata items for %d of %d pics in %d seconds (%.1f pics/sec).", 
-					nChanges, nProcessed, nPhotos, timeUsed + 0.5, picPerSec))
+		message = LOC ("$$$/PSUpload/Bezel/GetRatingsFromPublishedCollection=^1 added/modified metadata items for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
+					nChanges, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 		if #reloadPhotos > 0 then
 			message = message .. string.format("\nThe following photos must be reloaded (added faces):\n%s", table.concat(reloadPhotos, '\n'))
 			showFinalMessage("Photo StatLr: Get ratings/metadata done", message, "warning")
