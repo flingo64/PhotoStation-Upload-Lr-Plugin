@@ -663,7 +663,7 @@ function promptForMissingSettings(exportParams, operation)
 	local passwdView = f:view {
 		f:row {
 			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/USERNAME=Photo Station Login:",
+				title = LOC "$$$/PSUpload/ExportDialog/USERNAME=Username:",
 				alignment = 'right',
 				width = share 'labelWidth',
 			},
@@ -682,7 +682,7 @@ function promptForMissingSettings(exportParams, operation)
 
 		f:row {
 			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Photo Station Password:",
+				title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
 				alignment = 'right',
 				width = share 'labelWidth',
 			},
