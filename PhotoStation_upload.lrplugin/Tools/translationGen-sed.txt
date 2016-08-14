@@ -1,0 +1,13 @@
+# Combine up to nq lines that end with ..
+# Combined ZStrings won't work 
+#/\.\. *$/{
+#N
+#s/\n/ /
+#}
+
+# Combine concatenated strings to a single string
+s/"\s*\.\.\s*"//g 
+# Substitute \n by ^n
+s/\\n/\^n/g
+# Get the resulting LOC String
+s/^.*LOC *\(* *"(\$\$\$.*)=(.*)".*$/\"\1=\2\"/p
