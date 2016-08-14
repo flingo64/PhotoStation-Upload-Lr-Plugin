@@ -452,7 +452,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 	writeLogfile(3, string.format("uploadVideoMetadata: %d videos\n", nVideos))
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSPublish/UploadVideoMeta=Uploading Metadata for videos"),
+								{ 	title = LOC( "$$$/PSUpload/UploadVideoMeta=Uploading Metadata for videos"),
 --							 		functionContext = context 
 							 	})    
 	while #videosUploaded > 0 do
@@ -886,9 +886,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
     	timeUsed =  LrDate.currentTime() - startTime
     	picPerSec = nProcessed / timeUsed
     
-    	message = LOC ("$$$/PSUpload/PluginDialog/Conversion=" ..
-    							 string.format("Processed %d of %d photos, %d converted in %d seconds (%.1f pic/sec).", 
-    											nProcessed, nPhotos, nConverted, timeUsed + 0.5, picPerSec))
+    	message = LOC ("$$$/PSUpload/Bezel/ConvertCollection=Processed ^1 of ^2 photos, ^3 converted in ^4 seconds (^5 pics/sec).", 
+    											nProcessed, nPhotos, nConverted, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 		closeSession(exportParams)
@@ -903,9 +902,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime
 			picPerSec = nProcessed / timeUsed
-			message = LOC ("$$$/PSUpload/Upload/Errors/CheckMoved=" .. 
-							string.format("Checked %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
-											nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
+			message = LOC("$$$/PSUpload/Bezel/CheckMoved=Checked ^1 of ^2 pics in ^3 seconds (^4 pic/sec). ^5 pics moved.\n", 
+											nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec), nMoved)
 		end
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
@@ -917,9 +915,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		nPhotos, nProcessed, nMoved = movePhotos(publishedCollection, exportContext, exportParams)
 		timeUsed = 	LrDate.currentTime() - startTime
 		picPerSec = nProcessed / timeUsed
-		message = LOC ("$$$/PSUpload/Upload/Errors/Move=" .. 
-						string.format("Processed %d of %d pics in %d seconds (%.1f pic/sec). %d pics moved.\n", 
-										nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nMoved))
+		message = LOC ("$$$/PSUpload/Bezel/Move=Processed ^1 of ^2 pics in ^3 seconds (^4 pic/sec). ^5 pics moved.\n", 
+										nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec), nMoved)
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 		closeSession(exportParams)
@@ -1119,22 +1116,19 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	picPerSec = nProcessed / timeUsed
 	
 	if #failures > 0 then
-		message = LOC ("$$$/PSUpload/Upload/Errors/SomeFileFailed=" .. 
-						string.format("Processed %d of %d pics in %d seconds (%.1f secs/pic). %d failed to upload.\n", 
-						nProcessed, nPhotos, timeUsed, timePerPic, #failures))
+		message = LOC ("$$$/PSUpload/Upload/Errors/Upload=Processed ^1 of ^2 pics in ^3 seconds (^4 secs/pic). ^5 failed to upload.", 
+						nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", timePerPic), #failures)
 		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Go to Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(getLogFilename())
 		end
 	else
 		if publishMode == 'CheckExisting' then
-			message = LOC ("$$$/PSUpload/Upload/Errors/CheckExistOK=" .. 
-							 string.format("Checked %d of %d files in %d seconds (%.1f pics/sec). %d already there, %d need export.", 
-											nProcessed, nPhotos, timeUsed + 0.5, picPerSec, nNotCopied, nNeedCopy))
+			message = LOC ("$$$/PSUpload/Bezel/CheckExist=Checked ^1 of ^2 files in ^3 seconds (^4 pics/sec). ^5 already there, ^6 need export.", 
+											nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec), nNotCopied, nNeedCopy)
 		else
-			message = LOC ("$$$/PSUpload/Upload/Errors/UploadOK=" ..
-							 string.format("Uploaded %d of %d files in %d seconds (%.1f secs/pic).", 
-											nProcessed, nPhotos, timeUsed + 0.5, timePerPic))
+			message = LOC ("$$$/PSUpload/Bezel/Upload=Uploaded ^1 of ^2 files in ^3 seconds (^4 secs/pic).", 
+											nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", timePerPic))
 		end
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
