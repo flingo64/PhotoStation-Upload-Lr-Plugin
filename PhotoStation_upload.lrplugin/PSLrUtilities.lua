@@ -646,9 +646,8 @@ function PSLrUtilities.convertAllPhotos()
 	local timeUsed =  LrDate.currentTime() - startTime
 	local picPerSec = nProcessedTotal / timeUsed
 
-	local message = LOC ("$$$/PSUpload/PluginDialog/Conversion=" ..
-							 string.format("Photo StatLr: Processed %d of %d photos in %d collections, %d converted in %d seconds (%.1f pic/sec).", 
-											nProcessedTotal, nPhotosTotal, #allPublishedCollections, nConvertedTotal, timeUsed + 0.5, picPerSec))
+	local message = LOC ("$$$/PSUpload/Bezel/ConvertAll=Photo StatLr: Processed ^1 of ^2 photos in ^3 collections, ^4 converted in ^5 seconds (^6 pic/sec).", 
+											nProcessedTotal, nPhotosTotal, #allPublishedCollections, nConvertedTotal, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 	showFinalMessage("Photo StatLr: Conversion done", message, "info")
 
 end
