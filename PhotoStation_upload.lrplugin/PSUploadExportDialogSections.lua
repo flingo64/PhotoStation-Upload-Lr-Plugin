@@ -68,57 +68,57 @@ local function updateExportStatus( propertyTable )
 		-- (It only goes through once.)
 		
 		if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 			break
 		end
 
 		if propertyTable.servername == "" or propertyTable.servername == nil  then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/ServernameMissing=Enter a servername"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/ServernameMissing=Enter a servername"
 			break
 		end
 
 		if propertyTable.username == "" or propertyTable.username == nil  then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/UsernameMissing=Enter a username"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/UsernameMissing=Enter a username"
 			break
 		end
 
 		if propertyTable.copyTree and not PSDialogs.validateDirectory(nil, propertyTable.srcRoot) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterSubPath=Enter a source path"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
 			break
 		end
 				
 		if propertyTable.usePersonalPS and (propertyTable.personalPSOwner == "" or propertyTable.personalPSOwner == nil ) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterPersPSUser=Enter the owner of the Personal Photo Station to upload to"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Photo Station to upload to"
 			break
 		end
 
 		-- Check file format: PSD not supported by Photo Station, DNG only supported w/ embedded full-size jpg preview
 		if (propertyTable.LR_format == 'PSD') or  (propertyTable.LR_format == 'DNG' and ifnil(propertyTable.LR_DNG_previewSize, '') ~= 'large') then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/FileFormatNoSupp=File format not supported! Select: [JPEG], [TIFF], [DNG w/ full-size JPEG preview] or [Original]."
+			message = LOC "$$$/PSUpload/Dialogs/Messages/FileFormatNoSupp=File format not supported! Select: [JPEG], [TIFF], [DNG w/ full-size JPEG preview] or [Original]."
 			break
 		end
 
 		-- renaming: either Lr or plugin renaming can be active
 		if not propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn and propertyTable.renameDstFile then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenameOption=Use either Lr File Renaming or Photo StatLr File Renaming, not both!"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenameOption=Use either Lr File Renaming or Photo StatLr File Renaming, not both!"
 			break
 		end
 
 		-- renaming: renaming dstFilename must contain at least one metadata placeholder
 		if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
 			break
 		end
 
 		-- Publish Servic Provider start
 
 		if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
 			break
 		end
 
 		if propertyTable.useSecondAddress and ifnil(propertyTable.servername2, "") == "" then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/Servername2Missing=Enter a secondary servername"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/Servername2Missing=Enter a secondary servername"
 			break
 		end
 
@@ -137,7 +137,7 @@ local function updateExportStatus( propertyTable )
 		end
 				
 		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
+			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break
 		end
 		-- Exif translation end

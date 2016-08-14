@@ -409,13 +409,13 @@ local function updateCollectionStatus( collectionSettings )
 		-- (It only goes through once.)
 		
 		if collectionSettings.copyTree and not PSDialogs.validateDirectory(nil, collectionSettings.srcRoot) then
-			message = LOC "$$$/PSUpload/CollectionDialog/Messages/EnterSubPath=Enter a source path"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
 			break
 		end
 				
 		-- renaming: renaming dstFilename must contain at least one metadata placeholder
 		if collectionSettings.renameDstFile  and not PSDialogs.validateMetadataPlaceholder(nil, collectionSettings.dstFilename) then 
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
 			break
 		end
 
@@ -431,7 +431,7 @@ local function updateCollectionStatus( collectionSettings )
 		end
 		
 		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( nil, prefs.exiftoolprog ) then
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
+			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
 			break
 		end
 
@@ -444,7 +444,7 @@ local function updateCollectionStatus( collectionSettings )
 
 		-- exclusive or: rating download or rating tag download
 		if collectionSettings.ratingDownload and collectionSettings.PS2LrRating then 
-			message = LOC "$$$/PSUpload/ExportDialog/Messages/ratingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
+			message = LOC "$$$/PSUpload/Dialogs/Messages/ratingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
 			break
 		end
 		
@@ -570,14 +570,18 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 
             PSDialogs.publishModeView(f, collectionSettings),
 
+   			f:spacer { fill_horizontal = 1,	},
+			
     		f:row {
-    			alignment = 'left',
+    			alignment = 'center',
     
     			f:static_text {
-    				title = bind 'message',
-    				text_color = LrColor("red"),
+    				title 			= bind 'message',
+    				text_color 		= LrColor("red"),
+   					font			= '<system/bold>',
+   					alignment		= 'center', 
     				fill_horizontal = 1,
-    				visible = bind 'hasError'
+    				visible 		= bind 'hasError'
     			},
     		}, --row
 		}, --column
@@ -609,21 +613,10 @@ end
 
 -- updatCollectionSetStatus: do some sanity checks on Published Collection Set dialog settings
 local function updateCollectionSetStatus( collectionSetSettings )
-	
+	return true
+--[[	
 	local message = nil
 
---[[
-	repeat
-		-- Use a repeat loop to allow easy way to "break" out.
-		-- (It only goes through once.)
-		
-		if collectionSetSettings.baseDir .... then
-			message = LOC "$$$/PSUpload/CollectionDialog/Messages/EnterSubPath=Enter a source path"
-			break
-		end
-				
-	until true
-]]	
 	if message then
 		collectionSetSettings.hasError = true
 		collectionSetSettings.message = message
@@ -633,7 +626,7 @@ local function updateCollectionSetStatus( collectionSetSettings )
 		collectionSetSettings.message = nil
 		collectionSetSettings.LR_canSaveCollection = true
 	end
-	
+]]	
 end
 
 --------------------------------------------------------------------------------

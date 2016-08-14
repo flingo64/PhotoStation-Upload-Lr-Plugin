@@ -588,7 +588,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			},
         
         			f:popup_menu {
-        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nUse higher value (>= 40s), if you experience problems due to disks in standby mode",
+        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nUse higher value (> 40s), if you experience problems due to disks in standby mode",
         				items 			= timeoutItems,
         				alignment 		= 'left',
         				fill_horizontal = 1,
@@ -633,7 +633,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			},
         
         			f:popup_menu {
-        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nUse higher value (>= 40s), if you experience problems due to disks in standby mode",
+        				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nUse higher value (> 40s), if you experience problems due to disks in standby mode",
         				items 			= timeoutItems,
         				alignment 		= 'left',
         				fill_horizontal = 1,
@@ -1153,15 +1153,15 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/TitleDownload=Title",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TitleDownloadTT=Download photo title tag from Photo Station",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/TitleDownload=Title",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TitleDownloadTT=Download photo title tag from Photo Station",
 				fill_horizontal = 1,
 				value 			= bind 'titleDownload',
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/CaptionDownload=Description",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/CaptionDownloadTT=Download photo description (caption) from Photo Station",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/CaptionDownload=Description",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CaptionDownloadTT=Download photo description (caption) from Photo Station",
 				fill_horizontal = 1,
 				value 			= bind 'captionDownload',
 			},
@@ -1169,21 +1169,21 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 			f:row {
     			fill_horizontal = 1,
     			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationDownload=GPS (red)",
-    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LocationDownloadTT=Download GPS info of the photo (red pin) from Photo Station",
+    				title 			= LOC "$$$/PSUpload/CollectionSettings/LocationDownload=GPS (red)",
+    				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationDownloadTT=Download GPS info of the photo (red pin) from Photo Station",
     				value 			= bind 'locationDownload',
     			},
     			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationTagDownload=GPS (blue)",
-    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LocationTagDownloadTT=Download GPS info of the photo's location tag (blue pin) from Photo Station.\nRed pin has preference over blue pin. Download of blue pin GPS takes significantly more time!",
+    				title 			= LOC "$$$/PSUpload/CollectionSettings/LocationTagDownload=GPS (blue)",
+    				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationTagDownloadTT=Download GPS info of the photo's location tag (blue pin) from Photo Station.\nRed pin has preference over blue pin. Download of blue pin GPS takes significantly more time!",
     				value 			= bind 'locationTagDownload',
     				enabled			= bind 'locationDownload',
     			},
     		},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/RatingDownload=Rating",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/RatingDownloadTT=Download rating from Photo Station\n(Requires Photo Station 6.5 or later)",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/RatingDownload=Rating",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/RatingDownloadTT=Download rating from Photo Station\n(Requires Photo Station 6.5 or later)",
 				fill_horizontal = 1,
 				value 			= bind 'ratingDownload',
 				enabled			= iif(ifnil(propertyTable.psVersion, 65) >= 65, true, false),
@@ -1193,31 +1193,31 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/TagsDownload=Tags/Keywords",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TagsDownloadTT=Download tags from Photo Station to Lr keywords",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/TagsDownload=Tags/Keywords",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TagsDownloadTT=Download tags from Photo Station to Lr keywords",
 				fill_horizontal = 1,
 				value 			= bind 'tagsDownload',
 			},
 
 			f:checkbox {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/ExportDialog/PS2LrFaces=Faces",
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PS2LrFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
+				title = LOC "$$$/PSUpload/CollectionSettings/PS2LrFaces=Faces",
+				tooltip = LOC "$$$/PSUpload/CollectionSettings/PS2LrFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
 				value = bind 'PS2LrFaces',
 				enabled = bind 'exifXlatFaceRegions',
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrLabel=Color Label Tag",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/PS2LrLabel=Color Label Tag",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PS2LrLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrLabel',
 				enabled 		= bind 'exifXlatLabel',
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/PS2LrRating=Rating Tag",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/PS2LrRatingTT=Translate Photo Station '***' general tag to Lr rating\n(Useful for Photo Station version < 6.5)",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/PS2LrRating=Rating Tag",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PS2LrRatingTT=Translate Photo Station '***' general tag to Lr rating\n(Useful for Photo Station version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrRating',
 				enabled 		= bind 'exifXlatRating',
@@ -1228,8 +1228,8 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/CommentsDownload=Comments",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/commentsDownloadTT=Download photo comments from Photo Station to Lr Comments panel",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Comments",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/commentsDownloadTT=Download photo comments from Photo Station to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'commentsDownload',
 			},
@@ -1327,14 +1327,14 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 	return 
 		f:row {
 			f:static_text {
-				title 			= LOC "$$$/PSUpload/ExportDialog/LOGLEVEL=Loglevel:",
+				title 			= LOC "$$$/PSUpload/DialogsFooter/LOGLEVEL=Loglevel:",
 				alignment 		= 'right',
 				width			= share 'labelWidth'
 			},
 
 			f:popup_menu {
-				title 			= LOC "$$$/PSUpload/ExportDialog/LOGLEVEL=Loglevel:",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LOGLEVELTT=The level of log details",
+				title 			= LOC "$$$/PSUpload/DialogsFooter/LOGLEVEL=Loglevel:",
+				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LOGLEVELTT=The level of log details",
 				items 			= loglevelItems,		
 				fill_horizontal = 0, 
 				value 			= bind 'logLevel',
@@ -1343,8 +1343,8 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 			f:spacer { fill_horizontal = 1,	},
 			
 			f:push_button {
-				title 			= LOC "$$$/PSUpload/ExportDialog/Logfile=Go to Logfile",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/LogfileTT=Open Photo StatLr Logfile in Explorer/Finder.",
+				title 			= LOC "$$$/PSUpload/DialogsFooter/Logfile=Go to Logfile",
+				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LogfileTT=Open Photo StatLr Logfile in Explorer/Finder.",
 				alignment 		= 'right',
 				fill_horizontal = 1,
 				action 			= function()

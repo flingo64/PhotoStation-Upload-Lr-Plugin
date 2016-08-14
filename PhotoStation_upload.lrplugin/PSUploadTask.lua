@@ -595,8 +595,8 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
 	-- Set progress title.
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
-							and LOC( "$$$/PSUpload/Upload/Progress=Checking ^1 photos", nPhotos )
-							or LOC "$$$/PSUpload/Upload/Progress/One=Checking one photo",
+							and LOC( "$$$/PSUpload/Progress/CheckMoved=Checking ^1 photos", nPhotos )
+							or LOC "$$$/PSUpload/Progress/CheckMoved/One=Checking one photo",
 						renderPortion = 1 / nPhotos,
 					}
 					
@@ -670,8 +670,8 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 	-- Set progress title.
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
-							and LOC( "$$$/PSUpload/Upload/Progress=Checking ^1 photos", nPhotos )
-							or LOC "$$$/PSUpload/Upload/Progress/One=Checking one photo",
+							and LOC( "$$$/PSUpload/Progress/Move=Checking ^1 photos", nPhotos )
+							or LOC "$$$/PSUpload/Progress/Move/One=Checking one photo",
 						renderPortion = 1 / nPhotos,
 					}
 					
@@ -928,8 +928,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
-							   and LOC( "$$$/PSUpload/Upload/Progress=Uploading ^1 photos to Photo Station", nPhotos )
-							   or LOC "$$$/PSUpload/Upload/Progress/One=Uploading one photo to Photo Station",
+							   and LOC( "$$$/PSUpload/Progress/Upload=Uploading ^1 photos to Photo Station", nPhotos )
+							   or LOC "$$$/PSUpload/Progress/Upload/One=Uploading one photo to Photo Station",
 					}
 
 	writeLogfile(2, "--------------------------------------------------------------------\n")

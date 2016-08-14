@@ -59,12 +59,12 @@ local function updatePluginStatus( propertyTable )
 		-- (It only goes through once.)
 		
 		if propertyTable.PSUploaderPath ~= '' and not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 			break
 		end
 
 		if propertyTable.exiftoolprog ~= '' and not PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
-			message = LOC "$$$/PSUpload/PluginDialog/Messages/ExifToolPathMissing=Wrong exiftool path." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Wrong exiftool path." 
 			break
 		end
 
