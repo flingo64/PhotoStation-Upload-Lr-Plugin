@@ -14,7 +14,7 @@ if [ $? -ne 0 ] ; then
 	exit 1
 fi
 
-for lang in de ko ; do
+for lang in de es fr it ja ko nl pt sv zh_cn zh_tw ; do
 	# save old target translation file
 	cp TranslatedStrings_${lang}.txt TranslatedStrings_${lang}.txt.bak
 	#get list of ZString paths in target translation, remove untranslated strings
