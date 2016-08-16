@@ -192,7 +192,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
     
 				f:row {
 					f:static_text {
-    					title 			= LOC "$$$/PSUpload/Dialogs/Header/PaidNothing=S: We got our money's worth tonight.\nW: But we paid nothing.\nS: That's what we got!\n",
+    					title 			= LOC "$$$/PSUpload/Dialogs/Header/Slogan=S: We got our money's worth tonight.\nW: But we paid nothing.\nS: That's what we got!\n",
     					font			= '<system/bold>', 
 					},
 				},
@@ -279,7 +279,7 @@ function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection, d
     				fill_hoizontal = 0.6,
     				f:row {
             			f:static_text {
-            				title 		= LOC "$$$/PSUpload/ExportDialog/CollectionSettings1=Why would he want to remember this?\n\n",
+            				title 		= LOC "$$$/PSUpload/CollectionSettings/Header/Slogan=Why would he want to remember this?\n\n",
             				alignment 	= 'center',
         					font		= '<system/bold>', 
             			},
@@ -315,7 +315,7 @@ function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
     				fill_hoizontal = 0.6,
     				f:row {
             			f:static_text {
-            				title 		= LOC "$$$/PSUpload/ExportDialog/EnterMissing1=If you had half a mind, you wouldn't be here!\n\n",
+            				title 		= LOC "$$$/PSUpload/MissingParams/Header/Slogan=If you had half a mind, you wouldn't be here!\n\n",
             				alignment 	= 'left',
         					font		= '<system/bold>', 
             			},
@@ -323,7 +323,7 @@ function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
             		
     				f:row {
             			f:static_text {
-            				title = LOC "$$$/PSUpload/ExportDialog/EnterMissing2=Please enter missing parameters for:\n\n",
+            				title = LOC "$$$/PSUpload/MissingParams/Header/EnterMissing=Please enter missing parameters for:\n\n",
             				alignment = 'left',
             			},
     				},
@@ -350,13 +350,13 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 			
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOADDescription=Enter the path where 'Synology Photo Station Uploader' is installed.\nRequired, if you want to generate thumbs locally or upload videos.\n", 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploaderDescription=Enter the path where 'Synology Photo Station Uploader' is installed.\nRequired, if you want to generate thumbs locally or upload videos.\n", 
     			},
     		},
     
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUPLOAD=Synology PS Uploader:",
+    				title 			= "Synology PS Uploader:",
     				alignment 		= 'right',
     				width 			= share 'labelWidth',
     			},
@@ -372,8 +372,8 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     
     		f:row {   			
      			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadDef=Default",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadDefTT=Set to Default.",
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -382,8 +382,8 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     			},   			
 
     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadSearchTT=Search Synology Photo Station Uploader in Explorer/Finder.",
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -392,8 +392,8 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     			},   			
 
     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploadWeb=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/PSUploadWebTT=Search Synology Photo Station Uploader in Web.",
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -414,7 +414,7 @@ function PSDialogs.convertPhotosView(f, propertyTable)
 
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotos=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n", 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n", 
     				alignment 		= 'center',
 					fill_horizontal = 1,
     			},
@@ -458,7 +458,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprog=exiftool:",
+    				title 			= "exiftool:",
     				alignment 		= 'right',
     				width 			= share 'labelWidth',
     			},
@@ -474,8 +474,8 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     
     		f:row {
     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogDef=Default",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogDefTT=Set to default.",
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -484,8 +484,8 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			},   			
 
     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogSearchTT=Search exiftool in Explorer/Finder.",
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchSearchTT=Search program in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -494,8 +494,8 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			},   			
 
     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/exiftoolprogWeb=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/exiftoolprogWebTT=Search exiftool in the Web.",
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -540,13 +540,13 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         
         	f:row {
 				f:static_text {
-					title 			= LOC "$$$/PSUpload/ExportDialog/PSVERSION=Photo Station Version:",
+					title 			= LOC "$$$/PSUpload/ExportDialog/PSVersion=Photo Station Version:",
 					alignment 		= 'right',
         			width 			= share 'labelWidth',
 				},
 				
         		f:popup_menu {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/PSVERSIONLIST=Version:",
+        			title 			= LOC "$$$/PSUpload/ExportDialog/PSVersionList=Version:",
         			items 			= versionItems,
         			value 			= bind 'psVersion',
         		},
@@ -555,7 +555,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 
         	f:row {
         		f:radio_button {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/SERVERNAME=Server Address:",
+        			title 			= LOC "$$$/PSUpload/ExportDialog/Servername=Server Address:",
         			alignment 		= 'right',
         			width 			= share 'labelWidth',
         			value 			= bind 'useSecondAddress',
@@ -563,14 +563,14 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         		},
         
         		f:popup_menu {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/PROTOCOL=Protocol:",
+        			title 			= LOC "$$$/PSUpload/ExportDialog/Protocol=Protocol:",
         			items 			= protocolItems,
         			value 			= bind 'proto',
         			enabled 		= negativeOfKey 'useSecondAddress',
         		},
         
         		f:edit_field {
-        			tooltip 		= LOC "$$$/PSUpload/ExportDialog/SERVERNAMETT=Enter the IP address or hostname of the Photo Station.\nNon-standard port may be appended as :port",
+        			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServernameTT=Enter the IP address or hostname of the Photo Station.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
         			immediate 		= true,
         			fill_horizontal = 1,
@@ -600,7 +600,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         	
         	f:row {
         		f:radio_button {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/SERVERNAME2=2nd Server Address:",
+        			title 			= LOC "$$$/PSUpload/ExportDialog/Servername2=2nd Server Address:",
         			alignment 		= 'right',
         			width 			= share 'labelWidth',
         			value 			= bind 'useSecondAddress',
@@ -608,14 +608,14 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         		},
         
         		f:popup_menu {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/PROTOCOL=Protocol:",
+        			title 			= LOC "$$$/PSUpload/ExportDialog/Protocol=Protocol:",
         			items			= protocolItems,
         			value 			= bind 'proto2',
         			enabled 		= bind 'useSecondAddress',
         		},
         
         		f:edit_field {
-        			tooltip 		= LOC "$$$/PSUpload/ExportDialog/SERVERNAME2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
+        			tooltip 		= LOC "$$$/PSUpload/ExportDialog/Servername2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
         			immediate 		= true,
         			fill_horizontal = 1,
@@ -674,13 +674,13 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 
 			f:row {
 				f:static_text {
-					title 			= LOC "$$$/PSUpload/ExportDialog/USERNAME=Username:",
+					title 			= LOC "$$$/PSUpload/ExportDialog/Username=Username:",
 					alignment 		= 'right',
 					width 			= share 'labelWidth'
 				},
 	
 				f:edit_field {
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/USERNAMETT=Enter the username for Photo Station access.",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/UsernameTT=Enter the username for Photo Station access.",
 					truncation 		= 'middle',
 					immediate 		= true,
 					fill_horizontal = 1,
@@ -688,12 +688,12 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				},
 
 				f:static_text {
-					title 			= LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
+					title 			= LOC "$$$/PSUpload/ExportDialog/Password=Password:",
 					alignment 		= 'right',
 				},
 	
 				f:password_field {
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/PASSWORDOPTTT=Enter the password for Photo Station access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/PasswordOptTT=Enter the password for Photo Station access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
 					truncation 		= 'middle',
 					immediate 		= true,
 					fill_horizontal = 1,
@@ -970,8 +970,8 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 			f:row {
 
 				f:radio_button {
-					title 			= LOC "$$$/PSUpload/ExportDialog/FlatCp=Flat Copy to Target",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/FlatCpTT=All photos/videos will be copied to the Target Album",
+					title 			= LOC "$$$/PSUpload/ExportDialog/FlatCopy=Flat Copy to Target",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/FlatCopyTT=All photos/videos will be copied to the Target Album",
 					alignment 		= 'right',
 					width 			= share 'labelWidth',
 					value 			= bind 'copyTree',

@@ -542,7 +542,7 @@ function PSLrUtilities.convertCollection(publishedCollection)
 	-- Set progress title.
 	local progressScope = LrProgressScope( 
 								{ 	
-								 	title = LOC("$$$/PSUpload/PluginDialog/ConvColl=Converting collection '^1'", publishedCollection:getName()),
+								 	title = LOC("$$$/PSUpload/Progress/ConvColl=Converting collection '^1'", publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 					
@@ -624,7 +624,7 @@ function PSLrUtilities.convertAllPhotos()
 
 	-- now convert them
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC("$$$/PSUpload/PluginDialog/ConvAll=Photo StatLr: Converting all collections"),
+								{ 	title = LOC("$$$/PSUpload/Progress/ConvertAll=Photo StatLr: Converting all collections"),
 --							 		functionContext = context 
 							 	})    
 
@@ -646,7 +646,7 @@ function PSLrUtilities.convertAllPhotos()
 	local timeUsed =  LrDate.currentTime() - startTime
 	local picPerSec = nProcessedTotal / timeUsed
 
-	local message = LOC ("$$$/PSUpload/Bezel/ConvertAll=Photo StatLr: Processed ^1 of ^2 photos in ^3 collections, ^4 converted in ^5 seconds (^6 pic/sec).", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/ConvertAll=Photo StatLr: Processed ^1 of ^2 photos in ^3 collections, ^4 converted in ^5 seconds (^6 pic/sec).", 
 											nProcessedTotal, nPhotosTotal, #allPublishedCollections, nConvertedTotal, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 	showFinalMessage("Photo StatLr: Conversion done", message, "info")
 

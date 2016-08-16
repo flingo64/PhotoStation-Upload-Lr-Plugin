@@ -134,10 +134,10 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 		synops = "You plan to like this show?"
 		updateAvail = false
 	elseif prefs.updateAvailable == '' or prefs.updateAvailable == pluginVersion then
-		synops = LOC "$$$/PSUpload/PluginDialog/NOUPDATE=Nothing, just thought I'd mention it: Plugin is up-to-date"
+		synops = LOC "$$$/PSUpload/PluginDialog/Header/NoUpdateAvail=Nothing, just thought I'd mention it: Plugin is up-to-date"
 		updateAvail = false
 	else
-		synops = LOC("$$$/PSUpload/PluginDialog/UPDATE=This is a very moving moment: Version ^1 is available!", prefs.updateAvailable)
+		synops = LOC("$$$/PSUpload/PluginDialog/Header/UpdateAvail=This is a very moving moment: Version ^1 is available!", prefs.updateAvailable)
 		updateAvail = true
 	end 
 	
@@ -165,7 +165,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 
 			f:push_button {
 				title = LOC "$$$/PSUpload/PluginDialog/GetUpdate=Go to Update URL",
-				tooltip = LOC "$$$/PSUpload/PluginDialog/Logfile=Open Update URL in browser",
+				tooltip = LOC "$$$/PSUpload/PluginDialog/GetUpdateTT=Open Update URL in browser",
 				alignment = 'right',
 				fill_horizontal = 0.4,
 				action = function()
@@ -177,7 +177,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 	local result = {
 	
 		{
-			title = LOC "$$$/PSUpload/PluginDialog/PsUploadInfo=Photo StatLr",
+			title = "Photo StatLr",
 			
 			synopsis = synops,
 			f:row {

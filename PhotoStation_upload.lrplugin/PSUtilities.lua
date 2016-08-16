@@ -663,14 +663,14 @@ function promptForMissingSettings(exportParams, operation)
 	local passwdView = f:view {
 		f:row {
 			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/USERNAME=Username:",
+				title = LOC "$$$/PSUpload/ExportDialog/Username=Username:",
 				alignment = 'right',
 				width = share 'labelWidth',
 			},
 
 			f:edit_field {
 				value = bind 'username',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/USERNAMETT=Enter the username for Photo Station access.",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/UsernameTT=Enter the username for Photo Station access.",
 				truncation = 'middle',
 				immediate = true,
 				width_in_chars = 16,
@@ -682,14 +682,14 @@ function promptForMissingSettings(exportParams, operation)
 
 		f:row {
 			f:static_text {
-				title = LOC "$$$/PSUpload/ExportDialog/PASSWORD=Password:",
+				title = LOC "$$$/PSUpload/ExportDialog/Password=Password:",
 				alignment = 'right',
 				width = share 'labelWidth',
 			},
 
 			f:password_field {
 				value = bind 'password',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PASSWORDTT=Enter the password for Photo Station access.",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/PasswordTT=Enter the password for Photo Station access.",
 				truncation = 'middle',
 				immediate = true,
 				width = share 'labelWidth',

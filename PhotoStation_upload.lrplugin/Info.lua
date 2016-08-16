@@ -52,7 +52,7 @@ return {
 
 	LrToolkitIdentifier = plugin_TkId,
 
-	LrPluginName = LOC "$$$/PSUpload/PluginName=Photo StatLr",
+	LrPluginName = "Photo StatLr",
 	
 	LrPluginInfoUrl = "http://messmer-online.de/index.php/software/11-photo-statlr",
 	

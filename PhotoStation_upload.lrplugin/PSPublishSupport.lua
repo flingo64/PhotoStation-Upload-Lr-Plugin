@@ -173,7 +173,7 @@ end
 --- When set to the string "disable", the "Go to Published Collection" context-menu item
  -- is disabled (dimmed) for this publish service.
 
-publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSUpload/TitleForGoToPublishedCollection=Show in Photo Station"
+publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSUpload/TitleForGoToPublishedCollection=Show Album in Photo Station"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses
@@ -212,7 +212,7 @@ end
  -- "Go to Published Photo" context-menu item, allowing you to use something more appropriate to
  -- your service. Set to the special value "disable" to disable (dim) the menu item for this service. 
 
-publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSUpload/TitleForGoToPublishedPhoto=Show in Photo Station"
+publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSUpload/TitleForGoToPublishedPhoto=Show Photo in Photo Station"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses the
@@ -359,7 +359,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/Bezel/DeletePhotosFromPublishedCollection=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePhotosFromPublishedCollection=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
 					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 
 	showFinalMessage("Photo StatLr: Delete photos done", message, "info")
@@ -415,7 +415,7 @@ local function updateCollectionStatus( collectionSettings )
 				
 		-- renaming: renaming dstFilename must contain at least one metadata placeholder
 		if collectionSettings.renameDstFile  and not PSDialogs.validateMetadataPlaceholder(nil, collectionSettings.dstFilename) then 
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
 			break
 		end
 
@@ -444,7 +444,7 @@ local function updateCollectionStatus( collectionSettings )
 
 		-- exclusive or: rating download or rating tag download
 		if collectionSettings.ratingDownload and collectionSettings.PS2LrRating then 
-			message = LOC "$$$/PSUpload/Dialogs/Messages/ratingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
 			break
 		end
 		
@@ -856,7 +856,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	writeLogfile(2, string.format("deletePublishedCollection: deleting %d published photos from collection %s\n", nPhotos, info.name ))
 
 	local progressScope = LrProgressScope ( {
-							title = LOC( "$$$/PSUpload/DeletingCollectionAndContents=Deleting collection ^[^1^]", info.name ),
+							title = LOC( "$$$/PSUpload/Progress/DeletingCollectionAndContents=Deleting collection ^[^1^]", info.name ),
 --								functionContext = context,
 						 }) 
 						
@@ -897,7 +897,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/Bezel/DeletePublishedColletion=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePublishedColletion=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
 					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f",timeUsed + 0.5), string.fromat("%.1f",picPerSec))
 
 	showFinalMessage("Photo StatLr: DeletePublishedCollection done", message, "info")
@@ -983,7 +983,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local startTime = LrDate.currentTime()
 
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/GetCommentsFromPublishedCollection=Downloading comments for collection ^[^1^]", publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/Progress/GetCommentsFromPublishedCollection=Downloading comments for collection ^[^1^]", publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
@@ -1024,7 +1024,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/Bezel/GetCommentsFromPublishedCollection=Got ^1 comments for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/GetCommentsFromPublishedCollection=Got ^1 comments for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
 					nComments, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 
 	showFinalMessage("Photo StatLr: Get comments done", message, "info")
@@ -1129,7 +1129,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/GetRatingsFromPublishedCollection=Downloading ratings for collection ^[^1^]", publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/Progress/GetRatingsFromPublishedCollection=Downloading ratings for collection ^[^1^]", publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
@@ -1558,11 +1558,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local message
 	
 	if (nRejectedChanges > 0) or (nFailed > 0) then
-		message = LOC ("$$$/PSUpload/Upload/Errors/GetRatingsFromPublishedCollection=^1 added/modified, ^2 failed and ^3 rejected removed metadata items for ^4 of ^5 pics in ^6 seconds (^7 pics/sec).", 
+		message = LOC ("$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection/Error=^1 added/modified, ^2 failed and ^3 rejected removed metadata items for ^4 of ^5 pics in ^6 seconds (^7 pics/sec).", 
 					nChanges, nFailed, nRejectedChanges, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 		showFinalMessage("Photo StatLr: Get ratings/metadata done", message, "critical")
 	else
-		message = LOC ("$$$/PSUpload/Bezel/GetRatingsFromPublishedCollection=^1 added/modified metadata items for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
+		message = LOC ("$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection=^1 added/modified metadata items for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
 					nChanges, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 		if #reloadPhotos > 0 then
 			message = message .. string.format("\nThe following photos must be reloaded (added faces):\n%s", table.concat(reloadPhotos, '\n'))
