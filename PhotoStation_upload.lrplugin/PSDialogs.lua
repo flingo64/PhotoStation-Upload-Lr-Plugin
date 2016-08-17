@@ -218,7 +218,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				
 				f:row {
 					f:static_text {
-        				title 			= LOC "$$$/PSUpload/Dialogs/Header/Double=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
+        				title 			= LOC "$$$/PSUpload/Dialogs/Header/Donate=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
         				alignment		= 'center',
 		    			fill_horizontal = 1,
 					},
@@ -226,8 +226,8 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				
 				f:row {
         			f:push_button {
-        				title 			= LOC "$$$/PSUpload/Dialogs/Header/Donate=Double or nothing, next week's show?",
-        				tooltip 		= LOC "$$$/PSUpload/Dialogs/Header/DonateTT=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
+        				title 			= LOC "$$$/PSUpload/Dialogs/Header/Double=Double or nothing, next week's show?",
+        				tooltip 		= LOC "$$$/PSUpload/Dialogs/Header/Donate=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
         				alignment 		= 'center',
     					font			= '<system/bold>', 
         				fill_horizontal = 1,
@@ -733,15 +733,15 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 
 			f:row {
 				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/thumbGenerate=Do thumbs:",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/thumbGenerateTT=Generate thumbs:\nUnselect only, if you want the diskstation to generate the thumbs\nor if you export to an unindexed folder and you don't need thumbs.\nThis will speed up photo uploads.",
+					title 			= LOC "$$$/PSUpload/ExportDialog/GenerateThumbs=Do thumbs:",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/GenerateThumbsTT=Generate thumbs:\nUnselect only, if you want the diskstation to generate the thumbs\nor if you export to an unindexed folder and you don't need thumbs.\nThis will speed up photo uploads.",
 					fill_horizontal = 1,
 					value 			= bind 'thumbGenerate',
 				},
 
 				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/isPS6=For PS 6",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/isPS6TT=Photo Station 6: Do not generate and upload Thumb_L",
+					title 			= LOC "$$$/PSUpload/ExportDialog/ForPS6=For PS 6",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/ForPS6TT=Photo Station 6: Do not generate and upload Thumb_L",
 					fill_horizontal = 1,
 					value 			= bind 'isPS6',
 					visible 		= bind 'thumbGenerate',
@@ -896,8 +896,8 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 				},					
 				
 				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/hardRotate=Use hard-rotation",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/hardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
+					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Use hard-rotation",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
 					alignment 		= 'left',
 					fill_horizontal = 1,
 					value 			= bind 'hardRotate',
@@ -943,7 +943,7 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/createDstRoot=Create Album, if needed",
+				title 			= LOC "$$$/PSUpload/ExportDialog/CreateDstRoot=Create Album, if needed",
 				alignment 		= 'left',
 				fill_horizontal = 0.1,
 				value 			= bind 'createDstRoot',
@@ -1106,22 +1106,22 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegions=Faces",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatFaceRegionsTT=Translate Lr face regions to Photo Station person tags\n(Useful for Photo Station version < 6.5)",
+				title 			= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegions=Faces",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Station person tags\n(Useful for Photo Station version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatFaceRegions',
 			},
 		
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatLabel=Color Label Tag",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
+				title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLabel=Color Label Tag",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatLabel',
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/exifXlatRating=Rating Tag",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/exifXlatRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag\n(Useful for Photo Station version < 6.5)",
+				title 			= LOC "$$$/PSUpload/ExportDialog/TranslateRating=Rating Tag",
+				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag\n(Useful for Photo Station version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'exifXlatRating',
 			},
@@ -1201,23 +1201,23 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/CollectionSettings/PS2LrFaces=Faces",
-				tooltip = LOC "$$$/PSUpload/CollectionSettings/PS2LrFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
+				title = LOC "$$$/PSUpload/CollectionSettings/PSTranslateFaces=Faces",
+				tooltip = LOC "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
 				value = bind 'PS2LrFaces',
 				enabled = bind 'exifXlatFaceRegions',
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/CollectionSettings/PS2LrLabel=Color Label Tag",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PS2LrLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/PSTranslateLabel=Color Label Tag",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrLabel',
 				enabled 		= bind 'exifXlatLabel',
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/CollectionSettings/PS2LrRating=Rating Tag",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PS2LrRatingTT=Translate Photo Station '***' general tag to Lr rating\n(Useful for Photo Station version < 6.5)",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/PSTranslateRating=Rating Tag",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateRatingTT=Translate Photo Station '***' general tag to Lr rating\n(Useful for Photo Station version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrRating',
 				enabled 		= bind 'exifXlatRating',
@@ -1229,7 +1229,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		f:row {
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Comments",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/commentsDownloadTT=Download photo comments from Photo Station to Lr Comments panel",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download photo comments from Photo Station to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'commentsDownload',
 			},
@@ -1327,14 +1327,14 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 	return 
 		f:row {
 			f:static_text {
-				title 			= LOC "$$$/PSUpload/DialogsFooter/LOGLEVEL=Loglevel:",
+				title 			= LOC "$$$/PSUpload/DialogsFooter/Loglevel=Loglevel:",
 				alignment 		= 'right',
 				width			= share 'labelWidth'
 			},
 
 			f:popup_menu {
-				title 			= LOC "$$$/PSUpload/DialogsFooter/LOGLEVEL=Loglevel:",
-				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LOGLEVELTT=The level of log details",
+				title 			= LOC "$$$/PSUpload/DialogsFooter/Loglevel=Loglevel:",
+				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LoglevelTT=The level of log details",
 				items 			= loglevelItems,		
 				fill_horizontal = 0, 
 				value 			= bind 'logLevel',

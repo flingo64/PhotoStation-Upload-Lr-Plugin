@@ -202,7 +202,7 @@ end
 function PSUploadExportDialogSections.sectionsForTopOfDialog( f, propertyTable )
 	return 	{
 		{
-			title = LOC "$$$/PSUpload/ExportDialog/PsHeader=Photo StatLr",
+			title = "Photo StatLr",
     		synopsis = "Yeah, but they can't put a moon on a man!",
     		
     		-- ================== Photo StatLr header ==================================================================
@@ -230,7 +230,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 	local result = {
 	
 		{
-			title = LOC "$$$/PSUpload/ExportDialog/PsSettings=Photo Station",
+			title = "Photo Station",
 			
 			synopsis = bind { key = 'psUrl', object = propertyTable },
 

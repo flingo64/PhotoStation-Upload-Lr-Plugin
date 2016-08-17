@@ -452,7 +452,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 	writeLogfile(3, string.format("uploadVideoMetadata: %d videos\n", nVideos))
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta=Uploading Metadata for videos"),
+								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta=Uploading metadata for ^1 videos", nVideos),
 --							 		functionContext = context 
 							 	})    
 	while #videosUploaded > 0 do
@@ -670,8 +670,8 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 	-- Set progress title.
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
-							and LOC( "$$$/PSUpload/Progress/Move=Checking ^1 photos", nPhotos )
-							or LOC "$$$/PSUpload/Progress/Move/One=Checking one photo",
+							and LOC( "$$$/PSUpload/Progress/Move=Moving ^1 photos", nPhotos )
+							or LOC "$$$/PSUpload/Progress/Move/One=Moving one photo",
 						renderPortion = 1 / nPhotos,
 					}
 					

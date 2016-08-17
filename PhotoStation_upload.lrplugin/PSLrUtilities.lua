@@ -542,7 +542,7 @@ function PSLrUtilities.convertCollection(publishedCollection)
 	-- Set progress title.
 	local progressScope = LrProgressScope( 
 								{ 	
-								 	title = LOC("$$$/PSUpload/Progress/ConvColl=Converting collection '^1'", publishedCollection:getName()),
+								 	title = LOC("$$$/PSUpload/Progress/ConvertCollection=Converting ^1 photos in collection '^2'", nPhotos, publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 					
@@ -624,7 +624,7 @@ function PSLrUtilities.convertAllPhotos()
 
 	-- now convert them
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC("$$$/PSUpload/Progress/ConvertAll=Photo StatLr: Converting all collections"),
+								{ 	title = LOC("$$$/PSUpload/Progress/ConvertAll=Photo StatLr: Converting all ^1 collections", #allPublishedCollections),
 --							 		functionContext = context 
 							 	})    
 

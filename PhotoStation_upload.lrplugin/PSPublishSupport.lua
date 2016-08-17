@@ -856,7 +856,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	writeLogfile(2, string.format("deletePublishedCollection: deleting %d published photos from collection %s\n", nPhotos, info.name ))
 
 	local progressScope = LrProgressScope ( {
-							title = LOC( "$$$/PSUpload/Progress/DeletingCollectionAndContents=Deleting collection ^[^1^]", info.name ),
+							title = LOC( "$$$/PSUpload/Progress/DeletingCollectionAndContents=Deleting collection ^[^1^] with ^2 photos", info.name, nPhotos),
 --								functionContext = context,
 						 }) 
 						
@@ -983,7 +983,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local startTime = LrDate.currentTime()
 
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/GetCommentsFromPublishedCollection=Downloading comments for collection ^[^1^]", publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/Progress/GetCommentsFromPublishedCollection=Downloading ^1 comments for collection ^[^2^]", nPhotos, publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
@@ -1129,7 +1129,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/GetRatingsFromPublishedCollection=Downloading ratings for collection ^[^1^]", publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/Progress/GetRatingsFromPublishedCollection=Downloading ^1 ratings for collection ^[^2^]", nPhotos, publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
