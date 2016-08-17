@@ -174,3 +174,4 @@
 "$$$/PSUpload/TitleForPublishedCollectionSet=게시된 컬렉션 세트"  
 "$$$/PSUpload/TitleForPublishedSmartCollection/Standalone=게시된 스마트 컬렉션"  
 "$$$/PSUpload/TitleForPublishedSmartCollection=게시된 스마트 컬렉션"  
+"$$$/PSUpload/TranslationBy/PleaseTranslate=translated by: get your name here"

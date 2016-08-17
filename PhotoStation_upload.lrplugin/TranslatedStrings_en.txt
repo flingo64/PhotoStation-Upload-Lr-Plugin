@@ -174,3 +174,4 @@
 "$$$/PSUpload/TitleForPublishedCollectionSet=Published Collection Set"
 "$$$/PSUpload/TitleForPublishedSmartCollection/Standalone=Published Smart Collection"
 "$$$/PSUpload/TitleForPublishedSmartCollection=Published Smart Collection"
+"$$$/PSUpload/TranslationBy=translated by: get your name here"

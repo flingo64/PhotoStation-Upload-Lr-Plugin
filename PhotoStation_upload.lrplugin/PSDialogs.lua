@@ -58,6 +58,7 @@ local LrColor 		= import 'LrColor'
 local LrDialogs		= import 'LrDialogs'
 local LrFileUtils	= import 'LrFileUtils'
 local LrHttp 		= import 'LrHttp'
+local LrLocalization= import 'LrLocalization'
 local LrPathUtils 	= import 'LrPathUtils'
 local LrPrefs 		= import 'LrPrefs'
 local LrShell 		= import 'LrShell'
@@ -158,23 +159,41 @@ end
 -- photoStatLrView(f, propertyTable)
 function PSDialogs.photoStatLrSmallView(f, propertyTable)
 	return 
-  		f:picture {
-			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
-			width		= 160,
-			height		= 115,
-			alignment	= 'right',
+		f:view { 
+      		f:picture {
+    			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
+    			width		= 160,
+    			height		= 115,
+    			alignment	= 'right',
+    		},
+    
+    		f:static_text {
+    			title 			= iif(LrLocalization.currentLanguage() == 'en', '', LOC "$$$/PSUpload/TranslationBy=translated by: get your name here"),
+    			alignment		= 'left	',
+    			size			= 'mini', 
+    			fill_horizontal = 1,
+    		},
 		}
 end
 
 -------------------------------------------------------------------------------
 -- photoStatLrView(f, propertyTable)
 function PSDialogs.photoStatLrView(f, propertyTable)
-	return 
-  		f:picture {
-			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
-			width		= 230,
-			height		= 165,
-			alignment	= 'right',
+	return
+		f:view { 
+      		f:picture {
+    			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
+    			width		= 230,
+    			height		= 165,
+    			alignment	= 'right',
+    		},
+    
+    		f:static_text {
+    			title 			= iif(LrLocalization.currentLanguage() == 'en', '', LOC "$$$/PSUpload/TranslationBy=translated by: get your name here"),
+    			alignment		= 'right',
+    			size			= 'mini', 
+    			fill_horizontal = 1,
+    		},
 		}
 end
 
