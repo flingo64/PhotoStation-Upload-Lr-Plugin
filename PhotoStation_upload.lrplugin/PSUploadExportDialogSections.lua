@@ -235,20 +235,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			synopsis = bind { key = 'psUrl', object = propertyTable },
 
 
---[[
-			-- ================== Photo StatLr header ==================================================================
-
-			f:row {
-				fill_horizontal = 1,
-
-    			f:spacer {
-    				fill_horizontal = 1,
-    			},
-			
-				PSDialogs.photoStatLrView(f, propertyTable),	
-			}, 
-]]
-			
 			-- ================== Target Photo Station ==========================================================
 
 			PSDialogs.targetPhotoStationView(f, propertyTable),
