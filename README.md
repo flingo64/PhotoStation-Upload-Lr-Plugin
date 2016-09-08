@@ -24,7 +24,7 @@ This plugin uses the same converters and the same upload API as the official "Sy
 
 Requirements
 =============
-* Windows or Mac OS X:
+* OS (Windows or Mac OS X):
 	- Windows 7
 	- Windows 8.0, 8.1
 	- Windows 10
@@ -33,6 +33,7 @@ Requirements
 	- MacOS 10.9.5	
 	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
 	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
+	- MacOS 10.12.0
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
