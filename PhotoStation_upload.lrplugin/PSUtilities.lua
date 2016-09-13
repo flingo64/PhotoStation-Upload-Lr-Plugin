@@ -552,7 +552,7 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 	
 	-- Get missing settings, if not stored in preset.
-	if promptForMissingSettings(exportParams, operation) == 'cancel' then
+	if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
 		return false, 'cancel'
 	end
 
@@ -626,9 +626,9 @@ end
 
 ---------------------- Dialog functions ----------------------------------------------------------
 
--- promptForMissingSettings(exportParams, operation)
+-- promptForMissingSettings(exportParams, publishedCollection, operation)
 -- check for parameters set to "Ask me later" and open a dialog to get values for them
-function promptForMissingSettings(exportParams, operation)
+function promptForMissingSettings(exportParams, publishedCollection, operation)
 	local f = LrView.osFactory()
 	local bind = LrView.bind
 	local share = LrView.share
@@ -639,6 +639,7 @@ function promptForMissingSettings(exportParams, operation)
 	local needDownloadMode = false
 	local needLoglevel = false
 	local isAskForMissingParams = true
+	local pubCollectionName
 
 	if operation == 'ProcessRenderedPhotos' and ifnil(exportParams.publishMode, 'Ask') == 'Ask' then
 		exportParams.publishMode = 'Publish'
@@ -659,6 +660,10 @@ function promptForMissingSettings(exportParams, operation)
 	if not (needPw or needDstRoot or needPublishMode or needDownloadMode or needLoglevel) then
 		return "ok"
 	end
+	
+	if publishedCollection then
+		pubCollectionName = publishedCollection:getName()
+	end 
 	
 	local passwdView = f:view {
 		f:row {
@@ -716,7 +721,7 @@ function promptForMissingSettings(exportParams, operation)
 	}
 
 	local result = LrDialogs.presentModalDialog {
-			title = "Photo StatLr",
+			title = "Photo StatLr" .. iif(pubCollectionName, ": Published Collection '" .. ifnil(pubCollectionName, '') .. "'", ""),
 			contents = c
 		}
 	
