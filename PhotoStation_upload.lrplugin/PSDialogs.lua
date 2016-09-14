@@ -504,7 +504,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchSearchTT=Search program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -1046,7 +1046,7 @@ function PSDialogs.photoNamingView(f, propertyTable)
 			f:row {
 				f:checkbox {
     				title 		= LOC "$$$/PSUpload/ExportDialog/RenamePhoto=Rename Photos To:",
-    				tooltip 	= LOC "$$$/PSUpload/ExportDialog/RenamePhotoTT=Define a target filename pattern",
+    				tooltip 	= LOC "$$$/PSUpload/ExportDialog/RenamePhotoTT=Rename photos in Photo Station acc. to a unique naming schema.",
     				alignment 	= 'right',
     				width 		= share 		'labelWidth',
     				value 		= bind 			'renameDstFile',
@@ -1362,8 +1362,8 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 			f:spacer { fill_horizontal = 1,	},
 			
 			f:push_button {
-				title 			= LOC "$$$/PSUpload/DialogsFooter/Logfile=Go to Logfile",
-				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LogfileTT=Open Photo StatLr Logfile in Explorer/Finder.",
+				title 			= LOC "$$$/PSUpload/DialogsFooter/Logfile=Show Logfile",
+				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LogfileTT=Show Photo StatLr Logfile in Explorer/Finder.",
 				alignment 		= 'right',
 				fill_horizontal = 1,
 				action 			= function()

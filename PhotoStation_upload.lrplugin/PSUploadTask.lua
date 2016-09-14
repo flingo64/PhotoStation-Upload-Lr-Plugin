@@ -902,7 +902,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			nPhotos, nProcessed, nMoved = checkMoved(publishedCollection, exportContext, exportParams)
 			timeUsed = 	LrDate.currentTime() - startTime
 			picPerSec = nProcessed / timeUsed
-			message = LOC("$$$/PSUpload/FinalMsg/CheckMoved=Checked ^1 of ^2 pics in ^3 seconds (^4 pic/sec). ^5 pics moved.\n", 
+			message = LOC("$$$/PSUpload/FinalMsg/CheckMoved=Checked ^1 of ^2 pics in ^3 seconds (^4 pics/sec). ^5 pics moved.\n", 
 											nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec), nMoved)
 		end
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
@@ -915,7 +915,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		nPhotos, nProcessed, nMoved = movePhotos(publishedCollection, exportContext, exportParams)
 		timeUsed = 	LrDate.currentTime() - startTime
 		picPerSec = nProcessed / timeUsed
-		message = LOC ("$$$/PSUpload/FinalMsg/Move=Processed ^1 of ^2 pics in ^3 seconds (^4 pic/sec). ^5 pics moved.\n", 
+		message = LOC ("$$$/PSUpload/FinalMsg/Move=Processed ^1 of ^2 pics in ^3 seconds (^4 pics/sec). ^5 pics moved.\n", 
 										nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec), nMoved)
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()

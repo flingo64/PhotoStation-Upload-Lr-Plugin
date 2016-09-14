@@ -106,7 +106,7 @@ local function updateExportStatus( propertyTable )
 
 		-- renaming: renaming dstFilename must contain at least one metadata placeholder
 		if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePattern=Rename Photos: Missing or unbalanced metadata placeholder!"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
 			break
 		end
 
