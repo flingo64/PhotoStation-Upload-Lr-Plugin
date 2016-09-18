@@ -478,7 +478,7 @@ function applyDefaultsIfNeededFromTo(srcTable, dstTable)
     for orig_key, orig_value in pairs(srcTable) do
 		if dstTable[orig_key] == nil then 
 			dstTable[orig_key] = orig_value 
-			writeLogfile(4, string.format("applyDefaultsIfNeededFromTo: copying orig_key %s, orig_value %s\n", orig_key, tostring(orig_value)))
+			writeLogfile(4, string.format("applyDefaultsIfNeededFromTo: copying orig_key %s, orig_value '%s'\n", orig_key, tostring(orig_value)))
 		end
     end
 end
