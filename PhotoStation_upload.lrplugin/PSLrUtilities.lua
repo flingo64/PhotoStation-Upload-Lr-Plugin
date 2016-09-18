@@ -210,10 +210,10 @@ function PSLrUtilities.getCollectionUploadPath(publishedCollection)
 	-- Build the directory path by recursively traversing the parent collection sets and prepend each directory
 	if publishedCollection:type() == 'LrPublishedCollection' then
 		local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-		collectionPath 	= collectionSettings.dstRoot
+		collectionPath 	= ifnil(collectionSettings.dstRoot, '')
 	else
 		local collectionSetSettings = publishedCollection:getCollectionSetInfoSummary().collectionSettings
-		collectionPath 	= collectionSetSettings.baseDir
+		collectionPath 	= ifnil(collectionSetSettings.baseDir, '')
 	end
 	
 	parentCollectionSet  = publishedCollection:getParent()
@@ -224,7 +224,7 @@ function PSLrUtilities.getCollectionUploadPath(publishedCollection)
 		end
 		parentCollectionSet  = parentCollectionSet:getParent()
 	end
-	writeLogfile(4, "getCollectionUploadPath() returns " .. ifnil(collectionPath, '<Nil>') .. "\n")
+	writeLogfile(4, "getCollectionUploadPath() returns '" .. collectionPath .. "'\n")
 	
 	return normalizeDirname(collectionPath)
 end
