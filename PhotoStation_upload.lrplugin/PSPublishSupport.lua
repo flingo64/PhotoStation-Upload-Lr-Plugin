@@ -521,7 +521,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	end
 	
 	if serviceDefaultCollectionSettings then
-		writeLogfile(3,string.format("Found Default Collection '%s' for service: Applying plugin defaults to unitialized values of Service Default Collection\n", serviceDefaultCollectionName))
+		writeLogfile(3,string.format("Found Default Collection '%s' for service:\nApplying plugin defaults to unitialized values of Service Default Collection\n", serviceDefaultCollectionName))
 		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, serviceDefaultCollectionSettings)
 		writeLogfile(3,string.format("Applying defaults from Service Default Collection to unitialized values of current collection\n"))
 		applyDefaultsIfNeededFromTo(serviceDefaultCollectionSettings, collectionSettings)
@@ -898,7 +898,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
 	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePublishedColletion=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
-					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f",timeUsed + 0.5), string.fromat("%.1f",picPerSec))
+					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f",timeUsed + 0.5), string.format("%.1f",picPerSec))
 
 	showFinalMessage("Photo StatLr: DeletePublishedCollection done", message, "info")
 	closeLogfile()
