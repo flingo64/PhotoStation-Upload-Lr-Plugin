@@ -567,8 +567,8 @@ function openSession(exportParams, publishedCollection, operation)
 	and 	exportParams.publishMode ~= 'CheckMoved' 
 	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
 		local result, errorCode
-		exportParams.uHandle, errorCode = PSPhotoStationAPI.initialize(exportParams.serverUrl, 
-														iif(exportParams.usePersonalPS, exportParams.personalPSOwner, nil),
+		exportParams.uHandle, errorCode = PSPhotoStationAPI.initialize(exportParams.serverUrl,
+														ifnil(exportParams.psPath, iif(exportParams.usePersonalPS, "/~" .. ifnil(exportParams.personalPSOwner, "unknown") .. "/photo/", "/photo/")),
 														exportParams.serverTimeout)
 		if not exportParams.uHandle then
 			local errorMsg = string.format("Initialization of %s %s at\n%s\nfailed!\nReason: %s\n",
