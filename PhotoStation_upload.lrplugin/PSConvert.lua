@@ -96,7 +96,7 @@ end
 
 ------------------------ initialize ---------------------------------------------------------------------------------
 
--- initialize: set serverUrl, loginPath and uploadPath
+-- initialize: initialize convert program paths
 function PSConvert.initialize()
 	local prefs = LrPrefs.prefsForPlugin()
 	local PSUploaderPath = prefs.PSUploaderPath
