@@ -592,8 +592,16 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServernameTT=Enter the IP address or hostname of the Photo Station.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
         			immediate 		= true,
-        			fill_horizontal = 1,
+        			fill_horizontal = 0.6,
         			value 			= bind 'servername',
+        			enabled 		= negativeOfKey 'useSecondAddress',
+        		},
+        
+				f:static_text {
+					title 			= bind 'psPath',
+        			truncation 		= 'middle',
+        			immediate 		= true,
+        			fill_horizontal = 0.4,
         			enabled 		= negativeOfKey 'useSecondAddress',
         		},
         
@@ -637,8 +645,16 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			tooltip 		= LOC "$$$/PSUpload/ExportDialog/Servername2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
         			immediate 		= true,
-        			fill_horizontal = 1,
+        			fill_horizontal = 0.6,
         			value 			= bind 'servername2',
+        			enabled 		= bind 'useSecondAddress',
+        		},
+        
+				f:static_text {
+					title 			= bind 'psPath',
+        			truncation 		= 'middle',
+        			immediate 		= true,
+        			fill_horizontal = 0.4,
         			enabled 		= bind 'useSecondAddress',
         		},
         
