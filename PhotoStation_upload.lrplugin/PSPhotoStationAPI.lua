@@ -232,25 +232,18 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- initialize: set serverUrl, loginPath and uploadPath
-function PSPhotoStationAPI.initialize(server, personalPSOwner, serverTimeout)
+function PSPhotoStationAPI.initialize(serverUrl, psPath, serverTimeout)
 	local h = {} -- the handle
 	local apiInfo = {}
-	local psBasePath
 
-	writeLogfile(4, "PSPhotoStationAPI.initialize(serverUrl=" .. server ..", " .. iif(personalPSOwner, "Personal PS(" .. ifnil(personalPSOwner,"<Nil>") .. ")", "Standard PS") .. ")\n")
+	writeLogfile(4, "PSPhotoStationAPI.initialize(PhotoStationUrl=" .. serverUrl .. psPath .. ", Timeout=" .. serverTimeout .. ")\n")
 
-	h.serverUrl = server
+	h.serverUrl = serverUrl
 	h.serverTimeout = serverTimeout
 
-	if personalPSOwner then -- connect to Personal Photo Station
-		psBasePath = '/~' .. personalPSOwner .. '/photo'
-	else
-		psBasePath = '/photo'
-	end
-
-	h.psAlbumRoot	= 	psBasePath .. '/#!Albums'
-	h.psWebAPI 		= 	psBasePath .. '/webapi/'
-	h.uploadPath 	=	psBasePath .. '/include/asst_file_upload.php'
+	h.psAlbumRoot	= 	psPath .. '#!Albums'
+	h.psWebAPI 		= 	psPath .. 'webapi/'
+	h.uploadPath 	=	psPath .. 'include/asst_file_upload.php'
 
 	-- bootstrap the apiInfo table 
 	apiInfo['SYNO.API.Info'] = {
