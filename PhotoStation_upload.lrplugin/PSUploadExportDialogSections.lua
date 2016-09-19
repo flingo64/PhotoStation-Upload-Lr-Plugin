@@ -142,12 +142,9 @@ local function updateExportStatus( propertyTable )
 		end
 		-- Exif translation end
 
-		propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
-		propertyTable.psUrl = propertyTable.serverUrl .. " --> ".. 
-							iif(propertyTable.usePersonalPS,"Personal", "Standard") .. " Album: " .. 
-							iif(propertyTable.usePersonalPS and propertyTable.personalPSOwner,propertyTable.personalPSOwner, "") .. ":" ..
-							iif(propertyTable.dstRoot, propertyTable.dstRoot, "") 
-
+		propertyTable.serverUrl = 	propertyTable.proto .. "://" .. propertyTable.servername
+		propertyTable.psPath = 		iif(propertyTable.usePersonalPS, "/~" .. ifnil(propertyTable.personalPSOwner, "unknown") .. "/photo/", "/photo/")
+		propertyTable.psUrl = 		propertyTable.serverUrl .. propertyTable.psPath 
 	until true
 	
 	if message then
