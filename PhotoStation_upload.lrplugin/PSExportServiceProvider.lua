@@ -76,7 +76,8 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'servername', 		default = '' },		-- name/address of the Photo Station, may include ':port' extension
 		{ key = 'serverTimeout', 	default = 10 },		-- http timeout
 		{ key = 'serverUrl', 		default = '' },		-- proto + servername
-		{ key = 'psUrl', 			default = '' },		-- serverUrl + destination album (used for synopsis)
+		{ key = 'psPath', 			default = '/photo/' },		-- Standard or Personal Photo Station path
+		{ key = 'psUrl', 			default = '' },		-- serverUrl + Photo Station path (used for synopsis)
 		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal Photo Station
 		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Station to upload to
 		{ key = 'username', 		default = '' },		-- account for Photo Station upload
