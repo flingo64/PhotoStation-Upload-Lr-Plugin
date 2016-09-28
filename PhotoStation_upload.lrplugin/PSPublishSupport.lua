@@ -1256,7 +1256,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		------------------------------------------------------------------------------------------------------
 			if collectionSettings.titleDownload then
         		local defaultTitlePS = LrPathUtils.removeExtension(LrPathUtils.leafName(photoInfo.remoteId))
-
+--[[
 	    		-- title can be stored in two places in PS: in title tag (when entered by PS user) and in exif 'Object Name' (when set by Lr)
    				-- title tag overwrites exif tag, get Object Name only, if no title was found
         		if (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
@@ -1269,6 +1269,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     					end
     				end
     			end
+]]
     			
         		-- check if PS title is not empty, is not the Default PS title (filename) and is different to Lr
         		if titlePS and titlePS ~= '' and titlePS ~= defaultTitlePS and titlePS ~= ifnil(srcPhoto:getFormattedMetadata('title'), '') then
