@@ -575,7 +575,7 @@ function openSession(exportParams, publishedCollection, operation)
 									iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
 									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
 									exportParams.serverUrl,
-									PSPhotoStationAPI.getErrorMsg(errorCode))
+									PSPhotoStationUtils.getErrorMsg(errorCode))
 			writeLogfile(1, errorMsg)
 			return 	false, errorMsg
 		end
@@ -586,7 +586,7 @@ function openSession(exportParams, publishedCollection, operation)
 									iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
 									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
 									exportParams.serverUrl,
-									PSPhotoStationAPI.getErrorMsg(errorCode))
+									PSPhotoStationUtils.getErrorMsg(errorCode))
 			writeLogfile(1, errorMsg)
 			 exportParams.uHandle = nil
 			return 	false, errorMsg

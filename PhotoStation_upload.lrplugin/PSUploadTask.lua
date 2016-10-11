@@ -56,6 +56,7 @@ require "PSConvert"
 require "PSUpdate"
 require "PSUploadAPI"
 require "PSPhotoStationAPI"
+require "PSPhotoStationUtils"
 require "PSExiftoolAPI"
 
 --============================================================================--
@@ -441,6 +442,7 @@ local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, vide
 	
 	return true
 end
+
 -----------------
 -- uploadVideoMetadata(videosUploaded, exportParams, failures) 
 -- upload metadata for videos just uploaded
@@ -488,7 +490,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 		-- get ratingTag if requested
 		local ratingTagParam
 		if exportParams.exifXlatRating and ifnil(ratingData, 0) ~= 0 then
-			ratingTagParam =  PSPhotoStationAPI.rating2Stars(ratingData)
+			ratingTagParam =  PSPhotoStationUtils.rating2Stars(ratingData)
 		end
 		
 		-- get keywords if requested
@@ -522,7 +524,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 			
 			while not photoThere and maxWait > 0 do
 				local isVideo, dontUseCache = true, false
-				if not PSPhotoStationAPI.getPhotoInfo(exportParams.uHandle, dstFilename, isVideo, dontUseCache) then
+				if not PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, dstFilename, isVideo, dontUseCache) then
 					LrTasks.sleep(1)
 					maxWait = maxWait - 1
 				else
@@ -548,10 +550,10 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 				 or (captionParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, captionParam))
 				 or (gpsParam		and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, gpsParam))
 				 or (ratingParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, ratingParam))
-				 or	(labelParam 	and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', labelParam))
-				 or	(ratingTagParam and not PSPhotoStationAPI.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', ratingTagParam))
+				 or	(labelParam 	and not PSPhotoStationUtils.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', labelParam))
+				 or	(ratingTagParam and not PSPhotoStationUtils.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', ratingTagParam))
 				 or	(keywordNamesAdd and #keywordNamesAdd > 0  
-									and not PSPhotoStationAPI.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
+									and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
 				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
 			then
 				signalSemaphore("PhotoStation")	
@@ -1029,7 +1031,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in Photo Station
-				local foundPhoto = PSPhotoStationAPI.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
+				local foundPhoto = PSPhotoStationUtils.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
 				if foundPhoto == 'yes' then
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1

@@ -202,7 +202,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 		return
 	end
 	
-	albumUrl = PSPhotoStationAPI.getAlbumUrl(publishSettings.uHandle, albumPath)
+	albumUrl = PSPhotoStationUtils.getAlbumUrl(publishSettings.uHandle, albumPath)
 
 	LrHttp.openUrlInBrowser(albumUrl)
 end
@@ -234,7 +234,7 @@ function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 		return
 	end
 	
-	photoUrl = PSPhotoStationAPI.getPhotoUrl(publishSettings.uHandle, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
+	photoUrl = PSPhotoStationUtils.getPhotoUrl(publishSettings.uHandle, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
 	LrHttp.openUrlInBrowser(photoUrl)
 end
 
@@ -1007,7 +1007,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
 	   								username = ifnil(comment.email, ''),
 	  								realname = ifnil(comment.name, ''),
---    								url = PSPhotoStationAPI.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+--    								url = PSPhotoStationUtils.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
     							} )
     			end			
     
@@ -1171,7 +1171,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.locationDownload
     		then
     			local useCache = true
-    			local psPhotoInfo, psPhotoAdditional = PSPhotoStationAPI.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
+    			local psPhotoInfo, psPhotoAdditional = PSPhotoStationUtils.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
         		if psPhotoInfo then
         			if collectionSettings.titleDownload 	then titlePS = psPhotoInfo.title end 
         			if collectionSettings.captionDownload	then captionPS = psPhotoInfo.description end 
