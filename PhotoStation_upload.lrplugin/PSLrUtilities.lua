@@ -410,7 +410,7 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 	local albumPath, _ = string.match(photoPath , '(.+)\/([^\/]+)')
 	if not albumPath then 
 		-- photo in root
-		writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): root will not be noted.\n", photoPath))
+		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): root will not be noted.\n", photoPath))
 		return albumCheckList 	
 	end
 	
@@ -421,7 +421,7 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 	
 	while currentAlbum do
 		if string.find(currentAlbum.albumPath, albumPath, 1, true) == 1 then 
-			writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
+			writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
 			return albumCheckList
 		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
 			newAlbum.next = currentAlbum
@@ -430,7 +430,7 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 			else		 
 				albumCheckList = newAlbum 
 			end
-			writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): insert before %s\n", albumPath, currentAlbum.albumPath))
+			writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert before %s\n", albumPath, currentAlbum.albumPath))
 			return albumCheckList
 		else
 			previousAlbum = currentAlbum
@@ -440,11 +440,11 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 	
 	newAlbum.next		= nil
 	if not previousAlbum then 
-		writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): insert as first in list\n", albumPath))
+		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert as first in list\n", albumPath))
 		albumCheckList 		= newAlbum
 	else
 		previousAlbum.next	= newAlbum
-		writeLogfile(3, string.format("noteAlbumForCheckEmpty(%s): insert as last in list\n", albumPath))
+		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert as last in list\n", albumPath))
 	end
 		
 	return albumCheckList	
