@@ -84,7 +84,8 @@ local PSAPIerrorMsgs = {
 	[467] = 'No such tag',
 	[468] = 'Duplicate tag',
 	[470] = 'No such file',
-	[599] = 'No such task No such task of the file operation',
+	[555] = 'No such shared album',
+	[599] = 'No such task of the file operation',
 	[1001]  = 'Http error: no response body, no response header',
 	[1002]  = 'Http error: no response data, no errorcode in response header',
 	[1003]  = 'Http error: No JSON response data',
@@ -94,7 +95,8 @@ local PSAPIerrorMsgs = {
 }
 
 -- ========================================== Album cache ==============================================
--- the albumCache 
+-- the Album cache holds Album lists for the least recently read albums
+
 local albumCache = {}
 local albumCacheTimeout = 60	-- 60 seconds cache time
  
@@ -143,41 +145,73 @@ local function albumCacheList(h, dstDir, listItems)
 	return albumItems
 end
 
--- ======================================= Tag cache ==============================================
+-- ===================================== sharedAlbumMapping ==============================================
+-- the Shared Album mapping holds the list of album name / album id mappings
 
-local tagCache = {
+local sharedAlbumMapping = {}
+ 
+---------------------------------------------------------------------------------------------------------
+-- sharedAlbumMappingUpdate(h) 
+local function sharedAlbumMappingUpdate(h)
+	writeLogfile(3, string.format('sharedAlbumMappingUpdate().\n'))
+	sharedAlbumMapping = PSPhotoStationAPI.getSharedAlbums(h)
+	return sharedAlbumMapping
+end
+
+---------------------------------------------------------------------------------------------------------
+-- sharedAlbumMappingFind(h, name) 
+local function sharedAlbumMappingFind(h, name)
+	if (#sharedAlbumMapping == 0) and not sharedAlbumMappingUpdate(h) then
+		return nil 
+	end
+	
+	for i = 1, #sharedAlbumMapping do
+		if sharedAlbumMapping[i].name == name then 
+			writeLogfile(3, string.format('sharedAlbumMappingFind(%s) found  %s.\n', name, sharedAlbumMapping[i].id))
+			return sharedAlbumMapping[i].id 
+		end
+	end
+
+	writeLogfile(3, string.format('sharedAlbumMappingFind(%s) not found.\n', name))
+	return nil
+end
+
+-- ======================================= tagMapping ==============================================
+-- the tagMapping holds the list of tag name / tag id mappings
+
+local tagMapping = {
 	['desc']	= {},
 	['person']	= {},
 	['geo']		= {},
 }
 
 ---------------------------------------------------------------------------------------------------------
--- tagCacheFind(h, type, name) 
-local function tagCacheFind(h, type, name)
-	local tagsOfType = tagCache[type]
+-- tagMappingUpdate(h, type) 
+local function tagMappingUpdate(h, type)
+	writeLogfile(3, string.format('tagMappingUpdate(%s).\n', type))
+	tagMapping[type] = PSPhotoStationAPI.getTags(h, type)
+	return tagMapping[type]
+end
 
-	if (#tagsOfType == 0) and not PSPhotoStationUtils.tagCacheUpdate(h, type) then
+---------------------------------------------------------------------------------------------------------
+-- tagMappingFind(h, type, name) 
+local function tagMappingFind(h, type, name)
+	local tagsOfType = tagMapping[type]
+
+	if (#tagsOfType == 0) and not tagMappingUpdate(h, type) then
 		return nil 
 	end
-	tagsOfType = tagCache[type]
+	tagsOfType = tagMapping[type]
 	
 	for i = 1, #tagsOfType do
 		if tagsOfType[i].name == name then 
-			writeLogfile(3, string.format('tagCacheFind(%s, %s) found  %s.\n', type, name, tagsOfType[i].id))
+			writeLogfile(3, string.format('tagMappingFind(%s, %s) found  %s.\n', type, name, tagsOfType[i].id))
 			return tagsOfType[i].id 
 		end
 	end
 
-	writeLogfile(3, string.format('tagCacheFind(%s, %s) not found.\n', type, name))
+	writeLogfile(3, string.format('tagMappingFind(%s, %s) not found.\n', type, name))
 	return nil
-end
-
----------------------------------------------------------------------------------------------------------
--- tagCacheUpdate(h, type) 
-local function tagCacheUpdate(h, type)
-	writeLogfile(3, string.format('tagCacheUpdate(%s).\n', type))
-	tagCache[type] = PSPhotoStationAPI.getTags(h, type)
-	return tagCache[type]
 end
 
 --================================= global functions ====================================================--
@@ -380,10 +414,10 @@ end
 -- createAndAddPhotoTag (h, dstFilename, isVideo, type, name) 
 -- create and add a new tag (desc,people,geo) to a photo
 function PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, name)
-	local tagId = PSPhotoStationUtils.tagCacheFind(h, type, name)
+	local tagId = tagMappingFind(h, type, name)
 	if not tagId then 
 		tagId = PSPhotoStationAPI.createTag(h, type, name)
-		PSPhotoStationUtils.tagCacheUpdate(h, type)
+		tagMappingUpdate(h, type)
 	end
 		
 	
@@ -394,7 +428,7 @@ function PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type,
 	if not photoTagIds and errorCode == 467 then
 		-- tag was deleted, cache wasn't up to date
 		tagId = PSPhotoStationAPI.createTag(h, type, name)
-		PSPhotoStationUtils.tagCacheUpdate(h, type)
+		tagMappingUpdate(h, type)
 	 	photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId)
 	end 
 	
@@ -417,6 +451,38 @@ function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, t
 	end
 	 
 	writeLogfile(3, string.format('createAndAddPhotoTagList(%s) returns OK.\n', dstFilename))
+	return true	
+end
+
+---------------------------------------------------------------------------------------------------------
+-- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, photos) 
+-- create a Shared Album and add a list of photo to it
+function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName, photos)
+	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
+	if not sharedAlbumId then 
+		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
+		sharedAlbumMappingUpdate(h)
+	end
+	
+	local photoIds = {}
+	for i = 1, #photos do
+		photoIds[i] = PSPhotoStationUtils.getPhotoId(photos[i].dstFilename, photos[i].isVideo)
+	end
+	
+	if not sharedAlbumId then return false end
+	
+	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
+	
+	if not success and errorCode == 555 then
+		-- shared album was deleted, mapping wasn't up to date
+		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
+		sharedAlbumMappingUpdate(h)
+	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
+	end 
+	
+	if not success then return false end 
+	
+	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photoIds))
 	return true	
 end
 
@@ -461,7 +527,7 @@ end
 ]]
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.deleteEmptyAlbumAndParents(h, albumPath)
+-- deleteEmptyAlbumAndParents(h, albumPath)
 -- delete an album and all its parents as long as they are empty
 -- return count of deleted albums
 function PSPhotoStationUtils.deleteEmptyAlbumAndParents(h, albumPath)

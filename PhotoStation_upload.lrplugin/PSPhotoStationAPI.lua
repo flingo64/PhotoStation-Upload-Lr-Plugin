@@ -323,7 +323,7 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- getTags (h, type) 
--- get table of tagId/tagString mappings or given type: desc, people, geo
+-- get table of tagId/tagString mappings for given type: desc, people, geo
 function PSPhotoStationAPI.getTags(h, type)
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
@@ -353,7 +353,7 @@ function PSPhotoStationAPI.createTag(h, type, name)
 	
 	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('createTag returns tagId %s.\n', respArray.data.id))
+	writeLogfile(3, string.format('createTag(%s, %s) returns tagId %s.\n', type, name, respArray.data.id))
 	return respArray.data.id
 end
 
@@ -410,33 +410,94 @@ function PSPhotoStationAPI.editPhoto(h, dstFilename, isVideo, attrValPairs)
 	
 	if not success then return false, errorCode end 
 
-	writeLogfile(3, string.format('editPhoto(%s%s) returns OK.\n', dstFilename, logMessage))
+	writeLogfile(3, string.format('editPhoto(%s,%s) returns OK.\n', dstFilename, logMessage))
 	return true
 end
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.createSharedAlbum(h, sharedAlbumName)
--- add photo to Shared Album
-function PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
-	writeLogfile(2, string.format('createSharedAlbum(%s) not yet implemented.\n', sharedAlbumName))
+-- getSharedAlbums (h) 
+-- get table of sharedAlbumId/sharedAlbumName mappings
+function PSPhotoStationAPI.getSharedAlbums(h, type)
+	local formData = 'method=list&' ..
+					 'version=1&' .. 
+--					 'additional=info&' .. 
+					 'offset=0&' ..  
+					 'limit=-1' 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('getSharedAlbums() returns %d albums.\n', respArray.data.total))
+	return respArray.data.items
+end
+
+
+---------------------------------------------------------------------------------------------------------
+-- createSharedAlbum(h, name)
+function PSPhotoStationAPI.createSharedAlbum(h, name)
+	local formData = 'method=create&' ..
+					 'version=1&' .. 
+--					 'item_id=<photo_id>&' ..
+					 'name=' .. urlencode(name) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('createSharedAlbum(%s) returns sharedAlbumId %s.\n', name, respArray.data.id))
+	return respArray.data.id
+end
+
+
+---------------------------------------------------------------------------------------------------------
+-- makeSharedAlbumPublic(h, name, makePublic)
+function PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, makePublic)
+	local formData = 'method=edit_public_share&' ..
+					 'version=1&' .. 
+					 'id=' .. sharedAlbumId ..'&' ..
+					 'is_shared=' .. tostring(makePublic)
+					 
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('makeSharedAlbumPublic(%s, %s) returns shareId %s.\n', sharedAlbumId, tostring(makePublic), respArray.data.shareid))
+	return respArray.data.shareid
 end
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.addPhotosToSharedAlbum(h, dstFilenames, sharedAlbumName)
+-- PhotoStation.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
 -- add photo to Shared Album
-function PSPhotoStationAPI.addPhotosToSharedAlbum(h, dstFilenames, sharedAlbumName)
-	local formData = 'method=' .. type .. '_tag&' ..
+function PSPhotoStationAPI.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
+	local itemList = table.concat(photoIds, ',')
+	local formData = 'method=add_items&' ..
 				 'version=1&' .. 
-				 'tag_id=' .. tagId .. '&' .. 
-				 'id=' .. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo) 
+				 'id=' .. sharedAlbumId .. '&' .. 
+				 'item_id=' .. itemList
+				 
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
 	
-	writeLogfile(2, string.format('addPhotoToSharedAlbum(%s --> %s) not yet implemented.\n', table.concat(dstFilenames, ','), sharedAlbumName))
-	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('addPhotosToSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumId, #photoIds))
+	return true
 end
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.removePhotosFromSharedAlbum(h, dstFilenames, sharedAlbumName)
+-- PhotoStation.removePhotosFromSharedAlbum(h, photoIds, sharedAlbumName)
 -- remove photo from Shared Album
-function PSPhotoStationAPI.removePhotosFromSharedAlbum(h, dstFilenames, sharedAlbumName)
-	writeLogfile(2, string.format('removePhotosFromSharedAlbum(%s --> %s) not yet implemented.\n', table.concat(dstFilenames, ','), sharedAlbumName))
+function PSPhotoStationAPI.removePhotosFromSharedAlbum(h, photoIds, sharedAlbumId)
+	local itemList = table.concat(photoIds, ',')
+	local formData = 'method=remove_items&' ..
+				 'version=1&' .. 
+				 'id=' .. sharedAlbumId .. '&' .. 
+				 'item_id=' .. itemList
+				 
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s,%d photos) returns OK.\n', sharedAlbumId, #photoIds))
+	return true
 end

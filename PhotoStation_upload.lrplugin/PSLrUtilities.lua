@@ -19,7 +19,8 @@ Lightroom utilities:
 	- getKeywordObjects
 	- addPhotoKeywordNames
 	- removePhotoKeyword
-
+	- getSharedAlbumKeywords
+	
 	- convertCollection
 	- convertAllPhotos
 	
@@ -510,6 +511,123 @@ function PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
 	return true
 end
 
+--------------------------------------------------------------------------------------------
+-- getSharedAlbumKeywords(srcPhoto)
+--   returns a list of all Shared Album keywords. i.e. keywords below "Photo StatLr"|"Shared Albums"
+function PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
+	local keywords 					= srcPhoto:getRawMetadata("keywords")  
+	local sharedAlbumKeywords 		= {} 	
+	local numSharedAlbumKeywords 	= 0
+
+	for i = 1, #keywords do
+		local keyword = keywords[i]
+		
+		if	keyword:getParent() and keyword:getParent():getName() == 'Shared Albums'
+		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Photo StatLr' then
+    		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
+    		sharedAlbumKeywords[numSharedAlbumKeywords] = keyword:getName()
+		end
+	end
+	writeLogfile(3, string.format("getSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
+									srcPhoto:getRawMetadata('path'), table.concat(sharedAlbumKeywords, ',')))
+	return sharedAlbumKeywords   		
+
+end
+
+--------------------------------------------------------------------------------------------
+-- getLinkedSharedAlbums(srcPhoto)
+--   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
+function PSLrUtilities.getLinkedSharedAlbums(srcPhoto, publishedCollectionId)
+	local sharedAlbumPluginMetadata
+	local sharedAlbumsPS 			= {}
+	local numSharedAlbumsPS			= 0
+
+--[[
+	-- format of plugin metadata: <collectionId>:<sharedAlbumName>/{<collectionId>:<sharedAlbumName>}
+	
+	sharedAlbumPluginMetadata = srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', 1, true)
+	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
+	local pluginMetadataArray = split(sharedAlbumPluginMetadata, '/')
+    	for i = 1, #pluginMetadataArray do
+    		local collectionId, sharedAlbumName = string.match(pluginMetadataArray[i], '(%d+):(.*)') 
+    
+    		if collectionId == publishedCollectionId then
+        		numSharedAlbumsPS = numSharedAlbumsPS + 1
+        		sharedAlbumsPS[numSharedAlbumsPS] = sharedAlbumName
+			end
+    	end
+	end
+]]	
+	writeLogfile(3, string.format("getLinkedSharedAlbums(%s): found Shared Albums: '%s'\n", 
+									srcPhoto:getRawMetadata('path'), table.concat(sharedAlbumsPS, ',')))    		
+	return sharedAlbumsPS
+end 
+
+--------------------------------------------------------------------------------------------
+-- noteSharedAlbumUpdates(sharedAlbumUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
+--   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
+function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
+	local sharedAlbumKeywords 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
+	local sharedAlbumsPS		= PSLrUtilities.getLinkedSharedAlbums(srcPhoto, publishedCollectionId)
+	
+	-- add photo to all given Shared Albums that it is not already member of
+	for i = 1, #sharedAlbumKeywords do
+		local sharedAlbumName = sharedAlbumKeywords[i]
+--[[
+		local photoAlreadyinPS = false
+		
+		for j = 1, #sharedAlbumsPS do
+			if 	sharedAlbumsPS[j].collectionId 		== publishedCollectionId 
+			and sharedAlbumsPS[j].sharedAlbumName 	== sharedAlbumName 
+			then 
+				photoAlreadyinPS = true
+				break 
+			end
+		end
+		if not photoAlreadyinPS then
+]]
+			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): found Shared Album %s\n", publishedPhotoId, sharedAlbumName))
+			local sharedAlbumUpdate = nil
+			
+			for k = 1, #sharedAlbumUpdates do
+				if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
+					sharedAlbumUpdate = sharedAlbumUpdates[k]
+					break
+				end
+			end
+			if not sharedAlbumUpdate then
+				writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+				sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, addPhotos = {}, removePhotos = {} }
+				sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
+			end
+			local addPhotos = sharedAlbumUpdate.addPhotos
+			addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
+		end 
+--	end
+
+--[[
+	-- remove photo from all Shared Albums that it is not member of
+	for i = 1, #sharedAlbumsPS do
+		local sharedAlbumFound = false
+		for j = 1, #sharedAlbumKeywords do
+			if 	sharedAlbumsPS[i].collectionId 		== publishedCollectionId
+			and sharedAlbumsPS[i].sharedAlbumName 	== sharedAlbumKeywords[j] 
+			then 
+				sharedAlbumFound = true 
+			end
+		end
+		if not sharedAlbumFound then
+			if not	sharedAlbumUpdates[publishedPhotoId] then
+					sharedAlbumUpdates[publishedPhotoId] = { add = {}, remove = {}, }
+			end
+			if not	sharedAlbumUpdates[publishedPhotoId].remove[publishedPhotoId] then
+					sharedAlbumUpdates[publishedPhotoId].remove[publishedPhotoId] = { isVideo = srcPhoto:getRawMetadata('isVideo') }
+			end 
+		end 
+	end
+]]
+	return true 
+end
 
 --------------------------------------------------------------------------------------------
 -- getAllPublishedCollectionsFromPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
