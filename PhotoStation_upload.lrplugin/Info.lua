@@ -62,6 +62,10 @@ return {
 		title = "Photo StatLr",
 		file = 'PSExportServiceProvider.lua',
 	},
+	
+	LrMetadataProvider 		= 'PSPluginMetadata.lua',
+--	LrMetadataTagsetFactory = 'MyMetadataTagset.lua',
+
 	VERSION = { major=plugin_major, minor=plugin_minor, revision=plugin_rev, build=plugin_build, 
 				-- display = '3.0.0-20150524 (Something)', 
 	},

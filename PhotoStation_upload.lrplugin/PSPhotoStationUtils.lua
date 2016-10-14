@@ -456,7 +456,7 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, photos) 
--- create a Shared Album and add a list of photo to it
+-- create a Shared Album and add a list of photos to it
 function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName, photos)
 	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
 	if not sharedAlbumId then 
@@ -471,18 +471,48 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	
 	if not sharedAlbumId then return false end
 	
-	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
+	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
 		sharedAlbumMappingUpdate(h)
-	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
+	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	end 
 	
 	if not success then return false end 
 	
-	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photoIds))
+	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
+	return true	
+end
+
+---------------------------------------------------------------------------------------------------------
+-- removePhotosFromSharedAlbum(h, sharedAlbumName, photos) 
+-- remove a a list of photos from a Shared Album
+function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
+	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
+	if not sharedAlbumId then 
+		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
+		return true
+	end
+	
+	local photoIds = {}
+	for i = 1, #photos do
+		photoIds[i] = PSPhotoStationUtils.getPhotoId(photos[i].dstFilename, photos[i].isVideo)
+	end
+	
+	local success, errorCode = PSPhotoStationAPI.removePhotosFromSharedAlbum(h, sharedAlbumId, photoIds)
+	
+	if not success and errorCode == 555 then
+		-- shared album was deleted, mapping wasn't up to date
+		sharedAlbumMappingUpdate(h)
+		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
+		return true
+	end 
+	
+	if not success then return false end 
+	
+	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true	
 end
 

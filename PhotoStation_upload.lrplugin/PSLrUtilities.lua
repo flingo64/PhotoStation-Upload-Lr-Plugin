@@ -536,96 +536,119 @@ end
 
 --------------------------------------------------------------------------------------------
 -- getLinkedSharedAlbums(srcPhoto)
---   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
-function PSLrUtilities.getLinkedSharedAlbums(srcPhoto, publishedCollectionId)
-	local sharedAlbumPluginMetadata
-	local sharedAlbumsPS 			= {}
-	local numSharedAlbumsPS			= 0
+--   returns a list of all Shared Album the photo was linked to as stored in private plugin metadata
+function PSLrUtilities.getLinkedSharedAlbums(srcPhoto)
+	local sharedAlbumPluginMetadata = srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
+	local sharedAlbumsPS
 
---[[
 	-- format of plugin metadata: <collectionId>:<sharedAlbumName>/{<collectionId>:<sharedAlbumName>}
-	
-	sharedAlbumPluginMetadata = srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', 1, true)
 	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
-	local pluginMetadataArray = split(sharedAlbumPluginMetadata, '/')
-    	for i = 1, #pluginMetadataArray do
-    		local collectionId, sharedAlbumName = string.match(pluginMetadataArray[i], '(%d+):(.*)') 
-    
-    		if collectionId == publishedCollectionId then
-        		numSharedAlbumsPS = numSharedAlbumsPS + 1
-        		sharedAlbumsPS[numSharedAlbumsPS] = sharedAlbumName
-			end
-    	end
+		sharedAlbumsPS = split(sharedAlbumPluginMetadata, '/')
 	end
-]]	
 	writeLogfile(3, string.format("getLinkedSharedAlbums(%s): found Shared Albums: '%s'\n", 
-									srcPhoto:getRawMetadata('path'), table.concat(sharedAlbumsPS, ',')))    		
+									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))    		
 	return sharedAlbumsPS
 end 
 
 --------------------------------------------------------------------------------------------
--- noteSharedAlbumUpdates(sharedAlbumUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
+-- setLinkedSharedAlbums(srcPhoto, sharedAlbums)
+--   store a list of all Shared Album the photo was linked to in private plugin metadata
+function PSLrUtilities.setLinkedSharedAlbums(srcPhoto, sharedAlbums)
+	local activeCatalog 				= LrApplication.activeCatalog()
+	local oldSharedAlbumPluginMetadata 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
+	table.sort(sharedAlbums)
+	local newSharedAlbumPluginMetadata 	= table.concat(sharedAlbums, '/')
+	
+	writeLogfile(3, string.format("setLinkedSharedAlbums(%s): '%s'\n", 
+									srcPhoto:getRawMetadata('path'), ifnil(newSharedAlbumPluginMetadata, '')))    		
+	if newSharedAlbumPluginMetadata ~= oldSharedAlbumPluginMetadata then
+		activeCatalog:withWriteAccessDo( 
+				'Update Plugin Metadata for Shared Albums',
+				function(context)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'sharedAlbums', newSharedAlbumPluginMetadata)
+				end,
+				{timeout=5}
+		)
+		writeLogfile(3, string.format("setLinkedSharedAlbums(%s): updated plugin metadata to '%s'\n", 
+									srcPhoto:getRawMetadata('path'), newSharedAlbumPluginMetadata))    		
+		return 1
+	end
+
+	return 0
+end 
+
+--------------------------------------------------------------------------------------------
+-- noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
 --   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
-function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
+function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
 	local sharedAlbumKeywords 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
-	local sharedAlbumsPS		= PSLrUtilities.getLinkedSharedAlbums(srcPhoto, publishedCollectionId)
+	local oldSharedAlbumsPS		= ifnil(PSLrUtilities.getLinkedSharedAlbums(srcPhoto), {})
+	local newSharedAlbumsPS		= tableShallowCopy(oldSharedAlbumsPS)
 	
 	-- add photo to all given Shared Albums that it is not already member of
 	for i = 1, #sharedAlbumKeywords do
 		local sharedAlbumName = sharedAlbumKeywords[i]
---[[
-		local photoAlreadyinPS = false
+		local photoSharedAlbum = publishedCollectionId .. ':' .. sharedAlbumName
 		
-		for j = 1, #sharedAlbumsPS do
-			if 	sharedAlbumsPS[j].collectionId 		== publishedCollectionId 
-			and sharedAlbumsPS[j].sharedAlbumName 	== sharedAlbumName 
-			then 
-				photoAlreadyinPS = true
-				break 
+		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): found Shared Album %s\n", publishedPhotoId, sharedAlbumName))
+		local sharedAlbumUpdate = nil
+		
+		for k = 1, #sharedAlbumUpdates do
+			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
+				sharedAlbumUpdate = sharedAlbumUpdates[k]
+				break
 			end
 		end
-		if not photoAlreadyinPS then
-]]
-			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): found Shared Album %s\n", publishedPhotoId, sharedAlbumName))
-			local sharedAlbumUpdate = nil
-			
-			for k = 1, #sharedAlbumUpdates do
-				if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
-					sharedAlbumUpdate = sharedAlbumUpdates[k]
-					break
-				end
-			end
-			if not sharedAlbumUpdate then
-				writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
-				sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, addPhotos = {}, removePhotos = {} }
-				sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
-			end
-			local addPhotos = sharedAlbumUpdate.addPhotos
-			addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
-		end 
---	end
+		if not sharedAlbumUpdate then
+			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, addPhotos = {}, removePhotos = {} }
+			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
+		end
+		local addPhotos = sharedAlbumUpdate.addPhotos
+		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
+		
+		if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
+			table.insert(newSharedAlbumsPS, photoSharedAlbum)
+			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding '%s' to plugin metadata\n", publishedPhotoId, photoSharedAlbum))
+		end
+	end 
 
---[[
 	-- remove photo from all Shared Albums that it is not member of
-	for i = 1, #sharedAlbumsPS do
-		local sharedAlbumFound = false
-		for j = 1, #sharedAlbumKeywords do
-			if 	sharedAlbumsPS[i].collectionId 		== publishedCollectionId
-			and sharedAlbumsPS[i].sharedAlbumName 	== sharedAlbumKeywords[j] 
-			then 
-				sharedAlbumFound = true 
-			end
-		end
-		if not sharedAlbumFound then
-			if not	sharedAlbumUpdates[publishedPhotoId] then
-					sharedAlbumUpdates[publishedPhotoId] = { add = {}, remove = {}, }
-			end
-			if not	sharedAlbumUpdates[publishedPhotoId].remove[publishedPhotoId] then
-					sharedAlbumUpdates[publishedPhotoId].remove[publishedPhotoId] = { isVideo = srcPhoto:getRawMetadata('isVideo') }
-			end 
-		end 
+	for i = 1, #oldSharedAlbumsPS do
+		local collId, sharedAlbumName = string.match(oldSharedAlbumsPS[i], '(%d+):(.*)')
+		local sharedAlbumUpdate = nil
+
+		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): checking %s:%s against %s:sharedAlbumKeywords\n", publishedPhotoId, collId, sharedAlbumName, tostring(publishedCollectionId)))
+		if collId == tostring(publishedCollectionId) and not findInStringTable(sharedAlbumKeywords, sharedAlbumName) then
+			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): '%s' is not in sharedAlbumKeywords\n", publishedPhotoId, sharedAlbumName))
+    		for k = 1, #sharedAlbumUpdates do
+    			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
+    				sharedAlbumUpdate = sharedAlbumUpdates[k]
+    				break
+    			end
+    		end
+
+    		if not sharedAlbumUpdate then
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, addPhotos = {}, removePhotos = {} }
+    			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
+    		end
+    		local removePhotos = sharedAlbumUpdate.removePhotos
+    		removePhotos[#removePhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
+    		
+    		local removeId = findInStringTable(newSharedAlbumsPS, oldSharedAlbumsPS[i])
+    		table.remove(newSharedAlbumsPS, removeId)
+ 		end 
 	end
-]]
+
+	writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): old plugin metadata '%s', new plugin metadata '%s'\n", 
+									publishedPhotoId, table.concat(oldSharedAlbumsPS, '/'), table.concat(newSharedAlbumsPS, '/')))
+	if table.concat(oldSharedAlbumsPS, '/') ~= table.concat(newSharedAlbumsPS, '/') then
+		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding plugin metadata %s to sharedPhotoUpdates\n", publishedPhotoId, table.concat(newSharedAlbumsPS, '/')))
+		local sharedPhotoUpdate = { srcPhoto = srcPhoto, sharedAlbums = newSharedAlbumsPS }
+		table.insert(sharedPhotoUpdates, sharedPhotoUpdate)
+	end
+	
 	return true 
 end
 

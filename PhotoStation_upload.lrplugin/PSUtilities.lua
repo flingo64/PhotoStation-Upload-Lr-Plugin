@@ -150,6 +150,44 @@ function trim(s)
  	return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
 end
 
+---------------------- table operations ----------------------------------------------------------
+
+-- tableShallowCopy (origTable)
+-- make a shallow copy of a table
+function tableShallowCopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in pairs(orig) do
+            copy[orig_key] = orig_value
+			writeLogfile(4, string.format("tableCopy: copying orig_key %s, orig_value %s\n", orig_key, tostring(orig_value)))
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+--[[
+-- tableDeepCopy (origTable)
+-- make a deep copy of a table
+function tableDeepCopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[tableDeepCopy(orig_key)] = tableDeepCopy(orig_value)
+        end
+        setmetatable(copy, tableDeepCopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+]]
+
 --------------------------------------------------------------------------------------------
 -- trimTable(inputTable)
 -- trims leading and trailing white spaces from all strings in a table
@@ -170,6 +208,18 @@ function findInTable(inputTable, indexField, indexValue, valueField)
 	
 	for i = 1, #inputTable do
 		if inputTable[i][indexField] == indexValue then return inputTable[i][valueField] end
+	end
+	
+	return nil
+end
+
+--------------------------------------------------------------------------------------------
+-- findInStringTable(inputTable, string)
+function findInStringTable(inputTable, string)
+	if not inputTable then return nil end
+	
+	for i = 1, #inputTable do
+		if inputTable[i] == string then return i end
 	end
 	
 	return nil
@@ -432,44 +482,6 @@ function urlencode(str)
 	end
 	return str
 end 
-
----------------------- table operations ----------------------------------------------------------
-
--- tableShallowCopy (origTable)
--- make a shallow copy of a table
---[[
-function tableShallowCopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in pairs(orig) do
-            copy[orig_key] = orig_value
-			writeLogfile(2, string.format("tableCopy: copying orig_key %s, orig_value %s\n", orig_key, tostring(orig_value)))
-        end
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-
--- tableDeepCopy (origTable)
--- make a deep copy of a table
-function tableDeepCopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in next, orig, nil do
-            copy[tableDeepCopy(orig_key)] = tableDeepCopy(orig_value)
-        end
-        setmetatable(copy, tableDeepCopy(getmetatable(orig)))
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
-end
-]]
 
 ---------------------------------------------------------------------------------------------------- 
 -- applyDefaultsIfNeededFromTo(srcTable, dstTable

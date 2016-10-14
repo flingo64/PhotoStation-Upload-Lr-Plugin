@@ -467,9 +467,9 @@ function PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, makePublic)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
+-- PhotoStation.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 -- add photo to Shared Album
-function PSPhotoStationAPI.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
+function PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	local itemList = table.concat(photoIds, ',')
 	local formData = 'method=add_items&' ..
 				 'version=1&' .. 
@@ -485,9 +485,9 @@ function PSPhotoStationAPI.addPhotosToSharedAlbum(h, photoIds, sharedAlbumId)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.removePhotosFromSharedAlbum(h, photoIds, sharedAlbumName)
+-- PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumId, photoIds)
 -- remove photo from Shared Album
-function PSPhotoStationAPI.removePhotosFromSharedAlbum(h, photoIds, sharedAlbumId)
+function PSPhotoStationAPI.removePhotosFromSharedAlbum(h, sharedAlbumId, photoIds)
 	local itemList = table.concat(photoIds, ',')
 	local formData = 'method=remove_items&' ..
 				 'version=1&' .. 
