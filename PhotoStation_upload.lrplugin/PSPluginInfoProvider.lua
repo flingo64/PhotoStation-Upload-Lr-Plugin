@@ -27,13 +27,14 @@ Photo StatLr uses the following free software to do its job:
 ------------------------------------------------------------------------------]]
 
 -- Lightroom SDK
-local LrBinding		= import 'LrBinding'
-local LrHttp 		= import 'LrHttp'
-local LrView 		= import 'LrView'
-local LrPathUtils 	= import 'LrPathUtils'
-local LrFileUtils	= import 'LrFileUtils'
-local LrPrefs		= import 'LrPrefs'
-local LrTasks		= import 'LrTasks'
+local LrBinding			= import 'LrBinding'
+local LrHttp 			= import 'LrHttp'
+local LrView 			= import 'LrView'
+local LrPathUtils 		= import 'LrPathUtils'
+local LrFileUtils		= import 'LrFileUtils'
+local LrFunctionContext	= import 'LrFunctionContext'
+local LrPrefs			= import 'LrPrefs'
+local LrTasks			= import 'LrTasks'
 
 local bind = LrView.bind
 local share = LrView.share
@@ -119,7 +120,8 @@ function pluginInfoProvider.endDialog( propertyTable )
 	prefs.exiftoolprog = propertyTable.exiftoolprog
 
 	if propertyTable.convertAllPhotos then
-		LrTasks.startAsyncTask(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
+--		LrTasks.startAsyncTask(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
+		LrFunctionContext.postAsyncTaskWithContext('ConvertAllPhotos', PSLrUtilities.convertAllPhotos)
 	end
 end
 

@@ -47,6 +47,7 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 -- Lightroom API
 local LrApplication 	= import 'LrApplication'
 local LrDate 			= import 'LrDate'
+local LrDialogs 		= import 'LrDialogs'
 local LrFileUtils 		= import 'LrFileUtils'
 local LrPathUtils 		= import 'LrPathUtils'
 local LrProgressScope 	= import 'LrProgressScope'
@@ -673,8 +674,8 @@ local function getAllPublishedCollectionsFromPublishedCollectionSet(publishedCol
 end
 
 --------------------------------------------------------------------------------------------
--- convertCollection(publishedCollection)
-function PSLrUtilities.convertCollection(publishedCollection)
+-- convertCollection(functionContext, publishedCollection)
+function PSLrUtilities.convertCollection(functionContext, publishedCollection)
 	local activeCatalog 	= LrApplication.activeCatalog()
 	local publishedPhotos 	= publishedCollection:getPublishedPhotos() 
 	local nPhotos 			= #publishedPhotos
@@ -685,7 +686,7 @@ function PSLrUtilities.convertCollection(publishedCollection)
 	local progressScope = LrProgressScope( 
 								{ 	
 								 	title = LOC("$$$/PSUpload/Progress/ConvertCollection=Converting ^1 photos in collection '^2'", nPhotos, publishedCollection:getName()),
---							 		functionContext = context 
+							 		functionContext = functionContext
 							 	})    
 					
 	for i = 1, nPhotos do
@@ -720,13 +721,28 @@ function PSLrUtilities.convertCollection(publishedCollection)
 end
 
 --------------------------------------------------------------------------------------------
+-- printError()
+-- Cleanup handler for a function context
+function PSLrUtilities.printError(success, message)
+    if not success then 
+		writeLogfile(1, 	string.format("That does it, I'm leaving! Internal error: '%s'\n", ifnil(message, 'Unknown error')))
+    end
+end
+
+--------------------------------------------------------------------------------------------
 -- convertAllPhotos()
-function PSLrUtilities.convertAllPhotos()
-	writeLogfile(2, string.format("ConvertAllPhotos: starting\n"))
+function PSLrUtilities.convertAllPhotos(functionContext)
+	writeLogfile(2, string.format("ConvertAllPhotos: starting %s functionContext\n", iif(functionContext, 'with', 'without')))
 	local activeCatalog = LrApplication.activeCatalog()
 --	local publishedCollections = activeCatalog:getPublishedCollections()  -- doesn't work
 	local publishServices = activeCatalog:getPublishServices(_PLUGIN.id)
 	local allPublishedCollections = {}
+
+	if functionContext then
+		LrDialogs.attachErrorDialogToFunctionContext(functionContext)
+		functionContext:addOperationTitleForError("Photo StatLr: That does it, I'm leaving!")
+		functionContext:addCleanupHandler(PSLrUtilities.printError)
+	end
 	
 	if not publishServices then
 		writeLogfile(2, string.format("ConvertAllPhotos: No publish services found, done.\n"))
@@ -767,7 +783,7 @@ function PSLrUtilities.convertAllPhotos()
 	-- now convert them
 	local progressScope = LrProgressScope( 
 								{ 	title = LOC("$$$/PSUpload/Progress/ConvertAll=Photo StatLr: Converting all ^1 collections", #allPublishedCollections),
---							 		functionContext = context 
+							 		functionContext = functionContext 
 							 	})    
 
 	local nPhotosTotal, nProcessedTotal, nConvertedTotal = 0, 0, 0
@@ -775,7 +791,7 @@ function PSLrUtilities.convertAllPhotos()
 	for i = 1, #allPublishedCollections do
 		if progressScope:isCanceled() then break end
 		
-		local nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(allPublishedCollections[i])
+		local nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(functionContext, allPublishedCollections[i])
 	
 		nPhotosTotal  	= nPhotosTotal 		+ nPhotos
 		nProcessedTotal = nProcessedTotal 	+ nProcessed

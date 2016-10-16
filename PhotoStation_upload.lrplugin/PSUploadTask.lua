@@ -444,9 +444,9 @@ local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, vide
 end
 
 -----------------
--- uploadVideoMetadata(videosUploaded, exportParams, failures) 
+-- uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
 -- upload metadata for videos just uploaded
-local function uploadVideoMetadata(videosUploaded, exportParams, failures)
+local function uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures)
 	local catalog = LrApplication.activeCatalog()
 	local nVideos =  #videosUploaded
 	local nProcessed 		= 0 
@@ -455,7 +455,7 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
 								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta=Uploading metadata for ^1 videos", nVideos),
---							 		functionContext = context 
+							 		functionContext = functionContext 
 							 	})    
 	while #videosUploaded > 0 do
 		local videoUploaded 			= videosUploaded[1]
@@ -580,11 +580,11 @@ local function uploadVideoMetadata(videosUploaded, exportParams, failures)
 end
 
 -----------------
--- updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, exportParams, failures) 
+-- updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) 
 -- update Shared Albums for photos/videos just uploaded
 -- 	  sharedAlbumUpdates contains the list of required Shared Album updates (adds and removes)
 -- 	  sharedPhotoUpdates contains the list of required plugin metadata updates
-local function updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, exportParams, failures)
+local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams)
 	local catalog = LrApplication.activeCatalog()
 	local nUpdateItems =  #sharedAlbumUpdates + #sharedPhotoUpdates 
 	local nProcessed 		= 0 
@@ -593,11 +593,12 @@ local function updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, export
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
 								{ 	title = LOC( "$$$/PSUpload/Progress/UpdateSharedAlbums=Updating ^1 shared albums with ^2 photos",  #sharedAlbumUpdates + #sharedPhotoUpdates),
---							 		functionContext = context 
+							 		functionContext = functionContext 
 							 	})    
 	for i = 1, #sharedAlbumUpdates do
 		if progressScope:isCanceled() then break end
 		local sharedAlbumUpdate = sharedAlbumUpdates[i]
+		writeLogfile(2, "Killing me softly" .. nil)
 
 		if #sharedAlbumUpdate.addPhotos > 0 then PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.mkSharedAlbumPublic, sharedAlbumUpdate.addPhotos) end
 		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
@@ -876,10 +877,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	-- Make a local reference to the export parameters.
 	local exportSession = exportContext.exportSession
 	local exportParams = exportContext.propertyTable
-	-- Make a local copy of the export parameters.
---	local origExportParams = exportContext.propertyTable
---	local exportParams = tableShallowCopy(origExportParams["< contents >"])
 	
+	LrDialogs.attachErrorDialogToFunctionContext(functionContext)
+	functionContext:addOperationTitleForError("Photo StatLr: That does it, I'm leaving!")
+	functionContext:addCleanupHandler(PSLrUtilities.printError)
+
 	local message
 	local nPhotos
 	local nProcessed = 0
@@ -926,7 +928,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	if publishMode == "Convert" then
 		local nConverted
-		nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(publishedCollection)
+		nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(functionContext, publishedCollection)
 
     	timeUsed =  LrDate.currentTime() - startTime
     	picPerSec = nProcessed / timeUsed
@@ -1155,8 +1157,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 
 	-- deferred metadata upload
-	if #videosUploaded > 0 then uploadVideoMetadata(videosUploaded, exportParams, failures) end
-	if #sharedAlbumUpdates > 0 then updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, exportParams, failures) end
+	if #videosUploaded > 0 then uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) end
+	if #sharedAlbumUpdates > 0 then updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) end
 	
 	writeLogfile(2,"--------------------------------------------------------------------\n")
 	closeSession(exportParams)
