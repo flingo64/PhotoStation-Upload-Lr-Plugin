@@ -14,7 +14,8 @@ exported functions:
 	- split
 	- trim
 	
-	- findInTable
+	- findInAttrValueTable
+	- findInStringTable
 	- getTableExtract
 	- getTableDiff
 		
@@ -161,7 +162,7 @@ function tableShallowCopy(orig)
         copy = {}
         for orig_key, orig_value in pairs(orig) do
             copy[orig_key] = orig_value
-			writeLogfile(4, string.format("tableCopy: copying orig_key %s, orig_value %s\n", orig_key, tostring(orig_value)))
+--			writeLogfile(4, string.format("tableCopy: copying orig_key %s, orig_value %s\n", orig_key, tostring(orig_value)))
         end
     else -- number, string, boolean, etc
         copy = orig
@@ -202,8 +203,8 @@ function trimTable(inputTable)
 end
 
 --------------------------------------------------------------------------------------------
--- findInTable(inputTable, indexField, indexValue, valueField)
-function findInTable(inputTable, indexField, indexValue, valueField)
+-- findInAttrValueTable(inputTable, indexField, indexValue, valueField)
+function findInAttrValueTable(inputTable, indexField, indexValue, valueField)
 	if not inputTable then return nil end
 	
 	for i = 1, #inputTable do

@@ -525,11 +525,14 @@ function PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
 		if	keyword:getParent() and keyword:getParent():getName() == 'Shared Albums'
 		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Photo StatLr' then
     		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
-    		sharedAlbumKeywords[numSharedAlbumKeywords] = keyword:getName()
+    		sharedAlbumKeywords[numSharedAlbumKeywords] = {
+    				sharedAlbumName 	= keyword:getName(), 
+    				mkSharedAlbumPublic	= iif(findInStringTable(keyword:getSynonyms(), 'private'), false, true)
+    		}
 		end
 	end
 	writeLogfile(3, string.format("getSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
-									srcPhoto:getRawMetadata('path'), table.concat(sharedAlbumKeywords, ',')))
+									srcPhoto:getRawMetadata('path'), table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
 	return sharedAlbumKeywords   		
 
 end
@@ -579,18 +582,21 @@ end
 
 --------------------------------------------------------------------------------------------
 -- noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
+-- 	  sharedAlbumUpdates holds the list of required Shared Album updates (adds and removes)
+-- 	  sharedPhotoUpdates holds the list of required plugin metadata updates
+-- 
 --   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
 function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
-	local sharedAlbumKeywords 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
-	local oldSharedAlbumsPS		= ifnil(PSLrUtilities.getLinkedSharedAlbums(srcPhoto), {})
-	local newSharedAlbumsPS		= tableShallowCopy(oldSharedAlbumsPS)
+	local sharedAlbumsLr 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
+	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getLinkedSharedAlbums(srcPhoto), {})
+	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
 	
 	-- add photo to all given Shared Albums that it is not already member of
-	for i = 1, #sharedAlbumKeywords do
-		local sharedAlbumName = sharedAlbumKeywords[i]
+	for i = 1, #sharedAlbumsLr do
+		local sharedAlbumName		= sharedAlbumsLr[i].sharedAlbumName
+		local mkSharedAlbumPublic 	= sharedAlbumsLr[i].mkSharedAlbumPublic
 		local photoSharedAlbum = publishedCollectionId .. ':' .. sharedAlbumName
 		
-		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): found Shared Album %s\n", publishedPhotoId, sharedAlbumName))
 		local sharedAlbumUpdate = nil
 		
 		for k = 1, #sharedAlbumUpdates do
@@ -601,7 +607,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		end
 		if not sharedAlbumUpdate then
 			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
-			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, addPhotos = {}, removePhotos = {} }
+			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, mkSharedAlbumPublic = mkSharedAlbumPublic, addPhotos = {}, removePhotos = {} }
 			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
 		end
 		local addPhotos = sharedAlbumUpdate.addPhotos
@@ -609,7 +615,6 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		
 		if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
 			table.insert(newSharedAlbumsPS, photoSharedAlbum)
-			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding '%s' to plugin metadata\n", publishedPhotoId, photoSharedAlbum))
 		end
 	end 
 
@@ -618,9 +623,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		local collId, sharedAlbumName = string.match(oldSharedAlbumsPS[i], '(%d+):(.*)')
 		local sharedAlbumUpdate = nil
 
-		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): checking %s:%s against %s:sharedAlbumKeywords\n", publishedPhotoId, collId, sharedAlbumName, tostring(publishedCollectionId)))
-		if collId == tostring(publishedCollectionId) and not findInStringTable(sharedAlbumKeywords, sharedAlbumName) then
-			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): '%s' is not in sharedAlbumKeywords\n", publishedPhotoId, sharedAlbumName))
+		if collId == tostring(publishedCollectionId) and not findInAttrValueTable(sharedAlbumsLr, 'sharedAlbumName', sharedAlbumName, 'sharedAlbumName') then
     		for k = 1, #sharedAlbumUpdates do
     			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
     				sharedAlbumUpdate = sharedAlbumUpdates[k]
@@ -641,8 +644,6 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
  		end 
 	end
 
-	writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): old plugin metadata '%s', new plugin metadata '%s'\n", 
-									publishedPhotoId, table.concat(oldSharedAlbumsPS, '/'), table.concat(newSharedAlbumsPS, '/')))
 	if table.concat(oldSharedAlbumsPS, '/') ~= table.concat(newSharedAlbumsPS, '/') then
 		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding plugin metadata %s to sharedPhotoUpdates\n", publishedPhotoId, table.concat(newSharedAlbumsPS, '/')))
 		local sharedPhotoUpdate = { srcPhoto = srcPhoto, sharedAlbums = newSharedAlbumsPS }

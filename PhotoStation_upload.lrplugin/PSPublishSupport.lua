@@ -353,7 +353,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	local currentAlbum = albumsForCheckEmpty
 	
 	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + PSPhotoStationAPI.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
+		nDeletedAlbums = nDeletedAlbums + PSPhotoStationUtils.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
 		currentAlbum = currentAlbum.next
 	end
 
@@ -889,7 +889,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	local currentAlbum = albumsForCheckEmpty
 	
 	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + PSPhotoStationAPI.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
+		nDeletedAlbums = nDeletedAlbums + PSPhotoStationUtils.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
 		currentAlbum = currentAlbum.next
 	end
 	
@@ -1262,7 +1262,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		if (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
     				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
     				if exifsPS then 
-    					local namePS = findInTable(exifsPS, 'label', 'Object Name', 'value')
+    					local namePS = findInAttrValueTable(exifsPS, 'label', 'Object Name', 'value')
     					if namePS then 
     						writeLogfile(3, string.format("Get ratings/metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
     						titlePS = namePS 

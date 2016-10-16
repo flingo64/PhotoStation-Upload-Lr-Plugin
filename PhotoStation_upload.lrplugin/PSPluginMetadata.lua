@@ -26,7 +26,7 @@ return {
 	metadataFieldsForPhotos = {
 		{
 			id = 'sharedAlbums',
-			title = "Shared Albums",
+--			title = "Shared Albums",
 --			dataType = 'string',
 		},
 	},

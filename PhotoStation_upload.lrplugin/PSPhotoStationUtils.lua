@@ -16,6 +16,11 @@ Photo Station utilities:
 	- createAndAddPhotoTag
 	- createAndAddPhotoTagList
 
+	- createAndAddPhotosToSharedAlbum
+	- removePhotosFromSharedAlbum
+	
+	- removePhotosFromSharedAlbum
+	
 	- rating2Stars
 	
 	
@@ -455,9 +460,9 @@ function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, t
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, photos) 
+-- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumPublic, photos) 
 -- create a Shared Album and add a list of photos to it
-function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName, photos)
+function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumPublic, photos)
 	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
 	if not sharedAlbumId then 
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
@@ -471,18 +476,20 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	
 	if not sharedAlbumId then return false end
 	
+	PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, mkSharedAlbumPublic) 
 	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
+		PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, mkSharedAlbumPublic) 
 		sharedAlbumMappingUpdate(h)
 	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	end 
 	
 	if not success then return false end 
 	
-	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
+	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumPublic, 'public', 'private'), #photos))
 	return true	
 end
 
@@ -515,13 +522,6 @@ function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, pho
 	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true	
 end
-
----------------------------------------------------------------------------------------------------------
--- rating2Stars (h, dstFilename, isVideo, field, value) 
-function PSPhotoStationUtils.rating2Stars(rating)
-	return string.rep ('*', rating)
-end
-
 
 ---------------------------------------------------------------------------------------------------------
 -- deleteAllEmptyAlbums (h, albumPath, albumsDeleted, photosLeft) 
@@ -583,4 +583,10 @@ function PSPhotoStationUtils.deleteEmptyAlbumAndParents(h, albumPath)
 	end
 	
 	return nDeletedAlbums 
+end
+
+---------------------------------------------------------------------------------------------------------
+-- rating2Stars (h, dstFilename, isVideo, field, value) 
+function PSPhotoStationUtils.rating2Stars(rating)
+	return string.rep ('*', rating)
 end

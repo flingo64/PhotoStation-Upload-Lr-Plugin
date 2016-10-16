@@ -582,6 +582,8 @@ end
 -----------------
 -- updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, exportParams, failures) 
 -- update Shared Albums for photos/videos just uploaded
+-- 	  sharedAlbumUpdates contains the list of required Shared Album updates (adds and removes)
+-- 	  sharedPhotoUpdates contains the list of required plugin metadata updates
 local function updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, exportParams, failures)
 	local catalog = LrApplication.activeCatalog()
 	local nUpdateItems =  #sharedAlbumUpdates + #sharedPhotoUpdates 
@@ -590,16 +592,18 @@ local function updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, export
 	writeLogfile(3, string.format("updateSharedAlbums: updating %d shared album and %d photo metadata\n", #sharedAlbumUpdates, #sharedPhotoUpdates))
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/UpdateSharedAlbums=Updating ^1 shared albums", nAlbums),
+								{ 	title = LOC( "$$$/PSUpload/Progress/UpdateSharedAlbums=Updating ^1 shared albums with ^2 photos",  #sharedAlbumUpdates + #sharedPhotoUpdates),
 --							 		functionContext = context 
 							 	})    
 	for i = 1, #sharedAlbumUpdates do
 		if progressScope:isCanceled() then break end
 		local sharedAlbumUpdate = sharedAlbumUpdates[i]
 
-		if #sharedAlbumUpdate.addPhotos > 0 then PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.addPhotos) end
+		if #sharedAlbumUpdate.addPhotos > 0 then PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.mkSharedAlbumPublic, sharedAlbumUpdate.addPhotos) end
 		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
-   		nProcessed = nProcessed + 1
+		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n', 
+										sharedAlbumUpdate.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
+		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
 	end 
 
@@ -608,6 +612,7 @@ local function updateSharedAlbums(sharedAlbumUpdates, sharedPhotoUpdates, export
 		local sharedPhotoUpdate = sharedPhotoUpdates[i]
 
 		PSLrUtilities.setLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
+		writeLogfile(3, string.format("%s: updated plugin metadata.\n",	sharedPhotoUpdate.srcPhoto:getRawMetadata('path')))
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
 	end 
@@ -834,7 +839,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 	local currentAlbum = albumsForCheckEmpty
 	
 	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + PSPhotoStationAPI.deleteEmptyAlbumAndParents(exportParams.uHandle, currentAlbum.albumPath)
+		nDeletedAlbums = nDeletedAlbums + PSPhotoStationUtils.deleteEmptyAlbumAndParents(exportParams.uHandle, currentAlbum.albumPath)
 		currentAlbum = currentAlbum.next
 	end
 	
