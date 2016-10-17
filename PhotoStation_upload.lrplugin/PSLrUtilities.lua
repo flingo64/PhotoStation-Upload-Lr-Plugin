@@ -453,6 +453,70 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 end
 
 --------------------------------------------------------------------------------------------
+-- addKeywordSynonym(keywordId, synonym)
+-- adds a synonym to a keyword
+function PSLrUtilities.addKeywordSynonym(keywordId, synonym)
+	local catalog = LrApplication.activeCatalog()
+	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
+	
+	if not keywords or not keywords[1] then
+		return false
+	end
+	
+	local keyword = keywords[1]
+	local keywordSynonyms = keyword:getSynonyms()
+	
+	if findInStringTable(keywordSynonyms, synonym) then return true end
+
+	table.insert(keywordSynonyms, synonym)
+
+	catalog:withWriteAccessDo( 
+		'AddShareUrl to SharedAlbumKeyword ',
+		function(context)
+			keyword:setAttributes({synonyms = keywordSynonyms})
+		end,
+		{timeout=5}
+	)
+
+	return true
+end
+
+--------------------------------------------------------------------------------------------
+-- addKeywordSynonym(keywordId, synonym)
+-- adds a synonym to a keyword
+function PSLrUtilities.removeKeywordSynonym(keywordId, synonym)
+	local catalog = LrApplication.activeCatalog()
+	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
+	
+	if not keywords or not keywords[1] then
+		return false
+	end
+	
+	local keyword = keywords[1]
+	local keywordSynonyms = keyword:getSynonyms()
+	local synonymFound = false
+	
+	for i = 1, #keywordSynonyms do
+		if string.match(keywordSynonyms[i], synonym) then
+			table.remove(keywordSynonyms, i)
+			synonymFound = true
+			break
+		end
+	end
+
+	if synonymFound then
+    	catalog:withWriteAccessDo( 
+    		'RemoveShareUrl from SharedAlbumKeyword ',
+    		function(context)
+    			keyword:setAttributes({synonyms = keywordSynonyms})
+    		end,
+    		{timeout=5}
+    	)
+	end 
+	return true
+end
+
+--------------------------------------------------------------------------------------------
 -- getKeywordObjects(srcPhoto, keywordNameTable)
 -- returns the keyword objects belonging to the keywords in the keywordTable
 -- will only return exportable leaf keywords (synonyms and parent keywords are not returned)
@@ -488,14 +552,14 @@ end
 -- create (if not existing) list of keyword hierarchies and add it to a photo. 
 -- keyword hierarchies look like: '{parentKeyword|}keyword
 function PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
-	local activeCatalog = LrApplication.activeCatalog()
+	local catalog = LrApplication.activeCatalog()
 	
 	for i = 1, #keywordNamesAdd do
 		local keywordHierarchy = split(keywordNamesAdd[i], '|')
 		local keyword, parentKeyword = nil, nil
 		
 		for j = 1, #keywordHierarchy do
-			keyword = activeCatalog:createKeyword(keywordHierarchy[j], {}, true, parentKeyword, true)
+			keyword = catalog:createKeyword(keywordHierarchy[j], {}, true, parentKeyword, true)
 			parentKeyword = keyword
 		end
 		srcPhoto:addKeyword(keyword) 
@@ -528,7 +592,8 @@ function PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
     		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
     		sharedAlbumKeywords[numSharedAlbumKeywords] = {
     				sharedAlbumName 	= keyword:getName(), 
-    				mkSharedAlbumPublic	= iif(findInStringTable(keyword:getSynonyms(), 'private'), false, true)
+    				mkSharedAlbumPublic	= iif(findInStringTable(keyword:getSynonyms(), 'private'), false, true),
+    				keywordId			= keyword.localIdentifier,
     		}
 		end
 	end
@@ -596,6 +661,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 	for i = 1, #sharedAlbumsLr do
 		local sharedAlbumName		= sharedAlbumsLr[i].sharedAlbumName
 		local mkSharedAlbumPublic 	= sharedAlbumsLr[i].mkSharedAlbumPublic
+		local keywordId				= sharedAlbumsLr[i].keywordId
 		local photoSharedAlbum = publishedCollectionId .. ':' .. sharedAlbumName
 		
 		local sharedAlbumUpdate = nil
@@ -608,7 +674,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		end
 		if not sharedAlbumUpdate then
 			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
-			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, mkSharedAlbumPublic = mkSharedAlbumPublic, addPhotos = {}, removePhotos = {} }
+			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, mkSharedAlbumPublic = mkSharedAlbumPublic, keywordId = keywordId, addPhotos = {}, removePhotos = {} }
 			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
 		end
 		local addPhotos = sharedAlbumUpdate.addPhotos

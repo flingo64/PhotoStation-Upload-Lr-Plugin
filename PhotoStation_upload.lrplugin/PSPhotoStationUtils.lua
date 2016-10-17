@@ -464,6 +464,7 @@ end
 -- create a Shared Album and add a list of photos to it
 function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumPublic, photos)
 	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
+	local shareResult
 	if not sharedAlbumId then 
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
 		sharedAlbumMappingUpdate(h)
@@ -476,21 +477,24 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	
 	if not sharedAlbumId then return false end
 	
-	PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, mkSharedAlbumPublic) 
 	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
-		PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, mkSharedAlbumPublic) 
 		sharedAlbumMappingUpdate(h)
+		if not sharedAlbumId then return false end
 	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	end 
 	
 	if not success then return false end 
 	
+	shareResult = PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, mkSharedAlbumPublic) 
+
+	if not shareResult then  return false end
+	
 	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumPublic, 'public', 'private'), #photos))
-	return true	
+	return true, shareResult.public_share_url	
 end
 
 ---------------------------------------------------------------------------------------------------------

@@ -426,7 +426,7 @@ function PSPhotoStationAPI.getSharedAlbums(h, type)
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
 	
-	if not respArray then return false, errorCode end 
+	if not respArray then return nil, errorCode end 
 
 	writeLogfile(3, string.format('getSharedAlbums() returns %d albums.\n', respArray.data.total))
 	return respArray.data.items
@@ -460,10 +460,10 @@ function PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, makePublic)
 					 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
 	
-	if not respArray then return false, errorCode end 
+	if not respArray then return nil, errorCode end 
 
 	writeLogfile(3, string.format('makeSharedAlbumPublic(%s, %s) returns shareId %s.\n', sharedAlbumId, tostring(makePublic), respArray.data.shareid))
-	return respArray.data.shareid
+	return respArray.data
 end
 
 ---------------------------------------------------------------------------------------------------------

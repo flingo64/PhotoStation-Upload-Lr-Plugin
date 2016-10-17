@@ -598,9 +598,18 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 	for i = 1, #sharedAlbumUpdates do
 		if progressScope:isCanceled() then break end
 		local sharedAlbumUpdate = sharedAlbumUpdates[i]
-		writeLogfile(2, "Killing me softly" .. nil)
 
-		if #sharedAlbumUpdate.addPhotos > 0 then PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.mkSharedAlbumPublic, sharedAlbumUpdate.addPhotos) end
+		if #sharedAlbumUpdate.addPhotos > 0 then 
+			local success, share_url = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
+																							sharedAlbumUpdate.mkSharedAlbumPublic, sharedAlbumUpdate.addPhotos)
+			if success then
+				if sharedAlbumUpdate.mkSharedAlbumPublic and share_url then 
+					PSLrUtilities.addKeywordSynonym(sharedAlbumUpdate.keywordId, share_url) 
+				elseif not sharedAlbumUpdate.mkSharedAlbumPublic then 
+					PSLrUtilities.removeKeywordSynonym(sharedAlbumUpdate.keywordId, 'http[s]*://.*')
+				end
+			end
+		end
 		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
 		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n', 
 										sharedAlbumUpdate.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
