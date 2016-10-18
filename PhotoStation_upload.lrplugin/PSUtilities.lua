@@ -504,14 +504,15 @@ end
 -- 	- login to Photo Station, if required
 --	- start exiftool listener, if required
 function openSession(exportParams, publishedCollection, operation)
-	-- if "use secondary server" was choosen, temporarily overwrite primary address
 	writeLogfile(4, string.format("openSession: operation = %s, publishMode = %s\n", operation, exportParams.publishMode))
+
+	-- if "use secondary server" was choosen, temporarily overwrite primary address
 	if exportParams.useSecondAddress then
 		writeLogfile(4, "openSession: copy second server parameters\n")
-		exportParams.proto = exportParams.proto2
-		exportParams.servername = exportParams.servername2
+--		exportParams.proto = exportParams.proto2
+--		exportParams.servername = exportParams.servername2
 		exportParams.serverTimeout = exportParams.serverTimeout2
-		exportParams.serverUrl = exportParams.proto .. "://" .. exportParams.servername
+		exportParams.serverUrl = exportParams.proto2 .. "://" .. exportParams.servername2
 	end
 	
 	local collectionSettings
@@ -581,7 +582,7 @@ function openSession(exportParams, publishedCollection, operation)
 	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
 		local result, errorCode
 		exportParams.uHandle, errorCode = PSPhotoStationAPI.initialize(exportParams.serverUrl,
-														ifnil(exportParams.psPath, iif(exportParams.usePersonalPS, "/~" .. ifnil(exportParams.personalPSOwner, "unknown") .. "/photo/", "/photo/")),
+														iif(exportParams.usePersonalPS, "/~" .. ifnil(exportParams.personalPSOwner, "unknown") .. "/photo/", "/photo/"),
 														exportParams.serverTimeout)
 		if not exportParams.uHandle then
 			local errorMsg = string.format("Initialization of %s %s at\n%s\nfailed!\nReason: %s\n",
