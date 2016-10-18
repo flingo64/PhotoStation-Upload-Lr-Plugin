@@ -453,9 +453,9 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 end
 
 --------------------------------------------------------------------------------------------
--- addKeywordSynonym(keywordId, synonym)
--- adds a synonym to a keyword
-function PSLrUtilities.addKeywordSynonym(keywordId, synonym)
+-- addKeywordSynonyms(keywordId, synonyms)
+-- adds a list of synonyms to a keyword
+function PSLrUtilities.addKeywordSynonyms(keywordId, synonyms)
 	local catalog = LrApplication.activeCatalog()
 	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
 	
@@ -465,26 +465,32 @@ function PSLrUtilities.addKeywordSynonym(keywordId, synonym)
 	
 	local keyword = keywords[1]
 	local keywordSynonyms = keyword:getSynonyms()
+	local foundNewSynonyms = false
 	
-	if findInStringTable(keywordSynonyms, synonym) then return true end
-
-	table.insert(keywordSynonyms, synonym)
-
-	catalog:withWriteAccessDo( 
-		'AddShareUrl to SharedAlbumKeyword ',
-		function(context)
-			keyword:setAttributes({synonyms = keywordSynonyms})
-		end,
-		{timeout=5}
-	)
-
+	for i = 1, #synonyms do
+		if not findInStringTable(keywordSynonyms, synonyms[i]) then
+			table.insert(keywordSynonyms, synonyms[i])
+			foundNewSynonyms = true 
+		end
+	end
+	
+	if foundNewSynonyms then
+    	catalog:withWriteAccessDo( 
+    		'AddShareUrl to SharedAlbumKeyword ',
+    		function(context)
+    			keyword:setAttributes({synonyms = keywordSynonyms})
+    		end,
+    		{timeout=5}
+    	)
+	end
+	
 	return true
 end
 
 --------------------------------------------------------------------------------------------
--- addKeywordSynonym(keywordId, synonym)
--- adds a synonym to a keyword
-function PSLrUtilities.removeKeywordSynonym(keywordId, synonym)
+-- removeKeywordSynonyms(keywordId, synonyms)
+-- remove a list of synonym patterns from a keyword
+function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms)
 	local catalog = LrApplication.activeCatalog()
 	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
 	
@@ -494,17 +500,19 @@ function PSLrUtilities.removeKeywordSynonym(keywordId, synonym)
 	
 	local keyword = keywords[1]
 	local keywordSynonyms = keyword:getSynonyms()
-	local synonymFound = false
+	local synonymsRemoved = false
 	
 	for i = 1, #keywordSynonyms do
-		if string.match(keywordSynonyms[i], synonym) then
-			table.remove(keywordSynonyms, i)
-			synonymFound = true
-			break
+		for j = 1, #synonyms do
+    		if string.match(keywordSynonyms[i], synonyms[j]) then
+    			table.remove(keywordSynonyms, i)
+    			synonymsRemoved = true
+    			break
+    		end
 		end
 	end
 
-	if synonymFound then
+	if synonymsRemoved then
     	catalog:withWriteAccessDo( 
     		'RemoveShareUrl from SharedAlbumKeyword ',
     		function(context)
@@ -577,18 +585,21 @@ function PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
 end
 
 --------------------------------------------------------------------------------------------
--- getSharedAlbumKeywords(srcPhoto)
+-- getSharedAlbumKeywords(srcPhoto, pubServiceName)
 --   returns a list of all Shared Album keywords. i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
+function PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName)
 	local keywords 					= srcPhoto:getRawMetadata("keywords")  
 	local sharedAlbumKeywords 		= {} 	
 	local numSharedAlbumKeywords 	= 0
 
+	writeLogfile(3, string.format("getSharedAlbumKeywords(%s, %s) starting\n", 
+									srcPhoto:getRawMetadata('path'), pubServiceName))
 	for i = 1, #keywords do
 		local keyword = keywords[i]
 		
-		if	keyword:getParent() and keyword:getParent():getName() == 'Shared Albums'
-		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Photo StatLr' then
+		if	keyword:getParent() and keyword:getParent():getName() == pubServiceName
+		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Shared Albums'
+		and keyword:getParent():getParent():getParent() and keyword:getParent():getParent():getParent():getName() == 'Photo StatLr' then
     		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
     		sharedAlbumKeywords[numSharedAlbumKeywords] = {
     				sharedAlbumName 	= keyword:getName(), 
@@ -597,8 +608,8 @@ function PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
     		}
 		end
 	end
-	writeLogfile(3, string.format("getSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
-									srcPhoto:getRawMetadata('path'), table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
+	writeLogfile(3, string.format("getSharedAlbumKeywords(%s, %s): found Shared Albums: '%s'\n", 
+									srcPhoto:getRawMetadata('path'), pubServiceName, table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
 	return sharedAlbumKeywords   		
 
 end
@@ -653,7 +664,8 @@ end
 -- 
 --   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
 function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
-	local sharedAlbumsLr 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto)
+	local pubServiceName = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(publishedCollectionId):getService():getName()
+	local sharedAlbumsLr 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName)
 	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getLinkedSharedAlbums(srcPhoto), {})
 	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
 	
