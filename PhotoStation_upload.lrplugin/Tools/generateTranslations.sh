@@ -31,7 +31,7 @@ for lang in de es fr it ja ko nl pt sv zh_cn zh_tw ; do
 	#combine all results
 	cat TranslatedStrings_${lang}_ok.txt TranslatedStrings_${lang}_missing.txt TranslatedStrings_${lang}_remove.txt | sort > TranslatedStrings_${lang}.txt 
 	#remove all language specific temporary files
-	rm -f TranslationPathsAll_${lang}.txt TranslationPaths_${lang}.txt TranslatedStrings_${lang}_ok.txt TranslatedStrings_${lang}_missing.txt TranslatedStrings_${lang}_remove.txt
+	rm -f TranslationPathsAll_${lang}.txt TranslationPaths_${lang}.txt TranslatedStrings_${lang}_ok.txt TranslatedStrings_${lang}_missing.txt TranslatedStrings_${lang}_remove.txt TranslatedStrings_${lang}.txt.bak 
 	#unix2dos ../TranslatedStrings_${lang}.txt
 done
 #remove all base language temporary files
