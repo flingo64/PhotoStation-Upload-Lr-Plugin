@@ -242,23 +242,67 @@ end
 --- (optional) This plug-in defined callback function is called when the user creates
  -- a new publish service via the Publish Manager dialog. It allows your plug-in
  -- to perform additional initialization.
---[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.didCreateNewPublishService( publishSettings, info )
+	local sharedAlbumKeywordRoot = "Photo StatLr|Shared Albums|" .. info.connectionName
+	writeLogfile(2, string.format("didCreateNewPublishService: adding Shared Album Keyword Hierarchy '%s'\n", sharedAlbumKeywordRoot))
+	local keyword
+
+	LrApplication.activeCatalog():withWriteAccessDo( 
+		'AddSharedAlbumHierarchy',
+		function(context)
+			keyword = PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(sharedAlbumKeywordRoot, nil)
+			-- set Attributes in same WriteAccess gate should work, but dosen't
+	  		-- if keyword then keyword:setAttributes({includeOnExport = false}) end
+  		end,
+		{timeout=5}
+	)
+
+	if keyword then
+    	LrApplication.activeCatalog():withWriteAccessDo( 
+    		'SetAttrForSharedAlbumHierarchy',
+    		function(context)
+    			keyword:setAttributes({includeOnExport = false})
+    		end,
+    		{timeout=5}
+    	)
+	end
 end
 
---]]
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user creates
  -- a new publish service via the Publish Manager dialog. It allows your plug-in
  -- to perform additional initialization.
---[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.didUpdatePublishService( publishSettings, info )
-end
+	local sharedAlbumKeywordRoot = "Photo StatLr|Shared Albums|" .. info.connectionName
+	writeLogfile(2, string.format("didUpdatePublishService: adding Shared Album Keyword Hierarchy '%s'\n", sharedAlbumKeywordRoot))
+	local keyword
 
-]]--
+	-- we should rename the existing belonging Shared Album keyword, 
+	-- but were not able to get the old service name
+	-- so, add another Shared Album keyword
+	LrApplication.activeCatalog():withWriteAccessDo( 
+		'AddSharedAlbumHierarchy',
+		function(context)
+			keyword = PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(sharedAlbumKeywordRoot, nil)
+			-- set Attributes in same WriteAccess gate should work, but dosen't
+	  		-- if keyword then keyword:setAttributes({includeOnExport = false}) end
+  		end,
+		{timeout=5}
+	)
+
+	if keyword then
+    	LrApplication.activeCatalog():withWriteAccessDo( 
+    		'SetAttrForSharedAlbumHierarchy',
+    		function(context)
+    			keyword:setAttributes({includeOnExport = false})
+    		end,
+    		{timeout=5}
+    	)
+	end
+end
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
@@ -266,24 +310,28 @@ end
  -- It provides an opportunity for you to customize the confirmation dialog.
  -- @return (string) 'cancel', 'delete', or nil (to allow Lightroom's default
  -- dialog to be shown instead)
+--
 --[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.shouldDeletePublishService( publishSettings, info )
 end
 
-]]--
+]]
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
  -- has confirmed the deletion of the publish service from Lightroom.
  -- It provides a final opportunity for	you to remove private data
  -- immediately before the publish service is removed from the Lightroom catalog.
---[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.willDeletePublishService( publishSettings, info )
+	-- we would like to remove the belonging Shared Album keyword hierarchy here
+	-- but: there is no API to remove keywords ...
+	
+	LrDialogs.message("Photo StatLr: Delete Publish Service", 
+					LOC("$$$/PSUpload/FinalMsg/DeletePublishService/RemoveSharedAlbum=Please consider removing the following service-related keyword hierarchy:\n'^1'.",
+						"Photo StatLr|Shared Albums|" .. info.connectionName), 'info') 
 end
-
---]]
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
@@ -293,10 +341,10 @@ end
  -- @return (string) "ignore", "cancel", "delete", or nil
  -- (If you return nil, Lightroom's default dialog will be displayed.)
 --[[ Not used for Photo StatLr plug-in.
-]]--
 
 function publishServiceProvider.shouldDeletePublishedCollection( publishSettings, info )
 end
+]]
 
 
 --------------------------------------------------------------------------------
@@ -1491,8 +1539,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         				if ratingChanged		then srcPhoto:setRawMetadata('rating', ratingPS) end
         				if ratingTagChanged		then srcPhoto:setRawMetadata('rating', ratingTagPS) end
         				if tagsChanged then 
-        					if #keywordNamesAdd > 0 then PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd) end
-        					if #keywordsRemove  > 0	then PSLrUtilities.removePhotoKeywords (srcPhoto, keywordsRemove) end
+    						for i = 1, #keywordNamesAdd do PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(keywordNamesAdd[i], srcPhoto)	end
+    						for i = 1, #keywordsRemove 	do srcPhoto:removeKeyword(keywordsRemove[i])	end
         				end 
         				if needRepublish 		then photoInfo.publishedPhoto:setEditedFlag(true) end
         			end,
