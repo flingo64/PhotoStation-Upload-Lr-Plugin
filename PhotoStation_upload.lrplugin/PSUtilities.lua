@@ -763,7 +763,7 @@ function showFinalMessage (title, message, msgType)
 
 	if msgType == 'critical' or msgType == 'warning' then 
 --		LrDialogs.message(title, 'Booo!! ' .. message, msgType)
-		local action = LrDialogs.confirm(title, iif(msgType == 'critical', 'Booo!! ', ' Well, that was different: ') .. message, "Go to Logfile", "Never mind")
+		local action = LrDialogs.confirm(title, iif(msgType == 'critical', 'Booo!!\n', ' Well, that was different:\n') .. message, "Go to Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(getLogFilename())
 		end	
