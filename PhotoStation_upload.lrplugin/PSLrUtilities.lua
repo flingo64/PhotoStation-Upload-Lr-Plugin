@@ -17,8 +17,9 @@ Lightroom utilities:
 	- noteAlbumForCheckEmpty
 	
 	- getKeywordObjects
-	- addPhotoKeywordNames
-	- removePhotoKeyword
+	- addKeywordHierarchyToCatalogAndPhoto
+	- renameKeyword
+	
 	- getSharedAlbumKeywords
 	
 	- convertCollection
@@ -556,31 +557,52 @@ function PSLrUtilities.getKeywordObjects(srcPhoto, keywordNameTable)
 end
 
 --------------------------------------------------------------------------------------------
--- addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
--- create (if not existing) list of keyword hierarchies and add it to a photo. 
+-- addKeywordHierarchyToCatalogAndPhoto(keywordPath, srcPhoto)
+-- create (if not existing) a keyword hierarchy and add it to a photo if given. 
 -- keyword hierarchies look like: '{parentKeyword|}keyword
-function PSLrUtilities.addPhotoKeywordNames(srcPhoto, keywordNamesAdd)
+--  returns the created leaf keyword
+function PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(keywordPath, srcPhoto)
 	local catalog = LrApplication.activeCatalog()
+	local keywordHierarchy = split(keywordPath, '|')
+	local keyword, parentKeyword = nil, nil
 	
-	for i = 1, #keywordNamesAdd do
-		local keywordHierarchy = split(keywordNamesAdd[i], '|')
-		local keyword, parentKeyword = nil, nil
-		
-		for j = 1, #keywordHierarchy do
-			keyword = catalog:createKeyword(keywordHierarchy[j], {}, true, parentKeyword, true)
-			parentKeyword = keyword
-		end
-		srcPhoto:addKeyword(keyword) 
+	writeLogfile(3, string.format("addKeywordHierarchyToCatalogAndPhoto('%s')\n", table.concat(keywordHierarchy, '->')))
+	
+	for i = 1, #keywordHierarchy do
+		writeLogfile(3, string.format("addKeywordHierarchyToCatalogAndPhoto('%s'): add '%s'\n", table.concat(keywordHierarchy, '->'), keywordHierarchy[i]))
+		keyword = catalog:createKeyword(keywordHierarchy[i], {}, true, parentKeyword, true)
+		parentKeyword = keyword
 	end
-	return true
+	if srcPhoto then srcPhoto:addKeyword(keyword) end 
+
+	return keyword
 end
 
 --------------------------------------------------------------------------------------------
--- removePhotoKeywords(srcPhoto, keywordsRemove)
-function PSLrUtilities.removePhotoKeywords(srcPhoto, keywordsRemove)
-	for i = 1, #keywordsRemove do
-		srcPhoto:removeKeyword(keywordsRemove[i])
+-- renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
+function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
+	writeLogfile(3, string.format("renameKeyword('%s', '%s', '%s', '%s')\n", table.concat(ifnil(rootKeywords, {}), '|'), ifnil(keywordParent, ''), oldKeywordName, newKeywordName))
+	local keywordHierarchy = split(keywordParent, '|')
+
+	if not keywordHierarchy then
+    	for i = 1, #rootKeywords do
+    		if rootKeywords[i]:getName() == oldKeywordName then
+				writeLogfile(3, string.format("renameKeyword() found'%', rename to '%s'\n", oldKeywordName, newKeywordName))
+    			rootKeywords[i]:setAttributes({keywordName = newKeywordName})
+    			return true
+   			end
+    	end
+    	-- keyword not found
+    	return false
 	end
+	
+	-- keyword hierarchy is not empty
+	for i = 1, #rootKeywords do
+		if rootKeywords[i]:getName() == keywordHierarchy[1] then
+			return PSLrUtilities.renameKeyword(rootKeywords[i]:getChildren(), table.concat(keywordHierarchy, '|', 2))	
+		end	
+	end
+	
 	return true
 end
 
