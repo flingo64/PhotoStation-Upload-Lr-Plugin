@@ -211,7 +211,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
     
 				f:row {
 					f:static_text {
-    					title 			= LOC "$$$/PSUpload/Dialogs/Header/Slogan=S: We got our money's worth tonight.\nW: But we paid nothing.\nS: That's what we got!\n",
+    					title 			= "S: We got our money's worth tonight.\nW: But we paid nothing.\nS: That's what we got!\n",
     					font			= '<system/bold>', 
 					},
 				},
@@ -245,7 +245,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 				
 				f:row {
         			f:push_button {
-        				title 			= LOC "$$$/PSUpload/Dialogs/Header/Double=Double or nothing, next week's show?",
+        				title 			= "Double or nothing, next week's show?",
         				tooltip 		= LOC "$$$/PSUpload/Dialogs/Header/Donate=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
         				alignment 		= 'center',
     					font			= '<system/bold>', 
@@ -298,7 +298,7 @@ function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection, d
     				fill_hoizontal = 0.6,
     				f:row {
             			f:static_text {
-            				title 		= LOC "$$$/PSUpload/CollectionSettings/Header/Slogan=Why would he want to remember this?\n\n",
+            				title 		= "Why would he want to remember this?\n\n",
             				alignment 	= 'center',
         					font		= '<system/bold>', 
             			},
@@ -334,7 +334,7 @@ function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
     				fill_hoizontal = 0.6,
     				f:row {
             			f:static_text {
-            				title 		= LOC "$$$/PSUpload/MissingParams/Header/Slogan=If you had half a mind, you wouldn't be here!\n\n",
+            				title 		= "If you had half a mind, you wouldn't be here!\n\n",
             				alignment 	= 'left',
         					font		= '<system/bold>', 
             			},
