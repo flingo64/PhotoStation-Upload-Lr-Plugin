@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 5.10.x<br>
+Version 6.0.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -15,12 +15,13 @@ Copyright(c) 2016, Martin Messmer<br>
 
 Overview
 =========
-Photo StatLr (formerly called PhotoStation Upload) is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service called "Photo StatLr" and a new Export target also called "Photo StatLr" to the "Export" dialog. 
-Both the Publish service as well as the Export service enable the export of pictures and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create and upload all required thumbnails and accompanying additional video files.<br>
+Photo StatLr (aka PhotoStation Upload) is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service and an Export target called "Photo StatLr" to the "Publish Services" panel / "Export" dialog. 
+Both the Publish service as well as the Export service enable the export of photos and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create 
+and upload all required thumbnails and accompanying additional video files.<br>
 Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature which will download comments and ratings from Photo Station to the Lightroom Comments panel (Library mode: bottom right panel).
 Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label, rating, person tags/faces regions and GPS info. 
 
-This plugin uses the same converters and the same upload API as the official "Synology Photo Station Uploader" tool, but will not use the Uploader itself. The upload API is http-based, so you have to specify the target Photo Station by protocol (http/https) and servename (IP@, hostname, FQDN).
+This plugin uses the same converters and the same upload API as the official "Synology Photo Station Uploader" tool, but does not use the Uploader itself. The Photo Station API is http-based, so you have to specify the target Photo Station by protocol (http/https) and servename (IP@, hostname, FQDN).
 
 Requirements
 =============
@@ -33,7 +34,7 @@ Requirements
 	- MacOS 10.9.5	
 	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
 	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
-	- MacOS 10.12.0
+	- MacOS 10.12.0, 10.12.1
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
@@ -181,7 +182,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 Publish Functionality:
 ---------------------
 
-- All Export Functions are Supported in Publish mode
+- All Export Functions are supported in Publish mode
 
 - Support for __Published Collections and Published Smart Collections__ 
 
@@ -227,6 +228,11 @@ Publish Functionality:
   To identify the Default Collection, just edit an existing Published Collection: the name of the Default Collection will be shown in the header section of the dialog.
   If the Default Collection has been removed before (this was possible in Photo StatLr befor v5.8.0) there is no way to create a new Default Collection for that Publish Service.     
 
+- Manage __Photo Station Shared Albums__ via Shared Album keyword hierarchies in Lr:<br>
+  Define Shared Album keywords under "Photo StatLr" | "Shared Albums" | "\<Publish Service Name\>" and assign them to photos you want to link to Photo Station Shared Albums.
+  As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums.<br>
+  For more infos please read the [Wiki article](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Managing-Photo-Station-Shared-Albums-in-Lightroom-via-Photo-StatLr).
+  
 Download / Sync Functionality:
 -------------------------------
 - Support for re-import of __Comments and Ratings__
@@ -529,6 +535,16 @@ Version 5.9
 Version 5.10
 ------------
 - Added metadata placeholder __{Path:\<level\> \<extract pattern\>}__ to retrieve the (extract of the) \<level\>st directory name of the photo's pathname.<br>
+
+Version 6.0
+------------
+- Added __Photo Station Shared Album__ management: Define __Shared Album keywords__ under "Photo StatLr" | "Shared Albums" | "\<Publish Service Name\>" and assign them to photos you want to link to Photo Station Shared Albums.
+  As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums
+- Fully localizable version: a German and (partially) Korean translation is available. If you like to see your name in the Plugin, please contribute a translation file. Instructions will be available in the Wiki soon!  
+- In case of an plugin exception:
+	- the progress bar will be removed
+	- the exception text will be copied to the logfile
+- Other minor bugfixes 
 
 Copyright
 ==========
