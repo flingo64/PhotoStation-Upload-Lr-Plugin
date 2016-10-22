@@ -428,7 +428,7 @@ end
 function PSDialogs.convertPhotosView(f, propertyTable)
 	return
         f:group_box {
-			title	= 'Convert published photos to Photo StatLr format',
+			title	= LOC "$$$/PSUpload/PluginDialog/Convert=Convert published photos to Photo StatLr format",
 			fill_horizontal = 1,
 
     		f:row {

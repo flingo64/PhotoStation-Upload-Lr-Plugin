@@ -132,6 +132,7 @@
 "$$$/PSUpload/FinalMsg/Upload/Error=^1 von ^2 Fotos hochgeladen in ^3 Sekunden (^4 s/Pic). ^5 konnten nicht hochgeladen werden."
 "$$$/PSUpload/FinalMsg/Upload=^1 von ^2 Fotos hochgeladen in ^3 Sekunden (^4 s/Pic)."
 "$$$/PSUpload/MissingParams/Header/EnterMissing=Bitte die fehlenden Parameter angebenen für:^n^n"
+"$$$/PSUpload/PluginDialog/Convert=Konvertieren von veröffentlichten Foto ins Photo StatLr Format"
 "$$$/PSUpload/PluginDialog/ConvertAll=Konvertiere alle Fotos"
 "$$$/PSUpload/PluginDialog/ConvertAllTT=Konvertiere alle veröffentlichten Fotos ins neue Format."
 "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=Wenn Du von PhotoStation Upload (Plugin Version < 5) zu Photo StatLr updatest und^ndie Download-Funktionen von Photo StatLr nutzen möchtest, dann müssen alle Fotos^nin Veröffentlichten Sammlungen, die die Download Optionen verwenden sollen, Lr-intern konvertiert werden.^nKonvertiere alle Fotos hier oder konvertiere Fotos einer einzelnen Sammlung^nvia 'Veröffentlichen' mit Publish Modus 'Convert'.^n"
