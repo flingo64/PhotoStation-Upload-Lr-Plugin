@@ -600,23 +600,24 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 		local sharedAlbumUpdate = sharedAlbumUpdates[i]
 
 		if #sharedAlbumUpdate.addPhotos > 0 then 
-			local success, share_url = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
+			local success, sharedAlbumId, shareUrl = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
 																							sharedAlbumUpdate.mkSharedAlbumPublic, sharedAlbumUpdate.addPhotos)
 			if success then
         		local firstServerUrl 	= exportParams.proto .. "://" .. exportParams.servername 
         		local secondServerUrl	= iif(ifnil(exportParams.servername2, '') ~= '', exportParams.proto2 .. "://" .. exportParams.servername2, nil)
         		writeLogfile(3, string.format("updateSharedAlbum: firstServer: %s secondServer %s\n", firstServerUrl, ifnil(secondServerUrl, '<nil>')))
         		
-				if sharedAlbumUpdate.mkSharedAlbumPublic and share_url then 
-					local shareUrls = {}
+				if sharedAlbumUpdate.mkSharedAlbumPublic and shareUrl then 
+					local sharedAlbumUrls = {}
+					sharedAlbumUrls[1] = exportParams.psUrl .. "/#!SharedAlbums/" .. sharedAlbumId
 					if not secondServerUrl then
-						shareUrls[1] = share_url
+						sharedAlbumUrls[2] = shareUrl
 					else
-						local pathUrl = string.match(share_url, 'http[s]*://[^/]*(.*)')
-						shareUrls[1] = firstServerUrl .. pathUrl
-						shareUrls[2] = secondServerUrl .. pathUrl
+						local pathUrl = string.match(shareUrl, 'http[s]*://[^/]*(.*)')
+						sharedAlbumUrls[2] = firstServerUrl .. pathUrl
+						sharedAlbumUrls[3] = secondServerUrl .. pathUrl
 					end
-					PSLrUtilities.addKeywordSynonyms(sharedAlbumUpdate.keywordId, shareUrls) 
+					PSLrUtilities.addKeywordSynonyms(sharedAlbumUpdate.keywordId, sharedAlbumUrls) 
 				elseif not sharedAlbumUpdate.mkSharedAlbumPublic then
 					local shareUrlPatterns = {}
 					shareUrlPatterns[1] = firstServerUrl
