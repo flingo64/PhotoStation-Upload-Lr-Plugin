@@ -697,8 +697,7 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 		collectionSetSettings.baseDir = ''
 	end
 
-	return f:group_box {
-		title = "Photo StatLr Settings",  -- this should be localized via LOC
+	return f:view {
 --		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSetSettings ),
@@ -707,22 +706,9 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 			fill_horizontal = 1,
 			spacing = f:label_spacing(),
 
-			f:row {
-				f:static_text {
-					title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Target Album:",
-					alignment = 'right',
-					width = share 'labelWidth'
-				},
-
-				f:edit_field {
-					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in Photo Station)",
-					value = bind 'baseDir',
-					truncation = 'middle',
-					immediate = true,
-					fill_horizontal = 1,
-				},
-
-			},
+			PSDialogs.collectionHeaderView(f, collectionSetSettings, false, nil),
+			
+			PSDialogs.dstRootForSetView(f, collectionSetSettings),
 			
 			f:row {
 				alignment = 'left',
