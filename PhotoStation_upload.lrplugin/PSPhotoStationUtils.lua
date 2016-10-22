@@ -462,6 +462,7 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumPublic, photos) 
 -- create a Shared Album and add a list of photos to it
+-- returns success, sharedAlbumId and share-link (if public)
 function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumPublic, photos)
 	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
 	local shareResult
@@ -494,7 +495,7 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	if not shareResult then  return false end
 	
 	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumPublic, 'public', 'private'), #photos))
-	return true, shareResult.public_share_url	
+	return true, sharedAlbumId, shareResult.public_share_url	
 end
 
 ---------------------------------------------------------------------------------------------------------
