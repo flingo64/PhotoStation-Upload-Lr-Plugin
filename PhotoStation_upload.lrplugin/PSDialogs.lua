@@ -990,6 +990,30 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 end
 
 -------------------------------------------------------------------------------
+-- dstRootForSetView(f, propertyTable)
+--
+function PSDialogs.dstRootForSetView(f, propertyTable)
+	return 
+		f:row {
+--			fill_horizontal = 1,
+
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Target Album:",
+				alignment = 'right',
+				width = share 'labelWidth'
+			},
+
+			f:edit_field {
+				tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in Photo Station)",
+				value = bind 'baseDir',
+				truncation = 'middle',
+				immediate = true,
+				fill_horizontal = 1,
+			},
+		}
+end
+
+-------------------------------------------------------------------------------
 -- targetAlbumView(f, propertyTable)
 --
 function PSDialogs.targetAlbumView(f, propertyTable)
