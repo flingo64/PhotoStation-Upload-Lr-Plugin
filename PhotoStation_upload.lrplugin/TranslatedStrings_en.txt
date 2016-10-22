@@ -148,6 +148,7 @@
 "$$$/PSUpload/PluginDialog/ProgSearch=Search"
 "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder."
 "$$$/PSUpload/PluginDialog/PsSettings=Geneneral Settings"
+"$$$/PSUpload/PluginDialog/PsSettingsSynopsis=Set program paths"
 "$$$/PSUpload/PluginDialog/exiftoolDesc=Enter the path where 'exiftool' is installed.^nRequired, if you want to use metadata translations (face regions, color labels, ratings).^n"
 "$$$/PSUpload/Progress/CheckMoved/One=Checking one photo"
 "$$$/PSUpload/Progress/CheckMoved=Checking ^1 photos"

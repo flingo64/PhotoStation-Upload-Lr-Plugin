@@ -206,8 +206,8 @@ end
 function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
 	return {
 		{
-    		title = LOC "$$$/PSUpload/PluginDialog/PsSettings=Geneneral Settings",
-    		synopsis = 'Set program paths',
+    		title = 	LOC "$$$/PSUpload/PluginDialog/PsSettings=Geneneral Settings",
+    		synopsis = 	LOC "$$$/PSUpload/PluginDialog/PsSettingsSynopsis=Set program paths",
 			bind_to_object = propertyTable,
 			     		
     		f:view {
