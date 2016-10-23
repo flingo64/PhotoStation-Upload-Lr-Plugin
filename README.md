@@ -540,7 +540,7 @@ Version 6.0
 ------------
 - Added __Photo Station Shared Album__ management: Define __Shared Album keywords__ under "Photo StatLr" | "Shared Albums" | "\<Publish Service Name\>" and assign them to photos you want to link to Photo Station Shared Albums.
   As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums
-- Fully localizable version: a German and (partially) Korean translation is available. If you like to see your name in the Plugin, please contribute a translation file. Instructions will be available in the Wiki soon!  
+- Fully localizable version: a German and (partially) Korean translation is available. If you like to see your name in the Plugin, please contribute a translation file. Instructions for translation file contribution can be found in __[this Wiki article](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Contributions:-How-to-contribute-a-translation-for-Photo-StatLr.)__!  
 - In case of an plugin exception:
 	- the progress bar will be removed
 	- the exception text will be copied to the logfile
