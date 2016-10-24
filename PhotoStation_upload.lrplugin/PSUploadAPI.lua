@@ -34,6 +34,42 @@ require "PSUtilities"
 
 --====== local functions =====================================================--
 
+---------------------------------------------------------------------------------------------------------
+-- checkPSUploadAPIAnswer(funcAndParams, respHeaders, respBody)
+--   returns success, errorMsg
+local function checkPSUploadAPIAnswer(funcAndParams, respHeaders, respBody)
+	local success, errorMsg = true, nil  
+
+	if not respBody then
+        if respHeaders then
+        	errorMsg = 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
+              				trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
+			writeTableLogfile(3, 'respHeaders', respHeaders)
+        else
+        	errorMsg = 'Unknown error on http request'
+        end
+	   	writeLogfile(1, string.format("%s failed: %s!\n", funcAndParams, errorMsg))
+        return false, errorMsg
+	end
+	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")	
+
+	local respArray = JSON:decode(respBody)
+
+	if not respArray then
+		success = false
+		errorMsg = PSPhotoStationUtils.getErrorMsg(1003)
+ 	elseif not respArray.success then
+ 		success = false
+    	errorMsg = respArray.err_msg
+ 	end
+ 	
+ 	if not success then
+	   	writeLogfile(1, string.format("%s failed: %s!\n", funcAndParams, errorMsg))
+ 	end 
+
+	return success, errorMsg
+end
+
 --====== global functions ====================================================--
 
 PSUploadAPI = {}
@@ -55,24 +91,9 @@ function PSUploadAPI.createFolder (h, parentDir, newDir)
 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, postBody, postHeaders, 'POST', h.serverTimeout, 0)
 	
 	writeLogfile(4, "createFolder: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ",...)\n")
-	if not respBody then
-    writeTableLogfile(3, 'respHeaders', respHeaders)
-    if respHeaders then
-      return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
-          trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
-    else
-      return false, 'Unknown error on http request"'
-    end
-	end
-	writeLogfile(4, "Got Body:\n" .. respBody .."\n")
-
-  local respArray = JSON:decode(respBody)
-  
-  if not respArray.success then
-    writeLogfile(3,"createFolder: " .. parentDir .. " / " .. newDir .. " failed: " .. respArray.err_msg .. "!\n")
-  end
-
-  return respArray.success, respArray.err_msg
+	
+	return checkPSUploadAPIAnswer(string.format("PSUploadAPI.createFolder('%s', '%s')", parentDir, newDir),
+									respHeaders, respBody)
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -138,22 +159,6 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, 
 								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
 	
-	if not respBody then
-    writeTableLogfile(3, 'respHeaders', respHeaders)
-    if respHeaders then
-      return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
-          trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
-    else
-      return false, 'Unknown error on http request"'
-    end
-	end
-	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")	
-
-  local respArray = JSON:decode(respBody)
-  
-  if not respArray.success then
-    writeLogfile(3,"uploadPictureFile: " .. srcFilename .. " to " .. dstDir .. "/" .. dstFilename .. " failed: " .. respArray.err_msg .. "!\n")
-  end
-
-  return respArray.success, respArray.err_msg
+	return checkPSUploadAPIAnswer(string.format("PSUploadAPI.uploadPictureFile('%s', '%s', '%s')", srcFilename, dstDir, dstFilename), 
+									respHeaders, respBody)
 end
