@@ -1103,13 +1103,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in Photo Station
-				local foundPhoto = PSPhotoStationUtils.existsPic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'))
-				if foundPhoto == 'yes' then
+				local useCache = true
+				local photoInfo, additionalInfo = PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), useCache)
+				if photoInfo then
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1
 					PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams) 
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', LrPathUtils.leafName(localPath), publishedPhotoId))
-				elseif foundPhoto == 'no' then
+				elseif not photoInfo and not additionalInfo then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
 					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. newPublishedPhotoId .. '\n')

@@ -10,7 +10,6 @@ Photo Station utilities:
 	- getAlbumUrl
 	- getPhotoUrl
 
-	- existsPic
 	- getPhotoInfo
 	
 	- createAndAddPhotoTag
@@ -135,8 +134,13 @@ local function albumCacheList(h, dstDir, listItems)
 	-- not found in cache: get it from Photo Station
 	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
 	if not albumItems then
-		writeLogfile(2, string.format('albumCacheList: Error on listAlbum: %d\n', errorCode))
-	   	return nil, errorCode
+		if 	errorCode ~= 408  	-- no such file or dir
+		and errorCode ~= 417	-- no such dir for non-administrative users , see GitHub issue 17
+		then
+			writeLogfile(2, string.format('albumCacheList: Error on listAlbum: %d\n', errorCode))
+		   	return nil, errorCode
+		end
+		albumItems = {} -- avoid re-requesting non-existing album 
 	end
 	
 	local cacheEntry = {}
@@ -145,7 +149,7 @@ local function albumCacheList(h, dstDir, listItems)
 	cacheEntry.validUntil = LrDate.currentTime() + albumCacheTimeout
 	table.insert(albumCache, 1, cacheEntry)
 	
-	writeLogfile(3, string.format("albumCacheList(%s): added to cache\n", dstDir))
+	writeLogfile(3, string.format("albumCacheList(%s): added to cache with %d items\n", dstDir, #albumItems))
 	
 	return albumItems
 end
@@ -371,6 +375,7 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- existsPic(dstFilename, isVideo) - check if a photo exists in Photo Station
 -- 	returns true, if filename 	
+--[[ replaced by getPhotoInfo()
 function PSPhotoStationUtils.existsPic(h, dstFilename, isVideo)
 	local _, _, dstDir = string.find(dstFilename, '(.*)\/', 1, false)
 	dstDir = ifnil(dstDir, '') 
@@ -388,10 +393,15 @@ function PSPhotoStationUtils.existsPic(h, dstFilename, isVideo)
 	
 	return 'no'
 end
+]]
 
 ---------------------------------------------------------------------------------------------------------
 -- getPhotoInfo (h, dstFilename, isVideo, useCache) 
--- photo infos are returned in the respective album
+-- return photo infos for a given remote filename
+-- returns:
+-- 		photoInfo, 	photoAdditionalInfo		if remote photo was found
+-- 		nil,		nil						if remote photo was not found
+-- 		nil,		errorCode				on error
 function PSPhotoStationUtils.getPhotoInfo(h, dstFilename, isVideo, useCache)
 	local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
 	local photoInfos, errorCode
@@ -401,7 +411,7 @@ function PSPhotoStationUtils.getPhotoInfo(h, dstFilename, isVideo, useCache)
 		photoInfos, errorCode=  PSPhotoStationAPI.listAlbum(h, dstAlbum, 'photo,video')
 	end
 	
-	if not photoInfos then return false, errorCode end 
+	if not photoInfos then return nil, errorCode end 
 
 	local photoId = PSPhotoStationUtils.getPhotoId(dstFilename, isVideo)
 	for i = 1, #photoInfos do
@@ -412,7 +422,7 @@ function PSPhotoStationUtils.getPhotoInfo(h, dstFilename, isVideo, useCache)
 	end
 	
 	writeLogfile(3, string.format('getPhotoInfo(%s, useCache %s) found no infos.\n', dstFilename, useCache))
-	return nil
+	return nil, nil
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -527,39 +537,6 @@ function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, pho
 	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true	
 end
-
----------------------------------------------------------------------------------------------------------
--- deleteAllEmptyAlbums (h, albumPath, albumsDeleted, photosLeft) 
--- deletes recursively all empty albums below albumPath.
--- fills albumsDeleted and photosLeft 
--- returns:
--- 		success - the Album itself can be deleted (is empty) 
-
---[[
-function PSPhotoStationUtils.deleteAllEmptyAlbums(h, albumPath, albumsDeleted, photosLeft)
-	writeLogfile(3, string.format('deleteEmptyAlbums(%s): starting\n', albumPath))
-	
-	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, albumPath, 'photo,video,album')
-	local canDeleteThisAlbum = true
-		
-	for i = 1, #albumItems do
-		local itemPath = albumPath .. '/' .. albumItems[i].info.name
-		if albumItems[i].type ~= 'album' then
-			table.insert(photosLeft, itemPath) 
-			canDeleteThisAlbum = false
-		else 
-			if PSPhotoStationUtils.deleteAllEmptyAlbums(h, itemPath, albumsDeleted, photosLeft) then
-				PSPhotoStationAPI.deleteAlbum (h, itemPath)
-				table.insert(albumsDeleted, itemPath) 
-			else
-				canDeleteThisAlbum = false
-			end
-		end
-	end
-	writeLogfile(3, string.format('deleteAllEmptyAlbums(%s): returns canDelete %s\n', albumPath, tostring(canDeleteThisAlbum)))
-	return canDeleteThisAlbum
-end
-]]
 
 ---------------------------------------------------------------------------------------------------------
 -- deleteEmptyAlbumAndParents(h, albumPath)
