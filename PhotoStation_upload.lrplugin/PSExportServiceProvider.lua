@@ -82,7 +82,8 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Station to upload to
 		{ key = 'username', 		default = '' },		-- account for Photo Station upload
 		{ key = 'password', 		default = '' },		-- guess what...
-		{ key = 'psVersion', 		default = 65 },		-- Photo Station version: default PS 6.5
+		{ key = 'psVersion', 		default = 66 },		-- Photo Station version: default PS 6.6
+		{ key = 'isPS6', 			default = true },	-- derived from psVersion: use upload optimization for Photo Station 6 (not THUMB_L required)
 
 		-- target album parameters
 		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
@@ -103,7 +104,6 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'largeThumbs', 		default = true },	-- generate large thumbs or small thumbs
 		{ key = 'thumbQuality', 	default = 80 },		-- conversion quality in percent
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
-		{ key = 'isPS6', 			default = true },	-- use upload optimization for Photo Station 6 (not THUMB_L required)
 
 		-- target filename parameters
 		{ key = 'renameDstFile',	default = false },	-- rename photo when uploading 
