@@ -451,18 +451,23 @@ end
 
 
 ---------------------------------------------------------------------------------------------------------
--- makeSharedAlbumPublic(h, name, makePublic)
-function PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, makePublic)
+-- editSharedAlbumPublic(h, name, sharedAlbumAttributes)
+function PSPhotoStationAPI.editSharedAlbumPublic(h, sharedAlbumId, sharedAlbumAttributes)
+	local numAttributes = 0
 	local formData = 'method=edit_public_share&' ..
 					 'version=1&' .. 
-					 'id=' .. sharedAlbumId ..'&' ..
-					 'is_shared=' .. tostring(makePublic)
+					 'id=' .. sharedAlbumId
+
+	for attr, value in pairs(sharedAlbumAttributes) do 
+		formData = formData .. '&' .. attr .. '=' .. urlencode(tostring(value))
+		numAttributes = numAttributes + 1
+	end
 					 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
 	
 	if not respArray then return nil, errorCode end 
 
-	writeLogfile(3, string.format('makeSharedAlbumPublic(%s, %s) returns shareId %s.\n', sharedAlbumId, tostring(makePublic), respArray.data.shareid))
+	writeLogfile(3, string.format('editSharedAlbumPublic(%s, %d attrs) returns shareId %s.\n', sharedAlbumId, numAttributes, respArray.data.shareid))
 	return respArray.data
 end
 
