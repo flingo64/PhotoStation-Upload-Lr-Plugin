@@ -607,9 +607,9 @@ function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName
 end
 
 --------------------------------------------------------------------------------------------
--- getSharedAlbumKeywords(srcPhoto, pubServiceName)
+-- getSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
 --   returns a list of all Shared Album keywords. i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName)
+function PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
 	local keywords 					= srcPhoto:getRawMetadata("keywords")  
 	local sharedAlbumKeywords 		= {} 	
 	local numSharedAlbumKeywords 	= 0
@@ -621,13 +621,27 @@ function PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName)
 		
 		if	keyword:getParent() and keyword:getParent():getName() == pubServiceName
 		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Shared Albums'
-		and keyword:getParent():getParent():getParent() and keyword:getParent():getParent():getParent():getName() == 'Photo StatLr' then
+		and keyword:getParent():getParent():getParent() and keyword:getParent():getParent():getParent():getName() == 'Photo StatLr' 
+		then
+			local keywordSynonyms = keyword:getSynonyms()
     		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
     		sharedAlbumKeywords[numSharedAlbumKeywords] = {
-    				sharedAlbumName 	= keyword:getName(), 
-    				mkSharedAlbumPublic	= iif(findInStringTable(keyword:getSynonyms(), 'private'), false, true),
     				keywordId			= keyword.localIdentifier,
+    				sharedAlbumName 	= keyword:getName(), 
+    				mkSharedAlbumPublic	= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
     		}
+			-- allow for Shared Album password for Photo Station 6.6 and above
+			if psVersion >= 66 then
+	    		sharedAlbumKeywords[numSharedAlbumKeywords]["mkSharedAlbumAdvanced"] = true
+	    		local sharedAlbumPassword
+	    		for i = 1,  #keywordSynonyms do
+	    			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
+	    			if sharedAlbumPassword then break end
+	    		end
+				if sharedAlbumPassword then
+		    		sharedAlbumKeywords[numSharedAlbumKeywords]["sharedAlbumPassword"] = sharedAlbumPassword
+		    	end
+		    end
 		end
 	end
 	writeLogfile(3, string.format("getSharedAlbumKeywords(%s, %s): found Shared Albums: '%s'\n", 
@@ -687,16 +701,19 @@ end
 --   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
 function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
 	local pubServiceName = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(publishedCollectionId):getService():getName()
-	local sharedAlbumsLr 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName)
+	local sharedAlbumsLr 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName, exportParams.psVersion)
 	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getLinkedSharedAlbums(srcPhoto), {})
 	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
 	
 	-- add photo to all given Shared Albums that it is not already member of
 	for i = 1, #sharedAlbumsLr do
+		local keywordId				= sharedAlbumsLr[i].keywordId
 		local sharedAlbumName		= sharedAlbumsLr[i].sharedAlbumName
 		local mkSharedAlbumPublic 	= sharedAlbumsLr[i].mkSharedAlbumPublic
-		local keywordId				= sharedAlbumsLr[i].keywordId
-		local photoSharedAlbum = publishedCollectionId .. ':' .. sharedAlbumName
+		local mkSharedAlbumAdvanced	= sharedAlbumsLr[i].mkSharedAlbumAdvanced
+		local sharedAlbumPassword	= sharedAlbumsLr[i].sharedAlbumPassword
+		
+		local photoSharedAlbum 		= publishedCollectionId .. ':' .. sharedAlbumName
 		
 		local sharedAlbumUpdate = nil
 		
@@ -708,7 +725,15 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		end
 		if not sharedAlbumUpdate then
 			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
-			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, mkSharedAlbumPublic = mkSharedAlbumPublic, keywordId = keywordId, addPhotos = {}, removePhotos = {} }
+			sharedAlbumUpdate = {
+				sharedAlbumName 		= sharedAlbumName, 
+				mkSharedAlbumAdvanced 	= mkSharedAlbumAdvanced, 
+				mkSharedAlbumPublic 	= mkSharedAlbumPublic, 
+				sharedAlbumPassword 	= sharedAlbumPassword, 
+				keywordId 				= keywordId, 
+				addPhotos 				= {}, 
+				removePhotos 			= {}, 
+			}
 			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
 		end
 		local addPhotos = sharedAlbumUpdate.addPhotos
