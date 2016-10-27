@@ -55,8 +55,6 @@
 "$$$/PSUpload/ExportDialog/DstRootTT=Gib das Zielverzeichnis auf der Diskstation unterhalb des Gemeinsamen Ordners '/photo' bzw. '/home/photo' an^n(der Verzeichnisname kann abweichen vom angezeigten Albumnamen in der Photo Station)"
 "$$$/PSUpload/ExportDialog/FlatCopy=Flaches Kopieren"
 "$$$/PSUpload/ExportDialog/FlatCopyTT=Alle Fotos/Videos werden direkt in das Ziel-Album kopiert"
-"$$$/PSUpload/ExportDialog/ForPS6=Für PS 6"
-"$$$/PSUpload/ExportDialog/ForPS6TT=Photo Station 6: Kein Thumb_L generieren und hochladen"
 "$$$/PSUpload/ExportDialog/GenerateThumbs=Erzeuge Vorschaubilder:"
 "$$$/PSUpload/ExportDialog/GenerateThumbsTT=Erzeuge Vorschaubilder:^nNur abwählen, wenn die Diskstation die Vorschaubilder erzeugen soll^noder wenn in einen nicht ge-indexten Ordner hochgeladen wird und keine Vorschaubilder benötigt werden.^nUpload ohne Vorschaubilder ist deutlich schneller."
 "$$$/PSUpload/ExportDialog/HardRotate=Hard-Rotation"

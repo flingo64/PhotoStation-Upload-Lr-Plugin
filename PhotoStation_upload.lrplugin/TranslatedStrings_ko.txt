@@ -55,8 +55,6 @@
 "$$$/PSUpload/ExportDialog/DstRootTT/PleaseTranslate=Enter the target directory below the diskstation share '/photo' or '/home/photo'^n(may be different from the Album name shown in Photo Station)"
 "$$$/PSUpload/ExportDialog/FlatCopy=모든 파일을 앨범으로 복사"
 "$$$/PSUpload/ExportDialog/FlatCopyTT/PleaseTranslate=All photos/videos will be copied to the Target Album"
-"$$$/PSUpload/ExportDialog/ForPS6/PleaseTranslate=For PS 6"
-"$$$/PSUpload/ExportDialog/ForPS6TT/PleaseTranslate=Photo Station 6: Do not generate and upload Thumb_L"
 "$$$/PSUpload/ExportDialog/GenerateThumbs=미리보기 적용:"
 "$$$/PSUpload/ExportDialog/GenerateThumbsTT/PleaseTranslate=Generate thumbs:^nUnselect only, if you want the diskstation to generate the thumbs^nor if you export to an unindexed folder and you don't need thumbs.^nThis will speed up photo uploads."
 "$$$/PSUpload/ExportDialog/HardRotate/PleaseTranslate=Use hard-rotation"

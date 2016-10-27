@@ -601,7 +601,8 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 
 		if #sharedAlbumUpdate.addPhotos > 0 then 
 			local success, sharedAlbumId, shareUrl = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
-																							sharedAlbumUpdate.mkSharedAlbumPublic, sharedAlbumUpdate.addPhotos)
+																							sharedAlbumUpdate.mkSharedAlbumAdvanced, sharedAlbumUpdate.mkSharedAlbumPublic, 
+																							sharedAlbumUpdate.sharedAlbumPassword, sharedAlbumUpdate.addPhotos)
 			if success then
         		local firstServerUrl 	= exportParams.proto .. "://" .. exportParams.servername 
         		local secondServerUrl	= iif(ifnil(exportParams.servername2, '') ~= '', exportParams.proto2 .. "://" .. exportParams.servername2, nil)
