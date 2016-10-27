@@ -470,11 +470,13 @@ function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, t
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumPublic, photos) 
+-- createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos) 
 -- create a Shared Album and add a list of photos to it
 -- returns success, sharedAlbumId and share-link (if public)
-function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumPublic, photos)
+function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
+	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumAdvanced, 'advanced', 'old'), iif(mkSharedAlbumPublic, 'public', 'private'), ifnil(sharedAlbumPassword, ''), #photos))
 	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
+	local sharedAlbumAttributes = {}
 	local shareResult
 	if not sharedAlbumId then 
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
@@ -500,7 +502,30 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	
 	if not success then return false end 
 	
-	shareResult = PSPhotoStationAPI.makeSharedAlbumPublic(h, sharedAlbumId, mkSharedAlbumPublic) 
+	sharedAlbumAttributes["is_shared"] = mkSharedAlbumPublic
+	if mkSharedAlbumAdvanced then
+		sharedAlbumAttributes["is_advanced"] = true
+		
+		if sharedAlbumPassword then
+			sharedAlbumAttributes["enable_password"] = true
+			sharedAlbumAttributes["password"] = sharedAlbumPassword
+		else
+			sharedAlbumAttributes["enable_password"] = false
+		end
+
+		-- a lot of default parameters ...
+		sharedAlbumAttributes["enable_marquee_tool"] = true
+		sharedAlbumAttributes["enable_comment"] = true
+		sharedAlbumAttributes["enable_color_label"] = true
+		sharedAlbumAttributes["color_label_1"] = "red"
+		sharedAlbumAttributes["color_label_2"] = "orange"
+		sharedAlbumAttributes["color_label_3"] = "lime green"
+		sharedAlbumAttributes["color_label_4"] = "aqua green"
+		sharedAlbumAttributes["color_label_5"] = "blue"
+		sharedAlbumAttributes["color_label_6"] = "purple"
+	end
+
+	shareResult = PSPhotoStationAPI.editSharedAlbumPublic(h, sharedAlbumId, sharedAlbumAttributes) 
 
 	if not shareResult then  return false end
 	
