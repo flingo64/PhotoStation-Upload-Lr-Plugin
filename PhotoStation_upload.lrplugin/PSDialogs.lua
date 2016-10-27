@@ -550,6 +550,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         { title	= 'Photo Station 5',   value 	= 50 },
         { title	= 'Photo Station 6',   value 	= 60 },
         { title	= 'Photo Station 6.5', value 	= 65 },
+        { title	= 'Photo Station 6.6', value 	= 66 },
 	}
 	
 	return
@@ -772,14 +773,6 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/GenerateThumbsTT=Generate thumbs:\nUnselect only, if you want the diskstation to generate the thumbs\nor if you export to an unindexed folder and you don't need thumbs.\nThis will speed up photo uploads.",
 					fill_horizontal = 1,
 					value 			= bind 'thumbGenerate',
-				},
-
-				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/ForPS6=For PS 6",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/ForPS6TT=Photo Station 6: Do not generate and upload Thumb_L",
-					fill_horizontal = 1,
-					value 			= bind 'isPS6',
-					visible 		= bind 'thumbGenerate',
 				},
 
 				f:row {
