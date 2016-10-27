@@ -144,7 +144,8 @@ local function updateExportStatus( propertyTable )
 
 		propertyTable.serverUrl = 	propertyTable.proto .. "://" .. propertyTable.servername
 		propertyTable.psPath = 		iif(propertyTable.usePersonalPS, "/~" .. ifnil(propertyTable.personalPSOwner, "unknown") .. "/photo/", "/photo/")
-		propertyTable.psUrl = 		propertyTable.serverUrl .. propertyTable.psPath 
+		propertyTable.psUrl = 		propertyTable.serverUrl .. propertyTable.psPath
+		propertyTable.isPS6 = 		iif(propertyTable.psVersion >= 60, true, false)
 	until true
 	
 	if message then
@@ -173,6 +174,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'copyTree', updateExportStatus )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
+	propertyTable:addObserver( 'psVersion', updateExportStatus )
 
 	propertyTable:addObserver( 'useSecondAddress', updateExportStatus )
 	propertyTable:addObserver( 'servername2', updateExportStatus )
