@@ -1293,12 +1293,12 @@ end
 -- publishModeView(f, propertyTable, isAskForMissingParams)
 function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 	local publishModeItems = {
-		{ title	= 'Ask me later',																				value 	= 'Ask' },
-		{ title	= 'Upload: Normal publishing of photos',														value 	= 'Publish' },
-		{ title	= 'CheckExisting: Set Unpublished to Published if existing in Photo Station.',					value 	= 'CheckExisting' },
-		{ title	= 'CheckMoved: Set Published to Unpublished if moved locally.',									value 	= 'CheckMoved' },
-		{ title	= 'MovePhotos: Move photos in Photo Station (for photos moved in Lr or changed target album).',	value 	= 'MovePhotos' },
-		{ title	= 'Convert: Convert collection to current version.',											value 	= 'Convert' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptAsk=Ask me later",																					value 	= 'Ask' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptUpload=Upload: Normal publishing of photos",														value 	= 'Publish' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptChkEx=CheckExisting: Set Unpublished to Published if existing in Photo Station.",					value 	= 'CheckExisting' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptChkMv=CheckMoved: Set Published to Unpublished if moved locally.",									value 	= 'CheckMoved' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMove=MovePhotos: Move photos in Photo Station (for photos moved in Lr or changed target album).",	value 	= 'MovePhotos' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptConv=Convert: Convert collection to current version.",												value 	= 'Convert' },
 	}
 	
 	if isAskForMissingParams then
@@ -1330,9 +1330,9 @@ end
 -- downloadModeView(f, propertyTable, isAskForMissingParams)
 function PSDialogs.downloadModeView(f, propertyTable, isAskForMissingParams)
 	local downloadModeItems = {
-		{ title	= 'Ask me later',	value 	= 'Ask' },
-		{ title	= 'Yes (enabled)',	value 	= 'Yes' },
-		{ title	= 'No (disabled)',	value 	= 'No'  },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptAsk=Ask me later",		value 	= 'Ask' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptEnabled=Yes (enabled)",	value 	= 'Yes' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptDisabled=No (disabled)",	value 	= 'No'  },
 	}
 	
 	if isAskForMissingParams then
@@ -1364,12 +1364,12 @@ end
 -- loglevelView(f, propertyTable, isAskForMissingParams)
 function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 	local loglevelItems = {
-		{ title	= 'Ask me later',	value 	= 9999 },
-		{ title	= 'Nothing',		value 	= 0 },
-		{ title	= 'Errors',			value 	= 1 },
-		{ title	= 'Normal',			value 	= 2 },
-		{ title	= 'Trace',			value 	= 3 },
-		{ title	= 'Debug',			value 	= 4 },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptAsk=Ask me later",				value 	= 9999 },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptNothing=Nothing",		value 	= 0 },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptErrors=Errors",		value 	= 1 },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptNormal=Normal",		value 	= 2 },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptTrace=Trace",			value 	= 3 },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptDebug=Debug",			value 	= 4 },
 	}
 	
 	if isAskForMissingParams then
