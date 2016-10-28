@@ -22,6 +22,7 @@ Photo Station Upload primitives:
 	- editPhoto
 	
 	- createSharedAlbum
+	- editSharedAlbum
 	- addPhotosToSharedAlbum
 	- removePhotosFromSharedAlbum
 	
@@ -451,8 +452,8 @@ end
 
 
 ---------------------------------------------------------------------------------------------------------
--- editSharedAlbumPublic(h, name, sharedAlbumAttributes)
-function PSPhotoStationAPI.editSharedAlbumPublic(h, sharedAlbumId, sharedAlbumAttributes)
+-- editSharedAlbum(h, name, sharedAlbumAttributes)
+function PSPhotoStationAPI.editSharedAlbum(h, sharedAlbumId, sharedAlbumAttributes)
 	local numAttributes = 0
 	local formData = 'method=edit_public_share&' ..
 					 'version=1&' .. 
@@ -467,7 +468,7 @@ function PSPhotoStationAPI.editSharedAlbumPublic(h, sharedAlbumId, sharedAlbumAt
 	
 	if not respArray then return nil, errorCode end 
 
-	writeLogfile(3, string.format('editSharedAlbumPublic(%s, %d attrs) returns shareId %s.\n', sharedAlbumId, numAttributes, respArray.data.shareid))
+	writeLogfile(3, string.format('editSharedAlbum(%s, %d attributes) returns shareId %s.\n', sharedAlbumId, numAttributes, respArray.data.shareid))
 	return respArray.data
 end
 
