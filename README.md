@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.0.x<br>
+Version 6.1.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
@@ -231,6 +231,8 @@ Publish Functionality:
 - Manage __Photo Station Shared Albums__ via Shared Album keyword hierarchies in Lr:<br>
   Define Shared Album keywords under "Photo StatLr" | "Shared Albums" | "\<Publish Service Name\>" and assign them to photos you want to link to Photo Station Shared Albums.
   As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums.<br>
+  You may define whether a Shared Album should be public (default) or private (using __keyword synonym 'private'__)<br>
+  You may define a __password__ for a public Shared Album (using __keyword synonym 'password:\<AlbumPassword\>'__) (requires Photo Station 6.6 or above)<br>
   For more infos please read the [Wiki article](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Managing-Photo-Station-Shared-Albums-in-Lightroom-via-Photo-StatLr).
   
 Download / Sync Functionality:
@@ -545,6 +547,13 @@ Version 6.0
 	- the progress bar will be removed
 	- the exception text will be copied to the logfile
 - Other minor bugfixes 
+
+Version 6.1
+------------
+- Added __"Photo Station 6.6"__ as configurable Photo Station version
+- __Removed__ setting "Generate Thumbs __For PS 6__", setting is now derived from configured Photo Station version 
+- Photo Station Shared Album management: You may define a __password for the public share__ (requires Photo 6.6 or above)
+- Added translations for various listboxes
 
 Copyright
 ==========
