@@ -18,7 +18,7 @@ Photo Station utilities:
 	- createAndAddPhotosToSharedAlbum
 	- removePhotosFromSharedAlbum
 	
-	- removePhotosFromSharedAlbum
+	- deleteEmptyAlbumAndParents
 	
 	- rating2Stars
 	
@@ -474,7 +474,6 @@ end
 -- create a Shared Album and add a list of photos to it
 -- returns success, sharedAlbumId and share-link (if public)
 function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
-	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumAdvanced, 'advanced', 'old'), iif(mkSharedAlbumPublic, 'public', 'private'), ifnil(sharedAlbumPassword, ''), #photos))
 	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
 	local sharedAlbumAttributes = {}
 	local shareResult
@@ -525,11 +524,11 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 		sharedAlbumAttributes["color_label_6"] = "purple"
 	end
 
-	shareResult = PSPhotoStationAPI.editSharedAlbumPublic(h, sharedAlbumId, sharedAlbumAttributes) 
+	shareResult = PSPhotoStationAPI.editSharedAlbum(h, sharedAlbumId, sharedAlbumAttributes) 
 
 	if not shareResult then  return false end
 	
-	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumPublic, 'public', 'private'), #photos))
+	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumAdvanced, 'advanced', 'old'), iif(mkSharedAlbumPublic, 'public', 'private'), iif(sharedAlbumPassword, 'w/ passwd', 'w/o passwd'), #photos))
 	return true, sharedAlbumId, shareResult.public_share_url	
 end
 
