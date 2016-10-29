@@ -1168,7 +1168,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					writeLogfile(1, 'Upload of "' .. dstFilename .. '" to "' .. dstDir .. '" failed!!!\n')
 					table.insert( failures, srcPath )
 				else
-					PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams) 
+					if publishedCollection then
+						PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
+					end 
 					writeLogfile(2, 'Upload of "' .. dstFilename .. '" to "' .. dstDir .. '" done\n')
 				end
 			end
