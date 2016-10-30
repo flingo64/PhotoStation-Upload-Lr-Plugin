@@ -154,34 +154,47 @@ local function albumCacheList(h, dstDir, listItems)
 	return albumItems
 end
 
--- ===================================== sharedAlbumMapping ==============================================
--- the Shared Album mapping holds the list of album name / album id mappings
+-- ===================================== Shared Album cache ==============================================
+-- the Shared Album cache holds the list of shared album infos
 
-local sharedAlbumMapping = {}
+local sharedAlbumCache 				= {}
+local sharedAlbumCacheTimeout 		= 60	-- 60 seconds cache time
+local sharedAlbumCacheValidUntil
  
 ---------------------------------------------------------------------------------------------------------
--- sharedAlbumMappingUpdate(h) 
-local function sharedAlbumMappingUpdate(h)
-	writeLogfile(3, string.format('sharedAlbumMappingUpdate().\n'))
-	sharedAlbumMapping = PSPhotoStationAPI.getSharedAlbums(h)
-	return sharedAlbumMapping
+-- sharedAlbumCacheCleanup: cleanup cache if cache is too old
+local function sharedAlbumCacheCleanup()
+	if ifnil(sharedAlbumCacheValidUntil, LrDate.currentTime()) <= LrDate.currentTime() then
+		sharedAlbumCache = {}
+	end
+	return true
 end
 
 ---------------------------------------------------------------------------------------------------------
--- sharedAlbumMappingFind(h, name) 
-local function sharedAlbumMappingFind(h, name)
-	if (#sharedAlbumMapping == 0) and not sharedAlbumMappingUpdate(h) then
+-- sharedAlbumCacheUpdate(h) 
+local function sharedAlbumCacheUpdate(h)
+	writeLogfile(3, string.format('sharedAlbumCacheUpdate().\n'))
+	sharedAlbumCache = PSPhotoStationAPI.getSharedAlbums(h)
+	sharedAlbumCacheValidUntil = LrDate.currentTime() + sharedAlbumCacheTimeout
+	return sharedAlbumCache
+end
+
+---------------------------------------------------------------------------------------------------------
+-- sharedAlbumCacheFind(h, name) 
+local function sharedAlbumCacheFind(h, name)
+	sharedAlbumCacheCleanup()
+	if (#sharedAlbumCache == 0) and not sharedAlbumCacheUpdate(h) then
 		return nil 
 	end
 	
-	for i = 1, #sharedAlbumMapping do
-		if sharedAlbumMapping[i].name == name then 
-			writeLogfile(3, string.format('sharedAlbumMappingFind(%s) found  %s.\n', name, sharedAlbumMapping[i].id))
-			return sharedAlbumMapping[i] 
+	for i = 1, #sharedAlbumCache do
+		if sharedAlbumCache[i].name == name then 
+			writeLogfile(3, string.format('sharedAlbumCacheFind(%s) found  %s.\n', name, sharedAlbumCache[i].id))
+			return sharedAlbumCache[i] 
 		end
 	end
 
-	writeLogfile(3, string.format('sharedAlbumMappingFind(%s) not found.\n', name))
+	writeLogfile(3, string.format('sharedAlbumCacheFind(%s) not found.\n', name))
 	return nil
 end
 
@@ -451,7 +464,7 @@ end
 -- create a Shared Album and add a list of photos to it
 -- returns success, sharedAlbumId and share-link (if public)
 function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
-	local sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 	local isNewSharedAlbum
 	local sharedAlbumId
 	local sharedAlbumAttributes = {}
@@ -459,8 +472,8 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	
 	if not sharedAlbumInfo then 
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
-		sharedAlbumMappingUpdate(h)
-		sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+		sharedAlbumCacheUpdate(h)
+		sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 		isNewSharedAlbum = true
 	end
 	
@@ -478,8 +491,8 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
 		if not sharedAlbumId then return false end
-		sharedAlbumMappingUpdate(h)
-		sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+		sharedAlbumCacheUpdate(h)
+		sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 		isNewSharedAlbum = true
 	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	end 
@@ -487,6 +500,19 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	if not success then return false end 
 	
 	sharedAlbumAttributes.is_shared = mkSharedAlbumPublic
+	
+	--preserve old share start/time end restriction if album was and will be public
+	if		mkSharedAlbumPublic 	
+		and not isNewSharedAlbum 
+		and sharedAlbumInfo 
+		and sharedAlbumInfo.additional 
+		and sharedAlbumInfo.additional.public_share 
+		and sharedAlbumInfo.additional.public_share.share_status == 'valid' 
+	then
+		sharedAlbumAttributes.start_time 	= sharedAlbumInfo.additional.public_share.start_time
+		sharedAlbumAttributes.end_time 		= sharedAlbumInfo.additional.public_share.end_time
+	end
+		
 	if mkSharedAlbumAdvanced then
 		sharedAlbumAttributes.is_advanced = true
 		
@@ -509,6 +535,7 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
     		sharedAlbumAttributes.color_label_5 		= "blue"
     		sharedAlbumAttributes.color_label_6 		= "purple"
 		else
+			--preserve old advcanced settings for already existing Shared Albums
 			if sharedAlbumInfo and sharedAlbumInfo.additional and sharedAlbumInfo.additional.public_share and sharedAlbumInfo.additional.public_share.advanced_info then
 				local advancedInfo = sharedAlbumInfo.additional.public_share.advanced_info
 				
@@ -537,7 +564,7 @@ end
 -- removePhotosFromSharedAlbum(h, sharedAlbumName, photos) 
 -- remove a a list of photos from a Shared Album
 function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
-	local sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 	local sharedAlbumId
 	
 	if not sharedAlbumInfo then 
@@ -555,7 +582,7 @@ function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, pho
 	
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
-		sharedAlbumMappingUpdate(h)
+		sharedAlbumCacheUpdate(h)
 		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end 
