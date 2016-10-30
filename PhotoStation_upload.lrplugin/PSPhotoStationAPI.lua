@@ -418,10 +418,10 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- getSharedAlbums (h) 
 -- get table of sharedAlbumId/sharedAlbumName mappings
-function PSPhotoStationAPI.getSharedAlbums(h, type)
+function PSPhotoStationAPI.getSharedAlbums(h)
 	local formData = 'method=list&' ..
 					 'version=1&' .. 
---					 'additional=info&' .. 
+					 'additional=public_share&' .. 
 					 'offset=0&' ..  
 					 'limit=-1' 
 
@@ -433,6 +433,24 @@ function PSPhotoStationAPI.getSharedAlbums(h, type)
 	return respArray.data.items
 end
 
+--[[
+---------------------------------------------------------------------------------------------------------
+-- getSharedAlbumInfo (h, sharedAlbumId) 
+-- get infos for the given Shared Album
+function PSPhotoStationAPI.getSharedAlbumInfo(h, sharedAlbumId)
+	local formData = 'method=getinfo&' ..
+					 'version=1&' .. 
+					 'additional=public_share&' .. 
+					 'id=' .. sharedAlbumId
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not respArray then return nil, errorCode end 
+
+	writeLogfile(3, string.format('getSharedAlbumInfo() returns %d albums.\n', #respArray.data.shared_albums))
+	return respArray.data.shared_albums[1];
+end
+]]
 
 ---------------------------------------------------------------------------------------------------------
 -- createSharedAlbum(h, name)
