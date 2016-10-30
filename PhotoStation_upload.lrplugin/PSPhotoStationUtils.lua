@@ -177,7 +177,7 @@ local function sharedAlbumMappingFind(h, name)
 	for i = 1, #sharedAlbumMapping do
 		if sharedAlbumMapping[i].name == name then 
 			writeLogfile(3, string.format('sharedAlbumMappingFind(%s) found  %s.\n', name, sharedAlbumMapping[i].id))
-			return sharedAlbumMapping[i].id 
+			return sharedAlbumMapping[i] 
 		end
 	end
 
@@ -373,29 +373,6 @@ function PSPhotoStationUtils.getPhotoUrl(h, photoPath, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- existsPic(dstFilename, isVideo) - check if a photo exists in Photo Station
--- 	returns true, if filename 	
---[[ replaced by getPhotoInfo()
-function PSPhotoStationUtils.existsPic(h, dstFilename, isVideo)
-	local _, _, dstDir = string.find(dstFilename, '(.*)\/', 1, false)
-	dstDir = ifnil(dstDir, '') 
-	writeLogfile(4, string.format('existsPic: dstFilename %s --> dstDir %s\n', dstFilename, dstDir))
-	
-	local albumItems, errorCode = albumCacheList(h, dstDir, 'photo,video')
-	if not albumItems and errorCode ~= 408 then -- 408: no such file or dir
-		writeLogfile(3, string.format('existsPic: Error on listAlbum: %d\n', errorCode))
-	   	return 'error'
-	end
-
-	for i = 1, #albumItems do
-		if albumItems[i].id == PSPhotoStationUtils.getPhotoId(dstFilename, isVideo) then return 'yes' end
-	end
-	
-	return 'no'
-end
-]]
-
----------------------------------------------------------------------------------------------------------
 -- getPhotoInfo (h, dstFilename, isVideo, useCache) 
 -- return photo infos for a given remote filename
 -- returns:
@@ -474,54 +451,78 @@ end
 -- create a Shared Album and add a list of photos to it
 -- returns success, sharedAlbumId and share-link (if public)
 function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
-	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+	local isNewSharedAlbum
+	local sharedAlbumId
 	local sharedAlbumAttributes = {}
 	local shareResult
-	if not sharedAlbumId then 
+	
+	if not sharedAlbumInfo then 
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
 		sharedAlbumMappingUpdate(h)
+		sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+		isNewSharedAlbum = true
 	end
+	
+	if not sharedAlbumInfo then return false end
+	sharedAlbumId = sharedAlbumInfo.id 
 	
 	local photoIds = {}
 	for i = 1, #photos do
 		photoIds[i] = PSPhotoStationUtils.getPhotoId(photos[i].dstFilename, photos[i].isVideo)
 	end
 	
-	if not sharedAlbumId then return false end
-	
 	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
-		sharedAlbumMappingUpdate(h)
 		if not sharedAlbumId then return false end
+		sharedAlbumMappingUpdate(h)
+		sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+		isNewSharedAlbum = true
 	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
 	end 
 	
 	if not success then return false end 
 	
-	sharedAlbumAttributes["is_shared"] = mkSharedAlbumPublic
+	sharedAlbumAttributes.is_shared = mkSharedAlbumPublic
 	if mkSharedAlbumAdvanced then
-		sharedAlbumAttributes["is_advanced"] = true
+		sharedAlbumAttributes.is_advanced = true
 		
 		if sharedAlbumPassword then
-			sharedAlbumAttributes["enable_password"] = true
-			sharedAlbumAttributes["password"] = sharedAlbumPassword
+			sharedAlbumAttributes.enable_password = true
+			sharedAlbumAttributes.password = sharedAlbumPassword
 		else
-			sharedAlbumAttributes["enable_password"] = false
+			sharedAlbumAttributes.enable_password = false
 		end
 
-		-- a lot of default parameters ...
-		sharedAlbumAttributes["enable_marquee_tool"] = true
-		sharedAlbumAttributes["enable_comment"] = true
-		sharedAlbumAttributes["enable_color_label"] = true
-		sharedAlbumAttributes["color_label_1"] = "red"
-		sharedAlbumAttributes["color_label_2"] = "orange"
-		sharedAlbumAttributes["color_label_3"] = "lime green"
-		sharedAlbumAttributes["color_label_4"] = "aqua green"
-		sharedAlbumAttributes["color_label_5"] = "blue"
-		sharedAlbumAttributes["color_label_6"] = "purple"
+		if isNewSharedAlbum then
+    		-- a lot of default parameters ...
+    		sharedAlbumAttributes.enable_marquee_tool	= true
+    		sharedAlbumAttributes.enable_comment 		= true
+    		sharedAlbumAttributes.enable_color_label	= true
+    		sharedAlbumAttributes.color_label_1 		= "red"
+    		sharedAlbumAttributes.color_label_2 		= "orange"
+    		sharedAlbumAttributes.color_label_3 		= "lime green"
+    		sharedAlbumAttributes.color_label_4 		= "aqua green"
+    		sharedAlbumAttributes.color_label_5 		= "blue"
+    		sharedAlbumAttributes.color_label_6 		= "purple"
+		else
+			if sharedAlbumInfo and sharedAlbumInfo.additional and sharedAlbumInfo.additional.public_share and sharedAlbumInfo.additional.public_share.advanced_info then
+				local advancedInfo = sharedAlbumInfo.additional.public_share.advanced_info
+				
+        		sharedAlbumAttributes.enable_marquee_tool	= advancedInfo.enable_marquee_tool
+        		sharedAlbumAttributes.enable_comment 		= advancedInfo.enable_comment
+        		sharedAlbumAttributes.enable_color_label 	= advancedInfo.enable_color_label
+        		sharedAlbumAttributes.color_label_1 		= advancedInfo.color_label_1
+        		sharedAlbumAttributes.color_label_2 		= advancedInfo.color_label_2
+        		sharedAlbumAttributes.color_label_3 		= advancedInfo.color_label_3
+        		sharedAlbumAttributes.color_label_4 		= advancedInfo.color_label_4
+        		sharedAlbumAttributes.color_label_5 		= advancedInfo.color_label_5
+        		sharedAlbumAttributes.color_label_6 		= advancedInfo.color_label_6
+			end
+		end
 	end
 
 	shareResult = PSPhotoStationAPI.editSharedAlbum(h, sharedAlbumId, sharedAlbumAttributes) 
@@ -536,11 +537,14 @@ end
 -- removePhotosFromSharedAlbum(h, sharedAlbumName, photos) 
 -- remove a a list of photos from a Shared Album
 function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
-	local sharedAlbumId = sharedAlbumMappingFind(h, sharedAlbumName)
-	if not sharedAlbumId then 
+	local sharedAlbumInfo = sharedAlbumMappingFind(h, sharedAlbumName)
+	local sharedAlbumId
+	
+	if not sharedAlbumInfo then 
 		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end
+	sharedAlbumId = sharedAlbumInfo.id
 	
 	local photoIds = {}
 	for i = 1, #photos do
