@@ -52,6 +52,7 @@ local LrTasks = import 'LrTasks'
 local LrView = import 'LrView'
 
 require "PSUtilities"
+require "PSLrUtilities"
 require "PSConvert"
 require "PSUpdate"
 require "PSUploadAPI"
@@ -1177,7 +1178,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		
 			-- do some video metadata upload in between
 			if #videosUploaded > 9 then 
-				uploadVideoMetadata(videosUploaded, exportParams, failures) 
+				uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
 				videosUploaded = {}
 			end
 			
