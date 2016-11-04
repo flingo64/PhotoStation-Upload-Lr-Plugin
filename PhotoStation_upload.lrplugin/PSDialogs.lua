@@ -560,13 +560,13 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         
         	f:row {
 				f:static_text {
-					title 			= LOC "$$$/PSUpload/ExportDialog/PSVersion=Photo Station Version:",
+					title 			= LOC "$$$/PSUpload/ExportDialog/PSVersion=Version:",
 					alignment 		= 'right',
         			width 			= share 'labelWidth',
 				},
 				
         		f:popup_menu {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/PSVersionList=Version:",
+        			tooltip			= LOC "$$$/PSUpload/ExportDialog/PSVersionListTT=Photo Station Version",
         			items 			= versionItems,
         			value 			= bind 'psVersion',
         		},
@@ -576,14 +576,14 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         	f:row {
         		f:radio_button {
         			title 			= LOC "$$$/PSUpload/ExportDialog/Servername=Server Address:",
-        			alignment 		= 'right',
+        			alignment 		= 'left',
         			width 			= share 'labelWidth',
         			value 			= bind 'useSecondAddress',
         			checked_value	= false,
         		},
         
         		f:popup_menu {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/Protocol=Protocol:",
+        			tooltip			= LOC "$$$/PSUpload/ExportDialog/ProtocolTT=Protocol",
         			items 			= protocolItems,
         			value 			= bind 'proto',
         			enabled 		= negativeOfKey 'useSecondAddress',
@@ -636,7 +636,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         		},
         
         		f:popup_menu {
-        			title 			= LOC "$$$/PSUpload/ExportDialog/Protocol=Protocol:",
+        			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ProtocolTT=Protocol",
         			items			= protocolItems,
         			value 			= bind 'proto2',
         			enabled 		= bind 'useSecondAddress',
@@ -924,7 +924,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 				},					
 				
 				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Use hard-rotation",
+					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Hard-rotation",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
 					alignment 		= 'left',
 					fill_horizontal = 1,
@@ -952,7 +952,7 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 				f:checkbox {
     				title 		= LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Target Album:",
     				tooltip 	= LOC "$$$/PSUpload/ExportDialog/StoreDstRootTT=Enter Target Album here or you will be prompted for it when the upload starts.",
-    				alignment 	= 'right',
+    				alignment 	= 'left',
     				width 		= share 'labelWidth',
     				value 		= bind 'storeDstRoot',
     				enabled 	=  negativeOfKey 'isCollection',
@@ -1022,16 +1022,16 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 			f:row {
 
 				f:radio_button {
-					title 			= LOC "$$$/PSUpload/ExportDialog/FlatCopy=Flat Copy to Target",
+					title 			= LOC "$$$/PSUpload/ExportDialog/FlatCopy=Flat Copy",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/FlatCopyTT=All photos/videos will be copied to the Target Album",
-					alignment 		= 'right',
-					width 			= share 'labelWidth',
+					alignment 		= 'left',
+--					width 			= share 'labelWidth',
 					value 			= bind 'copyTree',
 					checked_value 	= false,
 				},
 
 				f:radio_button {
-					title 			= LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror Tree relative to local Path:",
+					title 			= LOC "$$$/PSUpload/ExportDialog/CopyTree=Mirror Tree relative to:",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/CopyTreeTT=All photos/videos will be copied to a mirrored directory below the Target Album",
 					alignment 		= 'left',
 					value 			= bind 'copyTree',
@@ -1073,17 +1073,16 @@ function PSDialogs.photoNamingView(f, propertyTable)
 	return f:view {
 		fill_horizontal = 1,
 		f:group_box {
-			title 			= LOC "$$$/PSUpload/ExportDialog/TargetPhoto=Target Photo Naming options",
+			title 			= LOC "$$$/PSUpload/ExportDialog/TargetPhoto=Target Photo Naming Options",
 			fill_horizontal = 1,
 
 			f:row {
 				f:checkbox {
-    				title 		= LOC "$$$/PSUpload/ExportDialog/RenamePhoto=Rename Photos To:",
+    				title 		= LOC "$$$/PSUpload/ExportDialog/RenamePhoto=Rename To:",
     				tooltip 	= LOC "$$$/PSUpload/ExportDialog/RenamePhotoTT=Rename photos in Photo Station acc. to a unique naming schema.",
-    				alignment 	= 'right',
+    				alignment 	= 'left',
     				width 		= share 		'labelWidth',
     				value 		= bind 			'renameDstFile',
---    				enabled 	= negativeOfKey 'LR_renamingTokensOn'
 				},
 
     			f:edit_field {
@@ -1378,6 +1377,7 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 
 	return 
 		f:row {
+			fill_horizontal = 1,
 			f:static_text {
 				title 			= LOC "$$$/PSUpload/DialogsFooter/Loglevel=Loglevel:",
 				alignment 		= 'right',
@@ -1385,7 +1385,6 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 			},
 
 			f:popup_menu {
-				title 			= LOC "$$$/PSUpload/DialogsFooter/Loglevel=Loglevel:",
 				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LoglevelTT=The level of log details",
 				items 			= loglevelItems,		
 				fill_horizontal = 0, 

@@ -168,6 +168,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	
 	propertyTable:addObserver( 'thumbGenerate', updateExportStatus )
 
+	propertyTable:addObserver( 'proto', updateExportStatus )
 	propertyTable:addObserver( 'servername', updateExportStatus )
 	propertyTable:addObserver( 'username', updateExportStatus )
 	propertyTable:addObserver( 'srcRoot', updateExportStatus )
