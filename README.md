@@ -9,7 +9,7 @@ Forum threads:
 - [English Synology forum] (http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
 - [German Synology forum] (http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
-[Support Page] (http://messmer-online.de/index.php/software/11-photo-statlr/6-photo-statlr-a-lightroom-plugin-for-synology-photo-station)<br>
+[Support Page] (http://messmer-online.de/index.php/software/11-photo-statlr)<br>
 
 Copyright(c) 2016, Martin Messmer<br>
 
@@ -270,8 +270,9 @@ Additional Funtionality
 	- Operating system version
 	- Lightroom version
 	- Lightroom language setting
-	- a random unique identifier chosen by the update service
-  This helps me keep track of the different environments/combinations the plugin is running in.
+	- a random unique identifier chosen by the update service<br>
+
+This helps me keep track of the different environments/combinations the plugin is running in.
 
 Important note
 --------------
