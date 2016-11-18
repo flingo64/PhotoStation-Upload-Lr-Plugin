@@ -1567,20 +1567,20 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
    				nChanges = nChanges - (#facesAdd + #facesRemove)
    				nFailed = nFailed + 1 
 	    	end  
-		end -- not skip Photo
+
+    		if titleChanged	or captionChanged or ratingChanged or labelChanged or ratingTagChanged or tagsChanged or facesChanged or gpsChanged then
+        		writeLogfile(2, string.format("Get ratings/metadata: %s - %s %s%s%s.\n", 
+        												photoInfo.remoteId, resultText,
+        												iif(nFailed > 0, 'failed', 'done'), 
+        												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', ''),
+        												iif(needRepublish, ', Re-publish needed', '')))
+    		else
+    			writeLogfile(2, string.format("Get ratings/metadata: %s - no changes%s.\n", 
+    													photoInfo.remoteId, 
+        												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', '')))
+    		end
+		end 
 			
-		if titleChanged	or captionChanged or ratingChanged or labelChanged or ratingTagChanged or tagsChanged or facesChanged or gpsChanged then
-    		writeLogfile(2, string.format("Get ratings/metadata: %s - %s %s%s%s.\n", 
-    												photoInfo.remoteId, resultText,
-    												iif(nFailed > 0, 'failed', 'done'), 
-    												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', ''),
-    												iif(needRepublish, ', Re-publish needed', '')))
-		else
-			writeLogfile(2, string.format("Get ratings/metadata: %s - no changes%s.\n", 
-													photoInfo.remoteId, 
-    												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', '')))
-		end
-		
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
 	end 
