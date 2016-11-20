@@ -3,14 +3,18 @@ Photo StatLr (Lightroom plugin)
 Version 6.1.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
+
 [Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
 [FAQs] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
+
 Forum threads: 
 - [English Synology forum] (http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
 - [German Synology forum] (http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
 [Support Page] (http://messmer-online.de/index.php/software/11-photo-statlr)<br>
-
+[Donate to a good cause] (http://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
+[Get involved: Let Photo StatLr speak your language] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Contributions:-How-to-contribute-a-translation-for-Photo-StatLr.)<br>
+ 
 Copyright(c) 2016, Martin Messmer<br>
 
 Overview
@@ -34,13 +38,13 @@ Requirements
 	- MacOS 10.9.5	
 	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
 	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
-	- MacOS 10.12.0, 10.12.1
+	- MacOS 10.12.0, 10.12.1, 10.12.2
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
 	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7
 * Synology Photo Station:
-	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested)
+	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 Beta (tested)
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
 	- ImageMagick/convert(.exe)
 	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
