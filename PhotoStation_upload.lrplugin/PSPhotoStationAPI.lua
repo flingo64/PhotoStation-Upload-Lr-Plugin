@@ -207,9 +207,9 @@ function PSPhotoStationAPI.deletePic (h, dstFilename, isVideo)
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
 	
-	if not respArray then return false, errorCode end 
+	if not respArray and errorCode ~= 101 then return false, errorCode end 
 
-	writeLogfile(3, string.format('deletePic(%s) returns OK\n', dstFilename))
+	writeLogfile(3, string.format('deletePic(%s) returns OK (errorCode was %d)\n', dstFilename, ifnil(errorCode, 0)))
 	return respArray.success
 end
 

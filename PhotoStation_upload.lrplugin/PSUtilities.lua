@@ -593,7 +593,7 @@ function openSession(exportParams, publishedCollection, operation)
 			writeLogfile(1, errorMsg)
 			return 	false, errorMsg
 		end
-		
+
 		result, errorCode = PSPhotoStationAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
 		if not result then
 			local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",

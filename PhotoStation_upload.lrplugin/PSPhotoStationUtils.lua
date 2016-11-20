@@ -56,7 +56,7 @@ require "PSUtilities"
 local PSAPIerrorMsgs = {
 	[0]   = 'No error',
 	[100] = 'Unknown error ',
-    [101] = 'No parameter of API, method or version',
+    [101] = 'No parameter of API, method or version',		-- PS 6.6: no such directory 
     [102] = 'The requested API does not exist',
     [103] = 'The requested method does not exist',
     [104] = 'The requested version does not support the functionality',
@@ -136,6 +136,7 @@ local function albumCacheList(h, dstDir, listItems)
 	if not albumItems then
 		if 	errorCode ~= 408  	-- no such file or dir
 		and errorCode ~= 417	-- no such dir for non-administrative users , see GitHub issue 17
+		and errorCode ~= 101	-- no such dir in PS 6.6
 		then
 			writeLogfile(2, string.format('albumCacheList: Error on listAlbum: %d\n', errorCode))
 		   	return nil, errorCode
