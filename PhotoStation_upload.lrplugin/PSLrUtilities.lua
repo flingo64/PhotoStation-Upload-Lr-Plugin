@@ -153,10 +153,13 @@ function PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRo
 	local localRelativePath
 	local remoteAbsPath
 
-	-- if is virtual copy: add copyName as suffix to filename (to make the filename unique)
+	-- if is virtual copy: add copyName (if existing) as suffix to filename (to make the filename unique)
+	--    if no copyName set, use last 3 digits of photo uuid  
 	if srcPhoto:getRawMetadata('isVirtualCopy') then
-		localRenderedPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(localRenderedPath) .. '-' .. srcPhoto:getFormattedMetadata('copyName'), 
-												renderedExtension)
+		local vcSuffix =  srcPhoto:getFormattedMetadata('copyName')
+		if not vcSuffix or vcSuffix == '' then vcSuffix = string.sub(srcPhoto:getRawMetadata('uuid'), -3) end
+		
+		localRenderedPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(localRenderedPath) .. '-' .. vcSuffix,	renderedExtension)
 		writeLogfile(3, 'isVirtualCopy: new localRenderedPath is: ' .. localRenderedPath .. '"\n')				
 	end
 
