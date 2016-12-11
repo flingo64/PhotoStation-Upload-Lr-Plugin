@@ -73,7 +73,7 @@ PSUploadTask = {}
 -- 	store created directories in dirsCreated
 -- 	return created dstDir or nil on error
 local function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated) 
-	writeLogfile(4, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
+	writeLogfile(3, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
 
 	-- sanitize srcRoot: avoid trailing slash and backslash
 	local lastchar = string.sub(srcRoot, string.len(srcRoot))
@@ -1111,7 +1111,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1
 					PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams) 
-					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', LrPathUtils.leafName(localPath), publishedPhotoId))
+					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 				elseif not photoInfo and not additionalInfo then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1

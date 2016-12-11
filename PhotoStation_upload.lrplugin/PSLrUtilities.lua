@@ -832,10 +832,15 @@ function PSLrUtilities.convertCollection(functionContext, publishedCollection)
     				end,
     				{timeout=5}
     			)
-   			writeLogfile(2, "Convert(" .. publishedCollection:getName() .. " - " .. pubPhoto:getRemoteId() .. "): converted to new format.\n")
+   			writeLogfile(2, string.format("Convert( %s - %s / %s): converted to new format.\n",
+											publishedCollection:getName(), 
+											pubPhoto:getPhoto():getRawMetadata('path'),
+											pubPhoto:getRemoteId()))
 		else
-			writeLogfile(2, string.format("Convert( %s - %s): already converted, lastEdited %s, lastPublished %s.\n", 
-											publishedCollection:getName(), pubPhoto:getRemoteId(),
+			writeLogfile(2, string.format("Convert( %s - %s / %s): already converted, lastEdited %s, lastPublished %s.\n", 
+											publishedCollection:getName(), 
+											pubPhoto:getPhoto():getRawMetadata('path'),
+											pubPhoto:getRemoteId(),
 											LrDate.timeToUserFormat(pubPhoto:getPhoto():getRawMetadata('lastEditTime'), 			'%Y-%m-%d %H:%M:%S', false), 
 											LrDate.timeToUserFormat(tonumber(string.match(pubPhoto:getRemoteUrl(), '%d+/(%d+)')), 	'%Y-%m-%d %H:%M:%S', false)
 										))
