@@ -1108,14 +1108,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				local useCache = true
 				local photoInfo, additionalInfo = PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), useCache)
 				if photoInfo then
+					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1
 					PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams) 
-					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 				elseif not photoInfo and not additionalInfo then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
-					writeLogfile(2, 'CheckExisting: Upload required for "' .. LrPathUtils.leafName(localPath) .. '" to "' .. newPublishedPhotoId .. '\n')
+					writeLogfile(2, 'CheckExisting: Upload required for "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. newPublishedPhotoId .. '\n')
 				else -- error
 					table.insert( failures, srcPath )
 					break 
@@ -1166,13 +1166,13 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						)
 					)
 				then
-					writeLogfile(1, 'Upload of "' .. dstFilename .. '" to "' .. dstDir .. '" failed!!!\n')
+					writeLogfile(1, 'Upload of "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. dstDir .. "/" .. dstFilename .. '" failed!!!\n')
 					table.insert( failures, srcPath )
 				else
 					if publishedCollection then
 						PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
 					end 
-					writeLogfile(2, 'Upload of "' .. dstFilename .. '" to "' .. dstDir .. '" done\n')
+					writeLogfile(2, 'Upload of "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. dstDir .. "/" .. dstFilename .. '" done\n')
 				end
 			end
 		
