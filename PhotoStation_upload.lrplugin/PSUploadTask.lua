@@ -269,7 +269,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	-- there is no way to identify whether the video is exported as original or rendered
 	-- --> get both video infos 
 	-- get rendered video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
-	local vinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, renderedVideoPath)
+	local vinfo, ffinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, renderedVideoPath)
 	if not (vinfo and orgVideoInfo) then
 		return false
 	end
@@ -343,7 +343,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	
 	if exportParams.thumbGenerate and ( 
 		-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
-		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, renderedVideoPath, thmb_ORG_Filename, realDimension, vinfo.rotation, vinfo.duration)
+		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, renderedVideoPath, ffinfo, thmb_ORG_Filename, realDimension, vinfo.rotation, vinfo.duration)
 
 		-- generate all other thumb from first thumb
 		or ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
@@ -366,10 +366,10 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	)
 
 	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
-	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo.srcDateTime, vinfo.dar, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
+	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo.srcDateTime, vinfo.dar, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
 	-- if photo has a title: generate a title file  	
 	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))

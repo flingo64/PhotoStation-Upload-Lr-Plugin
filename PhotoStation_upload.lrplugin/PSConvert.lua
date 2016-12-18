@@ -68,7 +68,7 @@ local qtfstart
 ]]
 
 -- ffmpeg encoder to use depends on OS
-local encoderOpt
+local audioCodecOpt
 
 ---------------------- shell encoding routines ---------------------------------------------------------
 
@@ -128,9 +128,8 @@ function PSConvert.initialize()
 	h.ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
 	h.qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
 
- 	encoderOpt = iif(WIN_ENV, '-acodec libvo_aacenc',  '-strict experimental -acodec aac')
-	-- for newer ffmpeg versions
---	encoderOpt = iif(WIN_ENV, '-acodec aac',  '-strict experimental -acodec aac')
+-- 	audioCodecOpt = iif(WIN_ENV, '-acodec libvo_aacenc ',  '-strict experimental -acodec aac ')
+	audioCodecOpt = '-strict experimental -acodec aac '
 	
 	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. h.conv .. "\n\t\t\tdcraw: " .. h.dcraw .. 
 										 "\n\t\t\tffmpeg: " .. h.ffmpeg .. "\n\t\t\tqt-faststart: " .. h.qtfstart .. "\n")
@@ -248,6 +247,8 @@ end
 		sar				as aspect ratio 'N:M' 
 		dar				as aspect ratio 'N:M'
 		rotation		as string '0', '90', '180', '270'
+	  ffinfo:
+	  	version			version of ffmpeg tool
 ]]
 function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
@@ -257,6 +258,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	local cmdline = cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> "' .. outfile .. '"' .. cmdlineQuote()
 	local v,w,x,z -- iteration variables for string.gmatch()
 	local vinfo = {}
+	local ffinfo = {}
 	
 	writeLogfile(4, cmdline .. "\n")
 	LrTasks.execute(cmdline)
@@ -268,13 +270,26 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	end
 
 	local ffmpegReport = LrFileUtils.readFile(outfile)
-	writeLogfile(4, "ffmpeg report:\n" .. ffmpegReport)
+	writeLogfile(4, "ffmpeg report:\n" .. 
+					"===========================================================================\n".. 
+					ffmpegReport ..
+					"===========================================================================\n")
 	
 	writeLogfile(3, string.format("ffmpegGetAdditionalInfo(%s):\n", srcVideoFilename))
 	
+	-------------- ffmpeg version search for avp:
+	-- ffmpeg version 1.2.1 Copyright (c) 2000-2013 the FFmpeg developers
+	-- ffmpeg version N-82794-g3ab1311 Copyright (c) 2000-2016 the FFmpeg developers
+	-- ffmpeg version 3.2.2 Copyright (c) 2000-2016 the FFmpeg developers
+	ffinfo.version = string.match(ffmpegReport, "ffmpeg version ([^%s]+)")
+	if not ffinfo.version then
+		writeLogfile(3, "  error: cannot find ffmpeg version\n")
+	end
+	writeLogfile(3, "  ffmpeg version: " .. ffinfo.version .. "\n")
+	
 	-------------- DateTimeOriginal search for avp: 'date            : 2014-07-14T21:35:04-0700'
 	local dateCaptureString, dateCapture
-	for v in string.gmatch(ffmpegReport, "date%s+:%s+([%d%p]+T[%d%p]+)") do
+	for v in string.gmatch(ffmpegReport, "date%s+:%s+([%d%-]+[%sT][%d%:]+)") do
 		dateCaptureString = v
 		writeLogfile(4, "dateCaptureString: " .. dateCaptureString .. "\n")
 		-- translate from  yyyy-mm-dd HH:MM:ss to timestamp
@@ -290,9 +305,11 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 		break
      end
 	
-	-------------- DateTimeOriginal: search for avp: 'creation_time : date' -------------------------
+	-------------- DateTimeOriginal: search for avp:  -------------------------
+	--	'creation_time : 2014-09-10 16:09:51'
+	--	'creation_time : 2014-09-10T16:09:51.000000Z'
 	local creationTimeString, creationTime
-	for v in string.gmatch(ffmpegReport, "creation_time%s+:%s+([%d%p]+%s[%d%p]+)") do
+	for v in string.gmatch(ffmpegReport, "creation_time%s+:%s+([%d%-]+[%sT][%d%:]+)") do
 		creationTimeString = v
 		writeLogfile(4, "creationTimeString: " .. creationTimeString .. "\n")
 		-- translate from  yyyy-mm-dd HH:MM:ss to timestamp
@@ -324,8 +341,9 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	-- Video: mjpeg (MJPG / 0x47504A4D), yuvj422p, 640x480, 30 tbr, 30 tbn, 30 tbc
 	-- Video: h264 (Main) (avc1 / 0x31637661), yuv420p, 1440x1080 [SAR 4:3 DAR 16:9], 12091 kb/s, 29.97 fps, 29.97 tbr, 30k tbn, 59.94 tbc
 	-- Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709), 1920x1080 [SAR 1:1 DAR 16:9], 27066 kb/s, 50 fps, 50 tbr, 180k tbn, 100 tbc (default)
---	for z, v, w, x in string.gmatch(ffmpegReport, "Video:%s+(%w+)[%s%w%(%)/]+,[%s%w]+,%s+([%dx]+)%s*%[*%w*%s*([%d:]*)%s*%w*%s*([%w:]*)%]*,") do
-	for z, v, w, x in string.gmatch(ffmpegReport, "Video:%s+(%w+)[%s%w%(%)/]+,[%s%w%(%),]+,%s+([%d]+x[%d]+)%s*%[*%w*%s*([%d:]*)%s*%w*%s*([%w:]*)%]*,") do
+	-- Video: mjpeg (MJPG / 0x47504A4D), yuvj422p(pc, bt470bg/unknown/unknown), 320x240, 1898 kb/s, 15 fps, 15 tbr, 15 tbn, 15 tbc
+--	for z, v, w, x in string.gmatch(ffmpegReport, "Video:%s+(%w+)[%s%w%(%)/]+,[%s%w%(%),]+,%s+([%d]+x[%d]+)%s*%[*%w*%s*([%d:]*)%s*%w*%s*([%w:]*)%]*,") do
+	for z, v, w, x in string.gmatch(ffmpegReport, "Video:%s+(%w+).+,.+,%s+([%d]+x[%d]+)%s*%[*%w*%s*([%d:]*)%s*%w*%s*([%w:]*)%]*,") do
 		vinfo.vformat = z
 		vinfo.dimension = v
 		vinfo.sar = w
@@ -353,21 +371,22 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 	
 	-------------- GPS info: search for avp like:  -------------------------
 	--     location        : +52.1234+013.1234/
-	vinfo.latitude, vinfo.longitude = string.match(ffmpegReport, "location%s+:%s+([%+%-]%d+%.%d+)([%+%-]%d+%.%d+)/")
+	--     location 	   : +33.9528-118.3960+026.000/
+	vinfo.latitude, vinfo.longitude, vinfo.gpsHeight = string.match(ffmpegReport, "location%s+:%s+([%+%-]%d+%.%d+)([%+%-]%d+%.%d+)([%+%-%d%.]*)/")
 
 	if vinfo.latitude and vinfo.longitude then
-			writeLogfile(3, string.format("\tgps: %s / %s\n", vinfo.latitude, vinfo.longitude))
+			writeLogfile(3, string.format("\tgps: %s / %s (height:%s)\n", vinfo.latitude, vinfo.longitude, vinfo.gpsHeight))
 	end
 	
 	LrFileUtils.delete(outfile)
 
-	if dateCapture and dateCapture < creationTime then
+	if dateCapture and creationTime and dateCapture < creationTime then
 		vinfo.srcDateTime = dateCapture
 	else
 		vinfo.srcDateTime = creationTime
 	end
 	
-	return vinfo
+	return vinfo, ffinfo
 end
 
 -- ffmpegGetRotateParams(hardRotate, rotation, dimension, aspectRatio) ---------------------------------------------------------
@@ -380,43 +399,43 @@ function PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dimension, asp
 	if hardRotate then
 		-- hard-rotation: rotate video stream, calculate rotated dimension, remove rotation flag from metadata
 		if rotation == "90" then
-			rotateOpt = '-vf "transpose=1" -metadata:s:v:0 rotate=0'
+			rotateOpt = '-vf "transpose=1" -metadata:s:v:0 rotate=0 '
 			newDimension = string.format("%sx%s", 
 										string.sub(dimension, string.find(dimension,'x') + 1, -1),
 										string.sub(dimension, 1, string.find(dimension,'x') - 1))
 			newAspectRatio = string.gsub(newDimension, 'x', ':')
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 90\n")
 		elseif rotation == "270" then
-			rotateOpt = '-vf "transpose=2" -metadata:s:v:0 rotate=0'
+			rotateOpt = '-vf "transpose=2" -metadata:s:v:0 rotate=0 '
 			newDimension = string.format("%sx%s", 
 										string.sub(dimension, string.find(dimension,'x') + 1, -1),
 										string.sub(dimension, 1, string.find(dimension,'x') - 1))
 			newAspectRatio = string.gsub(newDimension, 'x', ':')
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 270\n")
 		elseif rotation == "180" then
-			rotateOpt = '-vf "hflip,vflip" -metadata:s:v:0 rotate=0'
+			rotateOpt = '-vf "hflip,vflip" -metadata:s:v:0 rotate=0 '
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 180\n")
 		end
 	else
 		-- soft-rotation: add rotation flag to metadata
 		if rotation == "90" then
-			rotateOpt = '-metadata:s:v:0 rotate=90'
+			rotateOpt = '-metadata:s:v:0 rotate=90 '
 			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 90\n")
 		elseif rotation == "180" then
-			rotateOpt = '-metadata:s:v:0 rotate=180'
+			rotateOpt = '-metadata:s:v:0 rotate=180 '
 			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 180\n")
 		elseif rotation == "270" then
-			rotateOpt = '-metadata:s:v:0 rotate=270'
+			rotateOpt = '-metadata:s:v:0 rotate=270 '
 			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 270\n")
 		end 
 	end
 	return rotateOpt, newDimension, newAspectRatio
 end
 
--- ffmpegGetThumbFromVideo(srcVideoFilename, thumbFilename, dimension, rotation, duration) ---------------------------------------------------------
-function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, dimension, rotation, duration)
+-- ffmpegGetThumbFromVideo(h, srcVideoFilename, ffinfo, thumbFilename, dimension, rotation, duration) ---------------------------------------------------------
+function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, ffinfo, thumbFilename, dimension, rotation, duration)
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
-	local rotateOpt, nweDim, aspectRatio
+	local rotateOpt, newDim, aspectRatio
 	local snapshotTime = iif(duration < 4, '00:00:00', '00:00:03') 
 	
 	rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(h, true, rotation, dimension, string.gsub(dimension, 'x', ':'))
@@ -426,16 +445,21 @@ function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, thumbFilename, 
 	
 	-- generate first thumb from video
 	local cmdline = cmdlineQuote() ..
-						'"' .. h.ffmpeg .. 
-						'" -i "' .. srcVideoFilename .. 
-						'" -y -vframes 1 -ss ' .. snapshotTime .. ' -an -qscale 0 -f mjpeg '.. rotateOpt .. ' ' ..
-						'-s ' .. newDim .. ' -aspect ' .. aspectRatio .. 
-						' "' .. thumbFilename .. '" 2> "' .. outfile .. '"' ..
+						'"' .. h.ffmpeg .. '" ' .. 
+						iif(ffinfo.version == '1.2.1', '', '-noautorotate ') ..  
+						'-i "' .. srcVideoFilename .. '" ' ..
+						'-y -vframes 1 -ss ' .. snapshotTime .. ' -an -qscale 0 -f mjpeg '.. rotateOpt ..
+						'-s ' .. newDim .. ' -aspect ' .. aspectRatio .. ' ' ..
+						'"' .. thumbFilename .. '" 2> "' .. outfile .. '"' ..
 					cmdlineQuote()
 
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(thumbFilename) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
+		writeLogfile(3, "ffmpeg report:\n" .. 
+						"===========================================================================\n".. 
+						LrFileUtils.readFile(outfile) ..
+						"===========================================================================\n")
 		LrFileUtils.delete(outfile)
 		return false
 	end
@@ -512,7 +536,7 @@ function PSConvert.videoIsNativePSFormat(videoExt)
 	return false
 end
 
--- convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
+-- convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
 --[[ 
 	converts a video to an mp4 with a given resolution using the ffmpeg and qt-faststart tool
 	srcVideoFilename	the src video file
@@ -520,7 +544,7 @@ end
 	dstHeight			target height in pixel
 	dstVideoFilename	the target video file
 ]]
-function PSConvert.convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename)
+function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename)
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
 	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
 	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
@@ -535,53 +559,76 @@ function PSConvert.convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, d
 								srcVideoFilename, aspectRatio, dstHeight, tostring(hardRotate), rotation,
 								convKey, videoConversion[convKey].id, videoConversion[convKey].upToHeight))
 	
+	-- disable autorotate option of newer ffmpeg versions
+	local noAutoRotateOpt = iif(ffinfo.version == '1.2.1', '', '-noautorotate ')
+	
 	-- get rotation params based on rotate flag 
 	local rotateOpt
 	rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dstDim, dstAspect)
 
 	-- add creation_time metadata to destination video
-	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(srcDateTime), '"%Y-%m-%d %H:%M:%S"', false)
+	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(srcDateTime), '"%Y-%m-%d %H:%M:%S" ', false)
 		
+	-- transcoding pass 1 
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
 	local cmdline =  cmdlineQuote() ..
-				'"' .. h.ffmpeg .. '" -i "' .. 
-				srcVideoFilename .. 
-				'" -y ' .. encoderOpt .. ' ' ..
-				createTimeOpt .. ' ' .. rotateOpt .. ' ' ..
+				'"' .. h.ffmpeg .. '" ' .. 
+				noAutoRotateOpt ..
+				'-i "' 	.. srcVideoFilename .. '" ' .. 
+				'-y ' 	.. audioCodecOpt .. 
+				createTimeOpt ..  
+				rotateOpt ..
+				'-pix_fmt yuv420p ' ..
 				videoConversion[convKey].pass1Params .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
-				'-passlogfile "' .. passLogfile .. '"' .. 
-				' "' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
+				'-passlogfile "' .. passLogfile .. '" ' .. 
+				'"' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
 				cmdlineQuote()
 				
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
+		writeLogfile(3, "ffmpeg report:\n" .. 
+						"===========================================================================\n".. 
+						LrFileUtils.readFile(outfile) ..
+						"===========================================================================\n")
 		LrFileUtils.delete(outfile)
 		LrFileUtils.delete(tmpVideoFilename)
 		return false
 	end
 
+--	writeLogfile(4, "ffmpeg report:\n" .. 
+--					"===========================================================================\n".. 
+--					LrFileUtils.readFile(outfile) ..
+--					"===========================================================================\n")
+
+	-- transcoding pass 2 
 	cmdline =   cmdlineQuote() ..
-				'"' .. h.ffmpeg .. '" -i "' .. 
-				srcVideoFilename .. 
-				'" -y ' .. encoderOpt .. ' ' ..
-				createTimeOpt .. ' ' .. rotateOpt .. ' ' ..
+				'"' .. h.ffmpeg .. '" ' .. 
+				noAutoRotateOpt ..
+				'-i "' ..	srcVideoFilename .. '" ' .. 
+				createTimeOpt ..  
+				'-y ' .. audioCodecOpt ..
+				rotateOpt ..
+				'-pix_fmt yuv420p ' ..
 				videoConversion[convKey].pass2Params .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
-				'-passlogfile "' .. passLogfile .. '"' .. 
-				' "' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
+				'-passlogfile "' .. passLogfile .. '" ' .. 
+				'"' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
 				cmdlineQuote()
 
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
+		writeLogfile(3, "ffmpeg report:\n" .. 
+						"===========================================================================\n".. 
+						LrFileUtils.readFile(outfile) ..
+						"===========================================================================\n")
 		LrFileUtils.delete(outfile)
 		LrFileUtils.delete(tmpVideoFilename)
 		return false
 	end
 
---	LrFileUtils.copy(tmpVideoFilename, tmpVideoFilename ..".bak")
 	cmdline = 	cmdlineQuote() ..
 					'"' .. h.qtfstart .. '" "' ..  tmpVideoFilename .. '" "' .. dstVideoFilename .. '" 2> "' .. outfile ..'"' ..
 				cmdlineQuote()
@@ -589,6 +636,10 @@ function PSConvert.convertVideo(h, srcVideoFilename, srcDateTime, aspectRatio, d
 	writeLogfile(4, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
+    	writeLogfile(3, "qtfstart report:\n" .. 
+    					"===========================================================================\n".. 
+    					LrFileUtils.readFile(outfile) ..
+    					"===========================================================================\n")
 		LrFileUtils.delete(outfile)
 		LrFileUtils.delete(tmpVideoFilename)
 		return false
