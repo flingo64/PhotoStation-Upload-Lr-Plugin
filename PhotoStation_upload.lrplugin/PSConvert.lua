@@ -592,6 +592,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspect
 						"===========================================================================\n".. 
 						LrFileUtils.readFile(outfile) ..
 						"===========================================================================\n")
+		LrFileUtils.delete(passLogfile)
 		LrFileUtils.delete(outfile)
 		LrFileUtils.delete(tmpVideoFilename)
 		return false
@@ -624,6 +625,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspect
 						"===========================================================================\n".. 
 						LrFileUtils.readFile(outfile) ..
 						"===========================================================================\n")
+		LrFileUtils.delete(passLogfile)
 		LrFileUtils.delete(outfile)
 		LrFileUtils.delete(tmpVideoFilename)
 		return false
@@ -640,11 +642,13 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspect
     					"===========================================================================\n".. 
     					LrFileUtils.readFile(outfile) ..
     					"===========================================================================\n")
+		LrFileUtils.delete(passLogfile)
 		LrFileUtils.delete(outfile)
 		LrFileUtils.delete(tmpVideoFilename)
 		return false
 	end
 
+	LrFileUtils.delete(passLogfile)
 	LrFileUtils.delete(outfile)
 	LrFileUtils.delete(tmpVideoFilename)
 	return true
