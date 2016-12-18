@@ -366,10 +366,10 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	)
 
 	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
-	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo.srcDateTime, vinfo.dar, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
+	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo.srcDateTime, vinfo.dar, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
 
 	-- if photo has a title: generate a title file  	
 	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))

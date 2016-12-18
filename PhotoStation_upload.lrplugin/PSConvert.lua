@@ -536,27 +536,29 @@ function PSConvert.videoIsNativePSFormat(videoExt)
 	return false
 end
 
--- convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
+-- convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, hardRotate, rotation, dstVideoFilename) --------------------------
 --[[ 
 	converts a video to an mp4 with a given resolution using the ffmpeg and qt-faststart tool
+	h					conversionHandle
 	srcVideoFilename	the src video file
-	aspectRatio			aspect ration as N:M
+	ffinfo				ffmpeg tool version info
+	vinfo				orig video metadata info
 	dstHeight			target height in pixel
 	dstVideoFilename	the target video file
 ]]
-function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspectRatio, dstHeight, hardRotate, rotation, dstVideoFilename)
+function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, hardRotate, rotation, dstVideoFilename)
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
 	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
 	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
-	local arw = tonumber(string.match(aspectRatio, '(%d+):%d+'))
-	local arh = tonumber(string.match(aspectRatio, '%d+:(%d+)'))
+	local arw = tonumber(string.match(vinfo.dar, '(%d+):%d+'))
+	local arh = tonumber(string.match(vinfo.dar, '%d+:(%d+)'))
 	local dstWidth = math.floor(((dstHeight * arw / arh) + 0.5) / 2) * 2  -- make sure width is an even integer
 	local dstDim = string.format("%dx%d", dstWidth, dstHeight)
 	local dstAspect = string.gsub(dstDim, 'x', ':')
 	local convKey = PSConvert.getConvertKey(h, dstHeight) 		-- get the conversionParams
 
 	writeLogfile(3, string.format("convertVideo: %s aspectR %s, dstHeight: %d hardRotate %s rotation %s using conversion %d/%s (%dp)\n", 
-								srcVideoFilename, aspectRatio, dstHeight, tostring(hardRotate), rotation,
+								srcVideoFilename, vinfo.dar, dstHeight, tostring(hardRotate), rotation,
 								convKey, videoConversion[convKey].id, videoConversion[convKey].upToHeight))
 	
 	-- disable autorotate option of newer ffmpeg versions
@@ -567,7 +569,13 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, srcDateTime, aspect
 	rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dstDim, dstAspect)
 
 	-- add creation_time metadata to destination video
-	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(srcDateTime), '"%Y-%m-%d %H:%M:%S" ', false)
+	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(vinfo.srcDateTime), '"%Y-%m-%d %H:%M:%S" ', false)
+		
+	-- add location metadata to destination video: doesn't work w/ ffmpeg 3.3.2
+--	local locationInfoOpt = ''
+--	if vinfo.latitude then
+--		 locationInfoOpt = '-metadata location="' .. vinfo.latitude .. vinfo.longitude .. ifnil(vinfo.gpsHeight, '') .. '/" '
+--	end
 		
 	-- transcoding pass 1 
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
