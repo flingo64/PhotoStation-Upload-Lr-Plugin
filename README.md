@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.1.x<br>
+Version 6.2.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -44,7 +44,7 @@ Requirements
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
 	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8
 * Synology Photo Station:
-	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 Beta (tested)
+	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 (tested)
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
 	- ImageMagick/convert(.exe)
 	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
@@ -135,6 +135,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {Date %Y-%m-%d}
 	  - {LrFM:cameraModel}
 	  - {LrFM:isoRating}
+	  - {LrRM:uuid}
 	  - {Path:5}
 	  - {LrCC:path ^Yearly Collections}
 	  - {LrCC:name}<br>
@@ -237,7 +238,7 @@ Publish Functionality:
   As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums.<br>
   You may define whether a Shared Album should be public (default) or private (using __keyword synonym 'private'__)<br>
   You may define a __password__ for a public Shared Album (using __keyword synonym 'password:\<AlbumPassword\>'__) (requires Photo Station 6.6 or above)<br>
-  For more infos please read the [Wiki article](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Managing-Photo-Station-Shared-Albums-in-Lightroom-via-Photo-StatLr).
+  For more infos please read the [Wiki article](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Managing-Photo-Station-Shared-Albums-in-Lightroom-via-Photo-StatLr).
   
 Download / Sync Functionality:
 -------------------------------
@@ -560,6 +561,13 @@ Version 6.1
 - Photo Station Shared Album management: You may define a __password for the public share__ (requires Photo 6.6 or above)
 - Added translations for various listboxes
 
+Version 6.2
+------------
+- Added	metadata placeholder __{LrRM:\<key\> \<extract pattern\>}__ to retrieve (an extract of) any metadata supported by Lightroom SDK: LrPhoto - photo:getRawMetadata(key)<br>
+This placeholder was introduced in particular to support the following features:
+	- __{LrRM:uuid}__ may be used in 'Rename to' to retrieve a unique, fixed, never changing identifier for any photo in the Lr catalog
+	- __{LrRM:stackPositionInFolder ^1([^%d]*)$|?}__ may be used in 'Rename to' to prevent the upload of any photo burried in a stack (not the top-most photo in a stack)    
+ 
 Copyright
 ==========
 Copyright(c) 2016, Martin Messmer
