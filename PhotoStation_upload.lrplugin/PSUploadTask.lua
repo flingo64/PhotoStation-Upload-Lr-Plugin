@@ -801,10 +801,11 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
     									PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename'))
        			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
     			
-    			-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
+    			-- check if dstRoot or dstFilename contains missing required metadata ('?') (which means: skip photo) 
     			skipPhoto = iif(string.find(dstRoot, '?', 1, true) or string.find(dstFilename, '?', 1, true), true, false)
 				if skipPhoto then
-					writeLogfile(2, string.format('MovePhotos: Skipping "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
+					writeLogfile(2, string.format("MovePhotos: Skipping '%s' due to invalid target album '%s' or remote filename '%s'\n", 
+											srcPhoto:getFormattedMetadata("fileName"), dstRoot, dstFilename))
     			end
 			end
 
@@ -1067,7 +1068,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 									PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename'))
    			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
 																			
-			-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
+			-- check if dstRoot or dstFilename contains missing required metadata ('?') (which means: skip photo) 
    			skipPhoto = iif(string.find(dstRoot, '?', 1, true) or string.find(dstFilename, '?', 1, true), true, false)
 			
 			writeLogfile(4, string.format("  sanitized dstRoot: %s, dstFilename %s\n", dstRoot, dstFilename))
@@ -1075,14 +1076,15 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			local localPath, newPublishedPhotoId
 			
 			if skipPhoto then
-				writeLogfile(2, string.format('Skip photo: "%s" due to unknown target album "%s"\n', srcPhoto:getFormattedMetadata("fileName"), dstRoot))
+				writeLogfile(2, string.format("%s: Skipping '%s' due to invalid target album '%s' or remote filename '%s'\n", 
+										publishMode, srcPhoto:getFormattedMetadata("fileName"), dstRoot, dstFilename))
+				
 				table.insert( failures, srcPath )
 			elseif publishMode ~= 'Export' or srcPhoto:getRawMetadata("isVideo") then
 				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
 				-- use the relative destination pathname, so we are able to identify moved pictures
 	    		localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot)
 				
---				writeLogfile(3, 'Old publishedPhotoId: ' .. ifnil(publishedPhotoId, '<Nil>') .. ',  New publishedPhotoId: ' .. newPublishedPhotoId .. '"\n')
 				writeLogfile(3, string.format("Old publishedPhotoId: '%s', New publishedPhotoId: '%s'\n",
 				 								ifnil(publishedPhotoId, '<Nil>'), newPublishedPhotoId))
 				-- if photo was moved ... 
