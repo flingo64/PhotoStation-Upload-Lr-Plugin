@@ -316,6 +316,40 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
     		end);
 	end
 	
+	-- get raw metadata, if required
+	if string.find(path, "{LrRM:", 1, true) then
+		local srcPhotoRMetadata = srcPhoto:getRawMetadata()
+
+    	-- substitute Lr RAW Metadata tokens: {LrRM:<key>} or {LrRM:<key> <extract pattern>}, only string, number or boolean type allowed
+    	path = string.gsub (path, '({LrRM:[^}]*})', function(metadataParam)
+    			local metadataNameAndPattern, dataDefault = string.match(metadataParam, "{LrRM:(.*)|(.*)}")
+    			if not metadataNameAndPattern then
+    				metadataNameAndPattern = string.match(metadataParam, "{LrRM:(.*)}")
+    			end
+    			local metadataName, metadataPattern = string.match(metadataNameAndPattern, "(%w+)%s+(.*)")
+    			if not metadataName then
+    				metadataName = metadataNameAndPattern
+    			end
+    			
+    			local metadataString = ifnil(srcPhotoRMetadata[metadataName], '')
+    			local metadataStringExtracted = metadataString
+    			if metadataString == '' then
+    				metadataStringExtracted = ifnil(dataDefault, '')
+    			else
+    				if metadataPattern then
+    					metadataStringExtracted = string.match(metadataString, metadataPattern)
+    				end 
+					if not metadataStringExtracted then 
+  						metadataStringExtracted = ifnil(dataDefault, '')
+    				else
+    					metadataStringExtracted = mkLegalFilename(metadataStringExtracted)
+    				end 
+    			end
+    			writeLogfile(3, string.format("evaluatePathOrFilename: LrRM:%s = %s, pattern %s --> %s\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
+    			return metadataStringExtracted
+    		end);
+	end
+	
 	-- get pathname, if required
 	if string.find(path, "{Path:", 1, true) then
 		local srcPhotoPath = srcPhoto:getRawMetadata('path')
