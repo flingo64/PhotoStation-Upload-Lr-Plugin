@@ -438,12 +438,15 @@ end
 -- This function should be used when a arbitrary string shall be used as filename or dirname 
 function mkLegalFilename(str)
 	if (str) then
-		writeLogfile(4, string.format("mkLegalFilename: was %s\n", str)) 
+		local newStr
 		-- illegal filename characters: '\', '/', ':', '?', '*',  '"', '<', '>', '|'  
-		str = string.gsub (str, '([\\\/:%?%*"<>|])', function (c)
+		newStr = string.gsub (str, '([\\\/:%?%*"<>|])', function (c)
 								return string.format ("%%%02X", string.byte(c))
          end) 
-		writeLogfile(4, string.format("mkLegalFilename: now %s\n", str)) 
+		if newStr ~= str then
+			writeLogfile(4, string.format("mkLegalFilename(%s) = %s\n", str, newStr))
+		end
+		str = newStr
 	end
 	return str
 end 
