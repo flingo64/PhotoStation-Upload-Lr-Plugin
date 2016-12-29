@@ -439,7 +439,9 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 			end);
 	end
 	
-	path = LrPathUtils.addExtension(path, LrPathUtils.extension(srcPhoto:getFormattedMetadata('fileName')))
+	if 	type == 'filename'	then
+		path = LrPathUtils.addExtension(path, LrPathUtils.extension(srcPhoto:getFormattedMetadata('fileName')))
+	end
 	return normalizeDirname(path)
 end 
 
