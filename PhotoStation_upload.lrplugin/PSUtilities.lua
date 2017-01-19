@@ -329,12 +329,11 @@ end
 -- writeLogfile: always open, write, close, otherwise output will get lost in case of unexpected errors
 function writeLogfile (level, msg)
 	if level <= ifnil(loglevel, 2) then
---		local logfile = io.open(logfilename, "a")
 		local logfile = io.open(getLogFilename(), "a")
---		if logfile then
+		if logfile then
 			logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ", " .. ifnil(loglevelname[level], tostring(level)) .. ": " .. msg)
 			io.close (logfile)
---		end
+		end
 	end
 end
 
