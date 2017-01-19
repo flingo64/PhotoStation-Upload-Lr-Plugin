@@ -1,6 +1,9 @@
 --[[----------------------------------------------------------------------------
 
 PSFileStationAPI.lua
+This file is part of Photo StatLr - Lightroom plugin.
+Copyright(c) 2015, Martin Messmer
+
 File Station primitives:
 	- initialize
 	- login
@@ -8,9 +11,6 @@ File Station primitives:
 	- listFiles
 	- existsPic
 	- deletePic
-Copyright(c) 2015, Martin Messmer
-
-This file is part of Photo StatLr - Lightroom plugin.
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

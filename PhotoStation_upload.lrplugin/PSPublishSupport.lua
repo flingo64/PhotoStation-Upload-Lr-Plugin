@@ -2,7 +2,7 @@
 
 PSPublishSupport.lua
 Publish support for Lightroom Photo StatLr
-Copyright(c) 2015, Martin Messmer
+Copyright(c) 2017, Martin Messmer
 
 This file is part of Photo StatLr - Lightroom plugin.
 

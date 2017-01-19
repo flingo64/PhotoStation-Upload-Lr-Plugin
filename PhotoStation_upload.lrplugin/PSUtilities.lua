@@ -1,8 +1,10 @@
 --[[----------------------------------------------------------------------------
 
 PSUtilities.lua
+This file is part of Photo StatLr - Lightroom plugin.
+Copyright(c) 2017, Martin Messmer
+
 Utilities for Lightroom Photo StatLr
-Copyright(c) 2015, Martin Messmer
 
 exported functions:
 	- JSON.onDecodeError
@@ -45,10 +47,6 @@ exported functions:
 	- promptForMissingSettings
 	- showFinalMessage	
 	
-Copyright(c) 2015, Martin Messmer
-
-This file is part of Photo StatLr - Lightroom plugin.
-
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or

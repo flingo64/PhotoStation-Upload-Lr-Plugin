@@ -1,6 +1,9 @@
 --[[----------------------------------------------------------------------------
 
 PSPhotoStationUtils.lua
+This file is part of Photo StatLr - Lightroom plugin.
+Copyright(c) 2017, Martin Messmer
+
 Photo Station utilities:
 	- getErrorMsg
 
@@ -22,11 +25,6 @@ Photo Station utilities:
 	
 	- rating2Stars
 	
-	
-Copyright(c) 2016, Martin Messmer
-
-This file is part of Photo StatLr - Lightroom plugin.
-
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
