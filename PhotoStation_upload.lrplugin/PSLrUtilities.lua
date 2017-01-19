@@ -77,6 +77,24 @@ function PSLrUtilities.isVideo(filename)
 				true, false)
 end
 
+---------------------- iso8601ToTime(timeISO8601) ----------------------------------------------------------
+-- iso8601ToTime(dateTimeISO8601)
+-- returns Cocoa timestamp as used all through out Lr  
+function PSLrUtilities.iso8601ToTime(dateTimeISO8601)
+	-- ISO8601: YYYY-MM-DD{THH:mm:{ss{Zssss}}
+	-- date is mandatory, time as whole, seconds and timezone may or may not be present, e.g.:
+        --	srcDateTimeISO8601 = '2016-07-06T17:16:15Z-3600'
+        --	srcDateTimeISO8601 = '2016-07-06T17:16:15Z'
+        --	srcDateTimeISO8601 = '2016-07-06T17:16:15'
+        --	srcDateTimeISO8601 = '2016-07-06T17:16'
+        --	srcDateTimeISO8601 = '2016-07-06'
+
+	local year, month, day, hour, minute, second, tzone = string.match(dateTimeISO8601, '(%d%d%d%d)%-(%d%d)%-(%d%d)T*(%d*):*(%d*):*(%d*)Z*([%-%+]*%d*)')
+	return LrDate.timeFromComponents(tonumber(ifnil(year, "2001")), tonumber(ifnil(month,"1")), tonumber(ifnil(day, "1")), 
+									 tonumber(ifnil(hour, "0")), tonumber(ifnil(minute, "0")), tonumber(ifnil(second, "0")),
+									 iif(ifnil(tzone, '') == '', "local", tzone))
+end
+
 ------------- getDateTimeOriginal -------------------------------------------------------------------
 -- getDateTimeOriginal(srcPhoto)
 -- get the DateTimeOriginal (capture date) of a photo or whatever comes close to it
@@ -84,39 +102,29 @@ end
 -- returns a unix timestamp and a boolean indicating if we found a real DateTimeOrig
 function PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	local srcDateTime = nil
+	local srcDateTimeISO8601 = nil
 	local isOrigDateTime = false
 
-	if srcPhoto:getRawMetadata("dateTimeOriginal") then
+ 	if srcPhoto:getRawMetadata("dateTimeOriginal") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginal")
 		isOrigDateTime = true
 		writeLogfile(3, "  dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeOriginalISO8601") then
-		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
+		srcDateTimeISO8601 	= srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
+		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
 		isOrigDateTime = true
-		writeLogfile(3, "  dateTimeOriginalISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		writeLogfile(3, string.format("  dateTimeOriginalISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	elseif srcPhoto:getRawMetadata("dateTimeDigitized") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitized")
 		writeLogfile(3, "  dateTimeDigitized: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
-		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
-		writeLogfile(3, "  dateTimeDigitizedISO8601: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		srcDateTimeISO8601 	= srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
+		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
+		writeLogfile(3, string.format("  dateTimeDigitizedISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	elseif srcPhoto:getFormattedMetadata("dateCreated") and srcPhoto:getFormattedMetadata("dateCreated") ~= '' then
-		local srcDateTimeStr = srcPhoto:getFormattedMetadata("dateCreated")
-		local year,month,day,hour,minute,second,tzone
-		local foundDate = false -- avoid empty dateCreated
-		
-		-- iptcDateCreated: date is mandatory, time as whole, seconds and timezone may or may not be present
-		for year,month,day,hour,minute,second,tzone in string.gmatch(srcDateTimeStr, "(%d+)-(%d+)-(%d+)T*(%d*):*(%d*):*(%d*)Z*(%w*)") do
-			writeLogfile(4, string.format("dateCreated: %s Year: %s Month: %s Day: %s Hour: %s Minute: %s Second: %s Zone: %s\n",
-											srcDateTimeStr, year, month, day, ifnil(hour, "00"), ifnil(minute, "00"), ifnil(second, "00"), ifnil(tzone, "local")))
-			srcDateTime = LrDate.timeFromComponents(tonumber(year), tonumber(month), tonumber(day),
-													tonumber(ifnil(hour, "0")),
-													tonumber(ifnil(minute, "0")),
-													tonumber(ifnil(second, "0")),
-													iif(not tzone or tzone == "", "local", tzone))
-			foundDate = true
-		end
-		if foundDate then writeLogfile(3, "  dateCreated: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n") end
+		srcDateTimeISO8601 	= srcPhoto:getFormattedMetadata("dateCreated")
+		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
+		writeLogfile(3, string.format("  dateCreated: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	end
 	
 	-- if nothing found in metadata of srcPhoto: take the fileCreationDate
