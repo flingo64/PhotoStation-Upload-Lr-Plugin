@@ -1,10 +1,10 @@
 --[[----------------------------------------------------------------------------
 
 Info.lua
-Summary information for Photo StatLr
-Copyright(c) 2015, Martin Messmer
-
 This file is part of Photo StatLr - Lightroom plugin.
+Copyright(c) 2017, Martin Messmer
+
+Summary information for Photo StatLr
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 plugin_major = 6
 plugin_minor = 2
-plugin_rev = 2
-plugin_build = 20161229
+plugin_rev = 3
+plugin_build = 20170119
 pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' ..plugin_rev .. '.' .. plugin_build
 plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
 
