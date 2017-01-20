@@ -540,6 +540,7 @@ function openSession(exportParams, publishedCollection, operation)
     	if operation == 'GetCommentsFromPublishedCollection' then
         	exportParams.downloadMode	 		= collectionSettings.downloadMode
         	exportParams.commentsDownload 		= collectionSettings.commentsDownload
+        	exportParams.pubCommentsDownload	= collectionSettings.pubCommentsDownload
         	exportParams.titleDownload	 		= collectionSettings.titleDownload
         	exportParams.captionDownload 		= collectionSettings.captionDownload
         	exportParams.tagsDownload	 		= collectionSettings.tagsDownload

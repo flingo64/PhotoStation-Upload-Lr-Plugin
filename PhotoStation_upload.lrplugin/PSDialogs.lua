@@ -1278,10 +1278,17 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Comments",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download photo comments from Photo Station to Lr Comments panel",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Internal Comments",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download photo comments from Photo Station (internal) to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'commentsDownload',
+			},
+
+			f:checkbox {
+				title 			= LOC "$$$/PSUpload/CollectionSettings/PublicCommentsDownload=Public Comments",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicCommentsDownloadTT=Download photo comments from Photo Station public shares to Lr Comments panel",
+				fill_horizontal = 1,
+				value 			= bind 'pubCommentsDownload',
 			},
 		},
 	}

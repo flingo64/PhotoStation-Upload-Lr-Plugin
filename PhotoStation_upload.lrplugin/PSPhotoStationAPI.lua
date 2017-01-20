@@ -307,6 +307,28 @@ function PSPhotoStationAPI.getPhotoComments (h, dstFilename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- getSharedPhotoComments (h, dstFilename, isVideo, shareId) 
+function PSPhotoStationAPI.getSharedPhotoComments (h, dstFilename, isVideo, shareId) 
+	local formData = 'method=list_comment&' ..
+					 'version=1&' .. 
+					 'offset=0&' .. 
+					 'limit=-1&' .. 
+					 'item_id=' .. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo) .. '&' ..
+					 'public_share_id=' .. shareId 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.AdvancedShare', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	if respArray.data then
+		writeLogfile(3, string.format('getSharedPhotoComments(%s, %s) returns %d comments.\n', dstFilename, shareId, #respArray.data))
+	else
+		writeLogfile(3, string.format('getSharedPhotoComments(%s, %s) returns no comments.\n', dstFilename, shareId))
+	end
+	return respArray.data
+end
+
+---------------------------------------------------------------------------------------------------------
 -- getPhotoExifs (h, dstFilename, isVideo) 
 function PSPhotoStationAPI.getPhotoExifs (h, dstFilename, isVideo) 
 	local formData = 'method=getexif&' ..

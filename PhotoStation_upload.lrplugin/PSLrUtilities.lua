@@ -23,7 +23,7 @@ Lightroom utilities:
 	- addKeywordHierarchyToCatalogAndPhoto
 	- renameKeyword
 	
-	- getSharedAlbumKeywords
+	- getPhotoSharedAlbumKeywords
 	
 	- convertCollection
 	- convertAllPhotos
@@ -550,9 +550,10 @@ function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms)
 	local keywordSynonyms = keyword:getSynonyms()
 	local synonymsRemoved = false
 	
-	for i = 1, #keywordSynonyms do
+	for i = #keywordSynonyms, 1, -1 do
 		for j = 1, #synonyms do
-    		if string.match(keywordSynonyms[i], synonyms[j]) then
+    		if string.find(keywordSynonyms[i], synonyms[j], 1, true) then
+				writeLogfile(4, string.format("Keyword '%s': removing %d. synonym '%s'\n", keyword:getName(), i, synonyms[j]))
     			table.remove(keywordSynonyms, i)
     			synonymsRemoved = true
     			break
@@ -562,7 +563,7 @@ function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms)
 
 	if synonymsRemoved then
     	catalog:withWriteAccessDo( 
-    		'RemoveShareUrl from SharedAlbumKeyword ',
+    		'Remove Keyword Synonyms',
     		function(context)
     			keyword:setAttributes({synonyms = keywordSynonyms})
     		end,
@@ -653,15 +654,60 @@ function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName
 	return true
 end
 
+--[[
 --------------------------------------------------------------------------------------------
--- getSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
---   returns a list of all Shared Album keywords. i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
+-- getCollectionSharedAlbumKeywords(pubServiceName, psVersion)
+--   returns a list of all Shared Album keywords for a collection, i.e. keywords below "Photo StatLr"|"Shared Albums"
+function PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
+	local keywords 					= activeCatalog:getKeywords()
+	local sharedAlbumKeywords 		= {} 	
+	local numSharedAlbumKeywords 	= 0
+
+	writeLogfile(3, string.format("getCollectionSharedAlbumKeywords(%s) starting\n",  pubServiceName))
+	for i = 1, #keywords do
+		local keyword = keywords[i]
+		
+		if	keyword:getParent() and keyword:getParent():getName() == pubServiceName
+		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Shared Albums'
+		and keyword:getParent():getParent():getParent() and keyword:getParent():getParent():getParent():getName() == 'Photo StatLr' 
+		then
+			local keywordSynonyms = keyword:getSynonyms()
+    		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
+    		sharedAlbumKeywords[numSharedAlbumKeywords] = {
+    				keywordId			= keyword.localIdentifier,
+    				sharedAlbumName 	= keyword:getName(), 
+    				mkSharedAlbumPublic	= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
+    		}
+			-- allow for Shared Album password for Photo Station 6.6 and above
+			if psVersion >= 66 then
+	    		sharedAlbumKeywords[numSharedAlbumKeywords]["mkSharedAlbumAdvanced"] = true
+	    		local sharedAlbumPassword
+	    		for i = 1,  #keywordSynonyms do
+	    			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
+	    			if sharedAlbumPassword then break end
+	    		end
+				if sharedAlbumPassword then
+		    		sharedAlbumKeywords[numSharedAlbumKeywords]["sharedAlbumPassword"] = sharedAlbumPassword
+		    	end
+		    end
+		end
+	end
+	writeLogfile(3, string.format("getCollectionSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
+									pubServiceName, table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
+	return sharedAlbumKeywords   		
+
+end
+]]
+
+--------------------------------------------------------------------------------------------
+-- getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
+--   returns a list of all Shared Album keywords for a photo, i.e. keywords below "Photo StatLr"|"Shared Albums"
+function PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
 	local keywords 					= srcPhoto:getRawMetadata("keywords")  
 	local sharedAlbumKeywords 		= {} 	
 	local numSharedAlbumKeywords 	= 0
 
-	writeLogfile(3, string.format("getSharedAlbumKeywords(%s, %s) starting\n", 
+	writeLogfile(4, string.format("getPhotoSharedAlbumKeywords(%s, %s) starting\n", 
 									srcPhoto:getRawMetadata('path'), pubServiceName))
 	for i = 1, #keywords do
 		local keyword = keywords[i]
@@ -691,16 +737,16 @@ function PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName, psVersio
 		    end
 		end
 	end
-	writeLogfile(3, string.format("getSharedAlbumKeywords(%s, %s): found Shared Albums: '%s'\n", 
+	writeLogfile(3, string.format("getPhotoSharedAlbumKeywords(%s, %s): found Shared Albums: '%s'\n", 
 									srcPhoto:getRawMetadata('path'), pubServiceName, table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
 	return sharedAlbumKeywords   		
 
 end
 
 --------------------------------------------------------------------------------------------
--- getLinkedSharedAlbums(srcPhoto)
+-- getPhotoLinkedSharedAlbums(srcPhoto)
 --   returns a list of all Shared Album the photo was linked to as stored in private plugin metadata
-function PSLrUtilities.getLinkedSharedAlbums(srcPhoto)
+function PSLrUtilities.getPhotoLinkedSharedAlbums(srcPhoto)
 	local sharedAlbumPluginMetadata = srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
 	local sharedAlbumsPS
 
@@ -708,21 +754,21 @@ function PSLrUtilities.getLinkedSharedAlbums(srcPhoto)
 	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
 		sharedAlbumsPS = split(sharedAlbumPluginMetadata, '/')
 	end
-	writeLogfile(3, string.format("getLinkedSharedAlbums(%s): found Shared Albums: '%s'\n", 
+	writeLogfile(3, string.format("getPhotoLinkedSharedAlbums(%s): found Shared Albums: '%s'\n", 
 									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))    		
 	return sharedAlbumsPS
 end 
 
 --------------------------------------------------------------------------------------------
--- setLinkedSharedAlbums(srcPhoto, sharedAlbums)
+-- setPhotoLinkedSharedAlbums(srcPhoto, sharedAlbums)
 --   store a list of all Shared Album the photo was linked to in private plugin metadata
-function PSLrUtilities.setLinkedSharedAlbums(srcPhoto, sharedAlbums)
+function PSLrUtilities.setPhotoLinkedSharedAlbums(srcPhoto, sharedAlbums)
 	local activeCatalog 				= LrApplication.activeCatalog()
 	local oldSharedAlbumPluginMetadata 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
 	table.sort(sharedAlbums)
 	local newSharedAlbumPluginMetadata 	= table.concat(sharedAlbums, '/')
 	
-	writeLogfile(3, string.format("setLinkedSharedAlbums(%s): '%s'\n", 
+	writeLogfile(3, string.format("setPhotoLinkedSharedAlbums(%s): '%s'\n", 
 									srcPhoto:getRawMetadata('path'), ifnil(newSharedAlbumPluginMetadata, '')))    		
 	if newSharedAlbumPluginMetadata ~= oldSharedAlbumPluginMetadata then
 		activeCatalog:withWriteAccessDo( 
@@ -732,7 +778,7 @@ function PSLrUtilities.setLinkedSharedAlbums(srcPhoto, sharedAlbums)
 				end,
 				{timeout=5}
 		)
-		writeLogfile(3, string.format("setLinkedSharedAlbums(%s): updated plugin metadata to '%s'\n", 
+		writeLogfile(3, string.format("setPhotoLinkedSharedAlbums(%s): updated plugin metadata to '%s'\n", 
 									srcPhoto:getRawMetadata('path'), newSharedAlbumPluginMetadata))    		
 		return 1
 	end
@@ -748,8 +794,8 @@ end
 --   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
 function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
 	local pubServiceName = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(publishedCollectionId):getService():getName()
-	local sharedAlbumsLr 	= PSLrUtilities.getSharedAlbumKeywords(srcPhoto, pubServiceName, exportParams.psVersion)
-	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getLinkedSharedAlbums(srcPhoto), {})
+	local sharedAlbumsLr 	= PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, exportParams.psVersion)
+	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getPhotoLinkedSharedAlbums(srcPhoto), {})
 	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
 	
 	-- add photo to all given Shared Albums that it is not already member of

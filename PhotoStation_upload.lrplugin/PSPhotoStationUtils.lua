@@ -9,6 +9,7 @@ Photo Station utilities:
 
 	- getAlbumId
 	- getPhotoId
+	- getSharedAlbumId
 	
 	- getAlbumUrl
 	- getPhotoUrl
@@ -188,7 +189,7 @@ local function sharedAlbumCacheFind(h, name)
 	
 	for i = 1, #sharedAlbumCache do
 		if sharedAlbumCache[i].name == name then 
-			writeLogfile(3, string.format('sharedAlbumCacheFind(%s) found  %s.\n', name, sharedAlbumCache[i].id))
+			writeLogfile(4, string.format('sharedAlbumCacheFind(%s) found  %s.\n', name, sharedAlbumCache[i].id))
 			return sharedAlbumCache[i] 
 		end
 	end
@@ -311,6 +312,24 @@ function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 --	writeLogfile(4, string.format("getPhotoId(%s) returns %s\n", photoPath, photoId))
 	
 	return photoId
+end
+
+--[[ 
+PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
+	returns the shareId of a given SharedAlbum using the Shared Album cache
+]]
+function PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	
+	if not sharedAlbumInfo then 
+		writeLogfile(3, string.format('getSharedAlbumId(%s): Shared album not found.\n', sharedAlbumName))
+		return nil
+	end
+	if not sharedAlbumInfo.additional or not sharedAlbumInfo.additional.public_share or sharedAlbumInfo.additional.public_share.share_status ~= 'valid' then 
+		return nil
+	end
+
+	return sharedAlbumInfo.additional.public_share.shareid
 end
 
 ---------------------------------------------------------------------------------------------------------

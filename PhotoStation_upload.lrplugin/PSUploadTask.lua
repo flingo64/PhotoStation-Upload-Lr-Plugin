@@ -607,7 +607,7 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 			if success then
         		local firstServerUrl 	= exportParams.proto .. "://" .. exportParams.servername 
         		local secondServerUrl	= iif(ifnil(exportParams.servername2, '') ~= '', exportParams.proto2 .. "://" .. exportParams.servername2, nil)
-        		writeLogfile(3, string.format("updateSharedAlbum: firstServer: %s secondServer %s\n", firstServerUrl, ifnil(secondServerUrl, '<nil>')))
+        		writeLogfile(4, string.format("updateSharedAlbum: firstServer: %s secondServer %s\n", firstServerUrl, ifnil(secondServerUrl, '<nil>')))
         		
 				if sharedAlbumUpdate.mkSharedAlbumPublic and shareUrl then 
 					local sharedAlbumUrls = {}
@@ -622,8 +622,8 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 					PSLrUtilities.addKeywordSynonyms(sharedAlbumUpdate.keywordId, sharedAlbumUrls) 
 				elseif not sharedAlbumUpdate.mkSharedAlbumPublic then
 					local shareUrlPatterns = {}
-					shareUrlPatterns[1] = firstServerUrl
-					if secondServerUrl then shareUrlPatterns[2] = secondServerUrl end
+					shareUrlPatterns[1] = firstServerUrl .. '/photo/share/'
+					if secondServerUrl then shareUrlPatterns[2] = secondServerUrl .. '/photo/share/' end
 					PSLrUtilities.removeKeywordSynonyms(sharedAlbumUpdate.keywordId, shareUrlPatterns)
 				end
 			end
@@ -639,7 +639,7 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 		if progressScope:isCanceled() then break end
 		local sharedPhotoUpdate = sharedPhotoUpdates[i]
 
-		PSLrUtilities.setLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
+		PSLrUtilities.setPhotoLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
 		writeLogfile(3, string.format("%s: updated plugin metadata.\n",	sharedPhotoUpdate.srcPhoto:getRawMetadata('path')))
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    

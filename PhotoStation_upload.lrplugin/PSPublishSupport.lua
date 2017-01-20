@@ -554,6 +554,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	PS2LrRating			= false,
     
     	commentsDownload	= false,
+    	pubCommentsDownload	= false,
     
     	publishMode 		= 'Publish',
     	downloadMode		= 'Yes',
@@ -1005,7 +1006,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end
 
-	if publishSettings.downloadMode == 'No' or not publishSettings.commentsDownload then
+	if publishSettings.downloadMode == 'No' or not (publishSettings.commentsDownload or publishSettings.pubCommentsDownload) then
 		writeLogfile(2, string.format("Get comments: comments not enabled for this collection.\n"))
 		closeLogfile()
 		return
@@ -1023,34 +1024,74 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
-		local comments = PSPhotoStationAPI.getPhotoComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
-		
-		if not comments then
-			writeLogfile(1, string.format("Get comments: %s failed!\n", photoInfo.remoteId))
-		else
-    		local commentList = {}
-    
-    		if comments and #comments > 0 then
-    
-    			for _, comment in ipairs( comments ) do
+   		local commentListLr = {} 
+
+		-- get photo comments from PS albums
+		if publishSettings.commentsDownload then 
+    		local commentsPS = PSPhotoStationAPI.getPhotoComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+    		
+    		if not commentsPS then
+    			writeLogfile(1, string.format("Get comments: %s failed!\n", photoInfo.remoteId))
+    		elseif  #commentsPS > 0 then
+        
+       			writeLogfile(3, string.format("Get comments: %s - found %d comments in private Album\n", photoInfo.remoteId, #commentsPS))
+    			for _, comment in ipairs( commentsPS ) do
     				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
     
-    				table.insert( commentList, {
+    				table.insert( commentListLr, {
     								commentId = string.match(comment.id, 'comment_(%d+)'),
     								commentText = comment.comment,
     								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
-	   								username = ifnil(comment.email, ''),
-	  								realname = ifnil(comment.name, ''),
---    								url = PSPhotoStationUtils.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+       								username = ifnil(comment.email, ''),
+      								realname = ifnil(comment.name, '') .. '@PS (Photo Station internal)',
     							} )
     			end			
     
     		end	
-			writeLogfile(2, string.format("Get comments: %s - %d comments\n", photoInfo.remoteId, #commentList))
-			writeTableLogfile(4, "commentList", commentList)
-    		commentCallback({publishedPhoto = photoInfo, comments = commentList})
-    		nComments = nComments + #comments
 		end
+
+		if publishSettings.pubCommentsDownload then
+    		-- get photo comments from PS public shared albums, if photo is member of any shared album
+    		local photoSharedAlbums = PSLrUtilities.getPhotoLinkedSharedAlbums(photoInfo.photo)
+    		if photoSharedAlbums then
+    		
+       			writeLogfile(4, string.format("Get comments: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
+    			for i = 1, #photoSharedAlbums do
+    				local collectionId, sharedAlbumName = string.match(photoSharedAlbums[i], '(%d+):(.+)')
+    				if tonumber(collectionId) == publishedCollection.localIdentifier then 
+    					local sharedAlbumId 	= PSPhotoStationUtils.getSharedAlbumShareId(publishSettings.uHandle, sharedAlbumName)
+    					if sharedAlbumId then
+            				local sharedCommentsPS 	= PSPhotoStationAPI.getSharedPhotoComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'), sharedAlbumId)
+            
+                    		if sharedCommentsPS and #sharedCommentsPS > 0 then
+            		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album %s\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
+                    
+                    			for j, comment in ipairs( sharedCommentsPS ) do
+                    				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
+                    
+                    				table.insert( commentListLr, {
+                    								commentId = photoSharedAlbums[i] .. '_' .. comment.date, -- we need something unique
+                    								commentText = comment.comment,
+                    								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
+                	   								username = ifnil(comment.email, ''),
+                	  								realname = ifnil(comment.name, '') .. '@' .. sharedAlbumName .. ' (Public Shared Album)',
+                    							} )
+                    			end
+        					end
+        				end
+            		end	
+    			end
+    		end
+		end
+
+		writeLogfile(2, string.format("Get comments: %s - %d comments\n", photoInfo.remoteId, #commentListLr))
+		
+		if #commentListLr > 0 then
+			writeTableLogfile(4, "commentListLr", commentListLr)
+    		commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
+    		nComments = nComments + #commentListLr
+    	end
+    	
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
 	end 
