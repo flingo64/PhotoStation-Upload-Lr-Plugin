@@ -654,50 +654,51 @@ function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName
 	return true
 end
 
---[[
 --------------------------------------------------------------------------------------------
--- getCollectionSharedAlbumKeywords(pubServiceName, psVersion)
+-- getServiceSharedAlbumKeywords(pubServiceName, psVersion)
 --   returns a list of all Shared Album keywords for a collection, i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
-	local keywords 					= activeCatalog:getKeywords()
+function PSLrUtilities.getServiceSharedAlbumKeywords(pubServiceName, psVersion)
 	local sharedAlbumKeywords 		= {} 	
 	local numSharedAlbumKeywords 	= 0
+	local sharedAlbumKeywordRoot = "Photo StatLr|Shared Albums|" .. pubServiceName
+	local pubServiceSharedAlbumRootKeyword
 
-	writeLogfile(3, string.format("getCollectionSharedAlbumKeywords(%s) starting\n",  pubServiceName))
+	LrApplication.activeCatalog():withWriteAccessDo( 
+		'GetPublishServiceSharedAlbumRoot',
+		function(context)
+			pubServiceSharedAlbumRootKeyword = PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(sharedAlbumKeywordRoot, nil)
+  		end,
+		{timeout=5}
+	)
+
+	local keywords = pubServiceSharedAlbumRootKeyword:getChildren()
 	for i = 1, #keywords do
 		local keyword = keywords[i]
-		
-		if	keyword:getParent() and keyword:getParent():getName() == pubServiceName
-		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Shared Albums'
-		and keyword:getParent():getParent():getParent() and keyword:getParent():getParent():getParent():getName() == 'Photo StatLr' 
-		then
-			local keywordSynonyms = keyword:getSynonyms()
-    		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
-    		sharedAlbumKeywords[numSharedAlbumKeywords] = {
-    				keywordId			= keyword.localIdentifier,
-    				sharedAlbumName 	= keyword:getName(), 
-    				mkSharedAlbumPublic	= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
-    		}
-			-- allow for Shared Album password for Photo Station 6.6 and above
-			if psVersion >= 66 then
-	    		sharedAlbumKeywords[numSharedAlbumKeywords]["mkSharedAlbumAdvanced"] = true
-	    		local sharedAlbumPassword
-	    		for i = 1,  #keywordSynonyms do
-	    			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
-	    			if sharedAlbumPassword then break end
-	    		end
-				if sharedAlbumPassword then
-		    		sharedAlbumKeywords[numSharedAlbumKeywords]["sharedAlbumPassword"] = sharedAlbumPassword
-		    	end
-		    end
-		end
+		local keywordSynonyms = keyword:getSynonyms()
+   		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
+   		sharedAlbumKeywords[numSharedAlbumKeywords] = {
+   				keywordId			= keyword.localIdentifier,
+   				sharedAlbumName 	= keyword:getName(), 
+   				mkSharedAlbumPublic	= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
+   		}
+		-- allow for Shared Album password for Photo Station 6.6 and above
+		if psVersion >= 66 then
+    		sharedAlbumKeywords[numSharedAlbumKeywords]["mkSharedAlbumAdvanced"] = true
+    		local sharedAlbumPassword
+    		for i = 1,  #keywordSynonyms do
+    			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
+    			if sharedAlbumPassword then break end
+    		end
+			if sharedAlbumPassword then
+	    		sharedAlbumKeywords[numSharedAlbumKeywords]["sharedAlbumPassword"] = sharedAlbumPassword
+	    	end
+	    end
 	end
-	writeLogfile(3, string.format("getCollectionSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
+	writeLogfile(3, string.format("getServiceSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
 									pubServiceName, table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
 	return sharedAlbumKeywords   		
 
 end
-]]
 
 --------------------------------------------------------------------------------------------
 -- getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)

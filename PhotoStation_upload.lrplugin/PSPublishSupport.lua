@@ -962,7 +962,7 @@ end
 function publishServiceProvider.getCommentsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, commentCallback )
 	-- get the belonging Published Collection by evaluating the first photo
 	local nPhotos =  #arrayOfPhotoInfo
-	local containedPublishedCollections 
+	local publishServiceName
 	local publishedCollection, publishedCollectionName
 	local nProcessed = 0 
 	local nComments = 0 
@@ -1013,14 +1013,30 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	end
 		
 	publishedCollectionName = publishedCollection:getName()
-	writeLogfile(2, string.format("Get comments for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
+	publishServiceName		= publishedCollection:getService():getName()
+	writeLogfile(2, string.format("Get comments for %d photos in collection %s (%s).\n", nPhotos, publishedCollectionName, publishServiceName))
 
 	local startTime = LrDate.currentTime()
 
 	local progressScope = LrProgressScope( 
 								{ 	title = LOC( "$$$/PSUpload/Progress/GetCommentsFromPublishedCollection=Downloading ^1 comments for collection ^[^2^]", nPhotos, publishedCollection:getName()),
 --							 		functionContext = context 
-							 	})    
+							 	})  
+	
+	-- if pubComemntDownload: download a comment list for all shared albums of this publish service						 	
+	local serviceSharedAlbumComments = {}
+	if publishSettings.pubCommentsDownload then
+		-- get all Shared Albums belonging to this service						 	
+		local serviceSharedAlbums = PSLrUtilities.getServiceSharedAlbumKeywords(publishServiceName, publishSettings.psVersion)
+		
+		-- download comment list for all shared albums of this publish service
+		for _, sharedAlbum in ipairs(serviceSharedAlbums) do
+			if PSPhotoStationUtils.isSharedAlbumPublic(publishSettings.uHandle, sharedAlbum.sharedAlbumName) then
+				serviceSharedAlbumComments[sharedAlbum.sharedAlbumName] = PSPhotoStationAPI.getSharedAlbumCommentList(publishSettings.uHandle, sharedAlbum.sharedAlbumName)
+			end
+		end
+	end
+	
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
@@ -1057,28 +1073,35 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     		
        			writeLogfile(4, string.format("Get comments: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
     			for i = 1, #photoSharedAlbums do
+  					-- download comments from this shared album only if:
+  					--  - the shared album belongs to this collection
+  					-- 	- the shared album is public
+  					-- 	- photo is in sharedAlbumCommentList
     				local collectionId, sharedAlbumName = string.match(photoSharedAlbums[i], '(%d+):(.+)')
-    				if tonumber(collectionId) == publishedCollection.localIdentifier then 
-    					local sharedAlbumId 	= PSPhotoStationUtils.getSharedAlbumShareId(publishSettings.uHandle, sharedAlbumName)
-    					if sharedAlbumId then
-            				local sharedCommentsPS 	= PSPhotoStationAPI.getSharedPhotoComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'), sharedAlbumId)
-            
-                    		if sharedCommentsPS and #sharedCommentsPS > 0 then
-            		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album %s\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
-                    
-                    			for j, comment in ipairs( sharedCommentsPS ) do
-                    				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
-                    
-                    				table.insert( commentListLr, {
-                    								commentId = photoSharedAlbums[i] .. '_' .. comment.date, -- we need something unique
-                    								commentText = comment.comment,
-                    								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
-                	   								username = ifnil(comment.email, ''),
-                	  								realname = ifnil(comment.name, '') .. '@' .. sharedAlbumName .. ' (Public Shared Album)',
-                    							} )
-                    			end
-        					end
-        				end
+    				if 		tonumber(collectionId) == publishedCollection.localIdentifier 
+    					and	PSPhotoStationUtils.isSharedAlbumPublic(publishSettings.uHandle, sharedAlbumName)
+	    				and findInAttrValueTable(serviceSharedAlbumComments[sharedAlbumName], 
+	    										 'item_id', 
+	    									 	 PSPhotoStationUtils.getPhotoId(photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo')), 
+	    									 	 'name')
+					then
+        				local sharedCommentsPS 	= PSPhotoStationAPI.getSharedPhotoComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'), sharedAlbumName)
+        
+                		if sharedCommentsPS and #sharedCommentsPS > 0 then
+        		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album %s\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
+                
+                			for j, comment in ipairs( sharedCommentsPS ) do
+                				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
+                
+                				table.insert( commentListLr, {
+                								commentId = photoSharedAlbums[i] .. '_' .. comment.date, -- we need something unique
+                								commentText = comment.comment,
+                								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
+            	   								username = ifnil(comment.email, ''),
+            	  								realname = ifnil(comment.name, '') .. '@' .. sharedAlbumName .. ' (Public Shared Album)',
+                							} )
+                			end
+    					end
             		end	
     			end
     		end
@@ -1126,7 +1149,6 @@ publishServiceProvider.titleForPhotoRating = LOC "$$$/PSUpload/TitleForPhotoRati
 function publishServiceProvider.getRatingsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, ratingCallback )
 	-- get the belonging Published Collection by evaluating the first photo
 	local nPhotos =  #arrayOfPhotoInfo
-	local containedPublishedCollections 
 	local publishedCollection, publishedCollectionName
 	local nProcessed 		= 0 
 	local nChanges 			= 0 
@@ -1684,8 +1706,8 @@ end
 		return false
 	end
 
-	writeLogfile(2, string.format("AddCommentToPublishedPhoto: %s - %s\n", remotePhotoId, commentText))
-	return PSPhotoStationAPI.addPhotoComment(publishSettings.uHandle, remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentText, publishSettings.username .. '@Lr')
+	-- add comment to photo in Photo Station album, comments to public share is not possible 
+	return PSPhotoStationAPI.addPhotoComment(publishSettings.uHandle, remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentContents, publishSettings.username .. '@Lr')
 end
 --------------------------------------------------------------------------------
 

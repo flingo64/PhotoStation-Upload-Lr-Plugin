@@ -306,26 +306,68 @@ function PSPhotoStationAPI.getPhotoComments (h, dstFilename, isVideo)
 	return respArray.data.comments
 end
 
+--[[ currently not needed
 ---------------------------------------------------------------------------------------------------------
--- getSharedPhotoComments (h, dstFilename, isVideo, shareId) 
-function PSPhotoStationAPI.getSharedPhotoComments (h, dstFilename, isVideo, shareId) 
+-- addSharedPhotoComment (h, dstFilename, isVideo, comment, username, sharedAlbumName) 
+function PSPhotoStationAPI.addSharedPhotoComment (h, dstFilename, isVideo, comment, username, sharedAlbumName) 
+	local formData = 'method=add_comment&' ..
+					 'version=1&' .. 
+					 'item_id=' .. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo) .. '&' .. 
+					 'name=' .. username .. '&' .. 
+					 'comment='.. urlencode(comment) ..'&' .. 
+					 'public_share_id=' .. PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.AdvancedShare', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	writeLogfile(3, string.format('addSharedPhotoComment(%s, %s, %s, %s) returns OK.\n', dstFilename, sharedAlbumName, comment, username))
+	return respArray.success
+end
+]]
+
+---------------------------------------------------------------------------------------------------------
+-- getSharedPhotoComments (h, dstFilename, isVideo, sharedAlbumName) 
+function PSPhotoStationAPI.getSharedPhotoComments (h, dstFilename, isVideo, sharedAlbumName)
 	local formData = 'method=list_comment&' ..
 					 'version=1&' .. 
 					 'offset=0&' .. 
 					 'limit=-1&' .. 
-					 'item_id=' .. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo) .. '&' ..
-					 'public_share_id=' .. shareId 
+					 'item_id=' 		.. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo) .. '&' ..
+					 'public_share_id=' .. PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName) 
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.AdvancedShare', formData)
 	
 	if not respArray then return false, errorCode end 
 
 	if respArray.data then
-		writeLogfile(3, string.format('getSharedPhotoComments(%s, %s) returns %d comments.\n', dstFilename, shareId, #respArray.data))
+		writeLogfile(3, string.format('getSharedPhotoComments(%s, %s) returns %d comments.\n', dstFilename, sharedAlbumName, #respArray.data))
 	else
-		writeLogfile(3, string.format('getSharedPhotoComments(%s, %s) returns no comments.\n', dstFilename, shareId))
+		writeLogfile(3, string.format('getSharedPhotoComments(%s, %s) returns no comments.\n', dstFilename, sharedAlbumName))
 	end
 	return respArray.data
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getSharedAlbumCommentList (h, sharedAlbumName) 
+function PSPhotoStationAPI.getSharedAlbumCommentList (h, sharedAlbumName) 
+	local formData = 'method=list_log&' ..
+					 'version=1&' .. 
+					 'offset=0&' .. 
+					 'limit=-1&' .. 
+					 'category=comment&' ..
+					 'public_share_id=' .. PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.AdvancedShare', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	if respArray.data then
+		writeLogfile(3, string.format('getSharedAlbumCommentList(%s) returns %d comments.\n', sharedAlbumName, respArray.data.total))
+	else
+		writeLogfile(3, string.format('getSharedAlbumCommentList(%s) returns no comments.\n', sharedAlbumName))
+	end
+	return respArray.data.data
 end
 
 ---------------------------------------------------------------------------------------------------------

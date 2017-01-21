@@ -9,6 +9,8 @@ Photo Station utilities:
 
 	- getAlbumId
 	- getPhotoId
+
+	- isSharedAlbumPublic
 	- getSharedAlbumId
 	
 	- getAlbumUrl
@@ -54,7 +56,7 @@ require "PSUtilities"
 
 local PSAPIerrorMsgs = {
 	[0]   = 'No error',
-	[100] = 'Unknown error ',
+	[100] = 'Unknown error',
     [101] = 'No parameter of API, method or version',		-- PS 6.6: no such directory 
     [102] = 'The requested API does not exist',
     [103] = 'The requested method does not exist',
@@ -194,7 +196,7 @@ local function sharedAlbumCacheFind(h, name)
 		end
 	end
 
-	writeLogfile(3, string.format('sharedAlbumCacheFind(%s) not found.\n', name))
+	writeLogfile(4, string.format('sharedAlbumCacheFind(%s) not found.\n', name))
 	return nil
 end
 
@@ -312,6 +314,24 @@ function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 --	writeLogfile(4, string.format("getPhotoId(%s) returns %s\n", photoPath, photoId))
 	
 	return photoId
+end
+
+--[[ 
+PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
+	returns the public flage of a given SharedAlbum using the Shared Album cache
+]]
+function PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	
+	if not sharedAlbumInfo then 
+		writeLogfile(3, string.format('getSharedAlbumId(%s): Shared album not found.\n', sharedAlbumName))
+		return false
+	end
+	if not sharedAlbumInfo.additional or not sharedAlbumInfo.additional.public_share or sharedAlbumInfo.additional.public_share.share_status ~= 'valid' then 
+		return false
+	end
+
+	return true
 end
 
 --[[ 
