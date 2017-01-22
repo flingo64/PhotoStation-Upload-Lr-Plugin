@@ -387,9 +387,33 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	local albumsForCheckEmpty
 	
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
+		
+		
 		if PSPhotoStationAPI.deletePic (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
-			writeLogfile(2, photoId .. ': successfully deleted.\n')
+			writeLogfile(2, "deletePhotosFromPublishedCollection: '" .. photoId .. "': successfully deleted.\n")
 			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, photoId)
+		
+			-- remove belonging shared albums from plugin metadata of the source photo
+			local publishedPhoto = PSLrUtilities.getPublishedPhotoByRemoteId(publishedCollection, photoId)
+			local srcPhoto
+			if publishedPhoto then srcPhoto = publishedPhoto:getPhoto()	end
+			if srcPhoto then
+				local sharedAlbumsPS = PSLrUtilities.getPhotoLinkedSharedAlbums(srcPhoto)
+				if sharedAlbumsPS then
+					local numOldSharedAlbumsPS = #sharedAlbumsPS
+    
+    				for i = #sharedAlbumsPS, 1, -1 do
+    					if string.match(sharedAlbumsPS[i],  '(%d+):.+')  == tostring(localCollectionId) then
+    						table.remove(sharedAlbumsPS, i);
+    					end
+    				end
+    				-- if number of shared albums has changed: update src photo plugin metadata
+					if #sharedAlbumsPS ~= numOldSharedAlbumsPS then
+						PSLrUtilities.setPhotoLinkedSharedAlbums(srcPhoto, sharedAlbumsPS)
+					end
+				end
+			end	
+			
 			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
 		else
