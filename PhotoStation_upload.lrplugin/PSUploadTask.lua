@@ -601,7 +601,7 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 		local sharedAlbumUpdate = sharedAlbumUpdates[i]
 
 		if #sharedAlbumUpdate.addPhotos > 0 then 
-			local success, sharedAlbumId, shareUrl = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
+			local success, shareUrl = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
 																							sharedAlbumUpdate.mkSharedAlbumAdvanced, sharedAlbumUpdate.mkSharedAlbumPublic, 
 																							sharedAlbumUpdate.sharedAlbumPassword, sharedAlbumUpdate.addPhotos)
 			if success then
@@ -609,18 +609,18 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
         		local secondServerUrl	= iif(ifnil(exportParams.servername2, '') ~= '', exportParams.proto2 .. "://" .. exportParams.servername2, nil)
         		writeLogfile(4, string.format("updateSharedAlbum: firstServer: %s secondServer %s\n", firstServerUrl, ifnil(secondServerUrl, '<nil>')))
         		
+				local sharedAlbumUrls = {}
+				sharedAlbumUrls[1] = exportParams.psUrl .. "#!SharedAlbums/" .. PSPhotoStationUtils.getSharedAlbumId(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName)
+
 				if sharedAlbumUpdate.mkSharedAlbumPublic and shareUrl then 
-					local sharedAlbumUrls = {}
-					sharedAlbumUrls[1] = exportParams.psUrl .. "/#!SharedAlbums/" .. sharedAlbumId
-					if not secondServerUrl then
-						sharedAlbumUrls[2] = shareUrl
-					else
-						local pathUrl = string.match(shareUrl, 'http[s]*://[^/]*(.*)')
-						sharedAlbumUrls[2] = firstServerUrl .. pathUrl
+					local pathUrl = string.match(shareUrl, 'http[s]*://[^/]*(.*)')
+					sharedAlbumUrls[2] = firstServerUrl .. pathUrl
+					if secondServerUrl then
 						sharedAlbumUrls[3] = secondServerUrl .. pathUrl
 					end
-					PSLrUtilities.addKeywordSynonyms(sharedAlbumUpdate.keywordId, sharedAlbumUrls) 
-				elseif not sharedAlbumUpdate.mkSharedAlbumPublic then
+				end
+				PSLrUtilities.addKeywordSynonyms(sharedAlbumUpdate.keywordId, sharedAlbumUrls) 
+				if not sharedAlbumUpdate.mkSharedAlbumPublic then
 					local shareUrlPatterns = {}
 					shareUrlPatterns[1] = firstServerUrl .. '/photo/share/'
 					if secondServerUrl then shareUrlPatterns[2] = secondServerUrl .. '/photo/share/' end
@@ -628,7 +628,7 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 				end
 			end
 		end
-		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
+		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbumIfExists(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
 		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n', 
 										sharedAlbumUpdate.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
 		nProcessed = nProcessed + 1
