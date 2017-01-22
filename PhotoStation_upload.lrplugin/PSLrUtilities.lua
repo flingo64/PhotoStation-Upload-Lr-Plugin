@@ -25,6 +25,8 @@ Lightroom utilities:
 	
 	- getPhotoSharedAlbumKeywords
 	
+	- getPublishedPhotoByRemoteId
+	
 	- convertCollection
 	- convertAllPhotos
 	
@@ -755,7 +757,7 @@ function PSLrUtilities.getPhotoLinkedSharedAlbums(srcPhoto)
 	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
 		sharedAlbumsPS = split(sharedAlbumPluginMetadata, '/')
 	end
-	writeLogfile(3, string.format("getPhotoLinkedSharedAlbums(%s): found Shared Albums: '%s'\n", 
+	writeLogfile(3, string.format("getPhotoLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n", 
 									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))    		
 	return sharedAlbumsPS
 end 
@@ -769,8 +771,6 @@ function PSLrUtilities.setPhotoLinkedSharedAlbums(srcPhoto, sharedAlbums)
 	table.sort(sharedAlbums)
 	local newSharedAlbumPluginMetadata 	= table.concat(sharedAlbums, '/')
 	
-	writeLogfile(3, string.format("setPhotoLinkedSharedAlbums(%s): '%s'\n", 
-									srcPhoto:getRawMetadata('path'), ifnil(newSharedAlbumPluginMetadata, '')))    		
 	if newSharedAlbumPluginMetadata ~= oldSharedAlbumPluginMetadata then
 		activeCatalog:withWriteAccessDo( 
 				'Update Plugin Metadata for Shared Albums',
@@ -779,7 +779,7 @@ function PSLrUtilities.setPhotoLinkedSharedAlbums(srcPhoto, sharedAlbums)
 				end,
 				{timeout=5}
 		)
-		writeLogfile(3, string.format("setPhotoLinkedSharedAlbums(%s): updated plugin metadata to '%s'\n", 
+		writeLogfile(3, string.format("setPhotoLinkedSharedAlbums(%s): updated Shared Albums plugin metadata to '%s'\n", 
 									srcPhoto:getRawMetadata('path'), newSharedAlbumPluginMetadata))    		
 		return 1
 	end
@@ -809,32 +809,32 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		
 		local photoSharedAlbum 		= publishedCollectionId .. ':' .. sharedAlbumName
 		
-		local sharedAlbumUpdate = nil
-		
-		for k = 1, #sharedAlbumUpdates do
-			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
-				sharedAlbumUpdate = sharedAlbumUpdates[k]
-				break
-			end
-		end
-		if not sharedAlbumUpdate then
-			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
-			sharedAlbumUpdate = {
-				sharedAlbumName 		= sharedAlbumName, 
-				mkSharedAlbumAdvanced 	= mkSharedAlbumAdvanced, 
-				mkSharedAlbumPublic 	= mkSharedAlbumPublic, 
-				sharedAlbumPassword 	= sharedAlbumPassword, 
-				keywordId 				= keywordId, 
-				addPhotos 				= {}, 
-				removePhotos 			= {}, 
-			}
-			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
-		end
-		local addPhotos = sharedAlbumUpdate.addPhotos
-		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
-		
 		if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
-			table.insert(newSharedAlbumsPS, photoSharedAlbum)
+    		local sharedAlbumUpdate = nil
+    		
+    		for k = 1, #sharedAlbumUpdates do
+    			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
+    				sharedAlbumUpdate = sharedAlbumUpdates[k]
+    				break
+    			end
+    		end
+    		if not sharedAlbumUpdate then
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			sharedAlbumUpdate = {
+    				sharedAlbumName 		= sharedAlbumName, 
+    				mkSharedAlbumAdvanced 	= mkSharedAlbumAdvanced, 
+    				mkSharedAlbumPublic 	= mkSharedAlbumPublic, 
+    				sharedAlbumPassword 	= sharedAlbumPassword, 
+    				keywordId 				= keywordId, 
+    				addPhotos 				= {}, 
+    				removePhotos 			= {}, 
+    			}
+    			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
+    		end
+    		local addPhotos = sharedAlbumUpdate.addPhotos
+    		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
+    		
+   			table.insert(newSharedAlbumsPS, photoSharedAlbum)
 		end
 	end 
 
@@ -890,6 +890,19 @@ local function getAllPublishedCollectionsFromPublishedCollectionSet(publishedCol
 	for i = 1, #childPublishedCollectionSets do
 		getAllPublishedCollectionsFromPublishedCollectionSet(childPublishedCollectionSets[i], allPublishedCollections)
 	end
+end
+
+--------------------------------------------------------------------------------------------
+-- getPublishedPhotoByRemoteId(publishedCollection, remoteId)
+function PSLrUtilities.getPublishedPhotoByRemoteId(publishedCollection, remoteId)
+	local publishedPhotos = publishedCollection:getPublishedPhotos()
+	for _, publishedPhoto in ipairs(publishedPhotos) do
+		if publishedPhoto:getRemoteId() == remoteId then
+			return publishedPhoto
+		end
+	end
+	
+	return nil
 end
 
 --------------------------------------------------------------------------------------------
