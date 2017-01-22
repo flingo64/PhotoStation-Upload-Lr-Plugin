@@ -12,6 +12,7 @@ Photo Station utilities:
 
 	- isSharedAlbumPublic
 	- getSharedAlbumId
+	- getSharedAlbumShareId
 	
 	- getAlbumUrl
 	- getPhotoUrl
@@ -22,7 +23,7 @@ Photo Station utilities:
 	- createAndAddPhotoTagList
 
 	- createAndAddPhotosToSharedAlbum
-	- removePhotosFromSharedAlbum
+	- removePhotosFromSharedAlbumIfExists
 	
 	- deleteEmptyAlbumAndParents
 	
@@ -316,15 +317,14 @@ function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 	return photoId
 end
 
---[[ 
-PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
-	returns the public flage of a given SharedAlbum using the Shared Album cache
-]]
+---------------------------------------------------------------------------------------------------------
+-- PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
+--  returns the public flage of a given SharedAlbum using the Shared Album cache
 function PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
 	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 	
 	if not sharedAlbumInfo then 
-		writeLogfile(3, string.format('getSharedAlbumId(%s): Shared album not found.\n', sharedAlbumName))
+		writeLogfile(3, string.format('isSharedAlbumPublic(%s): Shared album not found.\n', sharedAlbumName))
 		return false
 	end
 	if not sharedAlbumInfo.additional or not sharedAlbumInfo.additional.public_share or sharedAlbumInfo.additional.public_share.share_status ~= 'valid' then 
@@ -334,18 +334,28 @@ function PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
 	return true
 end
 
---[[ 
-PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
-	returns the shareId of a given SharedAlbum using the Shared Album cache
-]]
+---------------------------------------------------------------------------------------------------------
+-- PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
+-- 	returns the shareId of a given SharedAlbum using the Shared Album cache
+function PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	
+	if not sharedAlbumInfo then 
+		writeLogfile(3, string.format('getSharedAlbumId(%s): Shared Album not found.\n', sharedAlbumName))
+		return nil
+	end
+
+	return sharedAlbumInfo.id
+end
+
+---------------------------------------------------------------------------------------------------------
+-- PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName)
+-- 	returns the shareId of a given SharedAlbum using the Shared Album cache
 function PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName)
 	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 	
 	if not sharedAlbumInfo then 
-		writeLogfile(3, string.format('getSharedAlbumId(%s): Shared album not found.\n', sharedAlbumName))
-		return nil
-	end
-	if not sharedAlbumInfo.additional or not sharedAlbumInfo.additional.public_share or sharedAlbumInfo.additional.public_share.share_status ~= 'valid' then 
+		writeLogfile(3, string.format('getSharedAlbumShareId(%s): Shared Album not found.\n', sharedAlbumName))
 		return nil
 	end
 
@@ -498,41 +508,31 @@ function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, t
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos) 
+-- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos) 
 -- create a Shared Album and add a list of photos to it
--- returns success, sharedAlbumId and share-link (if public)
-function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,  mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
+-- returns success and share-link (if public)
+function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
 	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 	local isNewSharedAlbum
-	local sharedAlbumId
 	local sharedAlbumAttributes = {}
 	local shareResult
 	
 	if not sharedAlbumInfo then 
-		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
+		if not PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName) then return false end
 		sharedAlbumCacheUpdate(h)
 		sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 		isNewSharedAlbum = true
 	end
 	
-	if not sharedAlbumInfo then return false end
-	sharedAlbumId = sharedAlbumInfo.id 
-	
-	local photoIds = {}
-	for i = 1, #photos do
-		photoIds[i] = PSPhotoStationUtils.getPhotoId(photos[i].dstFilename, photos[i].isVideo)
-	end
-	
-	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
+	local success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumName, photos)
 	
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
-		sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
-		if not sharedAlbumId then return false end
+		if not PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName) then return false end
 		sharedAlbumCacheUpdate(h)
 		sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
 		isNewSharedAlbum = true
-	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumId, photoIds)
+	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumName, photos)
 	end 
 	
 	if not success then return false end 
@@ -590,44 +590,38 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 		end
 	end
 
-	shareResult = PSPhotoStationAPI.editSharedAlbum(h, sharedAlbumId, sharedAlbumAttributes) 
+	shareResult = PSPhotoStationAPI.editSharedAlbum(h, sharedAlbumName, sharedAlbumAttributes) 
 
-	if not shareResult then  return false end
+	if not shareResult then return false end
 	
 	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumAdvanced, 'advanced', 'old'), iif(mkSharedAlbumPublic, 'public', 'private'), iif(sharedAlbumPassword, 'w/ passwd', 'w/o passwd'), #photos))
-	return true, sharedAlbumId, shareResult.public_share_url	
+	return true, shareResult.public_share_url	
 end
 
 ---------------------------------------------------------------------------------------------------------
--- removePhotosFromSharedAlbum(h, sharedAlbumName, photos) 
--- remove a a list of photos from a Shared Album
-function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
+-- removePhotosFromSharedAlbumIfExists(h, sharedAlbumName, photos) 
+-- remove a list of photos from a Shared Album
+-- ignore error if Shared Album doesn't exist
+function PSPhotoStationUtils.removePhotosFromSharedAlbumIfExists(h, sharedAlbumName, photos)
 	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
-	local sharedAlbumId
 	
 	if not sharedAlbumInfo then 
-		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
+		writeLogfile(3, string.format('removePhotosFromSharedAlbumIfExists(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end
-	sharedAlbumId = sharedAlbumInfo.id
 	
-	local photoIds = {}
-	for i = 1, #photos do
-		photoIds[i] = PSPhotoStationUtils.getPhotoId(photos[i].dstFilename, photos[i].isVideo)
-	end
-	
-	local success, errorCode = PSPhotoStationAPI.removePhotosFromSharedAlbum(h, sharedAlbumId, photoIds)
+	local success, errorCode = PSPhotoStationAPI.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
 	
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumCacheUpdate(h)
-		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
+		writeLogfile(3, string.format('removePhotosFromSharedAlbumIfExists(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end 
 	
 	if not success then return false end 
 	
-	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
+	writeLogfile(3, string.format('removePhotosFromSharedAlbumIfExists(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true	
 end
 
