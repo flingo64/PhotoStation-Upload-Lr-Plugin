@@ -26,6 +26,7 @@ Photo Station Upload primitives:
 	
 	- createSharedAlbum
 	- editSharedAlbum
+	- listSharedAlbum
 	- addPhotosToSharedAlbum
 	- removePhotosFromSharedAlbum
 	
@@ -551,6 +552,30 @@ function PSPhotoStationAPI.editSharedAlbum(h, sharedAlbumName, sharedAlbumAttrib
 
 	writeLogfile(3, string.format('editSharedAlbum(%s, %d attributes) returns shareId %s.\n', sharedAlbumName, numAttributes, respArray.data.shareid))
 	return respArray.data
+end
+
+---------------------------------------------------------------------------------------------------------
+-- listSharedAlbum: returns all photos/videos in a given shared album
+-- returns
+--		albumItems:		table of photo infos, if success, otherwise nil
+--		errorcode:		errorcode, if not success
+function PSPhotoStationAPI.listSharedAlbum(h, dstDir, listItems)
+	local formData = 'method=list&' ..
+					 'version=1&' .. 
+					 'filter_shared_album=' .. PSPhotoStationUtils.getSharedAlbumId(h, dstDir) .. '&' ..
+					 'type=' .. listItems .. '&' ..   
+					 'offset=0&' .. 
+					 'limit=-1&' ..
+					 'recursive=false&'.. 
+					 'additional=photo_exif'
+--					 'additional=photo_exif,video_codec,video_quality,thumb_size'
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
+	
+	if not respArray then return nil, errorCode end 
+
+	writeTableLogfile(4, 'listAlbum', respArray.data.items)
+	return respArray.data.items
 end
 
 ---------------------------------------------------------------------------------------------------------
