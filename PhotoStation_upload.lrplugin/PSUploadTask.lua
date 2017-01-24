@@ -639,7 +639,7 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 		if progressScope:isCanceled() then break end
 		local sharedPhotoUpdate = sharedPhotoUpdates[i]
 
-		PSLrUtilities.setPhotoLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
+		PSLrUtilities.setPhotoPlMetaLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
 		writeLogfile(3, string.format("%s: updated plugin metadata.\n",	sharedPhotoUpdate.srcPhoto:getRawMetadata('path')))
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
