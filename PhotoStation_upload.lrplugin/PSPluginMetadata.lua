@@ -22,6 +22,7 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 ------------------------------------------------------------------------------]]
 
 return {
+	schemaVersion = 15,
 	
 	metadataFieldsForPhotos = {
 		{
@@ -29,7 +30,44 @@ return {
 --			title = "Shared Albums",
 --			dataType = 'string',
 		},
+
+		{
+			id 			= 'lastCommentTime',
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentTime=Last Comment Time",
+			dataType 	= 'string',
+			searchable	= true,
+			browsable	= true,
+			readOnly	= true,
+		},
+
+		{
+			id 			= 'lastCommentType',
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentType=Last Comment Type",
+			dataType 	= 'enum',
+			values 		= {
+    			{
+    				value = 'private',
+    				title = "Private"
+    			},
+    			{
+    				value = 'public',
+    				title = "Public"
+    			},
+			},
+			
+			searchable	= true,
+			browsable	= true,
+			readOnly	= true,
+		},
+
+		{
+			id 			= 'lastCommentSource',
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentSource=Last Comment From",
+			dataType 	= 'string',
+			searchable	= true,
+			browsable	= true,
+			readOnly	= true,
+		},
+
 	},
-	
-	schemaVersion = 1,
 }
