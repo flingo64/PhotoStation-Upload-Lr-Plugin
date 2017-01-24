@@ -398,7 +398,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 			local srcPhoto
 			if publishedPhoto then srcPhoto = publishedPhoto:getPhoto()	end
 			if srcPhoto then
-				local sharedAlbumsPS = PSLrUtilities.getPhotoLinkedSharedAlbums(srcPhoto)
+				local sharedAlbumsPS = PSLrUtilities.getPhotoPlMetaLinkedSharedAlbums(srcPhoto)
 				if sharedAlbumsPS then
 					local numOldSharedAlbumsPS = #sharedAlbumsPS
     
@@ -409,7 +409,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
     				end
     				-- if number of shared albums has changed: update src photo plugin metadata
 					if #sharedAlbumsPS ~= numOldSharedAlbumsPS then
-						PSLrUtilities.setPhotoLinkedSharedAlbums(srcPhoto, sharedAlbumsPS)
+						PSLrUtilities.getPhotoPlMetaLinkedSharedAlbums(srcPhoto, sharedAlbumsPS)
 					end
 				end
 			end	
@@ -1064,6 +1064,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
+   		local lastCommentTimestamp, lastCommentType, lastCommentSource
    		local commentListLr = {} 
 
 		-- get photo comments from PS albums
@@ -1077,14 +1078,21 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
        			writeLogfile(3, string.format("Get comments: %s - found %d comments in private Album\n", photoInfo.remoteId, #commentsPS))
     			for _, comment in ipairs( commentsPS ) do
     				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
-    
+    				local commentTimestamp = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local')
+    				
     				table.insert( commentListLr, {
     								commentId = string.match(comment.id, 'comment_(%d+)'),
     								commentText = comment.comment,
-    								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
+    								dateCreated = commentTimestamp,
        								username = ifnil(comment.email, ''),
       								realname = ifnil(comment.name, '') .. '@PS (Photo Station internal)',
     							} )
+   
+       				if commentTimestamp > ifnil(lastCommentTimestamp, 0) then
+       					lastCommentTimestamp	= commentTimestamp
+       					lastCommentType 		= 'private'
+       					lastCommentSource		= publishServiceName .. '/' .. publishedCollectionName
+    				end
     			end			
     
     		end	
@@ -1092,7 +1100,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 
 		if publishSettings.pubCommentsDownload then
     		-- get photo comments from PS public shared albums, if photo is member of any shared album
-    		local photoSharedAlbums = PSLrUtilities.getPhotoLinkedSharedAlbums(photoInfo.photo)
+    		local photoSharedAlbums = PSLrUtilities.getPhotoPlMetaLinkedSharedAlbums(photoInfo.photo)
     		if photoSharedAlbums then
     		
        			writeLogfile(4, string.format("Get comments: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
@@ -1116,14 +1124,21 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
                 
                 			for j, comment in ipairs( sharedCommentsPS ) do
                 				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
+			    				local commentTimestamp = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local')
                 
                 				table.insert( commentListLr, {
                 								commentId = photoSharedAlbums[i] .. '_' .. comment.date, -- we need something unique
                 								commentText = comment.comment,
-                								dateCreated = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local'),
+                								dateCreated = commentTimestamp,
             	   								username = ifnil(comment.email, ''),
             	  								realname = ifnil(comment.name, '') .. '@' .. sharedAlbumName .. ' (Public Shared Album)',
                 							} )
+
+                   				if commentTimestamp > ifnil(lastCommentTimestamp, 0) then
+                   					lastCommentTimestamp	= commentTimestamp
+                   					lastCommentType 		= 'public'
+                   					lastCommentSource		= publishServiceName .. '/' .. publishedCollectionName
+                				end
                 			end
     					end
             		end	
@@ -1133,11 +1148,17 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 
 		writeLogfile(2, string.format("Get comments: %s - %d comments\n", photoInfo.remoteId, #commentListLr))
 		
-		if #commentListLr > 0 then
+		local lastCommentTime 
+		if lastCommentTimestamp then
+			lastCommentTime= LrDate.timeToUserFormat(lastCommentTimestamp, "%Y-%m-%d %H:%M:%S", false)
+		end
+		PSLrUtilities.setPhotoPlMetaLastComment(photoInfo.photo, lastCommentTime, lastCommentType, lastCommentSource)
+		
+--		if #commentListLr > 0 then
 			writeTableLogfile(4, "commentListLr", commentListLr)
     		commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
     		nComments = nComments + #commentListLr
-    	end
+--    	end
     	
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
