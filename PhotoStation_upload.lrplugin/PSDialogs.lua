@@ -1278,7 +1278,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Internal Comments",
+				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Private Comments",
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download photo comments from Photo Station (internal) to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'commentsDownload',
