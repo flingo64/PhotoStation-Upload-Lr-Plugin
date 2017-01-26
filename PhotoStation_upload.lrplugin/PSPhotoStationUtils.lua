@@ -254,7 +254,7 @@ local function sharedAlbumsCacheFind(h, name)
 		end
 	end
 
-	writeLogfile(4, string.format('sharedAlbumCacheFind(%s) not found.\n', name))
+	writeLogfile(4, string.format('sharedAlbumsCacheFind(%s) not found.\n', name))
 	return nil
 end
 
@@ -378,7 +378,7 @@ end
 -- PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
 -- 	returns the shareId of a given SharedAlbum using the Shared Album cache
 function PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
-	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 	
 	if not sharedAlbumInfo then 
 		writeLogfile(3, string.format('getSharedAlbumId(%s): Shared Album not found.\n', sharedAlbumName))
@@ -392,7 +392,7 @@ end
 -- PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
 --  returns the public flage of a given SharedAlbum using the Shared Album cache
 function PSPhotoStationUtils.isSharedAlbumPublic(h, sharedAlbumName)
-	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 	
 	if not sharedAlbumInfo then 
 		writeLogfile(3, string.format('isSharedAlbumPublic(%s): Shared album not found.\n', sharedAlbumName))
@@ -409,7 +409,7 @@ end
 -- PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName)
 -- 	returns the shareId of a given SharedAlbum using the Shared Album cache
 function PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName)
-	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 	
 	if not sharedAlbumInfo then 
 		writeLogfile(3, string.format('getSharedAlbumShareId(%s): Shared Album not found.\n', sharedAlbumName))
@@ -598,7 +598,7 @@ end
 -- create a Shared Album and add a list of photos to it
 -- returns success and share-link (if public)
 function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
-	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 	local isNewSharedAlbum
 	local sharedAlbumAttributes = {}
 	local shareResult
@@ -606,7 +606,7 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	if not sharedAlbumInfo then 
 		if not PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName) then return false end
 		sharedAlbumsCacheUpdate(h)
-		sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+		sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 		isNewSharedAlbum = true
 	end
 	
@@ -616,7 +616,7 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 		-- shared album was deleted, mapping wasn't up to date
 		if not PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName) then return false end
 		sharedAlbumsCacheUpdate(h)
-		sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+		sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 		isNewSharedAlbum = true
 	 	success, errorCode = PSPhotoStationAPI.addPhotosToSharedAlbum(h, sharedAlbumName, photos)
 	end 
@@ -689,7 +689,7 @@ end
 -- remove a list of photos from a Shared Album
 -- ignore error if Shared Album doesn't exist
 function PSPhotoStationUtils.removePhotosFromSharedAlbumIfExists(h, sharedAlbumName, photos)
-	local sharedAlbumInfo = sharedAlbumCacheFind(h, sharedAlbumName)
+	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 	
 	if not sharedAlbumInfo then 
 		writeLogfile(3, string.format('removePhotosFromSharedAlbumIfExists(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
