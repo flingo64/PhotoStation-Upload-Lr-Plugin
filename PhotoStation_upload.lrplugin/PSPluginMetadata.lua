@@ -22,22 +22,57 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 ------------------------------------------------------------------------------]]
 
 return {
-	schemaVersion = 15,
+	schemaVersion = 17,
 	
 	metadataFieldsForPhotos = {
 		{
 			id = 'sharedAlbums',
---			title = "Shared Albums",
 --			dataType = 'string',
 		},
 
 		{
-			id 			= 'lastCommentTime',
-			title 		= LOC "$$$/PSUpload/Metadat/LastCommentTime=Last Comment Time",
+			id 			= 'commentCount',
+			title 		= LOC "$$$/PSUpload/Metadat/commentCount=Comment Count",
 			dataType 	= 'string',
+			readOnly	= true,
 			searchable	= true,
 			browsable	= true,
+			version		= 2
+		},
+
+		{
+			id 			= 'lastCommentText',
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentText=Last Comment",
+			dataType 	= 'string',
 			readOnly	= true,
+			searchable	= true,
+			browsable	= true,
+		},
+
+		{
+			id 			= 'lastCommentAuthor',
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentAuthor=Last Comment By",
+			dataType 	= 'string',
+			readOnly	= true,
+			searchable	= true,
+			browsable	= true,
+		},
+
+		{
+			id 			= 'lastCommentDate',
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentDate=Last Comment Date",
+			dataType 	= 'string',
+			readOnly	= true,
+			searchable	= true,
+			browsable	= true,
+		},
+
+		{
+			id 			= 'lastCommentUrl',
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentUrl=Last Comment Link",
+			dataType 	= 'url',
+			readOnly	= true,
+			version		= 2
 		},
 
 		{
@@ -54,20 +89,18 @@ return {
     				title = "Public"
     			},
 			},
-			
+			readOnly	= true,
 			searchable	= true,
 			browsable	= true,
-			readOnly	= true,
 		},
 
 		{
 			id 			= 'lastCommentSource',
-			title 		= LOC "$$$/PSUpload/Metadat/LastCommentSource=Last Comment From",
+			title 		= LOC "$$$/PSUpload/Metadat/LastCommentSource=Last Comment Collection",
 			dataType 	= 'string',
+			readOnly	= true,
 			searchable	= true,
 			browsable	= true,
-			readOnly	= true,
 		},
-
 	},
 }
