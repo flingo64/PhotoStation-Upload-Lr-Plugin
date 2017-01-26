@@ -25,11 +25,11 @@ Lightroom utilities:
 	
 	- getPhotoSharedAlbumKeywords
 
-	- getPhotoPlMetaLinkedSharedAlbums	
-	- setPhotoPlMetaLinkedSharedAlbums
+	- getPhotoPluginMetaLinkedSharedAlbums	
+	- setPhotoPluginMetaLinkedSharedAlbums
 	
-	- getPhotoPlMetaLastComment	
-	- setPhotoPlMetaLastComment
+	- getPhotoPluginMetaCommentInfo	
+	- setPhotoPluginMetaCommentInfo
 
 	- getPublishedPhotoByRemoteId
 	
@@ -764,9 +764,9 @@ function PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psV
 end
 
 --------------------------------------------------------------------------------------------
--- getPhotoPlMetaLinkedSharedAlbums(srcPhoto)
+-- getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
 --   returns a list of all Shared Album the photo was linked to as stored in private plugin metadata
-function PSLrUtilities.getPhotoPlMetaLinkedSharedAlbums(srcPhoto)
+function PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
 	local sharedAlbumPluginMetadata = srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
 	local sharedAlbumsPS
 
@@ -774,15 +774,15 @@ function PSLrUtilities.getPhotoPlMetaLinkedSharedAlbums(srcPhoto)
 	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
 		sharedAlbumsPS = split(sharedAlbumPluginMetadata, '/')
 	end
-	writeLogfile(3, string.format("getPhotoPlMetaLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n", 
+	writeLogfile(3, string.format("getPhotoPluginMetaLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n", 
 									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))    		
 	return sharedAlbumsPS
 end 
 
 --------------------------------------------------------------------------------------------
--- setPhotoPlMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
+-- setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
 --   store a list of all Shared Album the photo was linked to in private plugin metadata
-function PSLrUtilities.setPhotoPlMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
+function PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
 	local activeCatalog 				= LrApplication.activeCatalog()
 	local oldSharedAlbumPluginMetadata 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
 	table.sort(sharedAlbums)
@@ -792,11 +792,11 @@ function PSLrUtilities.setPhotoPlMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
 		activeCatalog:withWriteAccessDo( 
 				'Update Plugin Metadata for Shared Albums',
 				function(context)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'sharedAlbums', newSharedAlbumPluginMetadata)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'sharedAlbums', iif(#newSharedAlbumPluginMetadata == 0, nil, newSharedAlbumPluginMetadata))
 				end,
 				{timeout=5}
 		)
-		writeLogfile(3, string.format("setPhotoPlMetaLinkedSharedAlbums(%s): updated Shared Albums plugin metadata to '%s'\n", 
+		writeLogfile(3, string.format("setPhotoPluginMetaLinkedSharedAlbums(%s): updated Shared Albums plugin metadata to '%s'\n", 
 									srcPhoto:getRawMetadata('path'), newSharedAlbumPluginMetadata))    		
 		return 1
 	end
@@ -813,7 +813,7 @@ end
 function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
 	local pubServiceName = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(publishedCollectionId):getService():getName()
 	local sharedAlbumsLr 	= PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, exportParams.psVersion)
-	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getPhotoPlMetaLinkedSharedAlbums(srcPhoto), {})
+	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto), {})
 	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
 	
 	-- add photo to all given Shared Albums that it is not already member of
@@ -826,7 +826,9 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		
 		local photoSharedAlbum 		= publishedCollectionId .. ':' .. sharedAlbumName
 		
-		if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
+		if 		not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) 
+			or	not PSPhotoStationUtils.getSharedPhotoInfo(exportParams.uHandle, sharedAlbumName, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), true)
+		then
     		local sharedAlbumUpdate = nil
     		
     		for k = 1, #sharedAlbumUpdates do
@@ -836,7 +838,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
     			end
     		end
     		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album '%s' as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
     				sharedAlbumName 		= sharedAlbumName, 
     				mkSharedAlbumAdvanced 	= mkSharedAlbumAdvanced, 
@@ -851,7 +853,9 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
     		local addPhotos = sharedAlbumUpdate.addPhotos
     		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
     		
-   			table.insert(newSharedAlbumsPS, photoSharedAlbum)
+   			if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
+   				table.insert(newSharedAlbumsPS, photoSharedAlbum)
+   			end
 		end
 	end 
 
@@ -869,7 +873,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
     		end
 
     		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album %s as node %d for removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album '%s' as node %d for removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, addPhotos = {}, removePhotos = {} }
     			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
     		end
@@ -882,7 +886,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 	end
 
 	if table.concat(oldSharedAlbumsPS, '/') ~= table.concat(newSharedAlbumsPS, '/') then
-		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding plugin metadata %s to sharedPhotoUpdates\n", publishedPhotoId, table.concat(newSharedAlbumsPS, '/')))
+		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding modified plugin metadata '%s' to sharedPhotoUpdates\n", publishedPhotoId, table.concat(newSharedAlbumsPS, '/')))
 		local sharedPhotoUpdate = { srcPhoto = srcPhoto, sharedAlbums = newSharedAlbumsPS }
 		table.insert(sharedPhotoUpdates, sharedPhotoUpdate)
 	end
@@ -910,36 +914,36 @@ local function getAllPublishedCollectionsFromPublishedCollectionSet(publishedCol
 end
 
 --------------------------------------------------------------------------------------------
--- getPhotoPlMetaLastComment(srcPhoto)
-function PSLrUtilities.getPhotoPlMetaLastComment(srcPhoto)
-	local lastCommentTime 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentTime', nil, true)
+-- getPhotoPluginMetaCommentInfo(srcPhoto)
+function PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
+	local lastCommentDate 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentDate', nil, true)
 	local lastCommentType 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentType', nil, true)
 	local lastCommentSource = srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentSource', nil, true)
 
-	return lastCommentTime, lastCommentType, lastCommentSource
+	return lastCommentDate, lastCommentType, lastCommentSource
 end
 
 --------------------------------------------------------------------------------------------
--- setPhotoPlMetaLastComment(srcPhoto, lastCommentTime, lastCommentType, lastCommentSource)
-function PSLrUtilities.setPhotoPlMetaLastComment(srcPhoto, lastCommentTime, lastCommentType, lastCommentSource)
+-- setPhotoPluginMetaCommentInfo(srcPhoto, lastCommentDate, lastCommentType, lastCommentSource)
+function PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, lastCommentDate, lastCommentType, lastCommentSource)
 	local activeCatalog 				= LrApplication.activeCatalog()
-	local currentLastCommentTime, currentLastCommentType, currentLastCommentSource =  PSLrUtilities.getPhotoPlMetaLastComment(srcPhoto)
+	local currentlastCommentDate, currentLastCommentType, currentLastCommentSource =  PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
 	
-	if 		lastCommentTime	  ~= currentLastCommentTime
+	if 		lastCommentDate	  ~= currentlastCommentDate
 		or	lastCommentType   ~= currentLastCommentType
 		or	lastCommentSource ~= currentLastCommentSource 
 	then
 		activeCatalog:withWriteAccessDo( 
 				'Update Plugin Metadata for Last Comment',
 				function(context)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentTime', 	lastCommentTime)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentDate', 	lastCommentDate)
 					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentType', 	lastCommentType)
 					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentSource', lastCommentSource)
 				end,
 				{timeout=5}
 		)
-		writeLogfile(3, string.format("setPhotoPlMetaLastComment(%s): updated Last Comment to '%s/%s/%s'\n", 
-									srcPhoto:getRawMetadata('path'), lastCommentTime, lastCommentType, lastCommentSource))    		
+		writeLogfile(3, string.format("setPhotoPluginMetaCommentInfo(%s): updated Last Comment to '%s/%s/%s'\n", 
+									srcPhoto:getRawMetadata('path'), lastCommentDate, lastCommentType, lastCommentSource))    		
 		return 1
 	end
 
