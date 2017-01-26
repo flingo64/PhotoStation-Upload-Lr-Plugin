@@ -916,34 +916,50 @@ end
 --------------------------------------------------------------------------------------------
 -- getPhotoPluginMetaCommentInfo(srcPhoto)
 function PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
-	local lastCommentDate 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentDate', nil, true)
-	local lastCommentType 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentType', nil, true)
-	local lastCommentSource = srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentSource', nil, true)
+	local commentInfo = {}
+	
+	commentInfo.commentCount	 	= tonumber(srcPhoto:getPropertyForPlugin(_PLUGIN, 'commentCount', nil, true))
+	commentInfo.lastCommentDate 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentDate', nil, true)
+	commentInfo.lastCommentType 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentType', nil, true)
+	commentInfo.lastCommentSource 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentSource', nil, true)
+	commentInfo.lastCommentUrl 		= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentUrl', nil, true)
+	commentInfo.lastCommentAuthor 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentAuthor', nil, true)
+	commentInfo.lastCommentText 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentText', nil, true)
 
-	return lastCommentDate, lastCommentType, lastCommentSource
+	return commentInfo
 end
 
 --------------------------------------------------------------------------------------------
--- setPhotoPluginMetaCommentInfo(srcPhoto, lastCommentDate, lastCommentType, lastCommentSource)
-function PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, lastCommentDate, lastCommentType, lastCommentSource)
-	local activeCatalog 				= LrApplication.activeCatalog()
-	local currentlastCommentDate, currentLastCommentType, currentLastCommentSource =  PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
+-- setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
+function PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
+	local activeCatalog 	= LrApplication.activeCatalog()
+	local currCommentInfo 	=  PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
 	
-	if 		lastCommentDate	  ~= currentlastCommentDate
-		or	lastCommentType   ~= currentLastCommentType
-		or	lastCommentSource ~= currentLastCommentSource 
+	if 		commentInfo.commentCount 		~= currCommentInfo.commentCount
+		or	commentInfo.lastCommentDate		~= currCommentInfo.lastCommentDate
+		or	commentInfo.lastCommentType		~= currCommentInfo.lastCommentType
+		or	commentInfo.lastCommentSource	~= currCommentInfo.lastCommentSource 
+		or	commentInfo.lastCommentUrl		~= currCommentInfo.lastCommentUrl 
+		or	commentInfo.lastCommentAuthor	~= currCommentInfo.lastCommentAuthor 
+		or	commentInfo.lastCommentText		~= currCommentInfo.lastCommentText 
 	then
 		activeCatalog:withWriteAccessDo( 
 				'Update Plugin Metadata for Last Comment',
 				function(context)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentDate', 	lastCommentDate)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentType', 	lastCommentType)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentSource', lastCommentSource)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'commentCount', 		iif(ifnil(commentInfo.commentCount, 0) > 0, tostring(commentInfo.commentCount), nil))
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentDate', 	commentInfo.lastCommentDate)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentType', 	commentInfo.lastCommentType)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentSource', commentInfo.lastCommentSource)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentUrl', 	commentInfo.lastCommentUrl)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentAuthor', commentInfo.lastCommentAuthor)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentText', 	commentInfo.lastCommentText)
 				end,
 				{timeout=5}
 		)
-		writeLogfile(3, string.format("setPhotoPluginMetaCommentInfo(%s): updated Last Comment to '%s/%s/%s'\n", 
-									srcPhoto:getRawMetadata('path'), lastCommentDate, lastCommentType, lastCommentSource))    		
+		writeLogfile(3, string.format("setPhotoPluginMetaCommentInfo(%s): updated Comment Info to '%s/%s/%s/%s/%s/%s/%s'\n", 
+									srcPhoto:getRawMetadata('path'), 
+									commentInfo.commentCount, commentInfo.lastCommentDate, commentInfo.lastCommentType, 
+									commentInfo.lastCommentSource, commentInfo.lastCommentUrl, commentInfo.lastCommentAuthor, commentInfo.lastCommentText))    		
 		return 1
 	end
 
