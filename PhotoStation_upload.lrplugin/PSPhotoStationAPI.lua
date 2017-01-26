@@ -328,8 +328,8 @@ end
 ]]
 
 ---------------------------------------------------------------------------------------------------------
--- getSharedPhotoComments (h, dstFilename, isVideo, sharedAlbumName) 
-function PSPhotoStationAPI.getSharedPhotoComments (h, dstFilename, isVideo, sharedAlbumName)
+-- getSharedPhotoComments (h, sharedAlbumName, dstFilename, isVideo) 
+function PSPhotoStationAPI.getSharedPhotoComments (h, sharedAlbumName, dstFilename, isVideo)
 	local formData = 'method=list_comment&' ..
 					 'version=1&' .. 
 					 'offset=0&' .. 
