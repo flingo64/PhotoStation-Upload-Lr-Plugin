@@ -639,7 +639,7 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 		if progressScope:isCanceled() then break end
 		local sharedPhotoUpdate = sharedPhotoUpdates[i]
 
-		PSLrUtilities.setPhotoPlMetaLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
+		PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
 		writeLogfile(3, string.format("%s: updated plugin metadata.\n",	sharedPhotoUpdate.srcPhoto:getRawMetadata('path')))
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
@@ -1108,13 +1108,13 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in Photo Station
 				local useCache = true
-				local photoInfo, additionalInfo = PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), useCache)
-				if photoInfo then
+				local photoInfos, errorCode = PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), useCache)
+				if photoInfos then
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1
 					PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams) 
-				elseif not photoInfo and not additionalInfo then
+				elseif not photoInfos and not errorCode then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
 					writeLogfile(2, 'CheckExisting: Upload required for "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. newPublishedPhotoId .. '\n')
