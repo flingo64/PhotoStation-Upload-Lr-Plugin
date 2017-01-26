@@ -149,6 +149,8 @@
 "$$$/PSUpload/Metadat/LastCommentSource/PleaseTranslate=Last Comment Collection"
 "$$$/PSUpload/Metadat/LastCommentText/PleaseTranslate=Last Comment"
 "$$$/PSUpload/Metadat/LastCommentType/PleaseTranslate=Last Comment Type"
+"$$$/PSUpload/Metadat/LastCommentTypePrivate/PleaseTranslate=Private"
+"$$$/PSUpload/Metadat/LastCommentTypePublic/PleaseTranslate=Public"
 "$$$/PSUpload/Metadat/LastCommentUrl/PleaseTranslate=Last Comment Link"
 "$$$/PSUpload/Metadat/commentCount/PleaseTranslate=Comment Count"
 "$$$/PSUpload/MissingParams/Header/EnterMissing/PleaseTranslate=Please enter missing parameters for:^n^n"

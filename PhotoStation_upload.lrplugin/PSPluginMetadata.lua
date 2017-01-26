@@ -82,11 +82,11 @@ return {
 			values 		= {
     			{
     				value = 'private',
-    				title = "Private"
+    				title = LOC "$$$/PSUpload/Metadat/LastCommentTypePrivate=Private"
     			},
     			{
     				value = 'public',
-    				title = "Public"
+    				title = LOC "$$$/PSUpload/Metadat/LastCommentTypePublic=Public"
     			},
 			},
 			readOnly	= true,

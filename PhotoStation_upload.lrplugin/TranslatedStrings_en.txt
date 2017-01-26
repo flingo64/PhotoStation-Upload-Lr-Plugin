@@ -149,6 +149,8 @@
 "$$$/PSUpload/Metadat/LastCommentSource=Last Comment Collection"
 "$$$/PSUpload/Metadat/LastCommentText=Last Comment"
 "$$$/PSUpload/Metadat/LastCommentType=Last Comment Type"
+"$$$/PSUpload/Metadat/LastCommentTypePrivate=Private"
+"$$$/PSUpload/Metadat/LastCommentTypePublic=Public"
 "$$$/PSUpload/Metadat/LastCommentUrl=Last Comment Link"
 "$$$/PSUpload/Metadat/commentCount=Comment Count"
 "$$$/PSUpload/MissingParams/Header/EnterMissing=Please enter missing parameters for:^n^n"
