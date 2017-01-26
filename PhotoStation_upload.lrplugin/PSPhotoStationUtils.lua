@@ -494,9 +494,9 @@ end
 -- getPhotoInfo (h, dstFilename, isVideo, useCache) 
 -- return photo infos for a given remote filename
 -- returns:
--- 		photoInfo, 	photoAdditionalInfo		if remote photo was found
--- 		nil,		nil						if remote photo was not found
--- 		nil,		errorCode				on error
+-- 		photoInfos				if remote photo was found
+-- 		nil,		nil			if remote photo was not found
+-- 		nil,		errorCode	on error
 function PSPhotoStationUtils.getPhotoInfo(h, dstFilename, isVideo, useCache)
 	local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
 	local photoInfos, errorCode
@@ -512,7 +512,7 @@ function PSPhotoStationUtils.getPhotoInfo(h, dstFilename, isVideo, useCache)
 	for i = 1, #photoInfos do
 		if photoInfos[i].id == photoId then
 			writeLogfile(3, string.format('getPhotoInfo(%s, useCache %s) found infos.\n', dstFilename, useCache))
-			return photoInfos[i].info, photoInfos[i].additional
+			return photoInfos[i]
 		end
 	end
 	
@@ -522,11 +522,11 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- getSharedPhotoInfo (h, sharedAlbumName, dstFilename, isVideo, useCache) 
--- return photo infos for a given remote filename
+-- return photo infos for a photo in a shared album
 -- returns:
--- 		photoInfo, 	photoAdditionalInfo		if remote photo was found
--- 		nil,		nil						if remote photo was not found
--- 		nil,		errorCode				on error
+-- 		photoInfos				if remote photo was found
+-- 		nil,					if remote photo was not found
+-- 		nil,		errorCode	on error
 function PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename, isVideo, useCache)
 	local photoInfos, errorCode
 	if useCache then
@@ -541,12 +541,23 @@ function PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename,
 	for i = 1, #photoInfos do
 		if photoInfos[i].id == photoId then
 			writeLogfile(3, string.format('getSharedPhotoInfo(%s, %s, useCache %s) found infos.\n', sharedAlbumName, dstFilename, useCache))
-			return photoInfos[i].info, photoInfos[i].additional
+			return photoInfos[i]
 		end
 	end
 	
 	writeLogfile(3, string.format('getSharedPhotoInfo(%s %s, useCache %s) found no infos.\n', sharedAlbumName, dstFilename, useCache))
-	return nil, nil
+	return nil
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getSharedPhotoPublicUrl (h, sharedAlbumName, dstFilename, isVideo) 
+-- returns the public share url of a shared photo
+function PSPhotoStationUtils.getSharedPhotoPublicUrl(h, sharedAlbumName, dstFilename, isVideo)
+	local photoInfos, errorCode = PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename, isVideo, true)
+
+	if not photoInfos then return nil, errorCode end 
+
+	return photoInfos.public_share_url
 end
 
 ---------------------------------------------------------------------------------------------------------
