@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.2.x<br>
+Version 6.3.x<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -242,7 +242,11 @@ Publish Functionality:
   
 Download / Sync Functionality:
 -------------------------------
-- Support for re-import of __Comments and Ratings__
+- Support for download of __Comments__
+	- Download of private and public comments from Photo Station
+	- Lr plugin metadata for comments: __search and filter__ photos with comments<br>
+	- __Metadata Tagsets__ to view comments in the Metadata panel<br>
+	For more infos please read the [Wiki article on comments](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Some-comments-on-comments).
 
 - __Download and two-way sync of various metadata__ for photos and videos:
 	- title, description/caption
@@ -568,6 +572,18 @@ This placeholder was introduced in particular to support the following features:
 	- __{LrRM:uuid}__ may be used in 'Rename to' to retrieve a unique, fixed, never changing identifier for any photo in the Lr catalog
 	- __{LrRM:stackPositionInFolder ^1([^%d]*)$|?}__ may be used in 'Rename to' to prevent the upload of any photo burried in a stack (not the top-most photo in a stack)    
  
+Version 6.3
+-----------
+- Added support for __download of public comments__ from Photo Station (comments added to a public Shared Album in Photo Station)
+- Configurable download options for private and/or public comments (downloading public comments is much faster than downloading private comments)
+- Added plugin metadata for comments:  this allows to __search for or filter photos with comments__
+- Added __Metadata tagsets__ that include Photo StatLr's comment metadata
+- Added pattern matching for metadata placeholder {LrCC}: extract parts from the Contained Collection path or name
+- Bugfixes:
+	- Fixed an exception when a public Shared Album was modified to a private Shared Album
+	- Fixed an issue where Shared Album keyword synonyms were not handled correctly
+	- Fixed an issue where a comment that was removed in PS was not removed in Lr 
+
 Copyright
 ==========
 Copyright(c) 2016, Martin Messmer
