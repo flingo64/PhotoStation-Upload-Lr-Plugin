@@ -96,8 +96,6 @@ function PSUploadAPI.createFolder (h, parentDir, newDir)
 									respHeaders, respBody)
 end
 
----------------------------------------------------------------------------------------------------------
-
 --[[ 
 uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position) 
 upload a single file to Photo Station
@@ -143,21 +141,23 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 	-- calculate max. upload time for LrHttp.post()
 	-- we expect a minimum of 10 MBit/s upload speed --> 1.25 MByte/s
 	local fileSize = LrFileUtils.fileAttributes(srcFilename).fileSize
-	local timeout = fileSize / 1250000
+	local timeout = math.floor(fileSize / 1250000)
 	if timeout < 30 then timeout = 30 end
 	
-	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size %d --> timeout %d\n", 
-								srcFilename, dstDir, dstFilename, picType, position, fileSize, timeout))
-	writeLogfile(4, "uploadPictureFile: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ", timeout: " .. timeout .. ", fileSize: " .. fileSize .. "\n")
+	-- string.format does not %ld, which would be required for fileSize; in case of huge files
+	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size " .. fileSize .. " timeout %d --> %s\n", 
+								srcFilename, dstDir, dstFilename, picType, position, timeout, h.serverUrl .. h.uploadPath))
+	writeTableLogfile(4, 'postHeaders', postHeaders, true)
 
-	local i
-	writeLogfile(4, "postHeaders:\n")
-	for i = 1, #postHeaders do
-		writeLogfile(4, 'Field: ' .. postHeaders[i].field .. ' Value: ' .. postHeaders[i].value .. '\n')
-	end
 
-	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, 
-								LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
+	-- LrFileUtils.readFile() can't handle huge files, e.g videos > 2GB
+-- 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
+
+	-- use callback function returning 10MB chunks to feed LrHttp.post() 
+	local postFile = io.open(srcFilename, "rb")
+	if not postFile then return false, "Cannot open " .. srcFilename ..' for reading' end
+	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, function () return postFile:read(10000000) end, postHeaders, 'POST', timeout, fileSize)
+ 	postFile:close()
 	
 	return checkPSUploadAPIAnswer(string.format("PSUploadAPI.uploadPictureFile('%s', '%s', '%s')", srcFilename, dstDir, dstFilename), 
 									respHeaders, respBody)
