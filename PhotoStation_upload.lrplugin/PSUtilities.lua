@@ -335,9 +335,11 @@ function writeLogfile (level, msg)
 	end
 end
 
--- writeTableLogfile (level, tableName, printTable)
+-- writeTableLogfile (level, tableName, printTable, compact)
 -- output a table to logfile, max one level of nested tables
-function writeTableLogfile(level, tableName, printTable)
+function writeTableLogfile(level, tableName, printTable, compact)
+	if level > ifnil(loglevel, 2) then return end
+	
 	if type(printTable) ~= 'table' then
 		writeLogfile(level, tableName .. ' is not a table, but ' .. type(printTable) .. '\n')
 		return
@@ -346,11 +348,24 @@ function writeTableLogfile(level, tableName, printTable)
 	writeLogfile(level, '"' .. tableName .. '":{\n')
 	for key, value in pairs( printTable ) do
 		if type(value) == 'table' then
-			writeLogfile(level, '	"' .. key .. '":{\n')
-			for key2, value2 in pairs( value ) do
-				writeLogfile(level, '		"' .. key2 ..'":"' .. tostring(ifnil(value2, '<Nil>')) ..'"\n')
+			local outputLine = {}
+			if not compact then
+				writeLogfile(level, '\t"' .. key .. '":{' ..  iif(compact, ' ', '\n'))
 			end
-			writeLogfile(level, '	}\n')
+			for key2, value2 in pairs( value ) do
+				local attrValueString = '"' .. key2 ..'":"' .. tostring(ifnil(value2, '<Nil>')) ..'"'
+				if compact then
+					table.insert(outputLine, attrValueString)
+				else	
+					writeLogfile(level, '\t\t' .. attrValueString .. '\n')
+				end
+			end
+			if compact then
+				table.sort(outputLine)
+				writeLogfile(level, '\t"' .. key .. '":{ ' .. table.concat(outputLine, ',\t') .. ' }\n')
+			else				
+				writeLogfile(level, '\t}\n')
+			end
 		else
 			writeLogfile(level, '	"' .. key ..'":"' .. tostring(ifnil(value, '<Nil>')) ..'"\n')
 		end
@@ -571,8 +586,8 @@ function openSession(exportParams, publishedCollection, operation)
 		return false, 'cancel'
 	end
 
-	-- ConvertAPI: required if Export/Publish and thumb generation is configured
-	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.thumbGenerate and not exportParams.cHandle then
+	-- ConvertAPI: required if Export/Publish 
+	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and not exportParams.cHandle then
 			exportParams.cHandle = PSConvert.initialize()
 			if not exportParams.cHandle then return false, 'Cannot initialize converters, check path for Syno Photo Station Uploader' end
 	end
