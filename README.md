@@ -139,7 +139,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {Path:5}
 	  - {LrCC:path ^Yearly Collections}
 	  - {LrCC:name}<br>
-  To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-target-album-definitions) 
+  To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-'Target-Album'-or-'Rename-Photos-To'-definitions) 
 
 - __Rename photos__ in target album using __metadata placehoders__:<br>
      Rename photos to a unique naming schema in the target album 
