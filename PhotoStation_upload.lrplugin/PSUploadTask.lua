@@ -326,9 +326,12 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		videoRotation = vinfo.rotation
 	end
 	
-	-- replace original video if srcVideo is to be rotated (meta or hard)
+	-- replace original video if:
+	--		- srcVideo is to be rotated (meta or hard)
+	-- 		- srcVideo is not mp4/264
 	local replaceOrgVideo = false
-	if videoRotation ~= '0' then
+	if 	videoRotation ~= '0' or 
+		(PSConvert.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264') then
 		replaceOrgVideo = true
 		vid_Orig_Filename = vid_Replace_Filename
 	else
@@ -365,7 +368,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 								'120x120>^',   thmb_S_Filename) )
 	)
 
-	-- generate mp4 in original size if srcVideo is not already mp4 or if video is rotated
+	-- generate mp4 in original size if srcVideo is not already mp4/h264 or if video is rotated
 	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
