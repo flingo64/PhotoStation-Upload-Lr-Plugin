@@ -97,7 +97,7 @@ local function callSynoAPI (h, synoAPI, formData)
 
 	if respArray.error then 
 		local errorCode = tonumber(respArray.error.code)
-		writeLogfile(1, string.format('PSPhotoStationAPI.callSynoAPI: %s returns error %d\n', synoAPI, errorCode))
+		writeLogfile(3, string.format('PSPhotoStationAPI.callSynoAPI: %s returns error %d\n', synoAPI, errorCode))
 		return nil, errorCode
 	end
 	
