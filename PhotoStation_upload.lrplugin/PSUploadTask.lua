@@ -328,7 +328,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	
 	-- replace original video if:
 	--		- srcVideo is to be rotated (meta or hard)
-	-- 		- srcVideo is not mp4/264
+	-- 		- srcVideo is mp4, but not h264 (PS would try to open, but does only support h264
 	local replaceOrgVideo = false
 	if 	videoRotation ~= '0' or 
 		(PSConvert.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264') then
@@ -339,6 +339,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	end
 
 	-- Additional MP4 in orig dimension if video is not MP4
+	-- Non-MP4 will not be opened by PS, so it's safe to upload the original version plus an additional MP4
 	local addOrigAsMp4 = false
 	if not PSConvert.videoIsNativePSFormat(vidExtOrg) and not replaceOrgVideo then
 		addOrigAsMp4 = true
