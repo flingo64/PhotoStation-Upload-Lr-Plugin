@@ -149,15 +149,33 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 								srcFilename, dstDir, dstFilename, picType, position, timeout, h.serverUrl .. h.uploadPath))
 	writeTableLogfile(4, 'postHeaders', postHeaders, true)
 
-
-	-- LrFileUtils.readFile() can't handle huge files, e.g videos > 2GB
--- 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
-
-	-- use callback function returning 10MB chunks to feed LrHttp.post() 
-	local postFile = io.open(srcFilename, "rb")
-	if not postFile then return false, "Cannot open " .. srcFilename ..' for reading' end
-	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, function () return postFile:read(10000000) end, postHeaders, 'POST', timeout, fileSize)
- 	postFile:close()
+	local respBody, respHeaders
+	-- MacOS issue: LrHttp.post() doesn't seem to work with callback
+	if not WIN_ENV then
+		-- remember: LrFileUtils.readFile() can't handle huge files, e.g videos > 2GB, at least on Windows
+ 		respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
+	else
+    	-- use callback function returning 10MB chunks to feed LrHttp.post() 
+    	local postFile = io.open(srcFilename, "rb")
+    	if not postFile then return false, "Cannot open " .. srcFilename ..' for reading' end
+        --[[ testing for MacOS
+        	local respBody, respHeaders = 
+        		LrHttp.post(h.serverUrl .. h.uploadPath, 
+        				function ()
+        --					local readBuf = postFile:read(10000000)
+        					local readBuf = postFile:read(30000)
+        					if readBuf then 
+        						writeLogfile(4, "uploadPictureFile: postFile reader returns " .. #readBuf .. " bytes\n") 
+        					else
+        						writeLogfile(4, "uploadPictureFile: postFile reader returns <nil>\n") 
+        					end 
+        					return readBuf
+        				end, 
+        				postHeaders, 'POST', timeout, fileSize)
+         ]]
+    	respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, function () return postFile:read(10000000) end, postHeaders, 'POST', timeout, fileSize)
+     	postFile:close()
+	end 
 	
 	return checkPSUploadAPIAnswer(string.format("PSUploadAPI.uploadPictureFile('%s', '%s', '%s')", srcFilename, dstDir, dstFilename), 
 									respHeaders, respBody)
