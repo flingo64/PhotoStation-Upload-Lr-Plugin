@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.3.2<br>
+Version 6.3.3<br>
 __[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -38,7 +38,7 @@ Requirements
 	- MacOS 10.9.5	
 	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
 	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
-	- MacOS 10.12.0, 10.12.1, 10.12.2, 10.12.3
+	- MacOS 10.12.0, 10.12.1, 10.12.2, 10.12.3, 10.12.4
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
