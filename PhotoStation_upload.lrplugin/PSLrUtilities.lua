@@ -215,7 +215,7 @@ function PSLrUtilities.getCollectionPath(collection)
 		collectionPath = mkLegalFilename(parentCollectionSet:getName()) .. "/" .. collectionPath	
 		parentCollectionSet  = parentCollectionSet:getParent()
 	end
-	writeLogfile(4, "getCollectionPath() returns " .. collectionPath .. "\n")
+	writeLogfile(4, string.format("getCollectionPath(%s) returns %s\n", collection:getName(), collectionPath))
 	
 	return normalizeDirname(collectionPath)
 end
@@ -223,7 +223,7 @@ end
 
 ---------------------- getCollectionUploadPath --------------------------------------------------
 -- getCollectionUploadPath(publishedCollection)
--- 	return the target album path path of a PSUpload Published Collection by recursively traversing the collection and all of its parents
+-- 	return the target album path of a PSUpload Published Collection by recursively traversing the collection and all of its parents
 function PSLrUtilities.getCollectionUploadPath(publishedCollection)
 	local parentCollectionSet
 	local collectionPath
@@ -454,7 +454,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
       					if not dataStringExtracted then 
       						dataStringExtracted = ifnil(dataDefault, '')
         				else
-        					dataStringExtracted = mkLegalFilename(dataStringExtracted)
+        					dataStringExtracted = dataStringExtracted
         				end 
         			end
 					writeLogfile(3, string.format("evaluatePathOrFilename: %s  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataStringExtracted, ''))) 
