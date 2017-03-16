@@ -63,6 +63,7 @@ Installation
 - In Lightroom:
 	*File* --\> *Plugin Manager* --\> *Add*: Enter the path to the directory 
 		"PhotoStation_upload.lrplugin" 
+![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/01-Install-Plugin.jpg)
 
 Description
 ============
