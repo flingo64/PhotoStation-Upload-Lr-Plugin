@@ -1,19 +1,19 @@
 Photo StatLr (Lightroom plugin)
 ======================================
 Version 6.3.3<br>
-__[Important note for updating to V3.6.x and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
-__[Important note for updating to V5.0 and above] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
+__[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+__[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
-[Release Notes] (https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
-[FAQs] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
+[Release Notes](https://github.com//flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
+[FAQs](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
 
 Forum threads: 
-- [English Synology forum] (http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
-- [German Synology forum] (http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
+- [English Synology forum](http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
+- [German Synology forum](http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
-[Support Page] (http://messmer-online.de/index.php/software/11-photo-statlr)<br>
-[Donate to a good cause] (http://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
-[Get involved: Let Photo StatLr speak your language] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Contributions:-How-to-contribute-a-translation-for-Photo-StatLr.)<br>
+[Support Page](http://messmer-online.de/index.php/software/11-photo-statlr)<br>
+[Donate to a good cause](http://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
+[Get involved: Let Photo StatLr speak your language](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Contributions:-How-to-contribute-a-translation-for-Photo-StatLr.)<br>
  
 Copyright(c) 2017, Martin Messmer<br>
 
@@ -64,6 +64,8 @@ Installation
 	*File* --\> *Plugin Manager* --\> *Add*: Enter the path to the directory 
 		"PhotoStation_upload.lrplugin" 
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/01-Install-Plugin.jpg)
+ - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required tools are correct.
+ ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/03-Install_OK.jpg)
 
 Description
 ============
@@ -269,7 +271,7 @@ Download / Sync Functionality:
 	  This is not a download mode itself but let's you postpone the download mode decision to the point in time where the actual download action is started (e.g. after a publish action or when you click the "Refresh Comments" button).
 	  This mode is useful if you do not want to download metadata after every publish action, but only occasionally.<br>
 
-- For more detail, please read the [Wiki article] (https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Some-words-on-the-two-way-sync-of-metadata)
+- For more detail, please read the [Wiki article on metadata two-way sync](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Some-words-on-the-two-way-sync-of-metadata)
 
 Additional Funtionality
 ------------------------
@@ -587,7 +589,7 @@ Version 6.3
 
 Copyright
 ==========
-Copyright(c) 2016, Martin Messmer
+Copyright(c) 2017, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
