@@ -472,6 +472,8 @@ local function uploadVideoMetadata(functionContext, videosUploaded, exportParams
 		local latitude					= videoUploaded.latitude
 		local longitude					= videoUploaded.longitude
 		
+		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
+
 		-- get caption if requested
 		local captionParam
 		local captionData = srcPhoto:getFormattedMetadata("caption")
@@ -605,6 +607,8 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 		if progressScope:isCanceled() then break end
 		local sharedAlbumUpdate = sharedAlbumUpdates[i]
 
+		progressScope:setCaption(sharedAlbumUpdate.sharedAlbumName)
+
 		if #sharedAlbumUpdate.addPhotos > 0 then 
 			local success, shareUrl = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
 																							sharedAlbumUpdate.mkSharedAlbumAdvanced, sharedAlbumUpdate.mkSharedAlbumPublic, 
@@ -643,6 +647,8 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 	for i = 1, #sharedPhotoUpdates do
 		if progressScope:isCanceled() then break end
 		local sharedPhotoUpdate = sharedPhotoUpdates[i]
+
+		progressScope:setCaption(LrPathUtils.leafName(sharedPhotoUpdate.srcPhoto:getRawMetadata("path")))
 
 		PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
 		writeLogfile(3, string.format("%s: updated plugin metadata.\n",	sharedPhotoUpdate.srcPhoto:getRawMetadata('path')))
@@ -687,6 +693,8 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
 		local publishedPath = ifnil(pubPhoto:getRemoteId(), '<Nil>')
 		local edited = pubPhoto:getEditedFlag()
 		local dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
+
+		progressScope:setCaption(LrPathUtils.leafName(srcPath))
 
 		-- check if dstRoot contains missing required metadata ('?') (which means: skip photo) 
 		local skipPhoto = iif(string.find(dstRoot, '?', 1, true), true, false)
@@ -784,6 +792,8 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 			local dstDir
 			local dstFilename
 					
+			progressScope:setCaption(LrPathUtils.leafName(srcPath))
+
 			nProcessed = nProcessed + 1
 			skipPhoto = false
 			
@@ -1053,6 +1063,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			local dstRoot
 			local dstDir
 			local dstFilename
+			
+			progressScope:setCaption(srcFilename)
 			
 			nProcessed = nProcessed + 1
 			

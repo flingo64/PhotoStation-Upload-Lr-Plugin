@@ -931,6 +931,8 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		local pubPhoto = publishedPhotos[i]
 		local publishedPath = pubPhoto:getRemoteId()
 
+		progressScope:setCaption(publishedPath)
+
 		writeLogfile(3, string.format("deletePublishedCollection: deleting %s from  %s\n", publishedPath, info.name ))
 
 --			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
@@ -1043,7 +1045,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local startTime = LrDate.currentTime()
 
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/GetCommentsFromPublishedCollection=Downloading ^1 comments for collection ^[^2^]", nPhotos, publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/Progress/GetCommentsFromPublishedCollection=Downloading comments for ^1 photos in collection ^[^2^]", nPhotos, publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})  
 	
@@ -1064,13 +1066,16 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
+		local srcPhoto = photoInfo.photo
+		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
+
    		local lastCommentTimestamp 
    		local commentInfo = {}
    		local commentListLr = {} 
 
 		-- get photo comments from PS albums
 		if publishSettings.commentsDownload then 
-    		local commentsPS = PSPhotoStationAPI.getPhotoComments(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+    		local commentsPS = PSPhotoStationAPI.getPhotoComments(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
     		
     		if not commentsPS then
     			writeLogfile(1, string.format("Get comments: %s failed!\n", photoInfo.remoteId))
@@ -1095,7 +1100,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
        					
        					commentInfo.lastCommentType 	= 'private'
        					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
-       					commentInfo.lastCommentUrl		= PSPhotoStationUtils.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+       					commentInfo.lastCommentUrl		= PSPhotoStationUtils.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
        					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
        					commentInfo.lastCommentText		= commentLr.commentText
        					
@@ -1107,7 +1112,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 
 		if publishSettings.pubCommentsDownload then
     		-- get photo comments from PS public shared albums, if photo is member of any shared album
-    		local photoSharedAlbums = PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(photoInfo.photo)
+    		local photoSharedAlbums = PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
     		if photoSharedAlbums then
     		
        			writeLogfile(4, string.format("Get comments: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
@@ -1121,10 +1126,10 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     					and	PSPhotoStationUtils.isSharedAlbumPublic(publishSettings.uHandle, sharedAlbumName)
 	    				and findInAttrValueTable(serviceSharedAlbumComments[sharedAlbumName], 
 	    										 'item_id', 
-	    									 	 PSPhotoStationUtils.getPhotoId(photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo')), 
+	    									 	 PSPhotoStationUtils.getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo')), 
 	    									 	 'name')
 					then
-        				local sharedCommentsPS 	= PSPhotoStationAPI.getSharedPhotoComments(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+        				local sharedCommentsPS 	= PSPhotoStationAPI.getSharedPhotoComments(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
         
                 		if sharedCommentsPS and #sharedCommentsPS > 0 then
         		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album '%s'\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
@@ -1149,7 +1154,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
                    					commentInfo.lastCommentType 	= 'public'
                    					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
                    					commentInfo.lastCommentUrl		= PSPhotoStationUtils.getSharedPhotoPublicUrl(publishSettings.uHandle, sharedAlbumName, 
-                   																							 photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+                   																							 photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
                    					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
                    					commentInfo.lastCommentText		= commentLr.commentText
                 				end
@@ -1167,7 +1172,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 			commentInfo.lastCommentDate= LrDate.timeToUserFormat(lastCommentTimestamp, "%Y-%m-%d", false)
 			commentInfo.commentCount = #commentListLr
 		end
-		PSLrUtilities.setPhotoPluginMetaCommentInfo(photoInfo.photo, commentInfo)
+		PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
 		
 		writeTableLogfile(4, "commentListLr", commentListLr)
 		commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
@@ -1284,13 +1289,14 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/GetRatingsFromPublishedCollection=Downloading ^1 ratings for collection ^[^2^]", nPhotos, publishedCollection:getName()),
+								{ 	title = LOC( "$$$/PSUpload/Progress/GetRatingsFromPublishedCollection=Downloading ratings/metadata for ^1 photos in collection ^[^2^]", nPhotos, publishedCollection:getName()),
 --							 		functionContext = context 
 							 	})    
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
 		local srcPhoto 		= photoInfo.photo
+		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
 		local titlePS,		titleChanged
 		local captionPS, 	captionChanged

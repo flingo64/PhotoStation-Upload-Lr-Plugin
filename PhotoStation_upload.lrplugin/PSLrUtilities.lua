@@ -1000,6 +1000,9 @@ function PSLrUtilities.convertCollection(functionContext, publishedCollection)
 		if progressScope:isCanceled() then break end
 		
 		local pubPhoto = publishedPhotos[i]
+		local srcPhoto = pubPhoto:getPhoto()
+		
+		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
 		-- check if backlink to the containing Published Collection must be adjusted
 		if string.match(ifnil(pubPhoto:getRemoteUrl(), ''), '(%d+)') ~= tostring(publishedCollection.localIdentifier) then
@@ -1013,14 +1016,14 @@ function PSLrUtilities.convertCollection(functionContext, publishedCollection)
     			)
    			writeLogfile(2, string.format("Convert( %s - %s / %s): converted to new format.\n",
 											publishedCollection:getName(), 
-											pubPhoto:getPhoto():getRawMetadata('path'),
+											srcPhoto:getRawMetadata('path'),
 											pubPhoto:getRemoteId()))
 		else
 			writeLogfile(2, string.format("Convert( %s - %s / %s): already converted, lastEdited %s, lastPublished %s.\n", 
 											publishedCollection:getName(), 
-											pubPhoto:getPhoto():getRawMetadata('path'),
+											srcPhoto:getRawMetadata('path'),
 											pubPhoto:getRemoteId(),
-											LrDate.timeToUserFormat(pubPhoto:getPhoto():getRawMetadata('lastEditTime'), 			'%Y-%m-%d %H:%M:%S', false), 
+											LrDate.timeToUserFormat(srcPhoto:getRawMetadata('lastEditTime'), 			'%Y-%m-%d %H:%M:%S', false), 
 											LrDate.timeToUserFormat(tonumber(string.match(pubPhoto:getRemoteUrl(), '%d+/(%d+)')), 	'%Y-%m-%d %H:%M:%S', false)
 										))
 		end
@@ -1103,6 +1106,8 @@ function PSLrUtilities.convertAllPhotos(functionContext)
 	for i = 1, #allPublishedCollections do
 		if progressScope:isCanceled() then break end
 		
+		progressScope:setCaption(allPublishedCollections[i]:getName())
+
 		local nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(functionContext, allPublishedCollections[i])
 	
 		nPhotosTotal  	= nPhotosTotal 		+ nPhotos
