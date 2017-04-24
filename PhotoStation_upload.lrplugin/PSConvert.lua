@@ -507,6 +507,15 @@ local videoConversion = {
 
 		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
 	},	
+
+	{	
+		id = 'ULTRA',
+		upToHeight	= 2160,
+		
+		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
+
+		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
+	},
 }
 
 ---------------- getConvertKey --------------------------------------------------------------------
