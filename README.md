@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.3.3<br>
+Version 6.4<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -38,11 +38,11 @@ Requirements
 	- MacOS 10.9.5	
 	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
 	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
-	- MacOS 10.12.0, 10.12.1, 10.12.2, 10.12.3, 10.12.4
+	- MacOS 10.12.0, 10.12.1, 10.12.2, 10.12.3, 10.12.4, 10.12.5
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
-	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8
+	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 (tested)
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
@@ -599,6 +599,13 @@ Version 6.3
 	- Fixed an exception when a public Shared Album was modified to a private Shared Album
 	- Fixed an issue where Shared Album keyword synonyms were not handled correctly
 	- Fixed an issue where a comment that was removed in PS was not removed in Lr 
+
+Version 6.4
+-----------
+- Added support for Utra High Definition (4k) Videos:
+	- Added a Custom Video Output Preset (shown in the "Video" section of the Export/Publish Service dialog) that enables the upload of rendered videos with original resolution. This is useful in particular for 4k Videos, because Lr supports upload of rendered videos only up to FullHD resolution
+	- Added a seperate config setting for additional videos for UHD videos with the Export/Publish Service dialog
+- Show current processed image as caption in the progess bar
 
 Copyright
 ==========
