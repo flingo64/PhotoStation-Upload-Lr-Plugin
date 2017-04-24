@@ -260,10 +260,11 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	writeLogfile(3, string.format("uploadVideo: %s\n", renderedVideoPath)) 
 
 	local convParams = { 
-		HIGH =  	{ height = 1080,	filename = vid_HIGH_Filename },
-		MEDIUM = 	{ height = 720, 	filename = vid_MED_Filename },
-		LOW =		{ height = 360, 	filename = vid_LOW_Filename },
-		MOBILE =	{ height = 240,		filename = vid_MOB_Filename },
+		ULTRA =  	{ height = 2160,	type = 'HIGH',		filename = vid_HIGH_Filename },
+		HIGH =  	{ height = 1080,	type = 'HIGH',		filename = vid_HIGH_Filename },
+		MEDIUM = 	{ height = 720, 	type = 'MEDIUM',	filename = vid_MED_Filename },
+		LOW =		{ height = 360, 	type = 'LOW',		filename = vid_LOW_Filename },
+		MOBILE =	{ height = 240,		type = 'MOBILE',	filename = vid_MOB_Filename },
 	}
 	
 	-- there is no way to identify whether the video is exported as original or rendered
@@ -392,12 +393,12 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
 		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
-	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyAdd, 'video/mpeg', 'MIDDLE'))
+	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convParams[convKeyAdd].type, 'video/mpeg', 'MIDDLE'))
 	-- add mp4 version in original resolution fo Non-MP4s 
-	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
+	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
 	-- upload at least one mp4 file to avoid the generation of a flash video by synomediaparserd 
 	or ((convKeyAdd == 'None') 	and not addOrigAsMp4
-	 	   						and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convKeyOrig, 'video/mpeg', 'MIDDLE'))
+	 	   						and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
 	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
 	or 					   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
@@ -600,7 +601,7 @@ local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPho
 	writeLogfile(3, string.format("updateSharedAlbums: updating %d shared album and %d photo metadata\n", #sharedAlbumUpdates, #sharedPhotoUpdates))
 	local catalog = LrApplication.activeCatalog()
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/UpdateSharedAlbums=Updating ^1 shared albums with ^2 photos",  #sharedAlbumUpdates + #sharedPhotoUpdates),
+								{ 	title = LOC( "$$$/PSUpload/Progress/UpdateSharedAlbums=Updating ^1 shared albums with ^2 photos",  #sharedAlbumUpdates,  #sharedPhotoUpdates),
 							 		functionContext = functionContext 
 							 	})    
 	for i = 1, #sharedAlbumUpdates do
@@ -936,6 +937,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	-- additionalVideo table: user selected additional video resolutions
 	local additionalVideos = {
+		ULTRA = 	exportParams.addVideoUltra,
 		HIGH = 		exportParams.addVideoHigh,
 		MEDIUM = 	exportParams.addVideoMed,
 		LOW = 		exportParams.addVideoLow,
