@@ -111,6 +111,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
 
 		-- video parameters
+		{ key = 'addVideoUltra', 	default = 'None' },	-- additional video resolution for ULTRA res videos
 		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
 		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUM res videos
 		{ key = 'addVideoLow', 		default = 'None' },	-- additional video resolution for LOW res videos	
