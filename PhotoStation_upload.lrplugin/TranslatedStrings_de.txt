@@ -129,6 +129,8 @@
 "$$$/PSUpload/ExportDialog/VideoLowTT=Zusätzliches Video für Low-Res (360p) Videos"
 "$$$/PSUpload/ExportDialog/VideoMed=Mittel:"
 "$$$/PSUpload/ExportDialog/VideoMedTT=Zusätzliches Video für Medium-Res (720p) Videos"
+"$$$/PSUpload/ExportDialog/VideoUltra=Ultra:"
+"$$$/PSUpload/ExportDialog/VideoUltraTT=Zusätzliches Video für Ultra-Hi-Res (2160p) Videos"
 "$$$/PSUpload/ExportDialog/Videos=Video Upload-Optionen: Zusätzliche Videoauflösung für Videos mit Originalauflösung ..."
 "$$$/PSUpload/FinalMsg/CheckExist= ^1 von ^2 Fotos in ^3 Sekunden überprüft (^4 Pics/s). ^5 schon vorhanden, ^6 müssen exportiert werden."
 "$$$/PSUpload/FinalMsg/CheckMoved/Error/NotNeeded=Photo StatLr (CheckMoved): Es ergibt keinen Sinn nach verschobenen Fotos in einem flachen Album zu suchen.^n"

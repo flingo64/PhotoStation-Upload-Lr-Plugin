@@ -129,6 +129,8 @@
 "$$$/PSUpload/ExportDialog/VideoLowTT/PleaseTranslate=Generate additional video for Low-Res (360p) videos"
 "$$$/PSUpload/ExportDialog/VideoMed=일반화질:"
 "$$$/PSUpload/ExportDialog/VideoMedTT/PleaseTranslate=Generate additional video for Medium-Res (720p) videos"
+"$$$/PSUpload/ExportDialog/VideoUltra/PleaseTranslate=Ultra:"
+"$$$/PSUpload/ExportDialog/VideoUltraTT/PleaseTranslate=Generate additional video for Ultra-Hi-Res (2160p) videos"
 "$$$/PSUpload/ExportDialog/Videos/PleaseTranslate=Video Upload Options: Additional video resolutions for ...-Res Videos"
 "$$$/PSUpload/FinalMsg/CheckExist/PleaseTranslate=Checked ^1 of ^2 files in ^3 seconds (^4 pics/sec). ^5 already there, ^6 need export."
 "$$$/PSUpload/FinalMsg/CheckMoved/Error/NotNeeded/PleaseTranslate=Photo StatLr (CheckMoved): Makes no sense on flat copy albums to check for moved pics.^n"
