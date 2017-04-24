@@ -844,30 +844,48 @@ end
 -------------------------------------------------------------------------------
 -- videoOptionsView(f, propertyTable)
 function PSDialogs.videoOptionsView(f, propertyTable)
-	local highResAddVideoItens	= {
+	local lowResAddVideoItems	= {
 		{ title	= 'None',			value 	= 'None' },
-		{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
-		{ title	= 'Low (360p)',		value 	= 'LOW' },
-		{ title	= 'Medium (720p)',	value 	= 'MEDIUM' },
+		{ title	= 'Mobile/240p',		value 	= 'MOBILE' },
 	}
+	
+	local medResAddVideoItems	= tableShallowCopy(lowResAddVideoItems)
+	table.insert(medResAddVideoItems,
+		{ title	= 'Low/360p',		value 	= 'LOW' })
+	
+	local highResAddVideoItems	= tableShallowCopy(medResAddVideoItems)
+	table.insert(highResAddVideoItems,
+		{ title	= 'Medium/720p',		value 	= 'MEDIUM' })
 
-	local medResAddVideoItens	= {
-		{ title	= 'None',			value 	= 'None' },
-		{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
-		{ title	= 'Low (360p)',		value 	= 'LOW' },
-	}
-	
-	local lowResAddVideoItens	= {
-		{ title	= 'None',			value 	= 'None' },
-		{ title	= 'Mobile (240p)',	value 	= 'MOBILE' },
-	}
-	
+	local ultraResAddVideoItems	= tableShallowCopy(highResAddVideoItems)
+	table.insert(ultraResAddVideoItems, 
+		{ title	= 'High/1080p',		value 	= 'HIGH' })
+
 	return
 		f:group_box {
 			title 			= LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options: Additional video resolutions for ...-Res Videos",
 			fill_horizontal = 1,
 
 			f:row {
+				fill_horizontal = 1,
+				f:row {
+					alignment = 'left',
+					fill_horizontal = 1,
+
+					f:static_text {
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:",
+						alignment 		= 'right',
+					},
+					
+					f:popup_menu {
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoUltraTT=Generate additional video for Ultra-Hi-Res (2160p) videos",
+						items 			= ultraResAddVideoItems,
+						alignment 		= 'left',
+						fill_horizontal = 1,
+						value 			= bind 'addVideoUltra',
+					},
+				},					
+
 				f:row {
 					alignment = 'left',
 					fill_horizontal = 1,
@@ -879,7 +897,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
-						items 			= highResAddVideoItens,
+						items 			= highResAddVideoItems,
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoHigh',
@@ -897,7 +915,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
-						items 			= medResAddVideoItens,
+						items 			= medResAddVideoItems,
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoMed',
@@ -915,13 +933,15 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
-						items 			= lowResAddVideoItens,
+						items 			= lowResAddVideoItems,
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoLow',
 					},
 				},					
-				
+			},
+			
+			f:row {
 				f:checkbox {
 					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Hard-rotation",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
