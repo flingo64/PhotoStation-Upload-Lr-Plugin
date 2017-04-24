@@ -39,12 +39,13 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 
 -- Lightroom SDK
-local LrBinding		= import 'LrBinding'
-local LrView 		= import 'LrView'
-local LrPathUtils 	= import 'LrPathUtils'
-local LrFileUtils	= import 'LrFileUtils'
-local LrPrefs	 	= import 'LrPrefs'
-local LrShell 		= import 'LrShell'
+local LrBinding			= import 'LrBinding'
+local LrExportSettings 	= import 'LrExportSettings'
+local LrView 			= import 'LrView'
+local LrPathUtils 		= import 'LrPathUtils'
+local LrFileUtils		= import 'LrFileUtils'
+local LrPrefs	 		= import 'LrPrefs'
+local LrShell 			= import 'LrShell'
 
 require "PSUtilities"
 require "PSDialogs"
@@ -165,7 +166,52 @@ end
 -------------------------------------------------------------------------------
 
 function PSUploadExportDialogSections.startDialog( propertyTable )
+
+	-- add custom video resolution 'Original size': useful for 4k videos 
+	local myVideoExportPresets = LrExportSettings.videoExportPresetsForPlugin( _PLUGIN )
+	local foundMyExportPreset = false
+	if myVideoExportPresets and #myVideoExportPresets > 0 then
+		for i=1, #myVideoExportPresets do
+			if myVideoExportPresets[i]:name() == 'Original Size' then 
+				foundMyExportPreset = true 
+				break
+			end
+		end
+	end
 	
+	if not foundMyExportPreset then
+    	local pluginDir = _PLUGIN.path
+    	local presetFile = 'OriginalSizeVideo.epr'
+		writeLogfile(4, 'PSUploadExportDialogSections.startDialog(): adding video export preset ' ..  LrPathUtils.child(pluginDir, presetFile) .. '\n')
+    	
+    	-- make sure, no older version is installed
+    	LrExportSettings.removeVideoExportPreset('ALL', _PLUGIN)
+    	
+    	local origSizeVideoPreset = LrExportSettings.addVideoExportPresets( {
+        	[ 'Original Size' ] = {
+    			-- The format identifier for the video export format that this preset
+    			-- corresponds to. This identifier must be equal to the 'formatName'
+    			-- entry in one of the entries in the table returned by
+    			-- LrExportSettings.supportableVideoExportFormats, i.e. 'h.264'.
+    			format = 'h.264',
+    
+    			-- Must be an absolute path
+    			presetPath = LrPathUtils.child(pluginDir, presetFile),
+    
+    			-- To be displayed as target info in export dialog.
+    			targetInfo = 'original resolution, high bitrate',
+         	}, 
+         },	_PLUGIN
+    	)
+    	
+    	if not origSizeVideoPreset then
+    		writeLogfile(1, "PSUploadExportDialogSections.startDialog(): Could not add 'Original Size' video export preset!\n")
+
+		else
+	    	writeLogfile(2, "PSUploadExportDialogSections.startDialog(): Successfully added 'Original Size' video export preset.\n")
+		end
+	end
+
 	propertyTable:addObserver( 'thumbGenerate', updateExportStatus )
 
 	propertyTable:addObserver( 'proto', updateExportStatus )
