@@ -88,6 +88,11 @@ local function updateExportStatus( propertyTable )
 			break
 		end
 				
+		if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
+			break
+		end
+				
 		if propertyTable.usePersonalPS and (propertyTable.personalPSOwner == "" or propertyTable.personalPSOwner == nil ) then
 			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Photo Station to upload to"
 			break
@@ -166,50 +171,52 @@ end
 -------------------------------------------------------------------------------
 
 function PSUploadExportDialogSections.startDialog( propertyTable )
-
-	-- add custom video resolution 'Original size': useful for 4k videos 
+	-- check if my custom video output presets are already installed 
 	local myVideoExportPresets = LrExportSettings.videoExportPresetsForPlugin( _PLUGIN )
-	local foundMyExportPreset = false
-	if myVideoExportPresets and #myVideoExportPresets > 0 then
-		for i=1, #myVideoExportPresets do
-			if myVideoExportPresets[i]:name() == 'Original Size' then 
-				foundMyExportPreset = true 
-				break
-			end
-		end
-	end
-	
-	if not foundMyExportPreset then
-    	local pluginDir = _PLUGIN.path
-    	local presetFile = 'OriginalSizeVideo.epr'
-		writeLogfile(4, 'PSUploadExportDialogSections.startDialog(): adding video export preset ' ..  LrPathUtils.child(pluginDir, presetFile) .. '\n')
-    	
-    	-- make sure, no older version is installed
-    	LrExportSettings.removeVideoExportPreset('ALL', _PLUGIN)
-    	
-    	local origSizeVideoPreset = LrExportSettings.addVideoExportPresets( {
-        	[ 'Original Size' ] = {
-    			-- The format identifier for the video export format that this preset
-    			-- corresponds to. This identifier must be equal to the 'formatName'
-    			-- entry in one of the entries in the table returned by
-    			-- LrExportSettings.supportableVideoExportFormats, i.e. 'h.264'.
-    			format = 'h.264',
-    
-    			-- Must be an absolute path
-    			presetPath = LrPathUtils.child(pluginDir, presetFile),
-    
-    			-- To be displayed as target info in export dialog.
-    			targetInfo = 'original resolution, high bitrate',
-         	}, 
-         },	_PLUGIN
-    	)
-    	
-    	if not origSizeVideoPreset then
-    		writeLogfile(1, "PSUploadExportDialogSections.startDialog(): Could not add 'Original Size' video export preset!\n")
 
-		else
-	    	writeLogfile(2, "PSUploadExportDialogSections.startDialog(): Successfully added 'Original Size' video export preset.\n")
-		end
+	if myVideoExportPresets and #myVideoExportPresets > 0 then
+	   	-- make sure, no older version of Video presets are installed
+		LrExportSettings.removeVideoExportPreset('ALL', _PLUGIN)
+--		writeLogfile(2, 'PSUploadExportDialogSections.startDialog(): found my custom video export presets.\n')
+  	end
+ 
+ 	-- (re-)install my video export presets 	
+	local pluginDir = _PLUGIN.path
+	local presetFile = 'OrigSizeHiBit.epr'
+	local presetFile2 = 'OrigSizeMedBit.epr'
+--	writeLogfile(2, 'PSUploadExportDialogSections.startDialog(): adding video export preset ' ..  LrPathUtils.child(pluginDir, presetFile) .. '\n')
+	
+	local origSizeVideoPreset = LrExportSettings.addVideoExportPresets( {
+    	[ 'Original Size - High Bitrate' ] = {
+			-- The format identifier for the video export format that this preset
+			-- corresponds to. This identifier must be equal to the 'formatName'
+			-- entry in one of the entries in the table returned by
+			-- LrExportSettings.supportableVideoExportFormats, i.e. 'h.264'.
+			format = 'h.264',
+
+			-- Must be an absolute path
+			presetPath = LrPathUtils.child(pluginDir, presetFile),
+
+			-- To be displayed as target info in export dialog.
+  			targetInfo =  LOC "$$$/PSUpload/ExportDialog/VideoSection/OrigSizePreset/TargetInfo=original resolution, high bitrate",
+     	}, 
+
+    	[ 'Original Size - Medium Bitrate' ] = {
+			format = 'h.264',
+
+			-- Must be an absolute path
+			presetPath = LrPathUtils.child(pluginDir, presetFile2),
+
+			-- To be displayed as target info in export dialog.
+			targetInfo =  LOC "$$$/PSUpload/ExportDialog/VideoSection/OrigSizePreset2/TargetInfo=original resolution, medium bitrate",
+     	}, 
+     },	_PLUGIN
+	)
+	
+	if not origSizeVideoPreset then
+		writeLogfile(1, "PSUploadExportDialogSections.startDialog(): Could not add custom video export presets!\n")
+	else
+		writeLogfile(2, "PSUploadExportDialogSections.startDialog(): Successfully added " .. #origSizeVideoPreset .. " custom video export presets.\n")
 	end
 
 	propertyTable:addObserver( 'thumbGenerate', updateExportStatus )
@@ -218,6 +225,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'servername', updateExportStatus )
 	propertyTable:addObserver( 'username', updateExportStatus )
 	propertyTable:addObserver( 'srcRoot', updateExportStatus )
+	propertyTable:addObserver( 'dstRoot', updateExportStatus )
 	propertyTable:addObserver( 'copyTree', updateExportStatus )
 	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
 	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
