@@ -89,6 +89,29 @@ function PSDialogs.validatePort( view, value )
 end
 
 -------------------------------------------------------------------------------
+-- validateAlbumPath: check if a given path is a valid Album path:
+-- no leading/trailing '/'
+-- no leading/trailing ' ' in each path component
+-- no '\'
+-- no '//'
+function PSDialogs.validateAlbumPath( view, path )
+	if 	string.match(path, '^/') or
+		string.match(path, '/$') or
+	 	string.match(path, '^ ') or
+	 	string.match(path, ' $') or
+	 	string.match(path, ' /') or
+	 	string.match(path, '/ ') or
+	 	string.match(path, ' /') or
+	 	string.match(path, '\\') or
+	 	string.match(path, '//') 
+	 then
+		return false, path
+	end
+	
+	return true, path
+end
+
+-------------------------------------------------------------------------------
 -- validateDirectory: check if a given path points to a local directory
 function PSDialogs.validateDirectory( view, path )
 	if LrFileUtils.exists(path) ~= 'directory' then 
@@ -987,6 +1010,7 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 				value 			= bind 'dstRoot',
 				enabled 		= iif(isAskForMissingParams, true, bind 'storeDstRoot'),
 				visible 		= iif(isAskForMissingParams, true, bind 'storeDstRoot'),
+				validate 		= PSDialogs.validateAlbumPath,
 			},
 
 			f:checkbox {
