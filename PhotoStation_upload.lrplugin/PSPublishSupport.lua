@@ -485,6 +485,11 @@ local function updateCollectionStatus( collectionSettings )
 			break
 		end
 				
+		if not PSDialogs.validateAlbumPath(nil, collectionSettings.dstRoot) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
+			break
+		end
+				
 		-- renaming: renaming dstFilename must contain at least one metadata placeholder
 		if collectionSettings.renameDstFile  and not PSDialogs.validateMetadataPlaceholder(nil, collectionSettings.dstFilename) then 
 			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
@@ -605,6 +610,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		
 	--============= observe changes in collection setiings dialog ==============
 	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
+	collectionSettings:addObserver( 'dstRoot', updateCollectionStatus )
 	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
 	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
 	collectionSettings:addObserver( 'renameDstFile', updateCollectionStatus )
