@@ -65,6 +65,8 @@ local etConfigFile = LrPathUtils.child(_PLUGIN.path, 'PSExiftool.conf')
 -- function sendCmd(h, cmd, noWsConv)
 -- send a command to exiftool listener by appending the command to the commandFile
 local function sendCmd(h, cmd, noWsConv)
+	if not h then return false end
+
 	-- all commands/parameters/options have to seperated by \n, therefore substitute whitespaces by \n 
 	-- terminate command with \n 
 	local cmdlines = iif(noWsConv, cmd .. "\n", string.gsub(cmd,"%s", "\n") .. "\n")
@@ -131,9 +133,15 @@ local function parseResponse(response, tag, sep)
 	local value = string.match(response, tag .. "%s+:%s+([^\r\n]+)")
 		
 	if sep then
-		-- if separator given: return a table of values
-		writeTableLogfile(4, tag, split(value, sep))
-		return split(value, sep)
+		-- if separator given: return a table of trimmed values
+		local valueList = split(value, sep)
+		if valueList then
+			for i = 1, #valueList do
+				valueList[i] = trim(valueList[i])
+			end
+		end
+		writeTableLogfile(4, tag, valueList)
+		return valueList
 	end	
 
 	writeLogfile(4, string.format("tag: %s --> value: %s\n", tag, value))
@@ -277,7 +285,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 	local foundFaceRegions = false
 	local personTags = {}
 	local photoDimension = {}
-	local sep = ', '
+	local sep = ','
 	
 	photoDimension.width 	= parseResponse(queryResults, 'Image Width')
 	photoDimension.height 	= parseResponse(queryResults, 'Image Height')
@@ -423,20 +431,21 @@ function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags, origPhotoDim
 	end
 
 	if not 	sendCmd(h, "-sep ".. separator)	
--- HACK: Lr writes rotated dimensions as RegionAppliedToDimensions, but won't accepted anything other than the original phot dimensions
+-- HACK: Lr writes rotated dimensions as RegionAppliedToDimensions, but won't accept anything other than the original photo dimensions
 --	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(appDimOrgW))
 --	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(appDimOrgH))
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(origPhotoDimension.width))
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(origPhotoDimension.height))
-	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsUnit=pixel") 
+	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsUnit=pixel")
+	-- Region Name may contain blanks: do not convert! 
+	or not	sendCmd(h, "-XMP-mwg-rs:RegionName="	.. personTagNames, noWhitespaceConversion)
 	or not	sendCmd(h, 
-					"-XMP-mwg-rs:RegionName="		.. personTagNames .. " " ..
 					"-XMP-mwg-rs:RegionType="		.. personTagTypes .. " " ..
 					"-XMP-mwg-rs:RegionRotation="	.. personTagRotations .. " " ..
 					"-XMP-mwg-rs:RegionAreaX=" 		.. personTagXs .. " " ..
 					"-XMP-mwg-rs:RegionAreaY="		.. personTagYs .. " " ..
 					"-XMP-mwg-rs:RegionAreaW="		.. personTagWs .. " " ..
-					"-XMP-mwg-rs:RegionAreaH="		.. personTagHs .. " "
+					"-XMP-mwg-rs:RegionAreaH="		.. personTagHs
 				)
 	or not sendCmd(h, photoFilename, noWhitespaceConversion)
 	then
