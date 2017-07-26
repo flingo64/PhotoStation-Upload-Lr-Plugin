@@ -228,6 +228,8 @@ end
 -- getTableExtract(inputTable, tableField)
 --  returns a table with the elements 'tableField' of table 
 function getTableExtract(inputTable, tableField)
+	if not inputTable then return nil end
+
 	local tableExtract = {}
 	
 	for i = 1, #inputTable do
@@ -241,6 +243,8 @@ end
 -- getTableDiff(table1, table2)
 --  returns a table of elements in table1, but not in table2 
 function getTableDiff(table1, table2)
+	if not table1 or not table2 then return nil end
+	
 	local tableDiff = {}
 	local nDiff = 0
 	
@@ -551,8 +555,9 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
     	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
 
-		-- copy download options to exportParams during GetComments, so it will survive from GetComments to GetRatings 
+		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
     	if operation == 'GetCommentsFromPublishedCollection' then
+			writeLogfile(4, "openSession: copy download settings\n")
         	exportParams.downloadMode	 		= collectionSettings.downloadMode
         	exportParams.commentsDownload 		= collectionSettings.commentsDownload
         	exportParams.pubCommentsDownload	= collectionSettings.pubCommentsDownload
@@ -627,9 +632,9 @@ function openSession(exportParams, publishedCollection, operation)
 								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
-	-- exiftool: required if Export/Publish and and any exif translation was selected
+	-- exiftool: required if Export/Publish and exif translation was selected, or if downloading faces
 	if 	(	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
-		 or	(operation == 'GetRatingsFromPublishedCollection' and collectionSettings and collectionSettings.PS2LrFaces)
+		 or	(operation == 'GetRatingsFromPublishedCollection' and exportParams.PS2LrFaces)
 		)
 	and not exportParams.eHandle then 
 		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
