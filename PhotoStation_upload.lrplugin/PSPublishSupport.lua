@@ -1605,17 +1605,25 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				-- get face regions in local photo
 				local facesLr
 				facesLr, origPhotoDimension = PSExiftoolAPI.queryLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'))
-
+				
     			-- get delta list: which person tags were added and removed
 				local faceNamesLr = getTableExtract(facesLr, 'name')
 				local faceNamesPS = getTableExtract(facesPS, 'name')
     			facesAdd 	= getTableDiff(faceNamesPS, faceNamesLr)
     			facesRemove = getTableDiff(faceNamesLr, faceNamesPS)
-       			writeLogfile(3, string.format("Get ratings/metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
-      											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
     			
+    			if facesAdd and facesRemove then
+	       			writeLogfile(3, string.format("Get ratings/metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
+    	  											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
+    			end
+    			
+    			if not facesAdd or not facesRemove then
+       				writeLogfile(1, string.format("Get ratings/metadata: %s - error getting face region info: Lr faces: %s, PS faces: %s\n", 
+      												photoInfo.remoteId, iif(facesLr, 'OK', '<nil>'), iif(facesPS, 'OK', 'nil>')))
+      				nFailed = nFailed + 1
+      				
     			-- allow update of faces only if faces were added or changed, not if faces were removed 
-    			if (#facesAdd > 0) and (#facesAdd >= #facesRemove) then
+    			elseif (#facesAdd > 0) and (#facesAdd >= #facesRemove) then
     				facesChanged = true
     				table.insert(reloadPhotos, srcPhoto:getRawMetadata('path'))
     				nChanges = nChanges + #facesAdd + #facesRemove 
