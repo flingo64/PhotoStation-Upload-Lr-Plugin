@@ -90,18 +90,14 @@ end
 
 -------------------------------------------------------------------------------
 -- validateAlbumPath: check if a given path is a valid Album path:
--- no leading/trailing '/'
 -- no leading/trailing ' ' in each path component
 -- no '\'
 -- no '//'
 function PSDialogs.validateAlbumPath( view, path )
-	if 	string.match(path, '^/') or
-		string.match(path, '/$') or
-	 	string.match(path, '^ ') or
+	if 	string.match(path, '^ ') or
 	 	string.match(path, ' $') or
 	 	string.match(path, ' /') or
 	 	string.match(path, '/ ') or
-	 	string.match(path, ' /') or
 	 	string.match(path, '\\') or
 	 	string.match(path, '//') 
 	 then
