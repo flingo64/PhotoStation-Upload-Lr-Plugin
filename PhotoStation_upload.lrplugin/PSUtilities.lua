@@ -339,42 +339,96 @@ function writeLogfile (level, msg)
 	end
 end
 
--- writeTableLogfile (level, tableName, printTable, compact)
+-- getAttrValueOutputString(key, value, pwKeyPattern, hideKeyPattern)
+-- returns the output string of an key-value-pair according to given keyname pattern for passwords
+-- and for keys to hide
+local function getAttrValueOutputString(key, value, pwKeyPattern, hideKeyPattern)
+	if hideKeyPattern and string.match(key, hideKeyPattern) then
+		return nil
+	elseif pwKeyPattern and string.match(key, pwKeyPattern) then
+		return '"' .. key ..'":"***"'
+	else
+		return '"' .. key ..'":"' .. tostring(ifnil(value, '<Nil>')) ..'"'
+	end
+end
+
+-- writeTableLogfile (level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern)
 -- output a table to logfile, max one level of nested tables
-function writeTableLogfile(level, tableName, printTable, compact)
+--   do not output keys matching hideKeyPattern
+--   obfuscate value for keys matching pwKeyPattern
+function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern)
 	if level > ifnil(loglevel, 2) then return end
+	
+	local tableCompactOutputLine = {}
 	
 	if type(printTable) ~= 'table' then
 		writeLogfile(level, tableName .. ' is not a table, but ' .. type(printTable) .. '\n')
 		return
 	end
 	
-	writeLogfile(level, '"' .. tableName .. '":{\n')
+	if not compact then writeLogfile(level, '"' .. tableName .. '":{\n') end
 	for key, value in pairs( printTable ) do
-		if type(value) == 'table' then
+		if type(key) == 'table' then
 			local outputLine = {}
 			if not compact then
-				writeLogfile(level, '\t"' .. key .. '":{' ..  iif(compact, ' ', '\n'))
+				writeLogfile(level, '\t<table>' .. ':{' ..  iif(compact, ' ', '\n'))
 			end
-			for key2, value2 in pairs( value ) do
-				local attrValueString = '"' .. key2 ..'":"' .. tostring(ifnil(value2, '<Nil>')) ..'"'
+			for key2, value2 in pairs( key ) do
+				local attrValueString = getAttrValueOutputString(key2, value2, pwKeyPattern, hideKeyPattern)
+				
 				if compact then
 					table.insert(outputLine, attrValueString)
 				else	
 					writeLogfile(level, '\t\t' .. attrValueString .. '\n')
 				end
 			end
+			if attrValueString then
+				if compact then
+					table.sort(outputLine)
+					table.insert(tableCompactOutputLine, '\n\t\t<table> : {' .. table.concat(outputLine, ', ') .. '}')
+				else				
+					writeLogfile(level, '\t}\n')
+				end
+			end
+		elseif type(value) == 'table' and not (hideKeyPattern and string.match(key, hideKeyPattern)) then
+			local outputLine = {}
+			if not compact then
+				writeLogfile(level, '\t"' .. key .. '":{' ..  iif(compact, ' ', '\n'))
+			end
+			for key2, value2 in pairs( value ) do
+				local attrValueString = getAttrValueOutputString(key2, value2, pwKeyPattern, hideKeyPattern)
+				if attrValueString then
+					if compact then
+						table.insert(outputLine, attrValueString)
+					else	
+						 writeLogfile(level, '\t\t' .. attrValueString .. '\n') 
+					end
+				end
+			end
 			if compact then
 				table.sort(outputLine)
-				writeLogfile(level, '\t"' .. key .. '":{ ' .. table.concat(outputLine, ',\t') .. ' }\n')
+				table.insert(tableCompactOutputLine, '\n\t\t"' .. key .. '":{' .. table.concat(outputLine, ', ') .. '}')
 			else				
 				writeLogfile(level, '\t}\n')
 			end
 		else
-			writeLogfile(level, '	"' .. key ..'":"' .. tostring(ifnil(value, '<Nil>')) ..'"\n')
+			local attrValueString = getAttrValueOutputString(key, value, pwKeyPattern, hideKeyPattern)
+			if attrValueString then
+				if compact then 
+					table.insert(tableCompactOutputLine, attrValueString)
+				else
+					writeLogfile(level, '	' .. attrValueString .. '\n')
+				end
+			end
 		end
 	end
-	writeLogfile(level, '}\n')
+
+	if compact then
+		table.sort(tableCompactOutputLine)
+		writeLogfile(level, '"' .. tableName .. '":{' .. table.concat(tableCompactOutputLine, ', ') .. '\n\t}\n')
+	else
+		writeLogfile(level, '}\n')
+	end
 end
 
 -- closeLogfile: do nothing 
@@ -590,6 +644,9 @@ function openSession(exportParams, publishedCollection, operation)
 	if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
 		return false, 'cancel'
 	end
+
+	-- dump current session parameters to logfile
+	writeTableLogfile(2, 'exportParams', exportParams["< contents >"], 	iif(getLogLevel() > 2, false, true), 'password', "^LR_")
 
 	-- ConvertAPI: required if Export/Publish 
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and not exportParams.cHandle then
