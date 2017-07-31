@@ -806,15 +806,12 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
     			dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
 
     			-- file renaming: 
-    			--	if not Photo StatLr renaming
-    			--		if Export: 	use renderedFilename (Lr renaming options may have been turned on)
-    			--		else:		use srcFilename
-    			--	else: apply Photo StatLr renaming 
-    			dstFilename =	iif(not exportParams.renameDstFile, 
-    							iif(publishMode == 'Export', 			
-    									renderedFilename, 
-    									srcFilename),
-    									PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename'))
+    			--	if not Photo StatLr renaming then use srcFilename
+    			if exportParams.renameDstFile then
+    				dstFilename = PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename')
+    			else
+    				dstFilename = srcFilename
+    			end
        			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
     			
     			-- check if dstRoot or dstFilename contains missing required metadata ('?') (which means: skip photo) 
@@ -945,6 +942,20 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	}
 	
 	writeLogfile(2, "processRenderedPhotos starting\n" )
+	
+--[[
+	local devPresetFolders = LrApplication.developPresetFolders()
+	for i = 1, #devPresetFolders do
+		writeLogfile(2, string.format("developPresetFolder: %s -  %s\n", devPresetFolders[i]:getName(), devPresetFolders[i]:getPath()))
+	end
+	
+	local watermarkFile = io.open('C:\\\Users\\\martin\\\AppData\\\Roaming\\\Adobe\\\Lightroom\\\Watermarks\\\SM.lrtemplate', 'r')
+	if not watermarkFile then
+		writeLogfile(1, "updateExportSettings: Cannot read watermark file!\n" )
+		return
+	end
+	writeLogfile(2, "Watermark begins with: " .. watermarkFile:read() .. "\n")
+]]
 	
 	-- check if this rendition process is an export or a publish
 	local publishedCollection = exportContext.publishedCollection
@@ -1079,12 +1090,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			--	if not Photo StatLr renaming
 			--		if Export: 	use renderedFilename (Lr renaming options may have been turned on)
 			--		else:		use srcFilename
-			--	else: apply Photo StatLr renaming 
-			dstFilename =	iif(not exportParams.renameDstFile, 
-							iif(publishMode == 'Export', 			
-									renderedFilename, 
-									srcFilename),
-									PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename'))
+			if exportParams.renameDstFile then
+				dstFilename = PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename')
+			else
+				dstFilename = iif(publishMode == 'Export', 	renderedFilename, srcFilename)
+			end
    			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
 																			
 			-- check if dstRoot or dstFilename contains missing required metadata ('?') (which means: skip photo) 
