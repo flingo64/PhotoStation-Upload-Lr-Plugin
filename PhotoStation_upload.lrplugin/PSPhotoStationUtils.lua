@@ -550,6 +550,17 @@ function PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename,
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- getSharedPhotoColorLabel (h, sharedAlbumName, dstFilename, isVideo) 
+-- returns the color label of a shared photo
+function PSPhotoStationUtils.getSharedPhotoColorLabel(h, sharedAlbumName, dstFilename, isVideo)
+	local photoInfos, errorCode = PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename, isVideo, true)
+
+	if not photoInfos then return nil, errorCode end 
+
+	return photoInfos.info.color_label
+end
+
+---------------------------------------------------------------------------------------------------------
 -- getSharedPhotoPublicUrl (h, sharedAlbumName, dstFilename, isVideo) 
 -- returns the public share url of a shared photo
 function PSPhotoStationUtils.getSharedPhotoPublicUrl(h, sharedAlbumName, dstFilename, isVideo)
