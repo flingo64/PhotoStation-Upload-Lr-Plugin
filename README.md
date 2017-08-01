@@ -58,8 +58,8 @@ Installation
 =============
 - install Synology Photo Station Uploader, if not already done
 - install exiftool (see credits below), if not already done<br>
-  Under Windows, __don't use "Run this program as administrator"__ setting (otherwise a command box will open everytime it is used and the plugin will not be able to get the output from exiftool)!
-  Under Windows, use __'exiftool.exe'__ instead of 'exiftool(-k).exe' as program name (otherwise the plugin can't terminate the exiftool background process when done)! 
+  On Windows, __don't use "Run this program as administrator"__ setting (otherwise a command box will open everytime it is used and the plugin will not be able to get the output from exiftool)!<br>
+  On Windows, use __'exiftool.exe'__ instead of __'exiftool(-k).exe'__ as program name (otherwise the plugin can't terminate the exiftool background process when done)! 
 - unzip the downloaded archive
 - copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
 - In Lightroom:
