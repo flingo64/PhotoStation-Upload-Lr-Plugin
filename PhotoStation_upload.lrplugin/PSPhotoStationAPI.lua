@@ -328,6 +328,26 @@ end
 ]]
 
 ---------------------------------------------------------------------------------------------------------
+-- getSharedAlbumInfo (h, sharedAlbumName) 
+function PSPhotoStationAPI.getSharedAlbumInfo (h, sharedAlbumName) 
+	local formData = 'method=getinfo_public&' ..
+					 'version=1&' .. 
+					 'public_share_id=' .. PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName) 
+
+	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not respArray then return false, errorCode end 
+
+	if respArray.data then
+		writeLogfile(3, string.format('getSharedAlbumInfo(%s) returns infos for album id %d.\n', sharedAlbumName, respArray.data.shared_album.id))
+		return respArray.data.sharedAlbum
+	else
+		writeLogfile(3, string.format('getSharedAlbumInfo(%s) returns no info.\n', sharedAlbumName))
+		return nil
+	end
+end
+
+---------------------------------------------------------------------------------------------------------
 -- getSharedPhotoComments (h, sharedAlbumName, dstFilename, isVideo) 
 function PSPhotoStationAPI.getSharedPhotoComments (h, sharedAlbumName, dstFilename, isVideo)
 	local formData = 'method=list_comment&' ..
