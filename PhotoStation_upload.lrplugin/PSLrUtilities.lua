@@ -270,13 +270,15 @@ end
 --	- undefined optional metadata will be substituted by their default or '' if no default
 function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 
+	writeLogfile(3, string.format("evaluatePathOrFilename(path '%s', type '%s' \n", ifnil(path, '<Nil>'), type)) 
+
 	if (not path or not string.find(path, "{", 1, true)) then
 		return normalizeDirname(path)
 	end
 
 	if 	type == 'filename' 
 	and (string.find(path, "/", 1, true) or string.find(path, "\\", 1, true)) then
-		writeLogfile(3, string.format("evaluatePathOrFilename: filenane %s must not contain / or \\ \n", path)) 
+		writeLogfile(3, string.format("evaluatePathOrFilename: filename %s must not contain / or \\ \n", path)) 
 		return '?'
 	end
 
