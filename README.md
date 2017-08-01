@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.4.1<br>
+Version 6.4.2<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -38,13 +38,14 @@ Requirements
 	- MacOS 10.9.5	
 	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
 	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
-	- MacOS 10.12.0, 10.12.1, 10.12.2, 10.12.3, 10.12.4, 10.12.5
+	- MacOS 10.12.0, 10.12.1, 10.12.2, 10.12.3, 10.12.4, 10.12.5, 10.12.6
+	- MacOS 10.13.0
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
-	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10
+	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12
 * Synology Photo Station:
-	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 (tested)
+	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 (tested), Photo Station (6.7)
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
 	- ImageMagick/convert(.exe)
 	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
@@ -57,7 +58,8 @@ Installation
 =============
 - install Synology Photo Station Uploader, if not already done
 - install exiftool (see credits below), if not already done<br>
-  Under Windows, __don't use "Run this program as administrator"__ setting!
+  Under Windows, __don't use "Run this program as administrator"__ setting (otherwise a command box will open everytime it is used and the plugin will not be able to get the output from exiftool)!
+  Under Windows, use __'exiftool.exe'__ instead of 'exiftool(-k).exe' as program name (otherwise the plugin can't terminate the exiftool background process when done)! 
 - unzip the downloaded archive
 - copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
 - In Lightroom:
