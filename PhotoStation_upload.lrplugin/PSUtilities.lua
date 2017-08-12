@@ -352,11 +352,11 @@ local function getAttrValueOutputString(key, value, pwKeyPattern, hideKeyPattern
 	end
 end
 
--- writeTableLogfile (level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern)
+-- writeTableLogfile (level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern, isObservableTable)
 -- output a table to logfile, max one level of nested tables
 --   do not output keys matching hideKeyPattern
 --   obfuscate value for keys matching pwKeyPattern
-function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern)
+function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern, isObservableTable)
 	if level > ifnil(loglevel, 2) then return end
 	
 	local tableCompactOutputLine = {}
@@ -366,8 +366,17 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 		return
 	end
 	
+	-- the pairs() iterator is different for observebale tables
+	local pairs_r1, pairs_r2, pairs_r3
+	if isObservableTable then
+		pairs_r1, pairs_r2, pairs_r3 = printTable:pairs()
+	else
+		pairs_r1, pairs_r2, pairs_r3 = pairs(printTable)
+	end
+	
 	if not compact then writeLogfile(level, '"' .. tableName .. '":{\n') end
-	for key, value in pairs( printTable ) do
+--	for key, value in pairs( printTable ) do
+	for key, value in pairs_r1, pairs_r2, pairs_r3 do
 		if type(key) == 'table' then
 			local outputLine = {}
 			if not compact then
@@ -646,7 +655,8 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- dump current session parameters to logfile
-	writeTableLogfile(2, 'exportParams', exportParams["< contents >"], 	iif(getLogLevel() > 2, false, true), 'password', "^LR_")
+--	writeTableLogfile(2, 'exportParams', exportParams["< contents >"], 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"))
+	writeTableLogfile(2, 'exportParams', exportParams, 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"), true)
 
 	-- ConvertAPI: required if Export/Publish 
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and not exportParams.cHandle then
