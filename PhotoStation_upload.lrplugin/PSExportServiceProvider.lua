@@ -94,9 +94,9 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Station acc. to collection sort order 
 
 		-- upload options / exif translation parameters
-		{ key = 'exifTranslate', 		default = true },	-- make exif translations: requires exiftool
+		{ key = 'exifTranslate', 		default = false },	-- make exif translations: requires exiftool
 		{ key = 'exifXlatFaceRegions',	default = false },	-- translate Lr/Picasa face regions to PS face regions
-		{ key = 'exifXlatLabel', 		default = true },	-- translate Lr label (red, green, ...) to PS keyword
+		{ key = 'exifXlatLabel', 		default = false },	-- translate Lr label (red, green, ...) to PS keyword
 		{ key = 'exifXlatRating', 		default = false},	-- translate Lr star rating (XMP:rating) to PS keywords
 
 		-- thumbnail parameters
