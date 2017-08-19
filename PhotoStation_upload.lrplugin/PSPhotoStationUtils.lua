@@ -616,10 +616,10 @@ function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, t
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos) 
+-- createAndAddPhotosToSharedAlbum(h, sharedAlbumName, isAdvanced, isPublic, sharedAlbumPassword, photos) 
 -- create a Shared Album and add a list of photos to it
 -- returns success and share-link (if public)
-function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName, mkSharedAlbumAdvanced, mkSharedAlbumPublic, sharedAlbumPassword, photos)
+function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName, isAdvanced, isPublic, sharedAlbumPassword, photos)
 	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 	local isNewSharedAlbum
 	local sharedAlbumAttributes = {}
@@ -645,10 +645,10 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	
 	if not success then return false end 
 	
-	sharedAlbumAttributes.is_shared = mkSharedAlbumPublic
+	sharedAlbumAttributes.is_shared = isPublic
 	
 	--preserve old share start/time end restriction if album was and will be public
-	if		mkSharedAlbumPublic 	
+	if		isPublic 	
 		and not isNewSharedAlbum 
 		and sharedAlbumInfo 
 		and sharedAlbumInfo.additional 
@@ -659,8 +659,8 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 		sharedAlbumAttributes.end_time 		= sharedAlbumInfo.additional.public_share.end_time
 	end
 		
-	if mkSharedAlbumAdvanced then
-		sharedAlbumAttributes.is_advanced = true
+	if isAdvanced then
+		sharedAlbumAttributes.isAdvanced = true
 		
 		if sharedAlbumPassword then
 			sharedAlbumAttributes.enable_password = true
@@ -702,7 +702,7 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 
 	if not shareResult then return false end
 	
-	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n', sharedAlbumName, iif(mkSharedAlbumAdvanced, 'advanced', 'old'), iif(mkSharedAlbumPublic, 'public', 'private'), iif(sharedAlbumPassword, 'w/ passwd', 'w/o passwd'), #photos))
+	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n', sharedAlbumName, iif(isAdvanced, 'advanced', 'old'), iif(isPublic, 'public', 'private'), iif(sharedAlbumPassword, 'w/ passwd', 'w/o passwd'), #photos))
 	return true, shareResult.public_share_url	
 end
 
