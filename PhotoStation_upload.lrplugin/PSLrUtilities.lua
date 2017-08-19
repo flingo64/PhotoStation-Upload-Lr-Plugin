@@ -557,9 +557,9 @@ function PSLrUtilities.addKeywordSynonyms(keywordId, synonyms)
 end
 
 --------------------------------------------------------------------------------------------
--- removeKeywordSynonyms(keywordId, synonyms)
+-- removeKeywordSynonyms(keywordId, synonyms, isPattern)
 -- remove a list of synonym patterns from a keyword
-function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms)
+function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms, isPattern)
 	local catalog = LrApplication.activeCatalog()
 	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
 	
@@ -573,7 +573,7 @@ function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms)
 	
 	for i = #keywordSynonyms, 1, -1 do
 		for j = 1, #synonyms do
-    		if string.find(keywordSynonyms[i], synonyms[j], 1, true) then
+    		if string.find(keywordSynonyms[i], synonyms[j], 1, not ifnil(isPattern, false)) then
 				writeLogfile(4, string.format("Keyword '%s': removing %d. synonym '%s'\n", keyword:getName(), i, synonyms[j]))
     			table.remove(keywordSynonyms, i)
     			synonymsRemoved = true
@@ -676,14 +676,16 @@ function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName
 end
 
 --------------------------------------------------------------------------------------------
--- getServiceSharedAlbumKeywords(pubServiceName, psVersion)
+-- getServiceSharedAlbumKeywords(pubService, psVersion)
 --   returns a list of all Shared Album keywords for a collection, i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getServiceSharedAlbumKeywords(pubServiceName, psVersion)
+function PSLrUtilities.getServiceSharedAlbumKeywords(pubService, psVersion)
 	local sharedAlbumKeywords 		= {} 	
 	local numSharedAlbumKeywords 	= 0
-	local sharedAlbumKeywordRoot = "Photo StatLr|Shared Albums|" .. pubServiceName
+	local sharedAlbumKeywordRoot = "Photo StatLr|Shared Albums|" .. pubService:getName()
+	local pubServiceSettings = pubService:getPublishSettings()
 	local pubServiceSharedAlbumRootKeyword
 
+	-- make sure root of Shared Album keyword hierarchy is available
 	LrApplication.activeCatalog():withWriteAccessDo( 
 		'GetPublishServiceSharedAlbumRoot',
 		function(context)
@@ -697,14 +699,32 @@ function PSLrUtilities.getServiceSharedAlbumKeywords(pubServiceName, psVersion)
 		local keyword = keywords[i]
 		local keywordSynonyms = keyword:getSynonyms()
    		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
+ 
+  		local privateUrlIndex = findInStringTable(keywordSynonyms, '.*#!SharedAlbums.*', true)
+  		local privateUrl
+		if privateUrlIndex then privateUrl = keywordSynonyms[privateUrlIndex] end
+ 
+  		local publicUrlIndex = findInStringTable(keywordSynonyms, '.*' .. regexpEscape(pubServiceSettings.servername) .. '/photo/share/.*', true)
+  		local publicUrl
+		if publicUrlIndex then publicUrl = keywordSynonyms[publicUrlIndex] end
+		
+  		local publicUrl2Index, publicUrl2
+  		if ifnil(pubServiceSettings.servername2, '') ~= '' then
+  			publicUrl2Index = findInStringTable(keywordSynonyms, '.*' .. regexpEscape(pubServiceSettings.servername2) .. '.*', true)
+			if publicUrl2Index then publicUrl2 = keywordSynonyms[publicUrl2Index] end
+		end
+		
    		sharedAlbumKeywords[numSharedAlbumKeywords] = {
    				keywordId			= keyword.localIdentifier,
    				sharedAlbumName 	= keyword:getName(), 
-   				mkSharedAlbumPublic	= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
+   				isPublic			= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
+   				privateUrl			= privateUrl,
+   				publicUrl			= publicUrl,
+   				publicUrl2			= publicUrl2,
    		}
 		-- allow for Shared Album password for Photo Station 6.6 and above
 		if psVersion >= 66 then
-    		sharedAlbumKeywords[numSharedAlbumKeywords]["mkSharedAlbumAdvanced"] = true
+    		sharedAlbumKeywords[numSharedAlbumKeywords]["isAdvanced"] = true
     		local sharedAlbumPassword
     		for i = 1,  #keywordSynonyms do
     			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
@@ -716,7 +736,7 @@ function PSLrUtilities.getServiceSharedAlbumKeywords(pubServiceName, psVersion)
 	    end
 	end
 	writeLogfile(3, string.format("getServiceSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
-									pubServiceName, table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
+									pubService:getName(), table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
 	return sharedAlbumKeywords   		
 
 end
@@ -743,11 +763,11 @@ function PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psV
     		sharedAlbumKeywords[numSharedAlbumKeywords] = {
     				keywordId			= keyword.localIdentifier,
     				sharedAlbumName 	= keyword:getName(), 
-    				mkSharedAlbumPublic	= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
+    				isPublic			= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
     		}
 			-- allow for Shared Album password for Photo Station 6.6 and above
 			if psVersion >= 66 then
-	    		sharedAlbumKeywords[numSharedAlbumKeywords]["mkSharedAlbumAdvanced"] = true
+	    		sharedAlbumKeywords[numSharedAlbumKeywords]["isAdvanced"] = true
 	    		local sharedAlbumPassword
 	    		for i = 1,  #keywordSynonyms do
 	    			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
@@ -822,8 +842,8 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 	for i = 1, #sharedAlbumsLr do
 		local keywordId				= sharedAlbumsLr[i].keywordId
 		local sharedAlbumName		= sharedAlbumsLr[i].sharedAlbumName
-		local mkSharedAlbumPublic 	= sharedAlbumsLr[i].mkSharedAlbumPublic
-		local mkSharedAlbumAdvanced	= sharedAlbumsLr[i].mkSharedAlbumAdvanced
+		local isPublic 				= sharedAlbumsLr[i].isPublic
+		local isAdvanced			= sharedAlbumsLr[i].isAdvanced
 		local sharedAlbumPassword	= sharedAlbumsLr[i].sharedAlbumPassword
 		
 		local photoSharedAlbum 		= publishedCollectionId .. ':' .. sharedAlbumName
@@ -843,8 +863,8 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
     			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album '%s' as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
     				sharedAlbumName 		= sharedAlbumName, 
-    				mkSharedAlbumAdvanced 	= mkSharedAlbumAdvanced, 
-    				mkSharedAlbumPublic 	= mkSharedAlbumPublic, 
+    				isAdvanced 				= isAdvanced, 
+    				isPublic 				= isPublic, 
     				sharedAlbumPassword 	= sharedAlbumPassword, 
     				keywordId 				= keywordId, 
     				addPhotos 				= {}, 

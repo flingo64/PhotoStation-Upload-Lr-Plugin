@@ -1059,7 +1059,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local serviceSharedAlbumComments = {}
 	if publishSettings.pubCommentsDownload then
 		-- get all Shared Albums belonging to this service						 	
-		local serviceSharedAlbums = PSLrUtilities.getServiceSharedAlbumKeywords(publishServiceName, publishSettings.psVersion)
+		local serviceSharedAlbums = PSLrUtilities.getServiceSharedAlbumKeywords(publishedCollection:getService(), publishSettings.psVersion)
 		
 		-- download comment list for all shared albums of this publish service
 		for _, sharedAlbum in ipairs(serviceSharedAlbums) do
