@@ -213,14 +213,12 @@ function findInAttrValueTable(inputTable, indexField, indexValue, valueField)
 end
 
 --------------------------------------------------------------------------------------------
--- findInStringTable(inputTable, string, isPattern)
-function findInStringTable(inputTable, string, isPattern)
+-- findInStringTable(inputTable, string)
+function findInStringTable(inputTable, string)
 	if not inputTable then return nil end
---	writeLogfile(4, string.format("findInStringTable('%s', '%s', %s)\n", table.concat(inputTable, ','), string, iif(isPattern, 'matchPattern', 'matchExact')))
+	
 	for i = 1, #inputTable do
-		if (isPattern and string.match(inputTable[i], string))
-		or (inputTable[i] == string)
-		then return i end
+		if inputTable[i] == string then return i end
 	end
 	
 	return nil
@@ -564,15 +562,6 @@ function urlencode(str)
 		str = string.gsub (str, "\n", "\r\n")
 		str = string.gsub (str, "([^%w ])",function (c) return string.format ("%%%02X", string.byte(c)) end)
 		str = string.gsub (str, " ", "%%20")
-	end
-	return str
-end 
-
----------------------- regexp escaping routines ---------------------------------------------------------
--- regexpEscape(str): escape all regexp special chars to make str a exact match pattern
-function regexpEscape(str)
-	if (str) then
-		str = string.gsub(str, "[%^%$%(%)%%%.%[%]%*%+%-%?]", function (c) return '%' .. c end )
 	end
 	return str
 end 
