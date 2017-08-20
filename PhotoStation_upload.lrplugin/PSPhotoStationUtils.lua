@@ -660,7 +660,7 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 	end
 		
 	if isAdvanced then
-		sharedAlbumAttributes.isAdvanced = true
+		sharedAlbumAttributes.is_advanced = true
 		
 		if sharedAlbumPassword then
 			sharedAlbumAttributes.enable_password = true
