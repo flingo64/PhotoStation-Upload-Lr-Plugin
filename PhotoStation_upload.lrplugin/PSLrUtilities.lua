@@ -648,33 +648,6 @@ function PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(keywordPath, srcPhot
 end
 
 --------------------------------------------------------------------------------------------
--- renameKeywordById(keywordId, newKeywordName)
-function PSLrUtilities.renameKeywordById(keywordId, newKeywordName)
-	local catalog = LrApplication.activeCatalog()
-	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
-	
-	if not keywords or not keywords[1] then
-		return false
-	end
-	
-	local keyword = keywords[1]
-	local oldKeywordName = keyword:getName()
-	if newKeywordName == oldKeywordName then return true end
-	
---	local keywordAttributes = keyword:getAttributes()
-	
-	catalog:withWriteAccessDo( 
-    	'RenameKeywordById',
-    	function(context)
-    		keyword:setAttributes({keywordName = newKeywordName})
-    	end,
-    	{timeout=5}
-    )
-	
-	return true
-end
-
---------------------------------------------------------------------------------------------
 -- renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
 function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
 	writeLogfile(3, string.format("renameKeyword('%s', '%s', '%s', '%s')\n", table.concat(ifnil(rootKeywords, {}), '|'), ifnil(keywordParent, ''), oldKeywordName, newKeywordName))
