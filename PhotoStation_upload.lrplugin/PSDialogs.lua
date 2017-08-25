@@ -420,7 +420,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search the program in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -430,7 +430,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download the program from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -522,7 +522,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search the program in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -532,7 +532,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download the program from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -775,10 +775,10 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 	}
 	
 	local thumbSharpnessItems = {
-		{ title	= 'None',	value 	= 'None' },
-		{ title	= 'Low',	value 	= 'LOW' },
-		{ title	= 'Medium',	value 	= 'MED' },
-		{ title	= 'High',	value 	= 'HIGH' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/None=None",		value 	= 'None' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/Low=Low",		value 	= 'LOW' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/Medium=Medium",	value 	= 'MED' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/High=High",		value 	= 'HIGH' },
 	}
 	
 	return
