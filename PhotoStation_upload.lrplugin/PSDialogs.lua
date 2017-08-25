@@ -775,10 +775,10 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 	}
 	
 	local thumbSharpnessItems = {
-		{ title	= 'None',	value 	= 'None' },
-		{ title	= 'Low',	value 	= 'LOW' },
-		{ title	= 'Medium',	value 	= 'MED' },
-		{ title	= 'High',	value 	= 'HIGH' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/None=None",		value 	= 'None' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/Low=Low",		value 	= 'LOW' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/Medium=Medium",	value 	= 'MED' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/High=High",		value 	= 'HIGH' },
 	}
 	
 	return
