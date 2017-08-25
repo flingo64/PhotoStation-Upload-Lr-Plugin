@@ -119,7 +119,7 @@ local function updateExportStatus( propertyTable )
 		-- Publish Servic Provider start
 
 		if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenameNoSupp=Lr File Renaming option not supported in Publish mode!"
 			break
 		end
 
