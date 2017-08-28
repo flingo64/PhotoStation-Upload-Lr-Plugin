@@ -876,7 +876,7 @@ function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpd
 		local photoSharedAlbum 		= publishedCollectionId .. ':' .. sharedAlbumName
 		
 		if 		not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) 
-			or	not PSPhotoStationUtils.getSharedPhotoInfo(exportParams.uHandle, sharedAlbumName, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), true)
+			or	not PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'sharedAlbum', sharedAlbumName, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), true)
 		then
     		local sharedAlbumUpdate = nil
     		

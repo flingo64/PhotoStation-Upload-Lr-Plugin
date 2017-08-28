@@ -532,8 +532,9 @@ local function uploadVideoMetadata(functionContext, videosUploaded, exportParams
 			local maxWait = 60
 			
 			while not photoThere and maxWait > 0 do
+				local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
 				local isVideo, dontUseCache = true, false
-				if not PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, dstFilename, isVideo, dontUseCache) then
+				if not PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'album', dstAlbum, dstFilename, isVideo, dontUseCache) then
 					LrTasks.sleep(1)
 					maxWait = maxWait - 1
 				else
@@ -1136,8 +1137,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in Photo Station
+				local dstAlbum = ifnil(string.match(publishedPhotoId , '(.*)\/[^\/]+'), '/')
 				local useCache = true
-				local photoInfos, errorCode = PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), useCache)
+				local photoInfos, errorCode = PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'album', dstAlbum, publishedPhotoId, 
+																						srcPhoto:getRawMetadata('isVideo'), useCache)
 				if photoInfos then
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
