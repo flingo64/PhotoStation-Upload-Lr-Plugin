@@ -183,6 +183,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
                     		alignment		= 'left',
                     		font			= '<system/small>',
             				width 			= columnWidth.start,
+            				-- TODO: validate date input
                 	   },
                 
                 		f:edit_field {
@@ -193,6 +194,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
                     		alignment		= 'left',
                     		font			= '<system/small>',
                     		width 			= columnWidth.stop,
+            				-- TODO: validate date input
                 	   },
                 
                 		f:edit_field {
@@ -528,6 +530,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
 				},
 				
 				f:row {
+        			-- TODO: Make this a Show/Hide button
         			f:checkbox {
         				title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/ShowPasswords=Show",
         				value 			= bind 'showPasswords',
@@ -624,6 +627,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
         					font			= '<system/small>', 
 							fill_horizontal	= 1,
             				action 			= function()
+            					-- TODO: Download Colors
             				end,
             			},   			
 					},
@@ -634,6 +638,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
         					font			= '<system/small>', 
 							fill_horizontal	= 1,
             				action 			= function()
+            					-- TODO: Download Public Comments
             				end,
             			},   			
 					},
@@ -922,11 +927,13 @@ function sharedAlbumMgmt.writeAllSharedAlbumsToLr()
 		if sharedAlbum.wasDeleted then
 			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: deleting Album\n",
 								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
+			-- TODO: delete album
 		end
 		
 		if sharedAlbum.wasAdded then
 			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: adding Album\n",
 								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
+			-- TODO: add album
 		end
 
 		if sharedAlbum.wasRenamed then
@@ -993,12 +1000,14 @@ function sharedAlbumMgmt.writeAllSharedAlbumsToPS()
 		if sharedAlbum.wasDeleted then
 			-- delete Shared Album in Photo Station
 			writeLogfile(3, string.format('writeAllSharedAlbumsToPS: deleting %s.\n', sharedAlbum.sharedAlbumName))
+			-- TODO: delete album in PS
 			numDeletes = numDeletes + 1
 			break
 		end
 		
 		if sharedAlbum.wasAdded then
 			-- add Shared Album in Photo Station
+			-- TODO: add album in PS
 			if shareResult then
 				numAdds = numAdds + 1
 			else
