@@ -8,17 +8,19 @@ Photo Station utilities:
 	- getErrorMsg
 
 	- getAlbumId
-	- getPhotoId
-
-	- isSharedAlbumPublic
-	- getSharedAlbumId
-	- getSharedAlbumShareId
-	
 	- getAlbumUrl
+	- getPhotoId
 	- getPhotoUrl
 
-	- getPhotoInfo
+	- getSharedAlbumId
+	- isSharedAlbumPublic
+	- getSharedAlbumShareId
 	
+	- getPhotoInfoFromList
+	
+	- getSharedPhotoPublicUrl
+	- getPublicSharedPhotoColorLabel
+
 	- createAndAddPhotoTag
 	- createAndAddPhotoTagList
 
@@ -100,122 +102,85 @@ local PSAPIerrorMsgs = {
 	[12038] = 'Http error: serverCertificateHasUnknownRoot',
 }
 
--- ========================================== Album Content cache ==============================================
--- the Album Content cache holds Album contents for the least recently read albums
+-- ========================================== Generic Content cache ==============================================
+-- Used for Albums, Shared Albums (private) and Public Shared Albums.
+-- The Album Content cache holds Album contents for the least recently read albums
+local contentCache = {
+	["album"] = {
+		cache 			= {},
+		timeout			= 60,
+		listFunction	= PSPhotoStationAPI.listAlbum,
+	},
+	
+	["sharedAlbum"] = {
+		cache 			= {},
+		timeout			= 60,
+		listFunction	= PSPhotoStationAPI.listSharedAlbum,
+	},
 
-local albumContentCache = {}
-local albumContentCacheTimeout = 60	-- 60 seconds cache time
- 
+	["publicSharedAlbum"] = {
+		cache 			= {},
+		timeout			= 60,
+		listFunction	= PSPhotoStationAPI.listPublicSharedAlbum,
+	},
+}
+
 ---------------------------------------------------------------------------------------------------------
--- albumContentCacheCleanup: remove old entries from cache
-local function albumContentCacheCleanup()
+-- contentCacheCleanup: remove old entries from cache
+local function contentCacheCleanup(cacheName)
+	local albumContentCache = contentCache[cacheName].cache
+	
 	for i = #albumContentCache, 1, -1 do
 		local cachedAlbum = albumContentCache[i]
 		if cachedAlbum.validUntil < LrDate.currentTime() then 
-			writeLogfile(3, string.format("albumContentCacheCleanup(); removing %s\n", cachedAlbum.albumPath))
+			writeLogfile(3, string.format("contentCacheCleanup(%s); removing %s\n", cacheName, cachedAlbum.albumPath))
 			table.remove(albumContentCache, i)
 		end
 	end
 end
 
 ---------------------------------------------------------------------------------------------------------
--- albumContentCacheList: returns all photos/videos and optionally albums in a given album via album cache
+-- contentCacheList: returns all photos/videos and optionally albums in a given album via album cache
 -- returns
 --		albumItems:		table of photo infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-local function albumContentCacheList(h, dstDir, listItems)
-	albumContentCacheCleanup()
+local function contentCacheList(cacheName, h, albumName, listItems)
+	contentCacheCleanup(cacheName)
+	local albumContentCache = contentCache[cacheName].cache
 	
 	for i = 1, #albumContentCache do
 		local cachedAlbum = albumContentCache[i]
-		if cachedAlbum.albumPath == dstDir then 
+		if cachedAlbum.albumPath == albumName then 
 			return cachedAlbum.albumItems
 		end
 	end
 	
 	-- not found in cache: get it from Photo Station
-	local albumItems, errorCode = PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
+	local albumItems, errorCode = contentCache[cacheName].listFunction(h, albumName, listItems)
 	if not albumItems then
 		if 	errorCode ~= 408  	-- no such file or dir
 		and errorCode ~= 417	-- no such dir for non-administrative users , see GitHub issue 17
 		and errorCode ~= 101	-- no such dir in PS 6.6
 		then
-			writeLogfile(2, string.format('albumContentCacheList: Error on listAlbum: %d\n', errorCode))
+			writeLogfile(2, string.format('contentCacheList(%s): Error on listAlbum: %d\n', cacheName, errorCode))
 		   	return nil, errorCode
 		end
 		albumItems = {} -- avoid re-requesting non-existing album 
 	end
 	
 	local cacheEntry = {}
-	cacheEntry.albumPath = dstDir
+	cacheEntry.albumPath = albumName
 	cacheEntry.albumItems = albumItems
-	cacheEntry.validUntil = LrDate.currentTime() + albumContentCacheTimeout
+	cacheEntry.validUntil = LrDate.currentTime() + contentCache[cacheName].timeout
 	table.insert(albumContentCache, 1, cacheEntry)
 	
-	writeLogfile(3, string.format("albumContentCacheList(%s): added to cache with %d items\n", dstDir, #albumItems))
-	
-	return albumItems
-end
-
--- ==================================== Shared Album content cache ==============================================
--- the Shared Album content cache holds Shared Album contents for the least recently read albums
-
-local sharedAlbumContentCache = {}
-local sharedAlbumContentCacheTimeout = 60	-- 60 seconds cache time
- 
----------------------------------------------------------------------------------------------------------
--- sharedAlbumContentCacheCleanup: remove old entries from cache
-local function sharedAlbumContentCacheCleanup()
-	for i = #sharedAlbumContentCache, 1, -1 do
-		local cachedAlbum = sharedAlbumContentCache[i]
-		if cachedAlbum.validUntil < LrDate.currentTime() then 
-			writeLogfile(3, string.format("sharedAlbumContentCacheCleanup(); removing %s\n", cachedAlbum.albumPath))
-			table.remove(sharedAlbumContentCache, i)
-		end
-	end
-end
-
----------------------------------------------------------------------------------------------------------
--- sharedAlbumContentCacheList: returns all photos/videos and optionally albums in a given album via album cache
--- returns
---		albumItems:		table of photo infos, if success, otherwise nil
---		errorcode:		errorcode, if not success
-local function sharedAlbumContentCacheList(h, dstDir, listItems)
-	sharedAlbumContentCacheCleanup()
-	
-	for i = 1, #sharedAlbumContentCache do
-		local cachedAlbum = sharedAlbumContentCache[i]
-		if cachedAlbum.albumPath == dstDir then 
-			return cachedAlbum.albumItems
-		end
-	end
-	
-	-- not found in cache: get it from Photo Station
-	local albumItems, errorCode = PSPhotoStationAPI.listSharedAlbum(h, dstDir, listItems)
-	if not albumItems then
-		if 	errorCode ~= 408  	-- no such file or dir
-		and errorCode ~= 417	-- no such dir for non-administrative users , see GitHub issue 17
-		and errorCode ~= 101	-- no such dir in PS 6.6
-		then
-			writeLogfile(2, string.format('sharedAlbumContentCacheList: Error on listSharedAlbum: %d\n', errorCode))
-		   	return nil, errorCode
-		end
-		albumItems = {} -- avoid re-requesting non-existing album 
-	end
-	
-	local cacheEntry = {}
-	cacheEntry.albumPath = dstDir
-	cacheEntry.albumItems = albumItems
-	cacheEntry.validUntil = LrDate.currentTime() + sharedAlbumContentCacheTimeout
-	table.insert(sharedAlbumContentCache, 1, cacheEntry)
-	
-	writeLogfile(3, string.format("sharedAlbumContentCacheList(%s): added to cache with %d items\n", dstDir, #albumItems))
+	writeLogfile(3, string.format("contentCacheList(%s): added to cache with %d items\n", albumName, #albumItems))
 	
 	return albumItems
 end
 
 -- ===================================== Shared Albums cache ==============================================
--- the Shared Album List cache holds the list of shared album infos
+-- the Shared Album List cache holds the list of shared Albums
 
 local sharedAlbumsCache 				= {}
 local sharedAlbumsCacheTimeout 		= 60	-- 60 seconds cache time
@@ -312,16 +277,15 @@ function PSPhotoStationUtils.getErrorMsg(errorCode)
 end
 
 
---[[ 
-PSPhotoStationUtils.getAlbumId(albumPath)
-	returns the AlbumId of a given Album path (not leading and trailing slashes) in Photo Station
-	AlbumId looks like:
-	album_<AlbumPathInHex>
-	E.g. Album Path:
-		Albums-->Test/2007
-	yields AlbumId:
-		album_546573742f32303037
-]]
+---------------------------------------------------------------------------------------------------------
+-- PSPhotoStationUtils.getAlbumId(albumPath)
+--	returns the AlbumId of a given Album path (not leading and trailing slashes) in Photo Station
+--	AlbumId looks like:
+--		album_<AlbumPathInHex>
+--	E.g. Album Path:
+--		Albums-->Test/2007
+--  yields AlbumId:
+--  	album_546573742f32303037
 function PSPhotoStationUtils.getAlbumId(albumPath)
 	local i
 	local albumId = 'album_'
@@ -337,17 +301,49 @@ function PSPhotoStationUtils.getAlbumId(albumPath)
 	return albumId
 end
 
---[[ 
-getPhotoId(photoPath, isVideo)
-	returns the PhotoId of a given photo path in Photo Station
-	PhotoId looks like:
-		photo_<AlbumPathInHex>_<PhotoPathInHex> or 
-		video_<AlbumPathInHex>_<PhotoPathInHex> or
-	E.g. Photo Path:
-		Albums --> Test/2007/2007_08_13_IMG_7415.JPG
-	yields PhotoId:
-		photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
-]]
+---------------------------------------------------------------------------------------------------------
+-- getAlbumUrl(h, albumPath)
+--	returns the URL of an album in the Photo Station
+--	URL of an album in PS is:
+--		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
+--	E.g. Album Path:
+--		Server: http://diskstation; Standard Photo Station; Album Breadcrumb: Albums/Test/2007
+--	yields PS Photo-URL:
+--		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
+function PSPhotoStationUtils.getAlbumUrl(h, albumPath) 
+	local i
+	local albumUrl
+	local subDirPath = ''
+	local subDirUrl  = ''
+	
+	local albumDirname = split(albumPath, '/')
+	
+	albumUrl = h.serverUrl .. h.psAlbumRoot
+	
+	for i = 1, #albumDirname do
+		if i > 1 then  
+			subDirPath = subDirPath .. '/'
+		end
+		subDirPath = subDirPath .. albumDirname[i]
+		subDirUrl = PSPhotoStationUtils.getAlbumId(subDirPath) 
+		albumUrl = albumUrl .. '/' .. subDirUrl
+	end
+	
+	writeLogfile(3, string.format("getAlbumUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, albumPath, albumUrl))
+	
+	return albumUrl
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getPhotoId(photoPath, isVideo)
+-- 	returns the PhotoId of a given photo path in Photo Station
+-- 	PhotoId looks like:
+-- 		photo_<AlbumPathInHex>_<PhotoPathInHex> or
+-- 		video_<AlbumPathInHex>_<PhotoPathInHex>
+-- 	E.g. Photo Path:
+--		Albums --> Test/2007/2007_08_13_IMG_7415.JPG
+--  yields PhotoId:
+--  	photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 	local i
 	local photoDir, photoFilename = string.match(photoPath , '(.*)\/([^\/]+)')
@@ -372,6 +368,44 @@ function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 --	writeLogfile(4, string.format("getPhotoId(%s) returns %s\n", photoPath, photoId))
 	
 	return photoId
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getPhotoUrl(h, photoPath, isVideo)
+--	returns the URL of a photo/video in the Photo Station
+--	URL of a photo in PS is:
+--		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>/<PhotoId>
+--	E.g. Photo Path:
+--		Server: http://diskstation; Standard Photo Station; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
+--	yields PS Photo-URL:
+--		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
+function PSPhotoStationUtils.getPhotoUrl(h, photoPath, isVideo) 
+	local i
+	local subDirPath = ''
+	local subDirUrl  = ''
+	local photoUrl
+	
+	local albumDir, _ = string.match(photoPath, '(.+)\/([^\/]+)')
+	
+	local albumDirname = split(albumDir, '/')
+	if not albumDirname then albumDirname = {} end
+
+	photoUrl = h.serverUrl .. h.psAlbumRoot
+	
+	for i = 1, #albumDirname do
+		if i > 1 then  
+			subDirPath = subDirPath .. '/'
+		end
+		subDirPath = subDirPath .. albumDirname[i]
+		subDirUrl = PSPhotoStationUtils.getAlbumId(subDirPath) 
+		photoUrl = photoUrl .. '/' .. subDirUrl
+	end
+	
+	photoUrl = photoUrl .. '/' .. PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
+	
+	writeLogfile(3, string.format("getPhotoUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, photoPath, photoUrl))
+	
+	return photoUrl
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -420,156 +454,56 @@ function PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getAlbumUrl(h, albumPath)
---	returns the URL of an album in the Photo Station
---	URL of an album in PS is:
---		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
---	E.g. Album Path:
---		Server: http://diskstation; Standard Photo Station; Album Breadcrumb: Albums/Test/2007
---	yields PS Photo-URL:
---		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
-function PSPhotoStationUtils.getAlbumUrl(h, albumPath) 
-	local i
-	local albumUrl
-	local subDirPath = ''
-	local subDirUrl  = ''
-	
-	local albumDirname = split(albumPath, '/')
-	
-	albumUrl = h.serverUrl .. h.psAlbumRoot
-	
-	for i = 1, #albumDirname do
-		if i > 1 then  
-			subDirPath = subDirPath .. '/'
-		end
-		subDirPath = subDirPath .. albumDirname[i]
-		subDirUrl = PSPhotoStationUtils.getAlbumId(subDirPath) 
-		albumUrl = albumUrl .. '/' .. subDirUrl
-	end
-	
-	writeLogfile(3, string.format("getAlbumUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, albumPath, albumUrl))
-	
-	return albumUrl
-end
-
----------------------------------------------------------------------------------------------------------
--- getPhotoUrl(h, photoPath, isVideo)
---	returns the URL of a photo/video in the Photo Station
---	URL of a photo in PS is:
---		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>/<PhotoId>
---	E.g. Photo Path:
---		Server: http://diskstation; Standard Photo Station; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
---	yields PS Photo-URL:
---		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
-function PSPhotoStationUtils.getPhotoUrl(h, photoPath, isVideo) 
-	local i
-	local subDirPath = ''
-	local subDirUrl  = ''
-	local photoUrl
-	
-	local albumDir, _ = string.match(photoPath, '(.+)\/([^\/]+)')
-	
-	local albumDirname = split(albumDir, '/')
-	if not albumDirname then albumDirname = {} end
-
-	photoUrl = h.serverUrl .. h.psAlbumRoot
-	
-	for i = 1, #albumDirname do
-		if i > 1 then  
-			subDirPath = subDirPath .. '/'
-		end
-		subDirPath = subDirPath .. albumDirname[i]
-		subDirUrl = PSPhotoStationUtils.getAlbumId(subDirPath) 
-		photoUrl = photoUrl .. '/' .. subDirUrl
-	end
-	
-	photoUrl = photoUrl .. '/' .. PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
-	
-	writeLogfile(3, string.format("getPhotoUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, photoPath, photoUrl))
-	
-	return photoUrl
-end
-
----------------------------------------------------------------------------------------------------------
--- getPhotoInfo (h, dstFilename, isVideo, useCache) 
--- return photo infos for a given remote filename
--- returns:
--- 		photoInfos				if remote photo was found
--- 		nil,		nil			if remote photo was not found
--- 		nil,		errorCode	on error
-function PSPhotoStationUtils.getPhotoInfo(h, dstFilename, isVideo, useCache)
-	local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
-	local photoInfos, errorCode
-	if useCache then
-		photoInfos, errorCode=  albumContentCacheList(h, dstAlbum, 'photo,video')
-	else
-		photoInfos, errorCode=  PSPhotoStationAPI.listAlbum(h, dstAlbum, 'photo,video')
-	end
-	
-	if not photoInfos then return nil, errorCode end 
-
-	local photoId = PSPhotoStationUtils.getPhotoId(dstFilename, isVideo)
-	for i = 1, #photoInfos do
-		if photoInfos[i].id == photoId then
-			writeLogfile(3, string.format('getPhotoInfo(%s, useCache %s) found infos.\n', dstFilename, useCache))
-			return photoInfos[i]
-		end
-	end
-	
-	writeLogfile(3, string.format('getPhotoInfo(%s, useCache %s) found no infos.\n', dstFilename, useCache))
-	return nil, nil
-end
-
----------------------------------------------------------------------------------------------------------
--- getSharedPhotoInfo (h, sharedAlbumName, dstFilename, isVideo, useCache) 
--- return photo infos for a photo in a shared album
+-- getPhotoInfoFromList(h, albumType, albumName, dstFilename, isVideo, useCache) 
+-- return photo infos for a photo in a given album list (album, shared album or public shared album)
 -- returns:
 -- 		photoInfos				if remote photo was found
 -- 		nil,					if remote photo was not found
 -- 		nil,		errorCode	on error
-function PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename, isVideo, useCache)
+function PSPhotoStationUtils.getPhotoInfoFromList(h, albumType, albumName, photoName, isVideo, useCache)
 	local photoInfos, errorCode
 	if useCache then
-		photoInfos, errorCode=  sharedAlbumContentCacheList(h, sharedAlbumName, 'photo,video')
+		photoInfos, errorCode=  contentCacheList(albumType, h, albumName, 'photo,video')
 	else
-		photoInfos, errorCode=  PSPhotoStationAPI.listSharedAlbum(h, sharedAlbumName, 'photo,video')
+		photoInfos, errorCode=  contentCache[albumType].listFunction(h, albumName, 'photo,video')
 	end
 	
 	if not photoInfos then return nil, errorCode end 
 
-	local photoId = PSPhotoStationUtils.getPhotoId(dstFilename, isVideo)
+	local photoId = PSPhotoStationUtils.getPhotoId(photoName, isVideo)
 	for i = 1, #photoInfos do
 		if photoInfos[i].id == photoId then
-			writeLogfile(3, string.format('getSharedPhotoInfo(%s, %s, useCache %s) found infos.\n', sharedAlbumName, dstFilename, useCache))
+			writeLogfile(3, string.format("getPhotoInfoFromList('%s', '%s', '%s', useCache %s) found infos.\n", albumType, albumName, photoName, useCache))
 			return photoInfos[i]
 		end
 	end
 	
-	writeLogfile(3, string.format('getSharedPhotoInfo(%s %s, useCache %s) found no infos.\n', sharedAlbumName, dstFilename, useCache))
+	writeLogfile(3, string.format("getPhotoInfoFromList('%s', '%s', '%s', useCache %s) found no infos.\n", albumType, albumName, photoName, useCache))
 	return nil
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getSharedPhotoColorLabel (h, sharedAlbumName, dstFilename, isVideo) 
--- returns the color label of a shared photo
-function PSPhotoStationUtils.getSharedPhotoColorLabel(h, sharedAlbumName, dstFilename, isVideo)
-	local photoInfos, errorCode = PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename, isVideo, true)
+-- getSharedPhotoPublicUrl (h, albumName, photoName, isVideo) 
+-- returns the public share url of a shared photo
+function PSPhotoStationUtils.getSharedPhotoPublicUrl(h, albumName, photoName, isVideo)
+	local photoInfos, errorCode = PSPhotoStationUtils.getPhotoInfoFromList(h, 'sharedAlbum', albumName, photoName, isVideo, true)
+
+	if not photoInfos then return nil, errorCode end 
+
+	return photoInfos.public_share_url
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getPublicSharedPhotoColorLabel (h, albumName, photoName, isVideo) 
+-- returns the color label of a pbulic shared photo
+function PSPhotoStationUtils.getPublicSharedPhotoColorLabel(h, albumName, photoName, isVideo)
+	local photoInfos, errorCode = PSPhotoStationUtils.getPhotoInfoFromList(h, 'publicSharedAlbum', albumName, photoName, isVideo, true)
 
 	if not photoInfos then return nil, errorCode end 
 
 	return photoInfos.info.color_label
 end
 
----------------------------------------------------------------------------------------------------------
--- getSharedPhotoPublicUrl (h, sharedAlbumName, dstFilename, isVideo) 
--- returns the public share url of a shared photo
-function PSPhotoStationUtils.getSharedPhotoPublicUrl(h, sharedAlbumName, dstFilename, isVideo)
-	local photoInfos, errorCode = PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename, isVideo, true)
-
-	if not photoInfos then return nil, errorCode end 
-
-	return photoInfos.public_share_url
-end
 
 ---------------------------------------------------------------------------------------------------------
 -- createAndAddPhotoTag (h, dstFilename, isVideo, type, name) 
