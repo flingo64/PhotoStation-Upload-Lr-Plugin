@@ -28,10 +28,11 @@ Photo Station API functions:
 	- getSharedAlbums
 	- listSharedAlbum
 	- createSharedAlbum
-	- renameSharedAlbum
 	- editSharedAlbum
 	- addPhotosToSharedAlbum
 	- removePhotosFromSharedAlbum
+	- renameSharedAlbum
+	- deleteSharedAlbum
 	
 	- listPublicSharedAlbum
 	- getPublicSharedAlbumLogList
@@ -512,40 +513,17 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- createSharedAlbum(h, name)
-function PSPhotoStationAPI.createSharedAlbum(h, name)
+function PSPhotoStationAPI.createSharedAlbum(h, sharedAlbumName)
 	local formData = 'method=create&' ..
 					 'version=1&' .. 
---					 'item_id=<photo_id>&' ..
-					 'name=' .. urlencode(name) 
+					 'name=' .. urlencode(sharedAlbumName) 
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
 	
 	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('createSharedAlbum(%s) returns sharedAlbumId %s.\n', name, respArray.data.id))
+	writeLogfile(2, string.format('createSharedAlbum(%s) returns sharedAlbumId %s.\n', sharedAlbumName, respArray.data.id))
 	return respArray.data.id
-end
-
----------------------------------------------------------------------------------------------------------
--- renameSharedAlbum(h, sharedAlbumName, newSharedAlbumName)
-function PSPhotoStationAPI.renameSharedAlbum(h, sharedAlbumName, newSharedAlbumName)
-	local albumId  = PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then 
-		writeLogfile(3, string.format('renameSharedAlbum(%s, %s): album not found!\n', sharedAlbumName, newSharedAlbumName))
-		return false, 555
-	end
-	
-	local formData = 'method=edit&' ..
-					 'version=1&' ..
-					 'name='  ..  newSharedAlbumName .. '&' ..
-					 'id=' .. albumId
-
-	local success, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not success then return false, errorCode end 
-
-	writeLogfile(3, string.format('renameSharedAlbum(%s, %s) returns OK.\n', sharedAlbumName, newSharedAlbumName))
-	return true
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -571,7 +549,7 @@ function PSPhotoStationAPI.editSharedAlbum(h, sharedAlbumName, sharedAlbumAttrib
 	
 	if not respArray then return nil, errorCode end 
 
-	writeLogfile(3, string.format('editSharedAlbum(%s, %d attributes) returns shareId %s.\n', sharedAlbumName, numAttributes, respArray.data.shareid))
+	writeLogfile(2, string.format('editSharedAlbum(%s, %d attributes) returns shareId %s.\n', sharedAlbumName, numAttributes, respArray.data.shareid))
 	return respArray.data
 end
 
@@ -650,6 +628,49 @@ function PSPhotoStationAPI.addSharedPhotoComment (h, dstFilename, isVideo, comme
 	return respArray.success
 end
 ]]
+
+---------------------------------------------------------------------------------------------------------
+-- renameSharedAlbum(h, sharedAlbumName, newSharedAlbumName)
+function PSPhotoStationAPI.renameSharedAlbum(h, sharedAlbumName, newSharedAlbumName)
+	local albumId  = PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
+	if not albumId then 
+		writeLogfile(3, string.format('renameSharedAlbum(%s, %s): album not found!\n', sharedAlbumName, newSharedAlbumName))
+		return false, 555
+	end
+	
+	local formData = 'method=edit&' ..
+					 'version=1&' ..
+					 'name='  ..  newSharedAlbumName .. '&' ..
+					 'id=' .. albumId
+
+	local success, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not success then return false, errorCode end 
+
+	writeLogfile(3, string.format('renameSharedAlbum(%s, %s) returns OK.\n', sharedAlbumName, newSharedAlbumName))
+	return true
+end
+
+---------------------------------------------------------------------------------------------------------
+-- deleteSharedAlbum(h, sharedAlbumName)
+function PSPhotoStationAPI.deleteSharedAlbum(h, sharedAlbumName)
+	local albumId  = PSPhotoStationUtils.getSharedAlbumId(h, sharedAlbumName)
+	if not albumId then 
+		writeLogfile(3, string.format('deleteSharedAlbum(%s): album not found, returning OK anyway!\n', sharedAlbumName))
+		return true
+	end
+	
+	local formData = 'method=delete&' ..
+					 'version=1&' ..
+					 'id=' .. albumId
+
+	local success, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
+	
+	if not success then return false, errorCode end 
+
+	writeLogfile(3, string.format('deleteSharedAlbum(%s) returns OK.\n', sharedAlbumName))
+	return true
+end
 
 -- #####################################################################################################
 -- ########################## public shared album management ###########################################

@@ -1,0 +1,11 @@
+https://developer.fundraisingbox.com/v1.0/docs/form-prepopulation-api
+
+https://www.tdh.de/spenden-und-stiften/einzelspende/online-spendenformular.html
+?message_fix=Photo%20StatLr&amount_fix=10&fb_item_id_fix=2696&payment_method=paypal
+
+https://www.aerztederwelt.org/spenden-helfen/jetzt-spenden.html?interval=0&message_fix=Photo%20StatLr&amount_fix=10&fb_item_id_fix=5677&payment_method=paypal
+
+https://www.aktion-deutschland-hilft.de/de/spenden/spenden/?interval=0&message_fix=Photo%20StatLr&amount_fix=10&fb_item_id_fix=8845&payment_method=paypal
+
+
+<!-- Begin FundraisingBox --> <script type='text/javascript'> var fb_config = {  'show_expired': '1',  'target': '_blank',  'domains': 'alogis-ag-hilft', }; var fb_params = ''; for(var key in fb_config) { fb_params += '&'+key+'='+encodeURI(fb_config[key]); } document.write(String.fromCharCode(60)+"script type='text/javascript' src='https://secure.fundraisingbox.com/app/widgetJS?cfl=582ceedb92b14&cfh=7ygs3o1j"+fb_params+"'>"+String.fromCharCode(60)+"/script>"); </script><noscript>Bitte Javascript aktivieren</noscript> <!-- End FundraisingBox --> 

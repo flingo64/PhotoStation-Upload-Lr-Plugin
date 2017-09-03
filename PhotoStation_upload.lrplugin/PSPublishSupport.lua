@@ -389,7 +389,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
 		
 		
-		if PSPhotoStationAPI.deletePic (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
+		if PSPhotoStationAPI.deletePhoto (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, "deletePhotosFromPublishedCollection: '" .. photoId .. "': successfully deleted.\n")
 			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, photoId)
 		
@@ -584,6 +584,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     
     	commentsDownload	= false,
     	pubCommentsDownload	= false,
+    	pubColorDownload	= true,
     
     	publishMode 		= 'Publish',
     	downloadMode		= 'Yes',
@@ -834,7 +835,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 		return false
 	end
 	
-	PSPhotoStationAPI.sortPics(publishSettings.uHandle, albumPath, remoteIdSequence)
+	PSPhotoStationAPI.sortAlbumPhotos(publishSettings.uHandle, albumPath, remoteIdSequence)
 
 	showFinalMessage("Photo StatLr: Sort Photos in Album done", "Sort Photos in Album done.", "info")
 
@@ -941,8 +942,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 
 		writeLogfile(3, string.format("deletePublishedCollection: deleting %s from  %s\n", publishedPath, info.name ))
 
---			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
-		if PSPhotoStationAPI.deletePic(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
+		if PSPhotoStationAPI.deletePhoto(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
 			writeLogfile(2, publishedPath .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
 			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPath)
@@ -996,8 +996,9 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local nPhotos =  #arrayOfPhotoInfo
 	local publishServiceName
 	local publishedCollection, publishedCollectionName
-	local nProcessed = 0 
-	local nComments = 0 
+	local nProcessed 	= 0 
+	local nComments 	= 0 
+	local nColorLabel	= 0 
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
@@ -1038,7 +1039,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end
 
-	if publishSettings.downloadMode == 'No' or not (publishSettings.commentsDownload or publishSettings.pubCommentsDownload) then
+	if publishSettings.downloadMode == 'No' or not (publishSettings.commentsDownload or publishSettings.pubCommentsDownload or publishSettings.pubColorDownload) then
 		writeLogfile(2, string.format("Get comments: comments not enabled for this collection.\n"))
 		closeLogfile()
 		return
@@ -1057,14 +1058,15 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	
 	-- if pubComemntDownload: download a comment list for all shared albums of this publish service						 	
 	local serviceSharedAlbumComments = {}
-	if publishSettings.pubCommentsDownload then
-		-- get all Shared Albums belonging to this service						 	
+
+	-- get all Shared Albums belonging to this service
+	if publishSettings.pubColorDownload or publishSettings.pubCommentsDownload then
 		local serviceSharedAlbums = PSLrUtilities.getServiceSharedAlbumKeywords(publishedCollection:getService(), publishSettings.psVersion)
-		
-		-- download comment list for all shared albums of this publish service
+
+		-- download colors and/or comment list for all shared albums of this publish service
 		for _, sharedAlbum in ipairs(serviceSharedAlbums) do
 			if PSPhotoStationUtils.isSharedAlbumPublic(publishSettings.uHandle, sharedAlbum.sharedAlbumName) then
-				serviceSharedAlbumComments[sharedAlbum.sharedAlbumName] = PSPhotoStationAPI.getSharedAlbumCommentList(publishSettings.uHandle, sharedAlbum.sharedAlbumName)
+				serviceSharedAlbumComments[sharedAlbum.sharedAlbumName] = PSPhotoStationAPI.getPublicSharedAlbumLogList(publishSettings.uHandle, sharedAlbum.sharedAlbumName)
 			end
 		end
 	end
@@ -1116,57 +1118,94 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     		end	
 		end
 
-		if publishSettings.pubCommentsDownload then
+		if publishSettings.pubColorDownload or publishSettings.pubCommentsDownload then
     		-- get photo comments from PS public shared albums, if photo is member of any shared album
     		local photoSharedAlbums = PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
     		if photoSharedAlbums then
     		
        			writeLogfile(4, string.format("Get comments: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
     			for i = 1, #photoSharedAlbums do
-  					-- download comments from this shared album only if:
+  					-- download color label and or comments from this shared album only if:
   					--  - the shared album belongs to this collection
   					-- 	- the shared album is public
   					-- 	- photo is in sharedAlbumCommentList
     				local collectionId, sharedAlbumName = string.match(photoSharedAlbums[i], '(%d+):(.+)')
+    				local psSharedPhotoId 		= PSPhotoStationUtils.getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+	    			local psSharedPhotoLogFound	= findInAttrValueTable(serviceSharedAlbumComments[sharedAlbumName], 'item_id', psSharedPhotoId, 'name')
+	    			 
     				if 		tonumber(collectionId) == publishedCollection.localIdentifier 
     					and	PSPhotoStationUtils.isSharedAlbumPublic(publishSettings.uHandle, sharedAlbumName)
-	    				and findInAttrValueTable(serviceSharedAlbumComments[sharedAlbumName], 
-	    										 'item_id', 
-	    									 	 PSPhotoStationUtils.getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo')), 
-	    									 	 'name')
+	    				and psSharedPhotoLogFound
 					then
-        				local sharedCommentsPS 	= PSPhotoStationAPI.getSharedPhotoComments(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
-        
-                		if sharedCommentsPS and #sharedCommentsPS > 0 then
-        		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album '%s'\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
-                
-                			for j, comment in ipairs( sharedCommentsPS ) do
-                				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
-			    				local commentTimestamp = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local')
-                
-                				local commentLr = {
-                								commentId = photoSharedAlbums[i] .. '_' .. comment.date, -- we need something unique
-                								commentText = comment.comment,
-                								dateCreated = commentTimestamp,
-            	   								username = ifnil(comment.email, ''),
-            	  								realname = ifnil(comment.name, '') .. '@' .. sharedAlbumName .. ' (Public Shared Album)',
-                							}
-                							
-                				table.insert(commentListLr, commentLr)
-
-                   				if commentTimestamp > ifnil(lastCommentTimestamp, 0) then
-                   					lastCommentTimestamp	= commentTimestamp
-
-                   					commentInfo.lastCommentType 	= 'public'
-                   					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
-                   					commentInfo.lastCommentUrl		= PSPhotoStationUtils.getSharedPhotoPublicUrl(publishSettings.uHandle, sharedAlbumName, 
-                   																							 photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
-                   					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
-                   					commentInfo.lastCommentText		= commentLr.commentText
-                				end
-                			end
-    					end
-            		end	
+						
+						if publishSettings.pubColorDownload then
+							local psPubColorLabel = PSPhotoStationUtils.getPublicSharedPhotoColorLabel(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+        		   			writeLogfile(3, string.format("Get comments: %s - found color label '%s' in Shared Album '%s'\n", 
+    		   							photoInfo.remoteId, ifnil(psPubColorLabel, '<nil>'), sharedAlbumName))
+    		   				nColorLabel = nColorLabel + 1
+							-- TODO: set label in Lr
+--[[
+							-- all label actions (labeling and unlabeling) are stored in the photo log, so we have to find the last action
+							local psSharedPhotoLabelColor, psSharedPhotoLabelDate 
+							local psSharedAlbumLog = serviceSharedAlbumComments[sharedAlbumName]
+							
+							for i = 1, #psSharedAlbumLog do
+								local psSharedPhotoLog =  psSharedAlbumLog[i]
+								if psSharedPhotoLog.item_id == psSharedPhotoId and psSharedPhotoLog.category == 'label' then
+	            		   			writeLogfile(3, string.format("Get comments: %s - found label action '%s (%s)' in Shared Album '%s'\n", 
+	            		   							photoInfo.remoteId, psSharedPhotoLog.log, psSharedPhotoLog.date, sharedAlbumName))
+									if not psSharedPhotoLabelDate or psSharedPhotoLog.date > psSharedPhotoLabelDate then
+										psSharedPhotoLabelDate = psSharedPhotoLog.date
+										psSharedPhotoLabelColor = string.match(psSharedPhotoLog.log, '.*%[(%w+)%]')
+		            		   			writeLogfile(3, string.format("Get comments: %s - note label '%s' (%s) in Shared Album '%s'\n", 
+	            		   							photoInfo.remoteId, ifnil(psSharedPhotoLabelColor, '<nil>'), psSharedPhotoLog.date, sharedAlbumName))
+	            		   			end
+								end
+							end
+							-- if we found one ...
+							if psSharedPhotoLabelDate then
+            		   			writeLogfile(3, string.format("Get comments: %s - using label '%s (%s)' in Shared Album '%s'\n", 
+        		   							photoInfo.remoteId, ifnil(psSharedPhotoLabelColor, '<nil>'), psSharedPhotoLabelDate, sharedAlbumName))
+        		   				nColorLabel = nColorLabel + 1
+								-- TODO: set label in Lr
+							end
+]]
+						end
+							
+						if publishSettings.pubCommentsDownload then
+            				local sharedCommentsPS 	= PSPhotoStationAPI.getPublicSharedPhotoComments(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+            
+                    		if sharedCommentsPS and #sharedCommentsPS > 0 then
+            		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album '%s'\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
+                    
+                    			for j, comment in ipairs( sharedCommentsPS ) do
+                    				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
+    			    				local commentTimestamp = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local')
+                    
+                    				local commentLr = {
+                    								commentId = photoSharedAlbums[i] .. '_' .. comment.date, -- we need something unique
+                    								commentText = comment.comment,
+                    								dateCreated = commentTimestamp,
+                	   								username = ifnil(comment.email, ''),
+                	  								realname = ifnil(comment.name, '') .. '@' .. sharedAlbumName .. ' (Public Shared Album)',
+                    							}
+                    							
+                    				table.insert(commentListLr, commentLr)
+    
+                       				if commentTimestamp > ifnil(lastCommentTimestamp, 0) then
+                       					lastCommentTimestamp	= commentTimestamp
+    
+                       					commentInfo.lastCommentType 	= 'public'
+                       					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
+                       					commentInfo.lastCommentUrl		= PSPhotoStationUtils.getSharedPhotoPublicUrl(publishSettings.uHandle, sharedAlbumName, 
+                       																							 photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+                       					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
+                       					commentInfo.lastCommentText		= commentLr.commentText
+                    				end
+                    			end
+        					end
+                		end	
+					end
     			end
     		end
 		end
@@ -1181,8 +1220,11 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
 		
 		writeTableLogfile(4, "commentListLr", commentListLr)
-		commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
-		nComments = nComments + #commentListLr
+		-- if we do not call commentCallback, the photo goes to 'To re-publish'
+--		if publishSettings.commentsDownload or publishSettings.pubCommentsDownload then 
+			commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
+			nComments = nComments + #commentListLr
+--		end
     	
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
@@ -1338,7 +1380,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.locationDownload
     		then
     			local useCache = true
-    			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
+    			local albumName 		= ifnil(string.match(photoInfo.remoteId , '(.*)\/[^\/]+'), '/')
+    			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfoFromList(publishSettings.uHandle, 'album', albumName, photoInfo.remoteId, 
+    																				srcPhoto:getRawMetadata('isVideo'), useCache)
     			local psPhotoInfo 		= psPhotoInfos.info 
     			local psPhotoAdditional = psPhotoInfos.additional
         		if psPhotoInfo then
@@ -1578,7 +1622,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			keywordNamesRemove  = getTableDiff(keywordsExported, tagsPS)
     			
     			-- get list of keyword objects to be removed: only leaf keywords can be removed, cannot remove synonyms or parent keywords 
-   				keywordsRemove 	= PSLrUtilities.getKeywordObjects(srcPhoto, keywordNamesRemove)
+   				keywordsRemove 	= PSLrUtilities.getPhotoKeywordObjects(srcPhoto, keywordNamesRemove)
     			
     			-- allow update of keywords only if keyword were added or changed, not if keywords were removed
     			-- compare w/ effectively removed keywords 

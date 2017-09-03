@@ -634,6 +634,8 @@ function openSession(exportParams, publishedCollection, operation)
         	exportParams.downloadMode	 		= collectionSettings.downloadMode
         	exportParams.commentsDownload 		= collectionSettings.commentsDownload
         	exportParams.pubCommentsDownload	= collectionSettings.pubCommentsDownload
+--        	exportParams.pubColorDownload		= collectionSettings.pubColorDownload
+        	exportParams.pubColorDownload		= true
         	exportParams.titleDownload	 		= collectionSettings.titleDownload
         	exportParams.captionDownload 		= collectionSettings.captionDownload
         	exportParams.tagsDownload	 		= collectionSettings.tagsDownload

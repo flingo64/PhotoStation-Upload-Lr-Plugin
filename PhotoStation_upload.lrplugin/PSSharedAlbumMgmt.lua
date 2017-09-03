@@ -39,9 +39,9 @@ local LrPrefs			= import 'LrPrefs'
 local LrTasks	 		= import 'LrTasks'
 local LrView 			= import 'LrView'
 
-local bind = LrView.bind
-local share = LrView.share
-local conditionalItem = LrView.conditionalItem
+local bind 				= LrView.bind
+local share 			= LrView.share
+local conditionalItem 	= LrView.conditionalItem
 local negativeOfKey 	= LrBinding.negativeOfKey
 
 -- Photo StatLr plug-in
@@ -54,10 +54,18 @@ local sharedAlbumMgmt = {}
 
 -- the following Shared Album attributes are stored in plugin preferences
 local sharedAlbumPrefKeys = {'colorRed', 'colorYellow', 'colorGreen', 'colorBlue', 'colorPurple', 'comments', 'areaTool', 'startTime', 'stopTime'}
+
 -- the following Shared Album attributes are stored in plugin preferences
 local sharedAlbumKeywordKeys = {'keywordId', 'sharedAlbumName', 'sharedAlbumPassword', 'isPublic', 'privateUrl', 'publicUrl', 'publicUrl2'}
--- the following keys may be modified and shall trigger updateRowSharedAlbumParams
-local modifyKeys = {'sharedAlbumPassword', 'isPublic', 'colorRed', 'colorYellow', 'colorGreen', 'colorBlue', 'colorPurple', 'comments', 'areaTool', 'startTime', 'stopTime'}
+
+-- the following keys may be modified in data row and shall trigger updateRowSharedAlbumParams
+local modifyKeys = {'colorRed', 'colorYellow', 'colorGreen', 'colorBlue', 'colorPurple', 'comments', 'areaTool', 'startTime', 'stopTime'}
+
+-- the following keys are visible in activeRow section
+local activeAlbumKeys = {'sharedAlbumName', 'publishServiceName', 'sharedAlbumPassword', 'isPublic', 'privateUrl', 'publicUrl', 'publicUrl2'}
+
+-- the following keys may be modified in activeRow section and shall trigger updateActiveSharedAlbumParams
+local activeAlbumModifyKeys = {'isPublic', 'sharedAlbumPassword'}
 
 local sharedAlbumDefaults = {
 	sharedAlbumPassword	= '',
@@ -80,10 +88,9 @@ local activeCatalog
 local publishServices
 local publishServiceNames
 
-local allSharedAlbums			-- all Shared Albums
-local rowsPropertyTable = {}	-- the visible rows in the dialog
-local nExtraRows 		= 5		-- add this number of rows for additions 
--- local maxRows 			= 10 
+local allSharedAlbums				-- all Shared Albums
+local rowsPropertyTable 	= {}	-- the visible rows in the dialog
+local nExtraRows 			= 5		-- add this number of rows for additions 
 
 local columnWidth = {
 	-- header section
@@ -104,7 +111,7 @@ local columnWidth = {
 	stop			= 70,
 	delete			= 60,
 
-	total			= 800,
+	total			= 740,
 
 	color			= 16,
 	scrollbar		= 50,
@@ -168,7 +175,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             				fill_horizontal	= 1,
                     		f:checkbox {
                     			value 			= bind 'isPublic',
-								enabled 		= bind 'isActive',
+								enabled 		= false,
         	       				immediate 		= true,
                         		alignment		= 'center',
                         		width_in_chars	= 0,
@@ -197,6 +204,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             				-- TODO: validate date input
                 	   },
                 
+--[[
                 		f:edit_field {
               				value 			= bind 'sharedAlbumPassword',
 							enabled 		= bind 'isActive',
@@ -218,6 +226,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             	       		font			= '<system/small>',
         					width 			= columnWidth.password,
            				},
+]]
                 
                 		f:checkbox {
                 			value 			= bind 'areaTool',
@@ -324,18 +333,18 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
 		   			
        				f:row {
             			f:static_text {
-					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album",
+					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album:",
                     		alignment		= 'left',
             				width 			= columnWidth.label,
             		   },
     
             			f:edit_field {
-            		  		value 			= bind 'activeSharedAlbumName',
+            		  		value 			= bind 'sharedAlbumName',
 --[[
             		  		value 			= bind {
-            		  			keys = {'activeSharedAlbumName'},
+            		  			keys = {'sharedAlbumName'},
             		  			operation = function (_, values, _)
-           		  					return ifnil(	values.activeSharedAlbumName,
+           		  					return ifnil(	values.sharedAlbumName,
            		  									LOC "$$$/PSUpload/SharedAlbumMgmt/SelectAlbum=Please select a Shared Album"
 												)
             		  			end,
@@ -345,9 +354,9 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             		  		},
 ]]
             		  		enabled			= bind {
-            		  			keys = {'activeSharedAlbumName'},
+            		  			keys = {'sharedAlbumName'},
             		  			operation = function (_, values, _)
-           		  					return iif(ifnil(values.activeSharedAlbumName, false), true, false)
+           		  					return iif(ifnil(values.sharedAlbumName, false), true, false)
             		  			end,
             		  		},
             		  		immediate		= true,
@@ -357,6 +366,38 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             		   },
     				},
     				
+            		f:row {
+            			f:static_text {
+					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Public=Public:",
+                    		alignment		= 'left',
+            				width 			= columnWidth.label,
+            		   },
+    
+                		f:checkbox {
+                			value 			= bind 'isPublic',
+                    		alignment		= 'center',
+                    		width_in_chars	= 0,
+                		},
+        			},
+
+
+					f:row {
+        				f:static_text {
+        		  			title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Password=Password:",
+                			alignment		= 'left',
+            				width 			= columnWidth.label,
+    					},
+
+                		f:edit_field {
+              				value 			= bind 'sharedAlbumPassword',
+        					visible			= bind 'isPublic',	
+               				immediate 		= true,
+                    		alignment		= 'left',
+            	       		font			= '<system/small>',
+            				width 			= columnWidth.data,
+           				},
+					},
+					
        				f:row {
             			f:static_text {
             		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/privateUrl=Private URL:",
@@ -365,13 +406,13 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             		   },
     
                 		f:static_text {
-                	  		title 			= bind 'activePrivateUrl',
+                	  		title 			= bind 'privateUrl',
                     		alignment		= 'left',
             				width 			= columnWidth.data,
             				text_color		= LrColor("blue"),
                     		font			= '<system/small>',
             				mouse_down		= function()
-           						LrHttp.openUrlInBrowser(propertyTable.activePrivateUrl)
+           						LrHttp.openUrlInBrowser(propertyTable.privateUrl)
            					end,
                 	   },
        				},
@@ -384,13 +425,13 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             		   },
     
                 		f:static_text {
-                	  		title 			= bind 'activePublicUrl',
+                	  		title 			= bind 'publicUrl',
                     		alignment		= 'left',
             				text_color		= LrColor("blue"),
                     		font			= '<system/small>',
             				width 			= columnWidth.data,
             				mouse_down		= function()
-           						LrHttp.openUrlInBrowser(propertyTable.activePublicUrl)
+           						LrHttp.openUrlInBrowser(propertyTable.publicUrl)
            					end,
                 	   },
                 	   
@@ -404,13 +445,13 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
             		   },
     
                 		f:static_text {
-                	  		title 			= bind 'activePublicUrl2',
+                	  		title 			= bind 'publicUrl2',
                     		alignment		= 'left',
             				text_color		= LrColor("blue"),
                     		font			= '<system/small>',
             				width 			= columnWidth.data,
             				mouse_down		= function()
-            					LrHttp.openUrlInBrowser(propertyTable.activePublicUrl2)
+            					LrHttp.openUrlInBrowser(propertyTable.publicUrl2)
            					end,
                 		},
        				},  				
@@ -430,19 +471,21 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
 	    				place_vertical	= 0.8,
     					fill_horizontal	= 1,
         				action 			= function()
+       						local emptyRowIndex = sharedAlbumMgmt.findEmptyRow()
+       						-- TODO check emptyRowIndex ~= -1
+							sharedAlbumMgmt.activateRow(propertyTable, emptyRowIndex)
+
         					if sharedAlbumMgmt.showAddAlbumDialog(f, propertyTable, context) == 'ok' then
-        						local emptyRowIndex = sharedAlbumMgmt.findEmptyRow()
-        						-- TODO check emptyRowIndex ~= -1
         						local rowProps = rowsPropertyTable[emptyRowIndex]
 
-        						rowProps.sharedAlbumName 	= propertyTable.activeSharedAlbumName
+        						rowProps.sharedAlbumName 	= propertyTable.sharedAlbumName
         						rowProps.publishServiceName = propertyTable.activePublishServiceName
         						rowProps.isEntry 			= true 
         						rowProps.wasAdded 			= true 
+        						rowProps.wasModified		= true 
 								for key, value in pairs(sharedAlbumDefaults) do
 									rowProps[key] = value
 								end
-								sharedAlbumMgmt.activateRow(propertyTable, emptyRowIndex)
         					end
         				end,
         			},   			
@@ -451,13 +494,13 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
         			f:push_button {
         				title 			= "Rename Shared Album",
     					font			= '<system/small>',
---    					enabled			= bind 'activeSharedAlbumName',
+--    					enabled			= bind 'sharedAlbumName',
     					enabled			= bind {
     										keys = {
-			        							{ key = 'activeSharedAlbumName' },
+			        							{ key = 'sharedAlbumName' },
         									},
         									operation = function( _, values, _ )
-        										return iif(values.activeSharedAlbumName, true, false)
+        										return iif(values.sharedAlbumName, true, false)
         									end
         								},	
 	    				place_horizontal= 1,
@@ -519,6 +562,7 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
         		alignment		= 'left',
 		   },
 		   
+--[[
 			f:column {
    				width 			= columnWidth.password,
 				f:row {
@@ -536,8 +580,8 @@ function sharedAlbumMgmt.showDialog(f, propertyTable, context)
         				value 			= bind 'showPasswords',
         			},
 				},
-    		   
 			},
+]]
 					   
 			f:static_text {
 				width 			= columnWidth.area,
@@ -720,7 +764,7 @@ function sharedAlbumMgmt.showAddAlbumDialog(f, propertyTable, context)
    			},
    			 
    			f:edit_field {
-   			value	= bind 'activeSharedAlbumName',
+   			value	= bind 'sharedAlbumName',
    			},
    		},
 
@@ -773,26 +817,26 @@ function sharedAlbumMgmt.updateGlobalRowsSelected( propertyTable )
 end
 
 -------------------------------------------------------------------------------
--- updateGlobalSharedAlbumName: 
+-- updateActiveSharedAlbumName: 
 -- 		set Rename-Flag, 
 -- 		update sharedAlbumName in belonging row 
-function sharedAlbumMgmt.updateGlobalSharedAlbumName( propertyTable )
+function sharedAlbumMgmt.updateActiveSharedAlbumName( propertyTable )
 --	local message = nil
 
-	writeLogfile(2, string.format("updateGlobalSharedAlbumName(%s) started\n", propertyTable.activeSharedAlbumName))
+	writeLogfile(2, string.format("updateActiveSharedAlbumName(%s) started\n", propertyTable.sharedAlbumName))
 	local rowProps = rowsPropertyTable[propertyTable.activeRowIndex]
 	
-	if rowProps.sharedAlbumName == propertyTable.activeSharedAlbumName then return end
+	if rowProps.sharedAlbumName == propertyTable.sharedAlbumName then return end
 	
 	if not rowProps.wasRenamed  then
 		rowProps.oldSharedAlbumName	= rowProps.sharedAlbumName
 		rowProps.wasRenamed = true
 	end
-	rowProps.sharedAlbumName 	= propertyTable.activeSharedAlbumName
+	rowProps.sharedAlbumName 	= propertyTable.sharedAlbumName
 	
 --[[
 	repeat
-		writeLogfile(2, "updateGlobalSharedAlbumName(): selected = " .. tostring(propertyTable.isSelected) .. "\n")	
+		writeLogfile(2, "updateActiveSharedAlbumName(): selected = " .. tostring(propertyTable.isSelected) .. "\n")	
 	until true
 	if message then
 		propertyTable.message = message
@@ -806,13 +850,32 @@ function sharedAlbumMgmt.updateGlobalSharedAlbumName( propertyTable )
 ]]		
 end
 
+--[[
+-------------------------------------------------------------------------------
+-- updateActiveSharedAlbumParams: 
+-- 		set Modify-Flag, 
+-- 		update sharedAlbum params in belonging row 
+function sharedAlbumMgmt.updateActiveSharedAlbumParams( propertyTable )
+--	local message = nil
+
+	writeLogfile(2, string.format("updateActiveSharedAlbumParams(%s) started\n", propertyTable.sharedAlbumName))
+	local rowProps = rowsPropertyTable[propertyTable.activeRowIndex]
+	
+	for _, key in ipairs(activeAlbumModifyKeys) do
+		rowProps[key] = propertyTable[key]
+	end
+	
+	rowProps.wasModified = true
+	
+end
+]]
+
 -------------------------------------------------------------------------------
 -- updateRowSharedAlbumParams:
 -- 		set Modified-Flag, 
 function sharedAlbumMgmt.updateRowSharedAlbumParams( propertyTable )
 --	local message = nil
 
-	writeLogfile(2, string.format("updateRowSharedAlbumParams(%s) started\n", propertyTable.sharedAlbumName))
 	propertyTable.wasModified = true
 
 --[[
@@ -836,12 +899,32 @@ end
 -- activateRow()
 -- 		activate the given row in dialog rows area 
 function sharedAlbumMgmt.activateRow(propertyTable, i) 
-   	writeLogfile(3, string.format("activateRow: %d\n", i))
+	-- save old values
+	if ifnil(propertyTable.activeRowIndex, i)  ~= i then
+		local lastRowProps = rowsPropertyTable[propertyTable.activeRowIndex]
+		
+		if lastRowProps.sharedAlbumName ~= propertyTable.sharedAlbumName then
+			if not lastRowProps.wasRenamed then
+				lastRowProps.oldSharedAlbumName	= lastRowProps.sharedAlbumName
+			end
+			lastRowProps.sharedAlbumName = propertyTable.sharedAlbumName
+			lastRowProps.wasRenamed = true
+		end
+		
+		for _, key in ipairs(activeAlbumModifyKeys) do
+    		if lastRowProps[key] ~= propertyTable[key] then
+    			lastRowProps[key] = propertyTable[key]
+    			lastRowProps.wasModified = true
+    		end
+		end
+	end
+
+	-- load new values
 	propertyTable.activeRowIndex		= i		
-	propertyTable.activeSharedAlbumName	= rowsPropertyTable[i].sharedAlbumName
-	propertyTable.activePrivateUrl		= rowsPropertyTable[i].privateUrl
-	propertyTable.activePublicUrl		= rowsPropertyTable[i].publicUrl
-	propertyTable.activePublicUrl2		= rowsPropertyTable[i].publicUrl2
+
+	for _, key in ipairs(activeAlbumKeys) do
+		propertyTable[key] = rowsPropertyTable[i][key]
+	end
 
 	for j = 1, #rowsPropertyTable do
 		rowsPropertyTable[j].isActive = false
@@ -893,7 +976,6 @@ function sharedAlbumMgmt.readAllSharedAlbumsFromLr()
     			sharedAlbum.wasModified			= false
     			sharedAlbum.wasDeleted	 		= false
     			sharedAlbum.wasRenamed	 		= false
-    			sharedAlbum.publishService 		= publishService
     			sharedAlbum.publishServiceName 	= publishService:getName()
     			
     			for _, key in ipairs(sharedAlbumKeywordKeys) do
@@ -924,53 +1006,93 @@ function sharedAlbumMgmt.writeAllSharedAlbumsToLr()
 	for i = 1, #allSharedAlbums do
 		local sharedAlbum = allSharedAlbums[i]
 		
-		if sharedAlbum.wasDeleted then
-			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: deleting Album\n",
-								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
-			-- TODO: delete album
-		end
-		
-		if sharedAlbum.wasAdded then
-			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: adding Album\n",
-								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
-			-- TODO: add album
-		end
-
-		if sharedAlbum.wasRenamed then
-			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: renaming Album to %s\n",
-								sharedAlbum.publishServiceName, sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
-			PSLrUtilities.renameKeywordById(sharedAlbum.keywordId, sharedAlbum.sharedAlbumName)
-		end
-
-		if sharedAlbum.wasModified then
-			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: storing modified params\n",
-								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
-
-			-- write back attribute to Shared Album keyword synonyms: private/public and password
-			if not sharedAlbum.isPublic then
-				PSLrUtilities.addKeywordSynonyms(sharedAlbum.keywordId, {"private"})
-			else
-				PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {"private"})
-			end
-			if ifnil(sharedAlbum.sharedAlbumPassword, '') ~= '' then
-				PSLrUtilities.addKeywordSynonyms(sharedAlbum.keywordId, {"password:" .. sharedAlbum.sharedAlbumPassword})
-			else
-				PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {"password:.*"}, isPattern)
-			end
-			
-			-- write back attributes to Shared Album plugin prefs:
-			--   colors, comments, start/stoptime
-			if not myPrefs.sharedAlbums then myPrefs.sharedAlbums = {} end
-			if not myPrefs.sharedAlbums[sharedAlbum.keywordId] then myPrefs.sharedAlbums[sharedAlbum.keywordId] = {} end
-			
-			local sharedAlbumPrefs = myPrefs.sharedAlbums[sharedAlbum.keywordId]
-			for _, key in ipairs(sharedAlbumPrefKeys) do
-				sharedAlbumPrefs[key] = sharedAlbum[key]
-			end
-			myPrefs.sharedAlbums[sharedAlbum.keywordId] = myPrefs.sharedAlbums[sharedAlbum.keywordId]
-			myPrefs.sharedAlbums = myPrefs.sharedAlbums
-		end
-	end	
+		if sharedAlbum.isEntry then
+    		if sharedAlbum.wasDeleted then
+    			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: deleting Album\n",
+    								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
+    			-- remove shared album plugin metadata from all belonging photos 
+    			local srcPhotos = PSLrUtilities.getKeywordPhotos(sharedAlbum.keywordId)
+    			
+    			for i = 1, #srcPhotos do
+    				local srcPhoto = srcPhotos[i]
+    				local sharedAlbums = PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
+        			if sharedAlbums then
+        				local numOldSharedAlbumsPS = #sharedAlbums
+        
+        				for j = #sharedAlbums, 1, -1 do
+        					if string.match(sharedAlbums[j],  '%d+:(.+)')  == sharedAlbum.sharedAlbumName then
+    							writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: srcPhoto %s, removing Shared Album '%s' from Plugin Metadata\n",
+    								srcPhoto:getFormattedMetadata('fileName'), sharedAlbums[j]))
+        						table.remove(sharedAlbums, j);
+        					end
+        				end
+        				-- if number of shared albums has changed: update src photo plugin metadata
+        				if #sharedAlbums ~= numOldSharedAlbumsPS then
+        					PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
+        				end
+        			end
+        			
+    				-- remove shared album keyword from photo
+        			PSLrUtilities.removeKeywordFromPhoto(srcPhoto, sharedAlbum.keywordId)
+    			end
+    
+    			-- remove all keywrd synonyms from shared album keyword
+    			PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {".*"}, isPattern)
+    			-- delete album from Lr keyword hierarchy  (currently not supported by Lr)
+    			PSLrUtilities.deleteKeywordById(sharedAlbum.keywordId)
+    		end
+    		
+    		if sharedAlbum.wasAdded then
+    			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: adding Album\n",
+    								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
+    			local createIfMissing = true
+    			local shareAlbumKeyword 
+    			
+    			local sharedAlbumKeywordPath 				= PSLrUtilities.getSharedAlbumKeywordPath(sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName)
+    			sharedAlbum.keywordId, shareAlbumKeyword	= PSLrUtilities.getKeywordByPath(sharedAlbumKeywordPath, createIfMissing)
+    			-- TODO: set keyword attributes
+    			local keywordAttributes = shareAlbumKeyword:getAttributes()
+	   			writeTableLogfile(2, "sharedAlbumMgmt.writeAllSharedAlbumsToLr: keywordAttributes", keywordAttributes, true)
+    		end
+    
+    		if sharedAlbum.wasRenamed and not sharedAlbum.wasAdded then
+    			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: renaming Album to %s\n",
+    								sharedAlbum.publishServiceName, sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
+    			PSLrUtilities.renameKeywordById(sharedAlbum.keywordId, sharedAlbum.sharedAlbumName)
+    			-- TODO: check result of renameKeywordById
+    		end
+    
+    		if sharedAlbum.wasAdded or sharedAlbum.wasModified then
+    			writeLogfile(2, string.format("sharedAlbumMgmt.writeAllSharedAlbumsToLr: PubServ %s, ShAlbum: %s: storing modified params\n",
+    								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
+    
+    			-- write back attribute to Shared Album keyword synonyms: private/public and password
+    			if not sharedAlbum.isPublic then
+    				PSLrUtilities.addKeywordSynonyms(sharedAlbum.keywordId, {"private"})
+    			else
+    				PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {"private"})
+    			end
+    			
+   				if ifnil(sharedAlbum.sharedAlbumPassword, '') ~= '' then
+       				PSLrUtilities.replaceKeywordSynonyms(sharedAlbum.keywordId, {"password:.*"}, {"password:" .. sharedAlbum.sharedAlbumPassword})
+				else
+       				PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {"password:.*"}, true)
+       			end
+    			
+    			-- write back attributes to Shared Album plugin prefs:
+    			--   colors, comments, start/stoptime
+    			if not myPrefs.sharedAlbums then myPrefs.sharedAlbums = {} end
+    			if not myPrefs.sharedAlbums[sharedAlbum.keywordId] then myPrefs.sharedAlbums[sharedAlbum.keywordId] = {} end
+    			
+    			local sharedAlbumPrefs = myPrefs.sharedAlbums[sharedAlbum.keywordId]
+    			for _, key in ipairs(sharedAlbumPrefKeys) do
+    				sharedAlbumPrefs[key] = sharedAlbum[key]
+    			end
+    			myPrefs.sharedAlbums[sharedAlbum.keywordId] = myPrefs.sharedAlbums[sharedAlbum.keywordId]
+    			myPrefs.sharedAlbums = myPrefs.sharedAlbums
+    		end
+    	end	
+	end
 end
 
 -------------------------------------------------------------------------------
@@ -979,106 +1101,129 @@ end
 function sharedAlbumMgmt.writeAllSharedAlbumsToPS()
 	local numDeletes, numAdds, numRenames, numModifies = 0, 0, 0, 0
 	local numFailDeletes, numFailAdds, numFailRenames, numFailModifies = 0, 0, 0, 0
+	local activePublishing = {
+			publishServiceName	= nil,
+			publishSettings		= nil,
+		}
 	
+	-- TODO: sort shared albums by publishService
 	for i = 1, #allSharedAlbums do
 		local sharedAlbum 		= allSharedAlbums[i]
-		local publishSettings	= sharedAlbum.publishService:getPublishSettings()
+		local publishService 	= PSLrUtilities.getPublishServiceByName(sharedAlbum.publishServiceName)
+		local publishSettings
 
-		if sharedAlbum.wasAdded or sharedAlbum.wasDeleted or sharedAlbum.wasRenamed or sharedAlbum.wasModified then
-    	-- open session: initialize environment, get missing params and login
-        	local sessionSuccess, reason = openSession(publishSettings, nil, 'ManageSharedAlbums')
-        	if not sessionSuccess then
-        		if reason ~= 'cancel' then
-        			showFinalMessage("Photo StatLr: Update Photo Station SharedAlbums failed!", reason, "critical")
-        		end
-        		closeLogfile()
-        		writeLogfile(3, "sharedAlbumMgmt.writeAllSharedAlbumsToPS(): nothing to do\n")
-        		return
-        	end
+		if 	 sharedAlbum.isEntry and 
+			(sharedAlbum.wasAdded or sharedAlbum.wasDeleted or sharedAlbum.wasRenamed or sharedAlbum.wasModified) then
+
+    		-- open session only if publish service changed or session not yet opened
+			if 		activePublishing.publishServiceName ~= sharedAlbum.publishServiceName
+				or 	not	activePublishing.publishSettings
+				or 	not	activePublishing.publishSettings.uHandle then
+    	    	-- open session: initialize environment, get missing params and login
+				publishSettings					= publishService:getPublishSettings()
+            	local sessionSuccess, reason	= openSession(publishSettings, nil, 'ManageSharedAlbums')
+            	if not sessionSuccess then
+            		if reason ~= 'cancel' then
+            			showFinalMessage("Photo StatLr: Update Photo Station SharedAlbums failed!", reason, "critical")
+            		end
+            		closeLogfile()
+            		writeLogfile(3, "sharedAlbumMgmt.writeAllSharedAlbumsToPS(): nothing to do\n")
+            		return
+            	end
+            	activePublishing.publishServiceName = sharedAlbum.publishServiceName
+            	activePublishing.publishSettings = publishSettings
+            else
+            	publishSettings = activePublishing.publishSettings
+			end
 		end 
 		
 		if sharedAlbum.wasDeleted then
 			-- delete Shared Album in Photo Station
 			writeLogfile(3, string.format('writeAllSharedAlbumsToPS: deleting %s.\n', sharedAlbum.sharedAlbumName))
-			-- TODO: delete album in PS
-			numDeletes = numDeletes + 1
-			break
-		end
+			if PSPhotoStationAPI.deleteSharedAlbum(publishSettings.uHandle, sharedAlbum.sharedAlbumName) then
+				numDeletes = numDeletes + 1
+			else
+				numFailDeletes = numFailDeletes + 1
+			end			
+		else
 		
-		if sharedAlbum.wasAdded then
-			-- add Shared Album in Photo Station
-			-- TODO: add album in PS
-			if shareResult then
-				numAdds = numAdds + 1
-			else
-				numFailAdds = numAdds + 1
-			end
-
-		end 		
-
-		if sharedAlbum.wasRenamed then
-			-- rename Shared Album in Photo Station
-			writeLogfile(3, string.format('writeAllSharedAlbumsToPS: rename %s to %s.\n', sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
-			local success, errorCode = PSPhotoStationAPI.renameSharedAlbum(publishSettings.uHandle, sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName) 
-	
-			writeLogfile(2, string.format('writeAllSharedAlbumsToPS(%s):renameSharedAlbum to %s returns %s.\n', 
-											sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName, iif(success, 'OK', tostring(ifnil(errorCode, '<nil>')))))
-			if success then
-				numRenames = numRenames + 1
-			else
-				numFailRenames = numFailRenames + 1
-			end
-		end
-
-		if sharedAlbum.wasModified then
-			-- modify Shared Album in Photo Station
-			writeLogfile(3, string.format('writeAllSharedAlbumsToPS: updating %s.\n', sharedAlbum.sharedAlbumName))
-			local sharedAlbumAttributes = {}
-			
-			sharedAlbumAttributes.is_shared 	= sharedAlbum.isPublic
-   			-- TODO: check if PS Version is 66 or above
-   			sharedAlbumAttributes.is_advanced 	= true
-
-			if sharedAlbum.isPublic then
-    			if ifnil(sharedAlbum.sharedAlbumPassword, '') ~= '' then
-    				sharedAlbumAttributes.enable_password = true
-    				sharedAlbumAttributes.password = sharedAlbum.sharedAlbumPassword
+    		if sharedAlbum.wasAdded then
+    			-- add Shared Album in Photo Station
+    			local sharedAlbumId = PSPhotoStationAPI.createSharedAlbum(publishSettings.uHandle, sharedAlbum.sharedAlbumName)
+    			if sharedAlbumId then
+    				numAdds = numAdds + 1
     			else
-    				sharedAlbumAttributes.enable_password = false
+    				numFailAdds = numAdds + 1
     			end
-
-				if ifnil(sharedAlbum.startTime, '') ~= '' then
-					sharedAlbumAttributes.start_time = sharedAlbum.startTime
-				end
-				  
-				if ifnil(sharedAlbum.stopTime, '') ~= '' then
-				sharedAlbumAttributes.end_time 		= sharedAlbum.stopTime
-				end
+    
+    		end 		
+    
+    		if sharedAlbum.wasRenamed then
+    			-- rename Shared Album in Photo Station
+    			writeLogfile(3, string.format('writeAllSharedAlbumsToPS: rename %s to %s.\n', sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
+    			local success, errorCode = PSPhotoStationAPI.renameSharedAlbum(publishSettings.uHandle, sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName) 
+    	
+    			writeLogfile(2, string.format('writeAllSharedAlbumsToPS(%s):renameSharedAlbum to %s returns %s.\n', 
+    											sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName, iif(success, 'OK', tostring(ifnil(errorCode, '<nil>')))))
+    			if success then
+    				numRenames = numRenames + 1
+    			else
+    				numFailRenames = numFailRenames + 1
+    			end
+    		end
+    
+    		if sharedAlbum.wasModified then
+    			-- modify Shared Album in Photo Station
+    			writeLogfile(3, string.format('writeAllSharedAlbumsToPS: updating %s.\n', sharedAlbum.sharedAlbumName))
+    			local sharedAlbumAttributes = {}
     			
-    			sharedAlbumAttributes.enable_marquee_tool	= sharedAlbum.areaTool
-        		sharedAlbumAttributes.enable_comment 		= sharedAlbum.comments
-     
-        		sharedAlbumAttributes.enable_color_label	= sharedAlbum.colorRed or sharedAlbum.colorYellow or sharedAlbum.colorGreen or
-        													  sharedAlbum.colorBlue or sharedAlbum.colorPurple
-        		if sharedAlbumAttributes.enable_color_label then
-	        		sharedAlbumAttributes.color_label_1		= iif(sharedAlbum.colorRed, "red", '')
-    	    		sharedAlbumAttributes.color_label_2		= iif(sharedAlbum.colorYellow, "yellow", '')
-        			sharedAlbumAttributes.color_label_3		= iif(sharedAlbum.colorGreen, "green", '')
-        			sharedAlbumAttributes.color_label_4		= ''
-        			sharedAlbumAttributes.color_label_5		= iif(sharedAlbum.colorBlue, "blue", '')
-        			sharedAlbumAttributes.color_label_6		= iif(sharedAlbum.colorPurple, "purple", '')
-        		end
-        	end
-			
-			local shareResult = PSPhotoStationAPI.editSharedAlbum(publishSettings.uHandle, sharedAlbum.sharedAlbumName, sharedAlbumAttributes) 
-	
-			writeLogfile(2, string.format('writeAllSharedAlbumsToPS(%s) returns %s.\n', sharedAlbum.sharedAlbumName, iif(shareResult, 'OK', tostring(ifnil(shareResult.errorCode, '<nil>')))))
-			
-			if shareResult then
-				numModifies = numModifies + 1
-			else
-				numFailModifies = numFailModifies + 1
-			end
+    			sharedAlbumAttributes.is_shared 	= sharedAlbum.isPublic
+       			-- TODO: check if PS Version is 66 or above
+       			sharedAlbumAttributes.is_advanced 	= true
+    
+    			if sharedAlbum.isPublic then
+        			if ifnil(sharedAlbum.sharedAlbumPassword, '') ~= '' then
+        				sharedAlbumAttributes.enable_password = true
+        				sharedAlbumAttributes.password = sharedAlbum.sharedAlbumPassword
+        			else
+        				sharedAlbumAttributes.enable_password = false
+        			end
+    
+    				if ifnil(sharedAlbum.startTime, '') ~= '' then
+    					sharedAlbumAttributes.start_time = sharedAlbum.startTime
+    				end
+    				  
+    				if ifnil(sharedAlbum.stopTime, '') ~= '' then
+    				sharedAlbumAttributes.end_time 		= sharedAlbum.stopTime
+    				end
+        			
+        			sharedAlbumAttributes.enable_marquee_tool	= sharedAlbum.areaTool
+            		sharedAlbumAttributes.enable_comment 		= sharedAlbum.comments
+         
+            		sharedAlbumAttributes.enable_color_label	= sharedAlbum.colorRed or sharedAlbum.colorYellow or sharedAlbum.colorGreen or
+            													  sharedAlbum.colorBlue or sharedAlbum.colorPurple
+            		if sharedAlbumAttributes.enable_color_label then
+    	        		sharedAlbumAttributes.color_label_1		= iif(sharedAlbum.colorRed, "red", '')
+        	    		sharedAlbumAttributes.color_label_2		= iif(sharedAlbum.colorYellow, "yellow", '')
+            			sharedAlbumAttributes.color_label_3		= iif(sharedAlbum.colorGreen, "green", '')
+            			sharedAlbumAttributes.color_label_4		= ''
+            			sharedAlbumAttributes.color_label_5		= iif(sharedAlbum.colorBlue, "blue", '')
+            			sharedAlbumAttributes.color_label_6		= iif(sharedAlbum.colorPurple, "purple", '')
+            		end
+            	end
+    			
+    			local shareResult, errorCode = PSPhotoStationAPI.editSharedAlbum(publishSettings.uHandle, sharedAlbum.sharedAlbumName, sharedAlbumAttributes) 
+    	
+    			
+    			if shareResult then
+	    			-- TODO: add private and publicUrl to keyword synonyms
+    				writeLogfile(2, string.format('writeAllSharedAlbumsToPS(%s) returns OK.\n', sharedAlbum.sharedAlbumName))
+    				numModifies = numModifies + 1
+    			else
+    				writeLogfile(1, string.format('writeAllSharedAlbumsToPS(%s) returns %s.\n', sharedAlbum.sharedAlbumName, tostring(errorCode)))
+    				numFailModifies = numFailModifies + 1
+    			end
+    		end
 		end
 	end
 	
@@ -1101,9 +1246,14 @@ function sharedAlbumMgmt.doDialog( )
 		props:addObserver('selectAll', sharedAlbumMgmt.updateGlobalRowsSelected)
 		props.showPasswords				= false		
 		props.activeRowIndex			= nil		
-		props.activeSharedAlbumName 	= nil
-		props:addObserver('activeSharedAlbumName', sharedAlbumMgmt.updateGlobalSharedAlbumName)
-
+		props.sharedAlbumName 	= nil
+--[[
+		props:addObserver('sharedAlbumName', sharedAlbumMgmt.updateActiveSharedAlbumName)
+		for _, key in ipairs(activeAlbumModifyKeys) do
+			props[key] = nil
+			props:addObserver(key, sharedAlbumMgmt.updateActiveSharedAlbumParams)
+		end
+]]
        	sharedAlbumMgmt.readAllSharedAlbumsFromLr()
     	
     	for i = 1, #allSharedAlbums + nExtraRows do
@@ -1122,6 +1272,12 @@ function sharedAlbumMgmt.doDialog( )
     	for i = 1, #allSharedAlbums  do
     		rowsPropertyTable[i].isEntry 		= true
     		rowsPropertyTable[i].isSelected 	= false
+    		
+    		-- make sure all keys are set
+	    	for _, key in ipairs(modifyKeys) do
+	    		rowsPropertyTable[i][key] = nil
+	    	end
+
 	    	for key, value in pairs(allSharedAlbums[i]) do
 	    		rowsPropertyTable[i][key] = value
 	    	end
@@ -1138,8 +1294,11 @@ function sharedAlbumMgmt.doDialog( )
 		
 		-- if not canceled: copy params back from rowsPropertyTable to allShardAlbums 
 		if retcode ~= 'cancel' then
+			-- write back active row
+			sharedAlbumMgmt.activateRow(props, sharedAlbumMgmt.findEmptyRow())
 	    	for i = 1,#rowsPropertyTable do
 	    		local rowProps = rowsPropertyTable[i]
+				if not allSharedAlbums[rowProps.index] then allSharedAlbums[rowProps.index] = {} end 
 				local sharedAlbum = allSharedAlbums[rowProps.index]
 	
 				for key, value in rowProps:pairs() do

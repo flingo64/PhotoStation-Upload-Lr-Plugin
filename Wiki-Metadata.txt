@@ -1,0 +1,67 @@
+## General notes
+Metadata placeholders are used to define a __Metadata-based PhotoStation Album layout__, which may be completely different fromthe local folder layout within the Lightroom Library. 
+They can be used anywhere within a **Target Album** definition, which can be found in the "**Export**" dialog, the "**Published Collection**" and the "**Published Collection Set**" definition. Placeholders are evaluated during export/publish for each processed photo/video, so that the actual target album depends on the photo and may be different for each processed photo/video.<br>
+
+Placeholders look like:<br>
+__{\<category\>:\<type\> \<options\>|\<default value\> or ?}__<br>
+Depending on the specific placeholder the \<type\> or \<options\> may be missing. The part beginning with the '|' is also optional.
+If the actual value of a placeholder cannot be determined for a photo, the following rules apply for the substitution:
+- if the placeholder defines __no default value ({...})__, placeholder is substituted by "" (empty string)
+- if the placeholder defines a __Default Value ({...|Default Value})__, placeholder is substituted by the default value
+- if the placeholder defines a metadata that is __Required ('{...|?}__, placeholder is substituted by '?' and uploading is prevented
+
+Here are some examples substitutions for a photo without the metadata 'Foobar' (in fact, I don't even know the metadata Foobar):
+- __{Foobar}__	--\> ""
+- __{Foobar|John Doe}__ --\> "John Doe"
+- __{Foobar|?}__		--\> "?", won't be uploaded
+
+## Metadata Placeholders
+Following is the list of metadata placeholders, not showing the above mentioned general substitution options 'Default Value' and 'Required':<br>
+* __{Date \<format\>}__: Capture Date<br>
+where __\<format\>__ is a date-time format string that may contain the following special strings representing various date elements:<br>
+__%B, %b, %m, %d, %e, %j, %y, %Y, %H, %1H, %I, %1I, %M, %S, %p, %P, %%__<br><br>
+This placeholder will be substituted by the specified date elements of the capture date (DateTimeOriginal) of the processed photo/video.<br>
+For a detailed description of the special formating strings, please refer to the documentation of the<br>
+__Lightroom SDK 5: LrDate.timeToUserFormat()__ ((c) by Adobe Systems Incorporated)<br>
+or look [here](http://lightroomsolutions.com/sdk/modules/LrDate.html#LrDate.timeToUserFormat).
+	
+* __{LrFM:\<key\>}__: Lightroom Formatted Metadata<br> 
+where __\<key\>__ is any of the following strings:<br>
+__keywordTags, keywordTagsForExport, fileName, copyName, folderName, fileSize, fileType, rating, label, title, caption, dimensions, croppedDimensions, exposure, shutterSpeed, aperture, brightnessValue, exposureBias, flash, exposureProgram, meteringMode, isoSpeedRating, focalLength, focalLength35mm, lens, subjectDistance, dateTimeOriginal, dateTimeDigitized, dateTime, cameraMake, cameraModel, cameraSerialNumber, artist, software, gps, gpsAltitude, creator, creatorJobTitle, creatorAddress, creatorCity, creatorStateProvince, creatorPostalCode, creatorCountry, creatorPhone, creatorEmail, creatorUrl, headline, iptcSubjectCode, descriptionWriter, iptcCategory, iptcOtherCategories, dateCreated, intellectualGenre, scene, location, city, stateProvince, country, isoCountryCode, jobIdentifier, instructions, provider, source, copyright, copyrightState, rightsUsageTerms, copyrightInfoUrl, personShown, nameOfOrgShown, codeOfOrgShown, event, additionalModelInfo, modelAge, minorModelAge, modelReleaseStatus, modelReleaseID, com.adobe.imageSupplierImageId, maxAvailWidth, maxAvailHeight, sourceType, propertyReleaseID, propertyReleaseStatus, digImageGUID, plusVersion__<br><br>
+This placeholder will be substituted by the specified metadata of the processed photo/video.<br><br>
+For a detailed description of the meaning of the keys, please refer to the documentation of the<br>
+__Lightroom SDK 5: LrPhoto - photo:getFormattedMetadata()__ ((c) by Adobe Systems Incorporated)<br>
+or look [here](http://lightroomsolutions.com/sdk/modules/LrPhoto.html#photo:getFormattedMetadata).
+
+* __{LrCC:path|name}__: Lightroom Contained Collection<br> 
+__{LrCC:path|name \<match\>}__<br>
+where __\<match\>__ is a ([Lua regular expression](http://www.lua.org/manual/5.2/manual.html#pdf-string.match)) pattern used as filter. Typical patterns are:<br>
+    - string	- to match the string anywhere in the selected metadata
+    - ^string	- to match the string at the beginning of the selected metadata 
+    - string$	- to match the string at the end of the selected metadata
+
+  This placeholder may be used to mirror an existing Standard Collection Set hierarchy to the PhotoStation<br>
+The placeholder will be substituted by the name  or the hierarchy path of the first Standard Collection that contains the processed photo and matches the optional match pattern. The hierarchy path is built by concatenating the names of all parent Collection Sets and Collection itself seperated by '/' (just like a Linux pathname without leading and trailing '/').
+Make sure, that all photos in your (Smart) Published Collection using this placeholder are either member of exactly one Standard Collection or that your match pattern will identify exactly one containing collection for each photo. Otherwise the result of the substitution will be un-deterministic.<br><br>
+Note: Collection and Collection Set names may include characters that are illegal within a pathname. Therefore, all __illegal characters will be substituted by their hexadecimal ascii value__ as string '0xnn'. Illegal characters are:<br>
+       __\ / : ? * " < > |__
+
+##Examples
+* Target Album:__{Date %Y}/{Date %m}__<br>Photo: captured 2015/07/06<br>--\> Upload to Album: '__2015/07__'<br>
+* Target Album:__{Date %Y/%m}__<br>Photo: captured 2015/07/06<br>--\> Upload to Album: '__2015/07__' <br>
+* Target Album:__{Date %y-%b}/{Date %d}__<br>Photo: captured 2015/07/06<br>--\> Upload to Album: '__15-Jul/06__'<br>
+* Target Album:__{LrFM:cameraModel}/{isoSpeedRating}__<br>Photo: camera=Canon EOS 6D, ISO: 125<br>--\> Upload to Album: '__Canon EOS 6D/ISO 125__'<br>
+* Target Album:__{LrCC:name 2015$}__<br>Photo: member of collections: 'ByYear/2015/Xmas' and 'TopRated/2015'<br>--\> Upload to Album: 'TopRated/2015'<br>
+* Target Album:__{LrCC:path ^ByYear}__<br>Photo: member of collections: 'ByYear/2015/Xmas' and 'TopRated/2015'<br>--\> Upload to Album: 'ByYear/2015/Xmas'<br>
+* Target Album:__{LrCC:path ^Top}__<br>Photo: member of collections: 'ByYear/2015/Xmas' and 'TopRated/2015'<br>--\> Upload to Album: 'TopRated/2015'<br>
+* Target Album:__{LrCC:path 2015}__<br>Photo: member of collections: 'ByYear/2015/Xmas' and 'TopRated/2015'<br>--\> Upload to Album: __undeterministic__ either 'ByYear/2015/Xmas' or 'TopRated/2015' <br>
+
+##How to test
+Metadata placeholders are geek stuff and sometimes it is not obvious how they work. The easiest way to test them is to 
+- create a Published Collection or Published Smart Collection
+- define the Target album based on metadata placeholders
+- set Publish Mode to "Ask me later" or "Check Existing"
+- put some representative photos into the collection
+- publish the photos via Publish Mode "Check Existing"
+- consult the logfile to see where the photos would go
+
