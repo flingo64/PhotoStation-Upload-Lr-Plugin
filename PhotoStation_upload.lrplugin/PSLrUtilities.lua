@@ -19,10 +19,11 @@ Lightroom utilities:
 
 	- noteAlbumForCheckEmpty
 	
-	- getPhotoKeywordObjects
+	- getKeywordObjects
 	- addKeywordHierarchyToCatalogAndPhoto
+	- renameKeyword
 	
-	- getPhotoSharedAlbums
+	- getPhotoSharedAlbumKeywords
 
 	- getPhotoPluginMetaLinkedSharedAlbums	
 	- setPhotoPluginMetaLinkedSharedAlbums
@@ -521,36 +522,6 @@ function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
 end
 
 --------------------------------------------------------------------------------------------
--- getPublishServiceByName(publishServiceName)
---   returns the LrPublishService  of the given name
-function PSLrUtilities.getPublishServiceByName(publishServiceName)
-	local activeCatalog = LrApplication.activeCatalog()
-	local publishServices = activeCatalog:getPublishServices(_PLUGIN.id)
-	
-    for i = 1, #publishServices	do
-    	if publishServices[i]:getName() == publishServiceName then
-    		return publishServices[i]
-    	end  
-	end	
-	
-	return nil
-end
-	
---------------------------------------------------------------------------------------------
--- getKeywordPhotos(keywordId)
--- returns the list of photos belonging to the given keyword 
-function PSLrUtilities.getKeywordPhotos(keywordId)
-	local catalog = LrApplication.activeCatalog()
-	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
-	
-	if not keywords or not keywords[1] then
-		return nil
-	end
-	
-	return keywords[1]:getPhotos()
-end
-
---------------------------------------------------------------------------------------------
 -- addKeywordSynonyms(keywordId, synonyms)
 -- adds a list of synonyms to a keyword
 function PSLrUtilities.addKeywordSynonyms(keywordId, synonyms)
@@ -567,7 +538,6 @@ function PSLrUtilities.addKeywordSynonyms(keywordId, synonyms)
 	
 	for i = 1, #synonyms do
 		if not findInStringTable(keywordSynonyms, synonyms[i]) then
-			writeLogfile(3, string.format("addKeywordSynonyms('%s', '%s'): done \n", keyword:getName(), synonyms[i]))
 			table.insert(keywordSynonyms, synonyms[i])
 			foundNewSynonyms = true 
 		end
@@ -604,7 +574,7 @@ function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms, isPattern)
 	for i = #keywordSynonyms, 1, -1 do
 		for j = 1, #synonyms do
     		if string.find(keywordSynonyms[i], synonyms[j], 1, not ifnil(isPattern, false)) then
-				writeLogfile(3, string.format("removeKeywordSynonyms('%s', '%s'): removing synonym '%s'\n", keyword:getName(), synonyms[j], keywordSynonyms[i]))
+				writeLogfile(4, string.format("Keyword '%s': removing %d. synonym '%s'\n", keyword:getName(), i, synonyms[j]))
     			table.remove(keywordSynonyms, i)
     			synonymsRemoved = true
     			break
@@ -625,60 +595,10 @@ function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms, isPattern)
 end
 
 --------------------------------------------------------------------------------------------
--- replaceKeywordSynonyms(keywordId, oldSynonyms, newSynonyms)
--- replace a list of synonym patterns for a keyword
-function PSLrUtilities.replaceKeywordSynonyms(keywordId, oldSynonyms, newSynonyms)
-	local catalog = LrApplication.activeCatalog()
-	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
-	
-	if not keywords or not keywords[1] then
-		return false
-	end
-	
-	local keyword = keywords[1]
-	local keywordSynonyms = keyword:getSynonyms()
-	local synonymsReplaced = false
-	
-	for i = 1, #oldSynonyms do
-		local oldSynonymFound, oldSynonymReplaced = false, false
-		for j = #keywordSynonyms, 1, -1 do
-			local foundSynonym = string.match(keywordSynonyms[j], oldSynonyms[i]) 
-    		if foundSynonym then
-    			oldSynonymFound = true
-    			if foundSynonym ~= newSynonyms[i] then
-					writeLogfile(3, string.format("replaceKeywordSynonyms('%s', '%s'): replacing synonym '%s' by '%s'\n", keyword:getName(), oldSynonyms[i], keywordSynonyms[j], newSynonyms[i]))
-    				table.remove(keywordSynonyms, j)
-    				table.insert(keywordSynonyms, newSynonyms[i]) 
-    				oldSynonymReplaced = true
-    				synonymsReplaced = true
-    			end
-    			break
-    		end
-		end
-		if not oldSynonymFound then
-			writeLogfile(3, string.format("replaceKeywordSynonyms('%s', '%s'): adding synonym '%s'\n", keyword:getName(), oldSynonyms[i], newSynonyms[i]))
-			table.insert(keywordSynonyms, newSynonyms[i])
-			synonymsReplaced = true 
-		end
-	end
-
-	if synonymsReplaced then
-    	catalog:withWriteAccessDo( 
-    		'Replace Keyword Synonyms',
-    		function(context)
-    			keyword:setAttributes({synonyms = keywordSynonyms})
-    		end,
-    		{timeout=5}
-    	)
-	end 
-	return true
-end
-
---------------------------------------------------------------------------------------------
--- getPhotoKeywordObjects(srcPhoto, keywordNameTable)
+-- getKeywordObjects(srcPhoto, keywordNameTable)
 -- returns the keyword objects belonging to the keywords in the keywordTable
 -- will only return exportable leaf keywords (synonyms and parent keywords are not returned)
-function PSLrUtilities.getPhotoKeywordObjects(srcPhoto, keywordNameTable)
+function PSLrUtilities.getKeywordObjects(srcPhoto, keywordNameTable)
 	-- get all leaf keywords
 	local keywords = srcPhoto:getRawMetadata("keywords")  
 	local keywordsFound, nFound = {}, 0 	
@@ -700,7 +620,7 @@ function PSLrUtilities.getPhotoKeywordObjects(srcPhoto, keywordNameTable)
 		end
 	end
 					
-	writeLogfile(3, string.format("getPhotoKeywordObjects(%s, '%s') returns %d leaf keyword object\n", 
+	writeLogfile(3, string.format("getKeywordObjects(%s, '%s') returns %d leaf keyword object\n", 
 									srcPhoto:getRawMetadata('path'), table.concat(keywordNameTable, ','), nFound))
 	return keywordsFound
 end
@@ -755,74 +675,51 @@ function PSLrUtilities.renameKeywordById(keywordId, newKeywordName)
 end
 
 --------------------------------------------------------------------------------------------
--- deleteKeywordById(keywordId)
-function PSLrUtilities.deleteKeywordById(keywordId)
-	-- there is no API to remove a keyword from catalog
+-- renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
+function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
+	writeLogfile(3, string.format("renameKeyword('%s', '%s', '%s', '%s')\n", table.concat(ifnil(rootKeywords, {}), '|'), ifnil(keywordParent, ''), oldKeywordName, newKeywordName))
+	local keywordHierarchy = split(keywordParent, '|')
+
+	if not keywordHierarchy then
+    	for i = 1, #rootKeywords do
+    		if rootKeywords[i]:getName() == oldKeywordName then
+				writeLogfile(3, string.format("renameKeyword() found'%', rename to '%s'\n", oldKeywordName, newKeywordName))
+    			rootKeywords[i]:setAttributes({keywordName = newKeywordName})
+    			return true
+   			end
+    	end
+    	-- keyword not found
+    	return false
+	end
 	
-	-- TODO: inform the user to remove the keyword manually
+	-- keyword hierarchy is not empty
+	for i = 1, #rootKeywords do
+		if rootKeywords[i]:getName() == keywordHierarchy[1] then
+			return PSLrUtilities.renameKeyword(rootKeywords[i]:getChildren(), table.concat(keywordHierarchy, '|', 2))	
+		end	
+	end
 	
 	return true
 end
 
 --------------------------------------------------------------------------------------------
--- getSharedAlbumKeywordPath(pubServiceName, sharedAlbumName)
---   returns keyword path of the given Shared Album within the given Publish Service, i.e:
---    "Photo StatLr"|"Shared Albums|<puServiceName>|<sharedAlbumName"
-function PSLrUtilities.getSharedAlbumKeywordPath(pubServiceName, sharedAlbumName)
-	if sharedAlbumName then
-		return "Photo StatLr|Shared Albums|" .. pubServiceName .. "|" .. sharedAlbumName
-	else
-		return "Photo StatLr|Shared Albums|" .. pubServiceName
-	end	
-end
-
-
---------------------------------------------------------------------------------------------
--- getKeywordByPath(keywordPath, createIfMissing)
---   returns the LrKeyword id of the given keyword path, create path if createIfMissing is set
-function PSLrUtilities.getKeywordByPath(keywordPath, createIfMissing)
-	local catalog = LrApplication.activeCatalog()
-	local keywordHierarchy = split(keywordPath, '|')
-	local keyword, parentKeyword, checkKeywords = nil, nil, catalog:getKeywords()
-	
-	for i = 1, #keywordHierarchy do
-		keyword = nil
-		for j = 1, #checkKeywords do
-			if checkKeywords[j]:getName() == keywordHierarchy[i] then
-				keyword = checkKeywords[j]
-				break
-			end
-		end
-		
-		if not keyword and not createIfMissing then
-			writeLogfile(3, string.format("getKeywordByPath('%s', create: %s): '%s' does not exist, returning nil\n", keywordPath, tostring(createIfMissing), keywordHierarchy[i]))
-			return nil
-		elseif not keyword and createIfMissing then
-			writeLogfile(3, string.format("getKeywordByPath('%s', create: %s): creating missing '%s'\n", keywordPath, tostring(createIfMissing), keywordHierarchy[i]))
-    		catalog:withWriteAccessDo( 
-    			'getKeywordByPath', function(context)
-					keyword = catalog:createKeyword(keywordHierarchy[i], {}, true, parentKeyword, true)
-				end,
-				{timeout=5})
-		end
-
-		parentKeyword = keyword	
-		checkKeywords = keyword:getChildren()
-	end
-
-	writeLogfile(2, string.format("getKeywordByPath('%s', create: %s) returns keyword id %d\n", keywordPath, tostring(createIfMissing), keyword.localIdentifier))
-	return keyword.localIdentifier, keyword
-end
-
---------------------------------------------------------------------------------------------
 -- getServiceSharedAlbumKeywords(pubService, psVersion)
---   returns a list of all Shared Album for a Publish Service, i.e. derived from keywords below "Photo StatLr"|"Shared Albums"
+--   returns a list of all Shared Album keywords for a collection, i.e. keywords below "Photo StatLr"|"Shared Albums"
 function PSLrUtilities.getServiceSharedAlbumKeywords(pubService, psVersion)
 	local sharedAlbumKeywords 		= {} 	
 	local numSharedAlbumKeywords 	= 0
+	local sharedAlbumKeywordRoot = "Photo StatLr|Shared Albums|" .. pubService:getName()
 	local pubServiceSettings = pubService:getPublishSettings()
-	local pubServiceSharedAlbumPath 			= PSLrUtilities.getSharedAlbumKeywordPath(pubService:getName(), nil)
-	local _, pubServiceSharedAlbumRootKeyword	= PSLrUtilities.getKeywordByPath(pubServiceSharedAlbumPath, false)
+	local pubServiceSharedAlbumRootKeyword
+
+	-- make sure root of Shared Album keyword hierarchy is available
+	LrApplication.activeCatalog():withWriteAccessDo( 
+		'GetPublishServiceSharedAlbumRoot',
+		function(context)
+			pubServiceSharedAlbumRootKeyword = PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(sharedAlbumKeywordRoot, nil)
+  		end,
+		{timeout=5}
+	)
 
 	local keywords = pubServiceSharedAlbumRootKeyword:getChildren()
 	for i = 1, #keywords do
@@ -872,35 +769,14 @@ function PSLrUtilities.getServiceSharedAlbumKeywords(pubService, psVersion)
 end
 
 --------------------------------------------------------------------------------------------
--- removeKeywordFromPhoto(srcPhoto, keywordId)
-function PSLrUtilities.removeKeywordFromPhoto(srcPhoto, keywordId)
-	local catalog = LrApplication.activeCatalog()
-	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
-	
-	if not keywords or not keywords[1] then
-		return true
-	end
-	 
-	LrApplication.activeCatalog():withWriteAccessDo( 
-		'RemoveKeyywordFromPhoto',
-		function(context)
-			srcPhoto:removeKeyword(keywords[1]) 
-  		end,
-		{timeout=5}
-	)
-
-	return true
-end
-
---------------------------------------------------------------------------------------------
--- getPhotoSharedAlbums(srcPhoto, pubServiceName, psVersion)
+-- getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
 --   returns a list of all Shared Album keywords for a photo, i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getPhotoSharedAlbums(srcPhoto, pubServiceName, psVersion)
+function PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
 	local keywords 					= srcPhoto:getRawMetadata("keywords")  
 	local sharedAlbumKeywords 		= {} 	
 	local numSharedAlbumKeywords 	= 0
 
-	writeLogfile(4, string.format("getPhotoSharedAlbums(%s, %s) starting\n", 
+	writeLogfile(4, string.format("getPhotoSharedAlbumKeywords(%s, %s) starting\n", 
 									srcPhoto:getRawMetadata('path'), pubServiceName))
 	for i = 1, #keywords do
 		local keyword = keywords[i]
@@ -930,7 +806,7 @@ function PSLrUtilities.getPhotoSharedAlbums(srcPhoto, pubServiceName, psVersion)
 		    end
 		end
 	end
-	writeLogfile(3, string.format("getPhotoSharedAlbums(%s, %s): found Shared Albums: '%s'\n", 
+	writeLogfile(3, string.format("getPhotoSharedAlbumKeywords(%s, %s): found Shared Albums: '%s'\n", 
 									srcPhoto:getRawMetadata('path'), pubServiceName, table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
 	return sharedAlbumKeywords   		
 
@@ -954,8 +830,7 @@ end
 
 --------------------------------------------------------------------------------------------
 -- setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
---   store a list of '/'-separated Shared Albums the photo was linked to into private plugin metadata 'sharedAlbums'
---   each sharedAlbum is coded as <publishedCollectionId>:<sharedAlbumName>
+--   store a list of all Shared Album the photo was linked to in private plugin metadata
 function PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
 	local activeCatalog 				= LrApplication.activeCatalog()
 	local oldSharedAlbumPluginMetadata 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
@@ -979,66 +854,14 @@ function PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbu
 end 
 
 --------------------------------------------------------------------------------------------
--- getPhotoPluginMetaCommentInfo(srcPhoto)
-function PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
-	local commentInfo = {}
-	
-	commentInfo.commentCount	 	= tonumber(srcPhoto:getPropertyForPlugin(_PLUGIN, 'commentCount', nil, true))
-	commentInfo.lastCommentDate 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentDate', nil, true)
-	commentInfo.lastCommentType 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentType', nil, true)
-	commentInfo.lastCommentSource 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentSource', nil, true)
-	commentInfo.lastCommentUrl 		= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentUrl', nil, true)
-	commentInfo.lastCommentAuthor 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentAuthor', nil, true)
-	commentInfo.lastCommentText 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentText', nil, true)
-
-	return commentInfo
-end
-
---------------------------------------------------------------------------------------------
--- setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
-function PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
-	local activeCatalog 	= LrApplication.activeCatalog()
-	local currCommentInfo 	=  PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
-	
-	if 		commentInfo.commentCount 		~= currCommentInfo.commentCount
-		or	commentInfo.lastCommentDate		~= currCommentInfo.lastCommentDate
-		or	commentInfo.lastCommentType		~= currCommentInfo.lastCommentType
-		or	commentInfo.lastCommentSource	~= currCommentInfo.lastCommentSource 
-		or	commentInfo.lastCommentUrl		~= currCommentInfo.lastCommentUrl 
-		or	commentInfo.lastCommentAuthor	~= currCommentInfo.lastCommentAuthor 
-		or	commentInfo.lastCommentText		~= currCommentInfo.lastCommentText 
-	then
-		activeCatalog:withWriteAccessDo( 
-				'Update Plugin Metadata for Last Comment',
-				function(context)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'commentCount', 		iif(ifnil(commentInfo.commentCount, 0) > 0, tostring(commentInfo.commentCount), nil))
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentDate', 	commentInfo.lastCommentDate)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentType', 	commentInfo.lastCommentType)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentSource', commentInfo.lastCommentSource)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentUrl', 	commentInfo.lastCommentUrl)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentAuthor', commentInfo.lastCommentAuthor)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentText', 	commentInfo.lastCommentText)
-				end,
-				{timeout=5}
-		)
-		writeLogfile(3, string.format("setPhotoPluginMetaCommentInfo(%s): updated Comment Info to '%s/%s/%s/%s/%s/%s/%s'\n", 
-									srcPhoto:getRawMetadata('path'), 
-									commentInfo.commentCount, commentInfo.lastCommentDate, commentInfo.lastCommentType, 
-									commentInfo.lastCommentSource, commentInfo.lastCommentUrl, commentInfo.lastCommentAuthor, commentInfo.lastCommentText))    		
-		return 1
-	end
-
-	return 0
-	
-end
-
---------------------------------------------------------------------------------------------
 -- noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
 -- 	  sharedAlbumUpdates holds the list of required Shared Album updates (adds and removes)
 -- 	  sharedPhotoUpdates holds the list of required plugin metadata updates
+-- 
+--   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
 function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
 	local pubServiceName = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(publishedCollectionId):getService():getName()
-	local sharedAlbumsLr 	= PSLrUtilities.getPhotoSharedAlbums(srcPhoto, pubServiceName, exportParams.psVersion)
+	local sharedAlbumsLr 	= PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, exportParams.psVersion)
 	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto), {})
 	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
 	
@@ -1137,6 +960,60 @@ local function getAllPublishedCollectionsFromPublishedCollectionSet(publishedCol
 	for i = 1, #childPublishedCollectionSets do
 		getAllPublishedCollectionsFromPublishedCollectionSet(childPublishedCollectionSets[i], allPublishedCollections)
 	end
+end
+
+--------------------------------------------------------------------------------------------
+-- getPhotoPluginMetaCommentInfo(srcPhoto)
+function PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
+	local commentInfo = {}
+	
+	commentInfo.commentCount	 	= tonumber(srcPhoto:getPropertyForPlugin(_PLUGIN, 'commentCount', nil, true))
+	commentInfo.lastCommentDate 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentDate', nil, true)
+	commentInfo.lastCommentType 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentType', nil, true)
+	commentInfo.lastCommentSource 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentSource', nil, true)
+	commentInfo.lastCommentUrl 		= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentUrl', nil, true)
+	commentInfo.lastCommentAuthor 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentAuthor', nil, true)
+	commentInfo.lastCommentText 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'lastCommentText', nil, true)
+
+	return commentInfo
+end
+
+--------------------------------------------------------------------------------------------
+-- setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
+function PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
+	local activeCatalog 	= LrApplication.activeCatalog()
+	local currCommentInfo 	=  PSLrUtilities.getPhotoPluginMetaCommentInfo(srcPhoto)
+	
+	if 		commentInfo.commentCount 		~= currCommentInfo.commentCount
+		or	commentInfo.lastCommentDate		~= currCommentInfo.lastCommentDate
+		or	commentInfo.lastCommentType		~= currCommentInfo.lastCommentType
+		or	commentInfo.lastCommentSource	~= currCommentInfo.lastCommentSource 
+		or	commentInfo.lastCommentUrl		~= currCommentInfo.lastCommentUrl 
+		or	commentInfo.lastCommentAuthor	~= currCommentInfo.lastCommentAuthor 
+		or	commentInfo.lastCommentText		~= currCommentInfo.lastCommentText 
+	then
+		activeCatalog:withWriteAccessDo( 
+				'Update Plugin Metadata for Last Comment',
+				function(context)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'commentCount', 		iif(ifnil(commentInfo.commentCount, 0) > 0, tostring(commentInfo.commentCount), nil))
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentDate', 	commentInfo.lastCommentDate)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentType', 	commentInfo.lastCommentType)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentSource', commentInfo.lastCommentSource)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentUrl', 	commentInfo.lastCommentUrl)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentAuthor', commentInfo.lastCommentAuthor)
+					srcPhoto:setPropertyForPlugin(_PLUGIN, 'lastCommentText', 	commentInfo.lastCommentText)
+				end,
+				{timeout=5}
+		)
+		writeLogfile(3, string.format("setPhotoPluginMetaCommentInfo(%s): updated Comment Info to '%s/%s/%s/%s/%s/%s/%s'\n", 
+									srcPhoto:getRawMetadata('path'), 
+									commentInfo.commentCount, commentInfo.lastCommentDate, commentInfo.lastCommentType, 
+									commentInfo.lastCommentSource, commentInfo.lastCommentUrl, commentInfo.lastCommentAuthor, commentInfo.lastCommentText))    		
+		return 1
+	end
+
+	return 0
+	
 end
 
 --------------------------------------------------------------------------------------------
