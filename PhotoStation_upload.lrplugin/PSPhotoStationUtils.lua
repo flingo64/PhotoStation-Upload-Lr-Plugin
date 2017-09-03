@@ -180,17 +180,15 @@ local function contentCacheList(cacheName, h, albumName, listItems)
 end
 
 -- ===================================== Shared Albums cache ==============================================
--- the Shared Album List cache holds the list of shared Albums
+-- the Shared Album List cache holds the list of shared Albums per session
 
-local sharedAlbumsCache 				= {}
 local sharedAlbumsCacheTimeout 		= 60	-- 60 seconds cache time
-local sharedAlbumsCacheValidUntil
- 
+
 ---------------------------------------------------------------------------------------------------------
 -- sharedAlbumsCacheCleanup: cleanup cache if cache is too old
-local function sharedAlbumsCacheCleanup()
-	if ifnil(sharedAlbumsCacheValidUntil, LrDate.currentTime()) <= LrDate.currentTime() then
-		sharedAlbumsCache = {}
+local function sharedAlbumsCacheCleanup(h)
+	if ifnil(h.sharedAlbumsCacheValidUntil, LrDate.currentTime()) <= LrDate.currentTime() then
+		h.sharedAlbumsCache = {}
 	end
 	return true
 end
@@ -199,23 +197,23 @@ end
 -- sharedAlbumsCacheUpdate(h) 
 local function sharedAlbumsCacheUpdate(h)
 	writeLogfile(3, string.format('sharedAlbumsCacheUpdate().\n'))
-	sharedAlbumsCache = PSPhotoStationAPI.getSharedAlbums(h)
-	sharedAlbumsCacheValidUntil = LrDate.currentTime() + sharedAlbumsCacheTimeout
-	return sharedAlbumsCache
+	h.sharedAlbumsCache = PSPhotoStationAPI.getSharedAlbums(h)
+	h.sharedAlbumsCacheValidUntil = LrDate.currentTime() + sharedAlbumsCacheTimeout
+	return h.sharedAlbumsCache
 end
 
 ---------------------------------------------------------------------------------------------------------
 -- sharedAlbumsCacheFind(h, name) 
 local function sharedAlbumsCacheFind(h, name)
-	sharedAlbumsCacheCleanup()
-	if (#sharedAlbumsCache == 0) and not sharedAlbumsCacheUpdate(h) then
+	sharedAlbumsCacheCleanup(h)
+	if (not h.sharedAlbumCache or #h.sharedAlbumsCache == 0) and not sharedAlbumsCacheUpdate(h) then
 		return nil 
 	end
 	
-	for i = 1, #sharedAlbumsCache do
-		if sharedAlbumsCache[i].name == name then 
-			writeLogfile(4, string.format('sharedAlbumsCacheFind(%s) found  %s.\n', name, sharedAlbumsCache[i].id))
-			return sharedAlbumsCache[i] 
+	for i = 1, #h.sharedAlbumsCache do
+		if h.sharedAlbumsCache[i].name == name then 
+			writeLogfile(4, string.format('sharedAlbumsCacheFind(%s) found  %s.\n', name, h.sharedAlbumsCache[i].id))
+			return h.sharedAlbumsCache[i] 
 		end
 	end
 
