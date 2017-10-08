@@ -282,7 +282,7 @@ function PSLrUtilities.isDynamicAlbumPath(path)
 end
 
 --------------------------------------------------------------------------------------------
--- evaluatePathOrFilename(path, srcPhoto, type)
+-- evaluatePathOrFilename(path, srcPhoto, type, publishedCollection)
 -- 	Substitute metadata placeholders by actual values from the photo and sanitize a given directory path.
 --	Metadata placeholders look in general like: {<category>:<type> <options>|<defaultValue_or_mandatory>}
 --	'?' stands for mandatory, no default available. 
