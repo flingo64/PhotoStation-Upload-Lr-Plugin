@@ -59,6 +59,7 @@ require "PSUploadAPI"
 require "PSPhotoStationAPI"
 require "PSPhotoStationUtils"
 require "PSExiftoolAPI"
+require "PSSharedAlbumMgmt"
 
 --============================================================================--
 		
@@ -589,80 +590,6 @@ local function uploadVideoMetadata(functionContext, videosUploaded, exportParams
 	return true
 end
 
------------------
--- updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) 
--- update Shared Albums for photos/videos just uploaded
--- 	  sharedAlbumUpdates contains the list of required Shared Album updates (adds and removes)
--- 	  sharedPhotoUpdates contains the list of required plugin metadata updates
-local function updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams)
-	local catalog = LrApplication.activeCatalog()
-	local nUpdateItems =  #sharedAlbumUpdates + #sharedPhotoUpdates 
-	local nProcessed 		= 0 
-		
-	writeLogfile(3, string.format("updateSharedAlbums: updating %d shared album and %d photo metadata\n", #sharedAlbumUpdates, #sharedPhotoUpdates))
-	local catalog = LrApplication.activeCatalog()
-	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/UpdateSharedAlbums=Updating ^1 shared albums with ^2 photos",  #sharedAlbumUpdates,  #sharedPhotoUpdates),
-							 		functionContext = functionContext 
-							 	})    
-	for i = 1, #sharedAlbumUpdates do
-		if progressScope:isCanceled() then break end
-		local sharedAlbumUpdate = sharedAlbumUpdates[i]
-
-		progressScope:setCaption(sharedAlbumUpdate.sharedAlbumName)
-
-		if #sharedAlbumUpdate.addPhotos > 0 then 
-			local success, shareUrl = PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, 
-																							sharedAlbumUpdate.isAdvanced, sharedAlbumUpdate.isPublic, 
-																							sharedAlbumUpdate.sharedAlbumPassword, sharedAlbumUpdate.addPhotos)
-			if success then
-        		local firstServerUrl 	= exportParams.proto .. "://" .. exportParams.servername 
-        		local secondServerUrl	= iif(ifnil(exportParams.servername2, '') ~= '', exportParams.proto2 .. "://" .. exportParams.servername2, nil)
-        		writeLogfile(4, string.format("updateSharedAlbum: firstServer: %s secondServer %s\n", firstServerUrl, ifnil(secondServerUrl, '<nil>')))
-        		
-				local sharedAlbumUrls = {}
-				sharedAlbumUrls[1] = exportParams.psUrl .. "#!SharedAlbums/" .. PSPhotoStationUtils.getSharedAlbumId(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName)
-
-				if sharedAlbumUpdate.isPublic and shareUrl then 
-					local pathUrl = string.match(shareUrl, 'http[s]*://[^/]*(.*)')
-					sharedAlbumUrls[2] = firstServerUrl .. pathUrl
-					if secondServerUrl then
-						sharedAlbumUrls[3] = secondServerUrl .. pathUrl
-					end
-				end
-				PSLrUtilities.addKeywordSynonyms(sharedAlbumUpdate.keywordId, sharedAlbumUrls) 
-				if not sharedAlbumUpdate.isPublic then
-					local shareUrlPatterns = {}
-					shareUrlPatterns[1] = firstServerUrl .. '/photo/share/'
-					if secondServerUrl then shareUrlPatterns[2] = secondServerUrl .. '/photo/share/' end
-					PSLrUtilities.removeKeywordSynonyms(sharedAlbumUpdate.keywordId, shareUrlPatterns)
-				end
-			end
-		end
-		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbumIfExists(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
-		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n', 
-										sharedAlbumUpdate.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
-		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
-	end 
-
-	for i = 1, #sharedPhotoUpdates do
-		if progressScope:isCanceled() then break end
-		local sharedPhotoUpdate = sharedPhotoUpdates[i]
-
-		progressScope:setCaption(LrPathUtils.leafName(sharedPhotoUpdate.srcPhoto:getRawMetadata("path")))
-
-		PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
-		writeLogfile(3, string.format("%s: updated plugin metadata.\n",	sharedPhotoUpdate.srcPhoto:getRawMetadata('path')))
-   		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
-	end 
-
-	progressScope:done()
-	 
-	return true
-end
-
 --------------------------------------------------------------------------------
 -- checkMoved(publishedCollection, exportContext, exportParams)
 -- check all photos in a collection locally, if moved
@@ -1145,7 +1072,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1
-					PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams) 
+					PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams) 
 				elseif not photoInfos and not errorCode then
 					-- do not acknowledge, so it will be left as "need copy"
 					nNeedCopy = nNeedCopy + 1
@@ -1204,7 +1131,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					table.insert( failures, srcPath )
 				else
 					if publishedCollection then
-						PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
+						PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
 					end 
 					writeLogfile(2, 'Upload of "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. dstDir .. "/" .. dstFilename .. '" done\n')
 				end
@@ -1222,7 +1149,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	-- deferred metadata upload
 	if #videosUploaded > 0 then uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) end
-	if #sharedAlbumUpdates > 0 then updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) end
+	if #sharedAlbumUpdates > 0 then PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) end
 	
 	writeLogfile(2,"--------------------------------------------------------------------\n")
 	closeSession(exportParams)
