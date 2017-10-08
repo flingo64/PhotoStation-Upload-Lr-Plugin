@@ -621,7 +621,7 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
 		local srcPath = srcPhoto:getRawMetadata('path')
 		local publishedPath = ifnil(pubPhoto:getRemoteId(), '<Nil>')
 		local edited = pubPhoto:getEditedFlag()
-		local dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
+		local dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path', publishedCollection)
 
 		progressScope:setCaption(LrPathUtils.leafName(srcPath))
 
@@ -731,12 +731,12 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 				skipPhoto = true
 			else
     			-- evaluate and sanitize dstRoot: 
-    			dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
+    			dstRoot = PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path', publishedCollection)
 
     			-- file renaming: 
     			--	if not Photo StatLr renaming then use srcFilename
     			if exportParams.renameDstFile then
-    				dstFilename = PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename')
+    				dstFilename = PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename', publishedCollection)
     			else
     				dstFilename = srcFilename
     			end
@@ -1012,14 +1012,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			-- evaluate and sanitize dstRoot: 
 			--   substitute metadata tokens
 			--   replace \ by /, remove leading and trailings slashes
-			dstRoot = 		PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path')
+			dstRoot = 		PSLrUtilities.evaluatePathOrFilename(exportParams.dstRoot, srcPhoto, 'path', publishedCollection)
 
 			-- file renaming: 
 			--	if not Photo StatLr renaming
 			--		if Export: 	use renderedFilename (Lr renaming options may have been turned on)
 			--		else:		use srcFilename
 			if exportParams.renameDstFile then
-				dstFilename = PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename')
+				dstFilename = PSLrUtilities.evaluatePathOrFilename(exportParams.dstFilename, srcPhoto, 'filename', publishedCollection)
 			else
 				dstFilename = iif(publishMode == 'Export', 	renderedFilename, srcFilename)
 			end

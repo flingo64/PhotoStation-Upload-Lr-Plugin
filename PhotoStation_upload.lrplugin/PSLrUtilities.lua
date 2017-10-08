@@ -289,7 +289,7 @@ end
 --	- unrecognized placeholders will be left unchanged, they might be intended path components
 --	- undefined mandatory metadata will be substituted by ?
 --	- undefined optional metadata will be substituted by their default or '' if no default
-function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
+function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCollection)
 
 	writeLogfile(3, string.format("evaluatePathOrFilename(path '%s', type '%s' \n", ifnil(path, '<Nil>'), type)) 
 
@@ -423,6 +423,61 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
     			return pathLevelExtracted
     		end);
 	end
+
+	local substituteCollectionNameOrPath = function(collectionPath, category)
+		return function(contCollParam)
+			local dataTypeAndPattern, dataDefault = string.match(contCollParam, string.format('{%s:(.*)|(.*)}', category))
+			if not dataTypeAndPattern then
+				dataTypeAndPattern = string.match(contCollParam, string.format('{%s:(.*)}',category))
+			end
+			local dataType, dataPattern = string.match(dataTypeAndPattern, '(%w+)%s+(.*)')
+			if not dataType then
+				dataType = dataTypeAndPattern
+			end
+
+			writeLogfile(4, string.format("evaluatePathOrFilename: '%s': type='%s' pattern='%s'\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataPattern, '<Nil>'))) 
+			
+			if not dataType or not string.find('name,path', dataType, 1, true) then 
+				writeLogfile(3, string.format("evaluatePathOrFilename:  '%s': type='%s' not valid  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
+				return contCollParam 
+			end
+			
+			if not collectionPath or not collectionPath[1] then
+				writeLogfile(4, string.format("evaluatePathOrFilename:  '%s': no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
+				return ifnil(dataDefault,'')  
+			end
+			
+			for i = 1, #collectionPath do
+				local dataString
+				
+				if dataType == 'name' then
+					local parents, leaf = string.match(collectionPath[i], "(.*)/([^\/]+)")
+					if not parents then leaf = collectionPath[i] end
+					dataString = leaf
+				else
+					dataString = collectionPath[i]
+				end
+			
+				local dataStringExtracted = dataString
+				if dataString == '' then
+					dataStringExtracted = ifnil(dataDefault, '')
+				else
+					if dataPattern then
+						dataStringExtracted = string.match(dataString, dataPattern)
+					end
+					if not dataStringExtracted then 
+						dataStringExtracted = ifnil(dataDefault, '')
+					else
+						dataStringExtracted = dataStringExtracted
+					end 
+				end
+				writeLogfile(3, string.format("evaluatePathOrFilename: %s  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataStringExtracted, ''))) 
+				return dataStringExtracted
+			end
+			writeLogfile(3, string.format("evaluatePathOrFilename:  %s: no match  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
+			return ifnil(dataDefault,'')  
+		end
+	end
 	
 	-- get contained collections, if required
 	if string.find(path, "{LrCC:", 1, true) then
@@ -434,58 +489,15 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 		end
 		
 		-- substitute Lr contained collection name or path: {LrCC:<name>|<path> <filter>}
-		path = string.gsub (path, '({LrCC:[^}]*})', function(contCollParam)
-				local dataTypeAndPattern, dataDefault = string.match(contCollParam, '{LrCC:(.*)|(.*)}')
-				if not dataTypeAndPattern then
-					dataTypeAndPattern = string.match(contCollParam, '{LrCC:(.*)}')
-				end
-				local dataType, dataPattern = string.match(dataTypeAndPattern, '(%w+)%s+(.*)')
-				if not dataType then
-					dataType = dataTypeAndPattern
-				end
+		path = string.gsub (path, '({LrCC:[^}]*})', substituteCollectionNameOrPath(containedCollectionPath, 'LrCC'));
+	end
 
- 				writeLogfile(4, string.format("evaluatePathOrFilename: '%s': type='%s' pattern='%s'\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataPattern, '<Nil>'))) 
-				
-				if not dataType or not string.find('name,path', dataType, 1, true) then 
-					writeLogfile(3, string.format("evaluatePathOrFilename:  '%s': type='%s' not valid  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
-					return contCollParam 
-				end
-				
-				if not containedCollectionPath or not containedCollectionPath[1] then
-					writeLogfile(4, string.format("evaluatePathOrFilename:  '%s': no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
-					return ifnil(dataDefault,'')  
-				end
-				
-				for i = 1, #containedCollectionPath do
-					local dataString
-					
-					if dataType == 'name' then
-						local parents, leaf = string.match(containedCollectionPath[i], "(.*)/([^\/]+)")
-						if not parents then leaf = containedCollectionPath[i] end
-						dataString = leaf
-					else
-						dataString = containedCollectionPath[i]
-					end
-				
-	    			local dataStringExtracted = dataString
-	    			if dataString == '' then
-    					dataStringExtracted = ifnil(dataDefault, '')
-    				else
-    	    			if dataPattern then
-    	    				dataStringExtracted = string.match(dataString, dataPattern)
-    	    			end
-      					if not dataStringExtracted then 
-      						dataStringExtracted = ifnil(dataDefault, '')
-        				else
-        					dataStringExtracted = dataStringExtracted
-        				end 
-        			end
-					writeLogfile(3, string.format("evaluatePathOrFilename: %s  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataStringExtracted, ''))) 
-        			return dataStringExtracted
-				end
-				writeLogfile(3, string.format("evaluatePathOrFilename:  %s: no match  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
-				return ifnil(dataDefault,'')  
-			end);
+	-- get published collections, if required
+	if string.find(path, "{LrPC:", 1, true) then
+		local publishedCollectionPath = {PSLrUtilities.getCollectionPath(publishedCollection)}
+		
+		-- substitute Lr published collection name or path: {LrPC:<name>|<path> <filter>}
+		path = string.gsub (path, '({LrPC:[^}]*})', substituteCollectionNameOrPath(publishedCollectionPath, 'LrPC'));
 	end
 	
 	if 	type == 'filename'	then

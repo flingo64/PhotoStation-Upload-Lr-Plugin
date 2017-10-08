@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.4.3<br>
+Version 6.5.0<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -149,7 +149,8 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {LrRM:uuid}
 	  - {Path:5}
 	  - {LrCC:path ^Yearly Collections}
-	  - {LrCC:name}<br>
+	  - {LrCC:name}
+	  - {LrPC:name}<br>
   To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-'Target-Album'-or-'Rename-Photos-To'-definitions) 
 
 - __Rename photos__ in target album using __metadata placehoders__:<br>
@@ -533,7 +534,7 @@ GPS coords can be added in Photo Station via the Location Tag panel: enter a loc
 
 Version 5.6
 -----------
-- Support for __downwload of (native) rating__ for photos and videos from __Photo Station 6.5__ and above<br>
+- Support for __download of (native) rating__ for photos and videos from __Photo Station 6.5__ and above<br>
 - Performance improvement __(up to 10 times faster)__ for publish mode __CheckExisting__ and __download of title, caption, rating and gps__ through introduction of a local Photo Station album cache
 
 Version 5.7
@@ -609,6 +610,11 @@ Version 6.4
 	- Added a seperate config setting for additional videos for UHD videos with the Export/Publish Service dialog
 - Show current processed image as caption in the progess bar
 
+Version 6.5
+-----------
+- Support for mirroring of Published Collection Set hierarchies via metadata placeholder __'{LrPC:...}'__<br>
+  Contributed by Filip Kis
+
 Copyright
 ==========
 Copyright(c) 2017, Martin Messmer
@@ -635,8 +641,11 @@ Photo StatLr uses the following phantastic free software to do its job:
 - qt-faststart(.exe), 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 - JSON.lua				see: http://regex.info/blog/lua/json (by Jeffrey Friedl)
 - exiftool(.exe)		see: http://www.sno.phy.queensu.ca/~phil/exiftool/ (by Phil Harvey)
- 
+
 Thanks to all you folks providing these real valuable software gems. This plugin would be nothing without it!
+
+Thanks for contributing code to the project:
+	- Filip Kis (metadata placeholder {LrPC})
 
 Thanks for the amazing, astounding, boooor-ing quotes from:
 http://www.imdb.com/character/ch0000704/quotes ;-)
