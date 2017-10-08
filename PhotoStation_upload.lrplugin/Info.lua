@@ -70,7 +70,7 @@ return {
 
 	LrLibraryMenuItems = {
 		title = "Manage PS Shared Albums",
-		file = "PSSharedAlbumMgmt.lua",
+		file = "PSSharedAlbumDialog.lua",
 	},
 	
 	VERSION = { major=plugin_major, minor=plugin_minor, revision=plugin_rev, build=plugin_build, 
