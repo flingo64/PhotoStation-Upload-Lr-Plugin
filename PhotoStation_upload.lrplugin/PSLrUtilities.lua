@@ -5,9 +5,12 @@ This file is part of Photo StatLr - Lightroom plugin.
 Copyright(c) 2017, Martin Messmer
 
 Lightroom utilities:
+	- printError
+	
 	- isVideo
 	- isRAW
 	
+	- iso8601ToTime
 	- getDateTimeOriginal
 	
 	- getPublishPath
@@ -17,24 +20,31 @@ Lightroom utilities:
 	- isDynamicAlbumPath
 	- evaluatePathOrFilename
 
-	- noteAlbumForCheckEmpty
+	- getPublishServiceByName
 	
-	- getKeywordObjects
-	- addKeywordHierarchyToCatalogAndPhoto
+	- getKeywordPhotos
+	- addKeywordSynonyms
+	- removeKeywordSynonyms
+	- replaceKeywordSynonyms
 	- renameKeyword
+	- deleteKeyword
 	
-	- getPhotoSharedAlbumKeywords
-
-	- getPhotoPluginMetaLinkedSharedAlbums	
-	- setPhotoPluginMetaLinkedSharedAlbums
+	- getPhotoKeywordObjects
+	- addPhotoKeyword
+	- removePhotoKeyword
+	- createAndAddPhotoKeywordHierarchy
 	
 	- getPhotoPluginMetaCommentInfo	
 	- setPhotoPluginMetaCommentInfo
 
+	- noteAlbumForCheckEmpty
+	
 	- getPublishedPhotoByRemoteId
 	
 	- convertCollection
 	- convertAllPhotos
+	
+	- getDefaultCollectionSettings
 	
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -58,6 +68,7 @@ local LrDate 			= import 'LrDate'
 local LrDialogs 		= import 'LrDialogs'
 local LrFileUtils 		= import 'LrFileUtils'
 local LrPathUtils 		= import 'LrPathUtils'
+local LrPrefs			= import 'LrPrefs'
 local LrProgressScope 	= import 'LrProgressScope'
 
 --====== local functions =====================================================--
@@ -65,6 +76,16 @@ local LrProgressScope 	= import 'LrProgressScope'
 --====== global functions ====================================================--
 
 PSLrUtilities = {}
+
+--------------------------------------------------------------------------------------------
+-- printError()
+-- Cleanup handler for a function context
+function PSLrUtilities.printError(success, message)
+    if not success then 
+		writeLogfile(1, 	string.format("That does it, I'm leaving! Internal error: '%s'\n", ifnil(message, 'Unknown error')))
+    end
+end
+
 
 ---------------------- isRAW() ----------------------------------------------------------
 -- isRAW(filename)
@@ -474,51 +495,86 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type)
 end 
 
 --------------------------------------------------------------------------------------------
--- noteAlbumForCheckEmpty(photoPath)
--- Note the album of a photo in the albumCheckList
--- make sure, each album exists only once and the albumCheckList is sorted by pathname length desc (longest pathnames first)
-function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
-	local albumPath, _ = string.match(photoPath , '(.+)\/([^\/]+)')
-	if not albumPath then 
-		-- photo in root
-		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): root will not be noted.\n", photoPath))
-		return albumCheckList 	
-	end
+-- getPublishServiceByName(publishServiceName)
+--   returns the LrPublishService  of the given name
+function PSLrUtilities.getPublishServiceByName(publishServiceName)
+	local activeCatalog = LrApplication.activeCatalog()
+	local publishServices = activeCatalog:getPublishServices(_PLUGIN.id)
 	
-	local newAlbum = {}
-	newAlbum.albumPath	= albumPath
+    for i = 1, #publishServices	do
+    	if publishServices[i]:getName() == publishServiceName then
+    		return publishServices[i]
+    	end  
+	end	
 	
-	local previousAlbum, currentAlbum = nil, albumCheckList
+	return nil
+end
 	
-	while currentAlbum do
-		if string.find(currentAlbum.albumPath, albumPath, 1, true) == 1 then 
-			writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
-			return albumCheckList
-		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
-			newAlbum.next = currentAlbum
-			if previousAlbum then
-				previousAlbum.next = newAlbum
-			else		 
-				albumCheckList = newAlbum 
+--------------------------------------------------------------------------------------------
+-- getKeywordByPath(keywordPath, createIfMissing, includeOnExport)
+--   returns the LrKeyword id of the given keyword path, create path if createIfMissing is set
+function PSLrUtilities.getKeywordByPath(keywordPath, createIfMissing, includeOnExport)
+	local catalog = LrApplication.activeCatalog()
+	local keywordHierarchy = split(keywordPath, '|')
+	local keyword, parentKeyword, checkKeywords = nil, nil, catalog:getKeywords()
+	
+	for i = 1, #keywordHierarchy do
+		keyword = nil
+		for j = 1, #checkKeywords do
+			if checkKeywords[j]:getName() == keywordHierarchy[i] then
+				keyword = checkKeywords[j]
+				break
 			end
-			writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert before %s\n", albumPath, currentAlbum.albumPath))
-			return albumCheckList
-		else
-			previousAlbum = currentAlbum
-			currentAlbum = currentAlbum.next			
 		end
+		
+		if not keyword and not createIfMissing then
+			writeLogfile(3, string.format("getKeywordByPath('%s', create: %s, include: %s): '%s' does not exist, returning nil\n", 
+											keywordPath, tostring(ifnil(createIfMissing, '<nil>')), tostring(ifnil(includeOnExport, '<nil>')), keywordHierarchy[i]))
+			return nil
+		elseif not keyword and createIfMissing then
+			writeLogfile(3, string.format("getKeywordByPath('%s', create: %s, include: %s): creating missing '%s'\n", 
+											keywordPath, tostring(ifnil(createIfMissing, '<nil>')), tostring(ifnil(includeOnExport, '<nil>')), keywordHierarchy[i]))
+    		catalog:withWriteAccessDo( 
+    			'getKeywordByPath', function(context)
+					keyword = catalog:createKeyword(keywordHierarchy[i], {}, true, parentKeyword, true)
+					-- setAttributes should work here, but doesn't 
+					-- keyword:setAttributes({includeOnExport = ifnil(includeOnExport, false)})					
+				end,
+				{timeout=5})
+				
+        	if keyword then
+            	LrApplication.activeCatalog():withWriteAccessDo( 
+            		'getKeywordByPath',
+            		function(context)
+            			keyword:setAttributes({includeOnExport = ifnil(includeOnExport, false)})
+            		end,
+            		{timeout=5}
+            	)
+        	end
+
+		end
+
+		parentKeyword = keyword	
+		checkKeywords = keyword:getChildren()
+	end
+
+	writeLogfile(4, string.format("getKeywordByPath('%s', create: %s, include: %s) returns keyword id %d\n", 
+									keywordPath, tostring(ifnil(createIfMissing, '<nil>')), tostring(ifnil(includeOnExport, '<nil>')), keyword.localIdentifier))
+	return keyword.localIdentifier, keyword
+end
+
+--------------------------------------------------------------------------------------------
+-- getKeywordPhotos(keywordId)
+-- returns the list of photos belonging to the given keyword 
+function PSLrUtilities.getKeywordPhotos(keywordId)
+	local catalog = LrApplication.activeCatalog()
+	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
+	
+	if not keywords or not keywords[1] then
+		return nil
 	end
 	
-	newAlbum.next		= nil
-	if not previousAlbum then 
-		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert as first in list\n", albumPath))
-		albumCheckList 		= newAlbum
-	else
-		previousAlbum.next	= newAlbum
-		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert as last in list\n", albumPath))
-	end
-		
-	return albumCheckList	
+	return keywords[1]:getPhotos()
 end
 
 --------------------------------------------------------------------------------------------
@@ -538,6 +594,7 @@ function PSLrUtilities.addKeywordSynonyms(keywordId, synonyms)
 	
 	for i = 1, #synonyms do
 		if not findInStringTable(keywordSynonyms, synonyms[i]) then
+			writeLogfile(3, string.format("addKeywordSynonyms('%s', '%s'): done \n", keyword:getName(), synonyms[i]))
 			table.insert(keywordSynonyms, synonyms[i])
 			foundNewSynonyms = true 
 		end
@@ -574,7 +631,7 @@ function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms, isPattern)
 	for i = #keywordSynonyms, 1, -1 do
 		for j = 1, #synonyms do
     		if string.find(keywordSynonyms[i], synonyms[j], 1, not ifnil(isPattern, false)) then
-				writeLogfile(4, string.format("Keyword '%s': removing %d. synonym '%s'\n", keyword:getName(), i, synonyms[j]))
+				writeLogfile(3, string.format("removeKeywordSynonyms('%s', '%s'): removing synonym '%s'\n", keyword:getName(), synonyms[j], keywordSynonyms[i]))
     			table.remove(keywordSynonyms, i)
     			synonymsRemoved = true
     			break
@@ -595,61 +652,58 @@ function PSLrUtilities.removeKeywordSynonyms(keywordId, synonyms, isPattern)
 end
 
 --------------------------------------------------------------------------------------------
--- getKeywordObjects(srcPhoto, keywordNameTable)
--- returns the keyword objects belonging to the keywords in the keywordTable
--- will only return exportable leaf keywords (synonyms and parent keywords are not returned)
-function PSLrUtilities.getKeywordObjects(srcPhoto, keywordNameTable)
-	-- get all leaf keywords
-	local keywords = srcPhoto:getRawMetadata("keywords")  
-	local keywordsFound, nFound = {}, 0 	
+-- replaceKeywordSynonyms(keywordId, oldSynonyms, newSynonyms)
+-- replace a list of synonym patterns for a keyword
+function PSLrUtilities.replaceKeywordSynonyms(keywordId, oldSynonyms, newSynonyms)
+	local catalog = LrApplication.activeCatalog()
+	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
 	
-	for i = 1, #keywords do
-		local found = false 
-		
-		if keywords[i]:getAttributes().includeOnExport then
-    		for j = 1, #keywordNameTable do
-    			if keywords[i]:getName() == keywordNameTable[j] then
-    				found = true
-    				break
+	if not keywords or not keywords[1] then
+		return false
+	end
+	
+	local keyword = keywords[1]
+	local keywordSynonyms = keyword:getSynonyms()
+	local synonymsReplaced = false
+	
+	for i = 1, #oldSynonyms do
+		local oldSynonymFound, oldSynonymReplaced = false, false
+		for j = #keywordSynonyms, 1, -1 do
+			local foundSynonym = string.match(keywordSynonyms[j], oldSynonyms[i]) 
+    		if foundSynonym then
+    			oldSynonymFound = true
+    			if foundSynonym ~= newSynonyms[i] then
+					writeLogfile(3, string.format("replaceKeywordSynonyms('%s', '%s'): replacing synonym '%s' by '%s'\n", keyword:getName(), oldSynonyms[i], keywordSynonyms[j], newSynonyms[i]))
+    				table.remove(keywordSynonyms, j)
+    				table.insert(keywordSynonyms, newSynonyms[i]) 
+    				oldSynonymReplaced = true
+    				synonymsReplaced = true
     			end
-    		end
-    		if found then
-    			nFound = nFound + 1
-    			keywordsFound[nFound] = keywords[i]  
+    			break
     		end
 		end
+		if not oldSynonymFound then
+			writeLogfile(3, string.format("replaceKeywordSynonyms('%s', '%s'): adding synonym '%s'\n", keyword:getName(), oldSynonyms[i], newSynonyms[i]))
+			table.insert(keywordSynonyms, newSynonyms[i])
+			synonymsReplaced = true 
+		end
 	end
-					
-	writeLogfile(3, string.format("getKeywordObjects(%s, '%s') returns %d leaf keyword object\n", 
-									srcPhoto:getRawMetadata('path'), table.concat(keywordNameTable, ','), nFound))
-	return keywordsFound
+
+	if synonymsReplaced then
+    	catalog:withWriteAccessDo( 
+    		'Replace Keyword Synonyms',
+    		function(context)
+    			keyword:setAttributes({synonyms = keywordSynonyms})
+    		end,
+    		{timeout=5}
+    	)
+	end 
+	return true
 end
 
 --------------------------------------------------------------------------------------------
--- addKeywordHierarchyToCatalogAndPhoto(keywordPath, srcPhoto)
--- create (if not existing) a keyword hierarchy and add it to a photo if given. 
--- keyword hierarchies look like: '{parentKeyword|}keyword
---  returns the created leaf keyword
-function PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(keywordPath, srcPhoto)
-	local catalog = LrApplication.activeCatalog()
-	local keywordHierarchy = split(keywordPath, '|')
-	local keyword, parentKeyword = nil, nil
-	
-	writeLogfile(3, string.format("addKeywordHierarchyToCatalogAndPhoto('%s')\n", table.concat(keywordHierarchy, '->')))
-	
-	for i = 1, #keywordHierarchy do
-		writeLogfile(3, string.format("addKeywordHierarchyToCatalogAndPhoto('%s'): add '%s'\n", table.concat(keywordHierarchy, '->'), keywordHierarchy[i]))
-		keyword = catalog:createKeyword(keywordHierarchy[i], {}, true, parentKeyword, true)
-		parentKeyword = keyword
-	end
-	if srcPhoto then srcPhoto:addKeyword(keyword) end 
-
-	return keyword
-end
-
---------------------------------------------------------------------------------------------
--- renameKeywordById(keywordId, newKeywordName)
-function PSLrUtilities.renameKeywordById(keywordId, newKeywordName)
+-- renameKeyword(keywordId, newKeywordName)
+function PSLrUtilities.renameKeyword(keywordId, newKeywordName)
 	local catalog = LrApplication.activeCatalog()
 	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
 	
@@ -675,291 +729,107 @@ function PSLrUtilities.renameKeywordById(keywordId, newKeywordName)
 end
 
 --------------------------------------------------------------------------------------------
--- renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
-function PSLrUtilities.renameKeyword(rootKeywords, keywordParent, oldKeywordName, newKeywordName)
-	writeLogfile(3, string.format("renameKeyword('%s', '%s', '%s', '%s')\n", table.concat(ifnil(rootKeywords, {}), '|'), ifnil(keywordParent, ''), oldKeywordName, newKeywordName))
-	local keywordHierarchy = split(keywordParent, '|')
-
-	if not keywordHierarchy then
-    	for i = 1, #rootKeywords do
-    		if rootKeywords[i]:getName() == oldKeywordName then
-				writeLogfile(3, string.format("renameKeyword() found'%', rename to '%s'\n", oldKeywordName, newKeywordName))
-    			rootKeywords[i]:setAttributes({keywordName = newKeywordName})
-    			return true
-   			end
-    	end
-    	-- keyword not found
-    	return false
-	end
+-- deleteKeyword(keywordId)
+function PSLrUtilities.deleteKeyword(keywordId)
+	-- there is no API to remove a keyword from catalog
 	
-	-- keyword hierarchy is not empty
-	for i = 1, #rootKeywords do
-		if rootKeywords[i]:getName() == keywordHierarchy[1] then
-			return PSLrUtilities.renameKeyword(rootKeywords[i]:getChildren(), table.concat(keywordHierarchy, '|', 2))	
-		end	
-	end
+	-- TODO: inform the user to remove the keyword manually
 	
 	return true
 end
 
 --------------------------------------------------------------------------------------------
--- getServiceSharedAlbumKeywords(pubService, psVersion)
---   returns a list of all Shared Album keywords for a collection, i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getServiceSharedAlbumKeywords(pubService, psVersion)
-	local sharedAlbumKeywords 		= {} 	
-	local numSharedAlbumKeywords 	= 0
-	local sharedAlbumKeywordRoot = "Photo StatLr|Shared Albums|" .. pubService:getName()
-	local pubServiceSettings = pubService:getPublishSettings()
-	local pubServiceSharedAlbumRootKeyword
+-- getPhotoKeywordObjects(srcPhoto, keywordNameTable)
+-- returns the keyword objects belonging to the keywords in the keywordTable
+-- will only return exportable leaf keywords (synonyms and parent keywords are not returned)
+function PSLrUtilities.getPhotoKeywordObjects(srcPhoto, keywordNameTable)
+	-- get all leaf keywords
+	local keywords = srcPhoto:getRawMetadata("keywords")  
+	local keywordsFound, nFound = {}, 0 	
+	
+	for i = 1, #keywords do
+		local found = false 
+		
+		if keywords[i]:getAttributes().includeOnExport then
+    		for j = 1, #keywordNameTable do
+    			if keywords[i]:getName() == keywordNameTable[j] then
+    				found = true
+    				break
+    			end
+    		end
+    		if found then
+    			nFound = nFound + 1
+    			keywordsFound[nFound] = keywords[i]  
+    		end
+		end
+	end
+					
+	writeLogfile(3, string.format("getPhotoKeywordObjects(%s, '%s') returns %d leaf keyword object\n", 
+									srcPhoto:getRawMetadata('path'), table.concat(keywordNameTable, ','), nFound))
+	return keywordsFound
+end
 
-	-- make sure root of Shared Album keyword hierarchy is available
+--------------------------------------------------------------------------------------------
+-- addPhotoKeyword(srcPhoto, keywordId)
+function PSLrUtilities.addPhotoKeyword(srcPhoto, keywordId)
+	local catalog = LrApplication.activeCatalog()
+	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
+	
+	if not keywords or not keywords[1] then
+		return true
+	end
+	 
 	LrApplication.activeCatalog():withWriteAccessDo( 
-		'GetPublishServiceSharedAlbumRoot',
+		'AddPhotoKeyword',
 		function(context)
-			pubServiceSharedAlbumRootKeyword = PSLrUtilities.addKeywordHierarchyToCatalogAndPhoto(sharedAlbumKeywordRoot, nil)
+			srcPhoto:addKeyword(keywords[1]) 
   		end,
 		{timeout=5}
 	)
 
-	local keywords = pubServiceSharedAlbumRootKeyword:getChildren()
-	for i = 1, #keywords do
-		local keyword = keywords[i]
-		local keywordSynonyms = keyword:getSynonyms()
-   		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
- 
-  		local privateUrlIndex = findInStringTable(keywordSynonyms, '.*#!SharedAlbums.*', true)
-  		local privateUrl
-		if privateUrlIndex then privateUrl = keywordSynonyms[privateUrlIndex] end
- 
-  		local publicUrlIndex = findInStringTable(keywordSynonyms, '.*' .. regexpEscape(pubServiceSettings.servername) .. '/photo/share/.*', true)
-  		local publicUrl
-		if publicUrlIndex then publicUrl = keywordSynonyms[publicUrlIndex] end
-		
-  		local publicUrl2Index, publicUrl2
-  		if ifnil(pubServiceSettings.servername2, '') ~= '' then
-  			publicUrl2Index = findInStringTable(keywordSynonyms, '.*' .. regexpEscape(pubServiceSettings.servername2) .. '.*', true)
-			if publicUrl2Index then publicUrl2 = keywordSynonyms[publicUrl2Index] end
-		end
-		
-   		sharedAlbumKeywords[numSharedAlbumKeywords] = {
-   				keywordId			= keyword.localIdentifier,
-   				sharedAlbumName 	= keyword:getName(), 
-   				isPublic			= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
-   				privateUrl			= privateUrl,
-   				publicUrl			= publicUrl,
-   				publicUrl2			= publicUrl2,
-   		}
-		-- allow for Shared Album password for Photo Station 6.6 and above
-		if psVersion >= 66 then
-    		sharedAlbumKeywords[numSharedAlbumKeywords]["isAdvanced"] = true
-    		local sharedAlbumPassword
-    		for i = 1,  #keywordSynonyms do
-    			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
-    			if sharedAlbumPassword then break end
-    		end
-			if sharedAlbumPassword then
-	    		sharedAlbumKeywords[numSharedAlbumKeywords]["sharedAlbumPassword"] = sharedAlbumPassword
-	    	end
-	    end
-	end
-	writeLogfile(3, string.format("getServiceSharedAlbumKeywords(%s): found Shared Albums: '%s'\n", 
-									pubService:getName(), table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
-	return sharedAlbumKeywords   		
-
+	return true
 end
 
 --------------------------------------------------------------------------------------------
--- getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
---   returns a list of all Shared Album keywords for a photo, i.e. keywords below "Photo StatLr"|"Shared Albums"
-function PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, psVersion)
-	local keywords 					= srcPhoto:getRawMetadata("keywords")  
-	local sharedAlbumKeywords 		= {} 	
-	local numSharedAlbumKeywords 	= 0
-
-	writeLogfile(4, string.format("getPhotoSharedAlbumKeywords(%s, %s) starting\n", 
-									srcPhoto:getRawMetadata('path'), pubServiceName))
-	for i = 1, #keywords do
-		local keyword = keywords[i]
-		
-		if	keyword:getParent() and keyword:getParent():getName() == pubServiceName
-		and keyword:getParent():getParent() and keyword:getParent():getParent():getName() == 'Shared Albums'
-		and keyword:getParent():getParent():getParent() and keyword:getParent():getParent():getParent():getName() == 'Photo StatLr' 
-		then
-			local keywordSynonyms = keyword:getSynonyms()
-    		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
-    		sharedAlbumKeywords[numSharedAlbumKeywords] = {
-    				keywordId			= keyword.localIdentifier,
-    				sharedAlbumName 	= keyword:getName(), 
-    				isPublic			= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
-    		}
-			-- allow for Shared Album password for Photo Station 6.6 and above
-			if psVersion >= 66 then
-	    		sharedAlbumKeywords[numSharedAlbumKeywords]["isAdvanced"] = true
-	    		local sharedAlbumPassword
-	    		for i = 1,  #keywordSynonyms do
-	    			sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
-	    			if sharedAlbumPassword then break end
-	    		end
-				if sharedAlbumPassword then
-		    		sharedAlbumKeywords[numSharedAlbumKeywords]["sharedAlbumPassword"] = sharedAlbumPassword
-		    	end
-		    end
-		end
+-- removePhotoKeyword(srcPhoto, keywordId)
+function PSLrUtilities.removePhotoKeyword(srcPhoto, keywordId)
+	local catalog = LrApplication.activeCatalog()
+	local keywords = catalog:getKeywordsByLocalId( { keywordId } )
+	
+	if not keywords or not keywords[1] then
+		return true
 	end
-	writeLogfile(3, string.format("getPhotoSharedAlbumKeywords(%s, %s): found Shared Albums: '%s'\n", 
-									srcPhoto:getRawMetadata('path'), pubServiceName, table.concat(getTableExtract(sharedAlbumKeywords, 'sharedAlbumName'), ',')))
-	return sharedAlbumKeywords   		
+	 
+	LrApplication.activeCatalog():withWriteAccessDo( 
+		'RemovePhotoKeyword',
+		function(context)
+			srcPhoto:removeKeyword(keywords[1]) 
+  		end,
+		{timeout=5}
+	)
 
+	return true
 end
 
 --------------------------------------------------------------------------------------------
--- getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
---   returns a list of all Shared Album the photo was linked to as stored in private plugin metadata
-function PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
-	local sharedAlbumPluginMetadata = srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
-	local sharedAlbumsPS
-
-	-- format of plugin metadata: <collectionId>:<sharedAlbumName>/{<collectionId>:<sharedAlbumName>}
-	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
-		sharedAlbumsPS = split(sharedAlbumPluginMetadata, '/')
-	end
-	writeLogfile(3, string.format("getPhotoPluginMetaLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n", 
-									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))    		
-	return sharedAlbumsPS
-end 
-
---------------------------------------------------------------------------------------------
--- setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
---   store a list of all Shared Album the photo was linked to in private plugin metadata
-function PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
-	local activeCatalog 				= LrApplication.activeCatalog()
-	local oldSharedAlbumPluginMetadata 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
-	table.sort(sharedAlbums)
-	local newSharedAlbumPluginMetadata 	= table.concat(sharedAlbums, '/')
+-- createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath)
+-- create (if not existing) a keyword hierarchy and add it to a photo. 
+-- keyword hierarchies look like: '{parentKeyword|}keyword
+function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath)
+	local catalog = LrApplication.activeCatalog()
+	local keywordHierarchy = split(keywordPath, '|')
+	local keyword, parentKeyword = nil, nil
 	
-	if newSharedAlbumPluginMetadata ~= oldSharedAlbumPluginMetadata then
-		activeCatalog:withWriteAccessDo( 
-				'Update Plugin Metadata for Shared Albums',
-				function(context)
-					srcPhoto:setPropertyForPlugin(_PLUGIN, 'sharedAlbums', iif(#newSharedAlbumPluginMetadata == 0, nil, newSharedAlbumPluginMetadata))
-				end,
-				{timeout=5}
-		)
-		writeLogfile(3, string.format("setPhotoPluginMetaLinkedSharedAlbums(%s): updated Shared Albums plugin metadata to '%s'\n", 
-									srcPhoto:getRawMetadata('path'), newSharedAlbumPluginMetadata))    		
-		return 1
-	end
-
-	return 0
-end 
-
---------------------------------------------------------------------------------------------
--- noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
--- 	  sharedAlbumUpdates holds the list of required Shared Album updates (adds and removes)
--- 	  sharedPhotoUpdates holds the list of required plugin metadata updates
--- 
---   returns a list of all Shared Album the photo was linked to via the given Published Collection as stored in plugin metadata
-function PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
-	local pubServiceName = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(publishedCollectionId):getService():getName()
-	local sharedAlbumsLr 	= PSLrUtilities.getPhotoSharedAlbumKeywords(srcPhoto, pubServiceName, exportParams.psVersion)
-	local oldSharedAlbumsPS	= ifnil(PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto), {})
-	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
+	writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s')\n", srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->')))
 	
-	-- add photo to all given Shared Albums that it is not already member of
-	for i = 1, #sharedAlbumsLr do
-		local keywordId				= sharedAlbumsLr[i].keywordId
-		local sharedAlbumName		= sharedAlbumsLr[i].sharedAlbumName
-		local isPublic 				= sharedAlbumsLr[i].isPublic
-		local isAdvanced			= sharedAlbumsLr[i].isAdvanced
-		local sharedAlbumPassword	= sharedAlbumsLr[i].sharedAlbumPassword
-		
-		local photoSharedAlbum 		= publishedCollectionId .. ':' .. sharedAlbumName
-		
-		if 		not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) 
-			or	not PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'sharedAlbum', sharedAlbumName, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), true)
-		then
-    		local sharedAlbumUpdate = nil
-    		
-    		for k = 1, #sharedAlbumUpdates do
-    			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
-    				sharedAlbumUpdate = sharedAlbumUpdates[k]
-    				break
-    			end
-    		end
-    		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album '%s' as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
-    			sharedAlbumUpdate = {
-    				sharedAlbumName 		= sharedAlbumName, 
-    				isAdvanced 				= isAdvanced, 
-    				isPublic 				= isPublic, 
-    				sharedAlbumPassword 	= sharedAlbumPassword, 
-    				keywordId 				= keywordId, 
-    				addPhotos 				= {}, 
-    				removePhotos 			= {}, 
-    			}
-    			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
-    		end
-    		local addPhotos = sharedAlbumUpdate.addPhotos
-    		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
-    		
-   			if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
-   				table.insert(newSharedAlbumsPS, photoSharedAlbum)
-   			end
-		end
-	end 
-
-	-- remove photo from all Shared Albums that it is not member of
-	for i = 1, #oldSharedAlbumsPS do
-		local collId, sharedAlbumName = string.match(oldSharedAlbumsPS[i], '(%d+):(.*)')
-		local sharedAlbumUpdate = nil
-
-		if collId == tostring(publishedCollectionId) and not findInAttrValueTable(sharedAlbumsLr, 'sharedAlbumName', sharedAlbumName, 'sharedAlbumName') then
-    		for k = 1, #sharedAlbumUpdates do
-    			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
-    				sharedAlbumUpdate = sharedAlbumUpdates[k]
-    				break
-    			end
-    		end
-
-    		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album '%s' as node %d for removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
-    			sharedAlbumUpdate = {sharedAlbumName = sharedAlbumName, addPhotos = {}, removePhotos = {} }
-    			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
-    		end
-    		local removePhotos = sharedAlbumUpdate.removePhotos
-    		removePhotos[#removePhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
-    		
-    		local removeId = findInStringTable(newSharedAlbumsPS, oldSharedAlbumsPS[i])
-    		table.remove(newSharedAlbumsPS, removeId)
- 		end 
-	end
-
-	if table.concat(oldSharedAlbumsPS, '/') ~= table.concat(newSharedAlbumsPS, '/') then
-		writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding modified plugin metadata '%s' to sharedPhotoUpdates\n", publishedPhotoId, table.concat(newSharedAlbumsPS, '/')))
-		local sharedPhotoUpdate = { srcPhoto = srcPhoto, sharedAlbums = newSharedAlbumsPS }
-		table.insert(sharedPhotoUpdates, sharedPhotoUpdate)
+	for i = 1, #keywordHierarchy do
+		writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s'): add '%s'\n", 
+									srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->'), keywordHierarchy[i]))
+		keyword = catalog:createKeyword(keywordHierarchy[i], {}, true, parentKeyword, true)
+		parentKeyword = keyword
 	end
 	
-	return true 
-end
-
---------------------------------------------------------------------------------------------
--- getAllPublishedCollectionsFromPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
-local function getAllPublishedCollectionsFromPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
-	local publishedCollections = publishedCollectionSet:getChildCollections()
-	local childPublishedCollectionSets = publishedCollectionSet:getChildCollectionSets()
-	writeLogfile(3, string.format("getAllPublishedCollectionsFromPublishedCollectionSet: set %s has %d collections and %d collection sets\n", 
-									publishedCollectionSet:getName(), #publishedCollections, #childPublishedCollectionSets))
-	
-	for i = 1, #publishedCollections do
-		local publishedCollection = publishedCollections[i]
-		table.insert(allPublishedCollections, publishedCollection)
-   		writeLogfile(3, string.format("getAllPublishedCollectionsFromPublishedCollection: published collection %s, total %d\n", publishedCollection:getName(), #allPublishedCollections))
-	end
-		
-	for i = 1, #childPublishedCollectionSets do
-		getAllPublishedCollectionsFromPublishedCollectionSet(childPublishedCollectionSets[i], allPublishedCollections)
-	end
+	srcPhoto:addKeyword(keyword) 
 end
 
 --------------------------------------------------------------------------------------------
@@ -1017,6 +887,54 @@ function PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
 end
 
 --------------------------------------------------------------------------------------------
+-- noteAlbumForCheckEmpty(photoPath)
+-- Note the album of a photo in the albumCheckList
+-- make sure, each album exists only once and the albumCheckList is sorted by pathname length desc (longest pathnames first)
+function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
+	local albumPath, _ = string.match(photoPath , '(.+)\/([^\/]+)')
+	if not albumPath then 
+		-- photo in root
+		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): root will not be noted.\n", photoPath))
+		return albumCheckList 	
+	end
+	
+	local newAlbum = {}
+	newAlbum.albumPath	= albumPath
+	
+	local previousAlbum, currentAlbum = nil, albumCheckList
+	
+	while currentAlbum do
+		if string.find(currentAlbum.albumPath, albumPath, 1, true) == 1 then 
+			writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
+			return albumCheckList
+		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
+			newAlbum.next = currentAlbum
+			if previousAlbum then
+				previousAlbum.next = newAlbum
+			else		 
+				albumCheckList = newAlbum 
+			end
+			writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert before %s\n", albumPath, currentAlbum.albumPath))
+			return albumCheckList
+		else
+			previousAlbum = currentAlbum
+			currentAlbum = currentAlbum.next			
+		end
+	end
+	
+	newAlbum.next		= nil
+	if not previousAlbum then 
+		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert as first in list\n", albumPath))
+		albumCheckList 		= newAlbum
+	else
+		previousAlbum.next	= newAlbum
+		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): insert as last in list\n", albumPath))
+	end
+		
+	return albumCheckList	
+end
+
+--------------------------------------------------------------------------------------------
 -- getPublishedPhotoByRemoteId(publishedCollection, remoteId)
 function PSLrUtilities.getPublishedPhotoByRemoteId(publishedCollection, remoteId)
 	local publishedPhotos = publishedCollection:getPublishedPhotos()
@@ -1027,6 +945,87 @@ function PSLrUtilities.getPublishedPhotoByRemoteId(publishedCollection, remoteId
 	end
 	
 	return nil
+end
+
+--------------------------------------------------------------------------------------------
+-- addPublishedCollectionsOfPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
+local function addPublishedCollectionsOfPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
+	local publishedCollections = publishedCollectionSet:getChildCollections()
+	local childPublishedCollectionSets = publishedCollectionSet:getChildCollectionSets()
+	writeLogfile(3, string.format("addPublishedCollectionsOfPublishedCollectionSet: Published Collection Set '%s' has %d collections and %d collection sets\n", 
+									publishedCollectionSet:getName(), #publishedCollections, #childPublishedCollectionSets))
+	
+	for i = 1, #publishedCollections do
+		local publishedCollection = publishedCollections[i]
+		table.insert(allPublishedCollections, publishedCollection)
+   		writeLogfile(3, string.format("addPublishedCollectionsOfPublishedCollectionSet: Published Collection '%s', total collections: %d\n", publishedCollection:getName(), #allPublishedCollections))
+	end
+		
+	for i = 1, #childPublishedCollectionSets do
+		addPublishedCollectionsOfPublishedCollectionSet(childPublishedCollectionSets[i], allPublishedCollections)
+	end
+end
+
+--------------------------------------------------------------------------------------------
+-- getPublishedCollections()
+--  returns a list of all Published Collections of the given Publish Service
+function PSLrUtilities.getPublishedCollections(publishService)
+	local allPublishedCollections = {}
+	
+   	local publishedCollections = publishService:getChildCollections()
+   	local publishedCollectionSets = publishService:getChildCollectionSets()   	
+    	
+	writeLogfile(3, string.format("getPublishedCollections: Publish Service '%s' has %d collections and %d collection sets\n", 
+									publishService:getName(), #publishedCollections, #publishedCollectionSets))
+	
+	-- note all immediate published collections
+	for j = 1, #publishedCollections do
+		local publishedCollection = publishedCollections[j]
+		
+		table.insert(allPublishedCollections, publishedCollection)
+		writeLogfile(3, string.format("getPublishedCollections: Publish Service '%s' -  Published collection '%s', total %d\n", publishService:getName(), publishedCollection:getName(), #allPublishedCollections))
+	end
+	
+	--  note all Published Collections from all Published Collection Sets
+	for j = 1, #publishedCollectionSets do
+		local publishedCollectionSet = publishedCollectionSets[j]
+		writeLogfile(2, string.format("getPublishedCollections: Publish Service '%s' -  Published Collection Set '%s'\n", publishService:getName(), publishedCollectionSet:getName()))
+		addPublishedCollectionsOfPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
+	end   	
+
+	return allPublishedCollections
+	
+end
+
+--------------------------------------------------------------------------------------------
+-- getAllPublishedCollections()
+--  returns a list of all Published Collections of all Publish Services
+function PSLrUtilities.getAllPublishedCollections()
+	writeLogfile(2, string.format("getAllPublishedCollections: starting\n"))
+	local activeCatalog = LrApplication.activeCatalog()
+	local publishServices = activeCatalog:getPublishServices(_PLUGIN.id)
+	local allPublishedCollections = {}
+
+	if not publishServices then
+		writeLogfile(2, string.format("getAllPublishedCollections: No publish services found, done.\n"))
+		return nil
+	end
+	
+	writeLogfile(3, string.format("getAllPublishedCollections: found %d publish services\n", #publishServices))
+	
+	-- first: collect all published collection
+    for i = 1, #publishServices	do
+    	local publishedCollections = PSLrUtilities.getPublishedCollections(publishServices[i])
+    	if publishedCollections then
+    		for j = 1, #publishedCollections do
+    			table.insert(allPublishedCollections, publishedCollections[j])
+    		end
+    	end
+    end
+    
+   	writeLogfile(2, string.format("getAllPublishedCollections: Found %d Published Collections in %d Publish Services\n", #allPublishedCollections, #publishServices))
+
+    return allPublishedCollections
 end
 
 --------------------------------------------------------------------------------------------
@@ -1085,22 +1084,11 @@ function PSLrUtilities.convertCollection(functionContext, publishedCollection)
 end
 
 --------------------------------------------------------------------------------------------
--- printError()
--- Cleanup handler for a function context
-function PSLrUtilities.printError(success, message)
-    if not success then 
-		writeLogfile(1, 	string.format("That does it, I'm leaving! Internal error: '%s'\n", ifnil(message, 'Unknown error')))
-    end
-end
-
---------------------------------------------------------------------------------------------
 -- convertAllPhotos()
 function PSLrUtilities.convertAllPhotos(functionContext)
+	local allPublishedCollections
+
 	writeLogfile(2, string.format("ConvertAllPhotos: starting %s functionContext\n", iif(functionContext, 'with', 'without')))
-	local activeCatalog = LrApplication.activeCatalog()
---	local publishedCollections = activeCatalog:getPublishedCollections()  -- doesn't work
-	local publishServices = activeCatalog:getPublishServices(_PLUGIN.id)
-	local allPublishedCollections = {}
 
 	if functionContext then
 		LrDialogs.attachErrorDialogToFunctionContext(functionContext)
@@ -1108,40 +1096,9 @@ function PSLrUtilities.convertAllPhotos(functionContext)
 		functionContext:addCleanupHandler(PSLrUtilities.printError)
 	end
 	
-	if not publishServices then
-		writeLogfile(2, string.format("ConvertAllPhotos: No publish services found, done.\n"))
-		return
-	end
-	
-	writeLogfile(3, string.format("ConvertAllPhotos: found %d publish services\n", #publishServices))
-	
 	-- first: collect all published collection
-    for i = 1, #publishServices	do
-    	local publishService = publishServices[i]
-    	local publishedCollections = publishService:getChildCollections()
-    	local publishedCollectionSets = publishService:getChildCollectionSets()   	
-    	
-    	writeLogfile(3, string.format("ConvertAllPhotos: publish service %s has %d collections and %d collection sets\n", 
-    									publishService:getName(), #publishedCollections, #publishedCollectionSets))
-    	
-    	-- note all immediate published collections
-    	for j = 1, #publishedCollections do
-    		local publishedCollection = publishedCollections[j]
-    		
-    		table.insert(allPublishedCollections, publishedCollection)
-    		writeLogfile(3, string.format("ConvertAllPhotos: service %s -  published collection %s, total %d\n", publishService:getName(), publishedCollection:getName(), #allPublishedCollections))
-    	end
-    	
-    	--  note all Published Collections from all Published Collection Sets
-    	for j = 1, #publishedCollectionSets do
-    		local publishedCollectionSet = publishedCollectionSets[j]
-    		writeLogfile(2, string.format("ConvertAllPhotos: service %s -  published collection set %s\n", publishService:getName(), publishedCollectionSet:getName()))
-    		getAllPublishedCollectionsFromPublishedCollectionSet(publishedCollectionSet, allPublishedCollections)
- 		end   	
-	end
+    allPublishedCollections = PSLrUtilities.getAllPublishedCollections()
 
-   	writeLogfile(2, string.format("ConvertAllPhotos: Found %d published collections in %d publish service\n", #allPublishedCollections,  #publishServices))
-	
 	local startTime = LrDate.currentTime()
 
 	-- now convert them
