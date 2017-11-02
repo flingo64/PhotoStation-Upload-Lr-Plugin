@@ -110,12 +110,12 @@ local function createTree(uHandle, srcDir, srcRoot, dstRoot, dirsCreated)
 		local newPath = parentDir .. "/" .. newDir
 
 		if not dirsCreated[newPath] then
-			writeLogfile(2,"Create dir - parent: " .. parentDir .. " newDir: " .. newDir .. " newPath: " .. newPath .. "\n")
+			writeLogfile(2,"Create dir - parent: '" .. parentDir .. "' newDir: '" .. newDir .. "' newPath: '" .. newPath .. "'\n")
 			
 			local paramParentDir
-			if parentDir == "" then paramParentDir = "/" else paramParentDir = parentDir  end  
+			if parentDir == "" then paramParentDir = "/" else paramParentDir = parentDir  end
 			if not PSUploadAPI.createFolder (uHandle, paramParentDir, newDir) then
-				writeLogfile(1,"Create dir - parent: " .. paramParentDir .. " newDir: " .. newDir .. " failed!\n")
+				writeLogfile(1,"Create dir - parent: '" .. paramParentDir .. "' newDir: '" .. newDir .. "' failed!\n")
 				return nil
 			end
 			dirsCreated[newPath] = true
