@@ -66,21 +66,21 @@ local columnWidth = {
 	label			= 80,
 	data			= 250,
 	url				= 400,
+	password		= 166,
 	
 	-- list section
-	select			= 20,
+	delete			= 30,
 	albumName		= 170,
 	publishService	= 120,
-	password		= 152,
 	public			= 40,
-	colors			= 100,
-	comments		= 70,
-	area 			= 35,
 	start			= 70,
 	stop			= 70,
-	delete			= 60,
+	area 			= 35,
+	comments		= 60,
+	colors			= 100,
+	sync			= 40,
 
-	total			= 760,
+	total			= 740,
 
 	color			= 16,
 	scrollbar		= 50,
@@ -114,24 +114,11 @@ end
 -------------------------------------------------------------------------------
 -- updateGlobalRowsSelected: select/unselect all rows
 local function updateGlobalRowsSelected( propertyTable )
--- 	local message = nil
-
 	writeLogfile(2, "updateGlobalRowsSelected() started\n")	
 	for i = 1, #rowsPropertyTable do
 		rowsPropertyTable[i].isSelected = propertyTable.selectAll
 	end
 	
---[[
-	if message then
-		propertyTable.message = message
-		propertyTable.hasError = true
-		propertyTable.hasNoError = false
-	else
-		propertyTable.message = nil
-		propertyTable.hasError = false
-		propertyTable.hasNoError = true
-	end
-]]	
 end
 
 --[[
@@ -309,8 +296,8 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
             				width 			= columnWidth.comments,
                 		},
             				
-                		f:row {
-            				width 			= columnWidth.colors,
+ --               		f:row {
+ --           				width 			= columnWidth.colors,
             
                     		f:checkbox {
                     			value 			= bind 'colorRed',
@@ -346,7 +333,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
             	       			visible			= bind 'isPublic',
                 				width 			= columnWidth.color,
                     		},
-                		},
+--                		},
 
                 		f:checkbox {
                 			title 			= "",
@@ -400,7 +387,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 		   			
                		f:row {
             			f:static_text {
-					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album",
+					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album:",
                     		alignment		= 'left',
             				width 			= columnWidth.label,
             		   },
@@ -419,7 +406,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 							fill_horizontal 	= 1,
 							
                    			f:static_text  {
-                		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service",
+                		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service:",
     --            				width 			= columnWidth.label,
                    			},
                    			 
@@ -749,7 +736,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 						},
 						    			
             			f:view {
-							width	= columnWidth.delete,
+							width	= columnWidth.sync,
                        		fill_horizontal = 1,
 
                 			f:static_text {
@@ -774,12 +761,14 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
     	-- Column Header
     	-----------------------------------------------------------------
 		f:group_box {
+       		fill_horizontal = 1,
+
     		f:row {
     			width = columnWidth.total,
     			
     			f:static_text {
     				width 			= columnWidth.delete,
-    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AddDelete=Add\nDelete",
+    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AddDelete=Delete",
             		alignment		= 'left',
     			},
     
@@ -787,25 +776,25 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
     		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album",
             		alignment		= 'left',
     				width 			= columnWidth.albumName,
-    		   },
+    		  	},
     		   
     			f:static_text {
     		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service",
             		alignment		= 'left',
     				width 			= columnWidth.publishService,
-    		   },
+    		  	},
     		   
     			f:static_text {
     		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Public=Public",
             		alignment		= 'left',
     				width 			= columnWidth.public,
-    		   },
+    		  	},
     		   
     			f:static_text {
     				width 			= columnWidth.start,
     		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/StartTime=From",
             		alignment		= 'left',
-    		   },
+    		  	},
     		   
     			f:static_text {
     				width 			= columnWidth.stop,
@@ -815,57 +804,69 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
     		   
     			f:static_text {
     				width 			= columnWidth.area,
-    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AreaTool=Area",
+    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AreaTool=Area^nTool",
             		alignment		= 'left',
-    		   },
+    		  	},
     		   
     			f:static_text {
     				width 			= columnWidth.comments,
     		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Comments=Comments",
             		alignment		= 'left',
-    		   },
+    		  	},
     		   
-				f:row {
-    				width 			= columnWidth.colors,
-	   				f:color_well {
-   						value			= LrColor('red'),
-   						enabled			= false,
-						width 			= columnWidth.color,
-   					},
-	
-	   				f:color_well {
-   						value			= LrColor('yellow'),
-   						enabled			= false,
-						width 			= columnWidth.color,
-   					},
-	
-	   				f:color_well {
-   						value			= LrColor('green'),
-   						enabled			= false,
-						width 			= columnWidth.color,
-   					},
-	
-	   				f:color_well {
-   						value			= LrColor('blue'),
-   						enabled			= false,
-						width 			= columnWidth.color,
-   					},
-	
-	   				f:color_well {
-   						value			= LrColor('purple'),
-   						enabled			= false,
-						width 			= columnWidth.color,
-   					},
-	
+    		   	f:view {
+    				f:row {
+--        				width 			= columnWidth.colors,
+    	   				f:color_well {
+       						value			= LrColor('red'),
+       						enabled			= false,
+    						width 			= columnWidth.color,
+       					},
+    	
+    	   				f:color_well {
+       						value			= LrColor('yellow'),
+       						enabled			= false,
+    						width 			= columnWidth.color,
+       					},
+    	
+    	   				f:color_well {
+       						value			= LrColor('green'),
+       						enabled			= false,
+    						width 			= columnWidth.color,
+       					},
+    	
+    	   				f:color_well {
+       						value			= LrColor('blue'),
+       						enabled			= false,
+    						width 			= columnWidth.color,
+       					},
+    	
+    	   				f:color_well {
+       						value			= LrColor('purple'),
+       						enabled			= false,
+    						width 			= columnWidth.color,
+       					},
+    				},
+  				}, 
+  				  			
+    			f:view {
+        			f:row {
+          				width 			= columnWidth.sync,
+               			f:static_text  {
+               				title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColor=Sync",
+--               				width 			= columnWidth.sync,
+               			},
+    				},
+           			
+        			f:row {
+                   		width 			= columnWidth.sync,
+            			f:checkbox {
+            				tooltip 		= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColorTT=Select All",
+            				width_in_chars	= 0,
+            				value 			= bind 'selectAll',
+            			},
+    				},
 				},
-    			
-    			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColor=Download\nColor Labels",
-    				tooltip 		= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColorTT=Select All",
-               		width_in_chars	= 0,
-    				text_color		= LrColor("red"),
-    				value 			= bind 'selectAll',
-    			},
     		},
     		
         	-----------------------------------------------------------------
