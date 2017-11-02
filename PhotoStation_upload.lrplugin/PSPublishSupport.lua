@@ -1347,8 +1347,12 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			local albumName 		= ifnil(string.match(photoInfo.remoteId , '(.*)\/[^\/]+'), '/')
     			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfoFromList(publishSettings.uHandle, 'album', albumName, photoInfo.remoteId, 
     																				srcPhoto:getRawMetadata('isVideo'), useCache)
-    			local psPhotoInfo 		= psPhotoInfos.info 
-    			local psPhotoAdditional = psPhotoInfos.additional
+    			local psPhotoInfo, psPhotoAdditional
+				if psPhotoInfos then
+					psPhotoInfo 		= psPhotoInfos.info 
+					psPhotoAdditional 	= psPhotoInfos.additional
+				end
+
         		if psPhotoInfo then
         			if collectionSettings.titleDownload 	then titlePS = psPhotoInfo.title end 
         			if collectionSettings.captionDownload	then captionPS = psPhotoInfo.description end 
