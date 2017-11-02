@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.5.0<br>
+Version 6.5.1<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -33,17 +33,18 @@ Requirements
 	- Windows 7
 	- Windows 8.0, 8.1
 	- Windows 10
-	- MacOS 10.7.5
-	- MacOS 10.8.5
-	- MacOS 10.9.5	
-	- MacOS 10.10.2, 10.10.3, 10.10.4, 10.10.5 
-	- MacOS 10.11.0, 10.11.1, 10.11.2, 10.11.3, 10.11.4, 10.11.5, 10.11.6
-	- MacOS 10.12.0, 10.12.1, 10.12.2, 10.12.3, 10.12.4, 10.12.5, 10.12.6
-	- MacOS 10.13.0
+	- MacOS X 7.5
+	- MacOS X 8.5
+	- MacOS X 9.5	
+	- MacOS X 10.2, 10.3, 10.4, 10.5 
+	- MacOS X 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6
+	- MacOS X 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6
+	- MacOS X 13.0, 13.1
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
-	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12
+	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12, 6.13
+	- Lr 7.0
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 (tested), Photo Station (6.7)
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
