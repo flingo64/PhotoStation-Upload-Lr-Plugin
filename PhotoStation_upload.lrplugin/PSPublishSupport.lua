@@ -1339,8 +1339,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		then
     			local useCache = true
     			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
-    			local psPhotoInfo 		= psPhotoInfos.info 
-    			local psPhotoAdditional = psPhotoInfos.additional
+    			local psPhotoInfo, psPhotoAdditional
+				if psPhotoInfos then
+					psPhotoInfo 		= psPhotoInfos.info 
+					psPhotoAdditional = psPhotoInfos.additional
+				end
         		if psPhotoInfo then
         			if collectionSettings.titleDownload 	then titlePS = psPhotoInfo.title end 
         			if collectionSettings.captionDownload	then captionPS = psPhotoInfo.description end 
