@@ -748,8 +748,8 @@ local function getColorLabelsFromPublishService(functionContext, publishServiceN
 					local colorLabelLr = srcPhoto:getRawMetadata('colorNameForLabel')
 		   			writeLogfile(3, string.format("Get color labels: %s - found color label '%s'(%s) in Shared Album '%s', Lr color is '%s'\n", 
 	   							photoInfo.remoteId, colorLabelPS, psPubColorLabel, sharedAlbumName, colorLabelLr))
-	   				nColorLabels = nColorLabels + 1
-					if colorLabelLr ~= iif(colorLabelPS == 'grey', 'none', colorLabelPS) then
+					if colorLabelLr ~= iif(colorLabelPS == 'none', 'grey', colorLabelPS) then
+		   				nColorLabels = nColorLabels + 1
 						LrApplication.activeCatalog():withWriteAccessDo( 
 							'ChangeColorLabel',
                     		function(context)
