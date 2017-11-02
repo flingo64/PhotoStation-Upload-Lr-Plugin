@@ -86,12 +86,12 @@ function PSUploadAPI.createFolder (h, parentDir, newDir)
 		{ field = 'X-DUPLICATE', 			value = 'SKIP' },
 		{ field = 'X-ORIG-FNAME', 			value =  urlencode(newDir) }, 
 		{ field = 'X-UPLOAD-TYPE',			value = 'FOLDER' },
---		{ field = 'X-IS-BATCH-LAST-FILE', 	value = '1' },
 	}
 	local postBody = ''
 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, postBody, postHeaders, 'POST', h.serverTimeout, 0)
 	
 	writeLogfile(4, "createFolder: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ",...)\n")
+	writeTableLogfile(4, 'postHeaders', postHeaders, true)
 	
 	return checkPSUploadAPIAnswer(string.format("PSUploadAPI.createFolder('%s', '%s')", parentDir, newDir),
 									respHeaders, respBody)
