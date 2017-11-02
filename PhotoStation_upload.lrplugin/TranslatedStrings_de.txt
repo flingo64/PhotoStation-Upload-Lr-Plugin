@@ -25,7 +25,7 @@
 "$$$/PSUpload/CollectionSettings/PublicCommentsDownloadTT=Download von Foto-Kommentaren von freigegebenen Gemeinsamen Alben der Photo Station zur Anzeige im Lr 'Kommentare'-Panel"
 "$$$/PSUpload/CollectionSettings/PublishMode=Veröffentlichungsmodus:"
 "$$$/PSUpload/CollectionSettings/PublishModeOptChkEx=CheckExisting: Überprüfen ob zu veröffentlichende Fotos schon auf der Photo Station existieren."
-"$$$/PSUpload/CollectionSettings/PublishModeOptChkMv=CheckMoved: Überprüfen ob veröffentlichte Fotos lokal verchoben wurden."
+"$$$/PSUpload/CollectionSettings/PublishModeOptChkMv=CheckMoved: Überprüfen ob veröffentlichte Fotos lokal verschoben wurden."
 "$$$/PSUpload/CollectionSettings/PublishModeOptConv=Convert: Konvertieren einer alten Sammlung in neues Format."
 "$$$/PSUpload/CollectionSettings/PublishModeOptMove=MovePhotos: Fotos in der Photo Station verschieben (nach lokalem Verschieben oder neuem Ziel-Album)."
 "$$$/PSUpload/CollectionSettings/PublishModeOptUpload=Upload: Normales Veröffentlichen von Fotos"
