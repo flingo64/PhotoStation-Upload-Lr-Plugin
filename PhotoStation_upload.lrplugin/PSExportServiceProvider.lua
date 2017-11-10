@@ -82,7 +82,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Station to upload to
 		{ key = 'username', 		default = '' },		-- account for Photo Station upload
 		{ key = 'password', 		default = '' },		-- guess what...
-		{ key = 'psVersion', 		default = 67 },		-- Photo Station version: default PS 6.6
+		{ key = 'psVersion', 		default = 68 },		-- Photo Station version: default PS 6.8
 		{ key = 'isPS6', 			default = true },	-- derived from psVersion: use upload optimization for Photo Station 6 (not THUMB_L required)
 
 		-- target album parameters
