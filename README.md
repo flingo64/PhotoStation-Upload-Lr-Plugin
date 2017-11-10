@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.5.1<br>
+Version 6.5.2<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -46,7 +46,7 @@ Requirements
 	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12, 6.13
 	- Lr 7.0
 * Synology Photo Station:
-	Photo Station 5, Photo Station 6 (tested), Photo Station 6.5 (tested), Photo Station 6.6 (tested), Photo Station (6.7)
+	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
 	- ImageMagick/convert(.exe)
 	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)

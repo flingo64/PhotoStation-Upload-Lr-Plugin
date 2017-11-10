@@ -570,6 +570,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         { title	= 'Photo Station 6.5', value 	= 65 },
         { title	= 'Photo Station 6.6', value 	= 66 },
         { title	= 'Photo Station 6.7', value 	= 67 },
+        { title	= 'Photo Station 6.8', value 	= 68 },
 	}
 	
 	return

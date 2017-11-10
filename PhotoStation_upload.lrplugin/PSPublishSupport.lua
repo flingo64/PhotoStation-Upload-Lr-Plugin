@@ -188,7 +188,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 	albumPath = PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
 	
 	if PSLrUtilities.isDynamicAlbumPath(albumPath)then 
-		showFinalMessage("Photo StatLr: GoToPublishedCollection failed!", "Cannot open dynamic album path: '" .. albumPath .. "'", "critical")
+		showFinalMessage("Photo StatLr: GoToPublishedCollection failed!", "Show Album '" .. info.publishedCollection:getName() .. "' in Photo Station: can't open a dynamic target album!", "info")
 		closeLogfile()
 		return
 	end
