@@ -297,7 +297,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			
 			conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.targetAlbumView(f, propertyTable)),
 			
-			-- ================== Phote renaming options======== ===============================================
+			-- ================== Photo Renaming Options ========================================================
 			
 			conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.photoNamingView(f, propertyTable)),
 			
