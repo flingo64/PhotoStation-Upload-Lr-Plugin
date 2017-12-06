@@ -30,6 +30,7 @@ Photo StatLr uses the following free software to do its job:
 local LrApplication		= import 'LrApplication'
 local LrBinding			= import 'LrBinding'
 local LrColor			= import 'LrColor'
+local LrDate			= import 'LrDate'
 local LrDialogs			= import 'LrDialogs'
 local LrFileUtils		= import 'LrFileUtils'
 local LrFunctionContext	= import 'LrFunctionContext'
@@ -51,8 +52,8 @@ require "PSSharedAlbumMgmt"
 
 --============================================================================--
 
--- the following keys can be modified in row view and should trigger updateRowSharedAlbumParams() 
-local rowModifyKeys = {'isPublic', 'startTime', 'stopTime', 'comments', 'areaTool', 'colorRed', 'colorYellow', 'colorGreen', 'colorBlue', 'colorPurple'}
+-- the following keys can be modified in active album view and should trigger updateActiveAlbumStatus() 
+local observedKeys = {'publishServiceName', 'sharedAlbumName', 'startTime', 'stopTime'}
 
 local allPublishServiceNames
 local allSharedAlbums				-- all Shared Albums
@@ -87,16 +88,47 @@ local columnWidth = {
 }
 
 -------------------------------------------------------------------------------
--- updateRowSharedAlbumParams:
--- 		set Modified-Flag, 
-local function updateRowSharedAlbumParams( propertyTable )
---	local message = nil
+-- updateActiveAlbumStatus:
+-- 
+local function updateActiveAlbumStatus( propertyTable )
+	local message = nil
 
-	propertyTable.wasModified = true
-
---[[
 	repeat
-		writeLogfile(2, "updateRowSharedAlbumParams(): selected = " .. tostring(propertyTable.isSelected) .. "\n")	
+		-- Use a repeat loop to allow easy way to "break" out.
+		-- (It only goes through once.)
+
+		if ifnil(propertyTable.publishServiceName, '') == '' then
+			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/PublishServiceMissing=Please select a Publish Service!" 
+			break
+		end
+
+		if ifnil(propertyTable.sharedAlbumName, '') == '' then
+			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/SharedAlbumNameMissing=Please enter a Shared Album Name!" 
+			break
+		end
+
+		-- if this is a new entry: check if Album does not yet exist
+		if propertyTable.wasAdded then
+			for i = 1, #allSharedAlbums do
+				if 	propertyTable.publishServiceName == allSharedAlbums[i].publishServiceName
+				and	propertyTable.sharedAlbumName == allSharedAlbums[i].sharedAlbumName
+				then
+        			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/SharedAlbumAlreadyExist=Shared Album already exists!" 
+        			break
+				end
+			end
+		end
+		
+		if ifnil(propertyTable.startTime, '') ~= '' and not PSSharedAlbumDialog.validateDate(nil, propertyTable.startTime) then
+			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/StartDateIncorrect=From Date must be 'YYYY-mm-dd'!" 
+			break
+		end
+
+		if ifnil(propertyTable.stopTime, '') ~= '' and not PSSharedAlbumDialog.validateDate(nil, propertyTable.stopTime) then
+			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/StartDateIncorrect=Until Date must be 'YYYY-mm-dd'!" 
+			break
+		end
+
 	until true
 	
 	if message then
@@ -108,7 +140,6 @@ local function updateRowSharedAlbumParams( propertyTable )
 		propertyTable.hasError = false
 		propertyTable.hasNoError = true
 	end
-]]
 end
 
 -------------------------------------------------------------------------------
@@ -144,26 +175,28 @@ end
 -------------------------------------------------------------------------------
 -- activateRow()
 -- 		activate the given row in dialog rows area 
-local function activateRow(propertyTable, i) 
-	-- save old values
-	if ifnil(propertyTable.activeRowIndex, i)  ~= i then
-		local lastRowProps = rowsPropertyTable[propertyTable.activeRowIndex]
-		
-		if lastRowProps.sharedAlbumName ~= propertyTable.sharedAlbumName then
-			if not lastRowProps.wasRenamed then
-				lastRowProps.oldSharedAlbumName	= lastRowProps.sharedAlbumName
-			end
-			lastRowProps.wasRenamed = true
-		end
-		
-		for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
-    		if lastRowProps[key] ~= propertyTable[key] then
-				writeLogfile(3, string.format("activateRow(%s/%s): key %s changed from %s to %s\n", 
-										lastRowProps.publishServiceName, lastRowProps.sharedAlbumeName, key, lastRowProps[key], propertyTable[key]))		
-    			lastRowProps[key] = propertyTable[key]
-    			lastRowProps.wasModified = true
+local function activateRow(propertyTable, i)
+	if not propertyTable.hasError then  
+    	-- save old values
+    	if ifnil(propertyTable.activeRowIndex, i)  ~= i then
+    		local lastRowProps = rowsPropertyTable[propertyTable.activeRowIndex]
+    		
+    		if lastRowProps.sharedAlbumName ~= propertyTable.sharedAlbumName then
+    			if not lastRowProps.wasRenamed then
+    				lastRowProps.oldSharedAlbumName	= lastRowProps.sharedAlbumName
+    			end
+    			lastRowProps.wasRenamed = true
     		end
-		end
+    		
+    		for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
+        		if lastRowProps[key] ~= propertyTable[key] then
+    				writeLogfile(3, string.format("activateRow(%s/%s): key %s changed from %s to %s\n", 
+    										lastRowProps.publishServiceName, lastRowProps.sharedAlbumeName, key, lastRowProps[key], propertyTable[key]))		
+        			lastRowProps[key] = propertyTable[key]
+        			lastRowProps.wasModified = true
+        		end
+    		end
+    	end
 	end
 
 	-- load new values
@@ -174,12 +207,12 @@ local function activateRow(propertyTable, i)
 	end
 	propertyTable.wasAdded = rowsPropertyTable[i].wasAdded
 	
+	updateActiveAlbumStatus(propertyTable)
 
 	for j = 1, #rowsPropertyTable do
 		rowsPropertyTable[j].isActive = false
 	end
 	rowsPropertyTable[i].isActive 	= true
-	
 end
 
 -------------------------------------------------------------------------------
@@ -198,6 +231,29 @@ end
 
 PSSharedAlbumDialog = {}
 
+--============================ validate functions ===========================================================
+
+-------------------------------------------------------------------------------
+-- validateDate: check if a string is a valide date string YYYY-mm-dd
+function PSSharedAlbumDialog.validateDate( view, value )
+-- 	if string.match(value, '^(%d%d%d%d%-%d%d%-%d%d)$') ~= value then 
+--		return false, value
+--	end
+
+	local year, month, day = string.match(value, '^(%d%d%d%d)%-(%d%d)%-(%d%d)$')
+	if not year then 
+		return false, value
+	end
+		
+	local timestamp = LrDate.timeFromComponents(tonumber(year), tonumber(month), tonumber(day), 0, 0, 0, 'local')
+	if not timestamp or timestamp == 0 then
+		return false, value
+	end
+	
+	return true, value
+end
+
+--============================ dialog functions ===========================================================
 
 -------------------------------------------------------------------------------
 -- showDialog(f, propertyTable, context)
@@ -264,10 +320,10 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 							enabled 		= false,
                    			visible			= bind 'isPublic',
                				immediate 		= true,
+               				validate		= PSSharedAlbumDialog.validateDate,
                     		alignment		= 'left',
                     		font			= '<system/small>',
             				width 			= columnWidth.start,
-            				-- TODO: validate date input
                 	   },
                 
                 		f:edit_field {
@@ -275,10 +331,10 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 							enabled 		= false,
                    			visible			= bind 'isPublic',
                				immediate 		= true,
+               				validate		= PSSharedAlbumDialog.validateDate,
                     		alignment		= 'left',
                     		font			= '<system/small>',
                     		width 			= columnWidth.stop,
-            				-- TODO: validate date input
                 	   },
                 
 						-- TODO: check if isAdvanced                
@@ -886,6 +942,15 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 			f:column {
 				fill_horizontal = 1,
 				fill_vertical 	= 1,
+
+    			f:static_text {
+    				title 			= bind 'message',
+    				text_color 		= LrColor("red"),
+   					font			= '<system/bold>',
+   					alignment		= 'center', 
+    				fill_horizontal = 1,
+    				visible 		= bind 'hasError'
+    			},
     		},
 			
 			f:column {
@@ -940,6 +1005,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 	
 end
 
+--[[
 -------------------------------------------------------------------------------
 -- showAddAlbumDialog
 function PSSharedAlbumDialog.showAddAlbumDialog(f, propertyTable, context)
@@ -993,6 +1059,7 @@ function PSSharedAlbumDialog.showAddAlbumDialog(f, propertyTable, context)
 	) 	
    	
 end
+]]
 
 -------------------------------------------------------------------------------
 -- PSSharedAlbumDialog.doDialog(  )
@@ -1007,8 +1074,13 @@ function PSSharedAlbumDialog.doDialog( )
 		props:addObserver('selectAll', updateGlobalRowsSelected)
 		props.showPasswords				= false		
 		props.activeRowIndex			= nil		
-		props.sharedAlbumName 	= nil
-
+		props.sharedAlbumName 			= nil
+		props.hasError					= false
+		
+    	for i = 1, #observedKeys  do
+    		props:addObserver(observedKeys[i], updateActiveAlbumStatus)
+    	end
+		
        	allPublishServiceNames, allSharedAlbums = PSSharedAlbumMgmt.readSharedAlbumsFromLr()
     	
     	-- initialize all rows, both filled and empty
@@ -1036,12 +1108,6 @@ function PSSharedAlbumDialog.doDialog( )
 			rowsPropertyTable[i].sharedAlbumNameOld	= rowsPropertyTable[i].sharedAlbumName	    	
     	end
 
-    	for i = 1,#rowsPropertyTable do
-	    	for j = 1, #rowModifyKeys  do
-	    		rowsPropertyTable[i]:addObserver(rowModifyKeys[j], updateRowSharedAlbumParams)
-	    	end
-	    end
-		
 		activateRow(props, 1)
 
 		local saveSharedAlbums 		= false
