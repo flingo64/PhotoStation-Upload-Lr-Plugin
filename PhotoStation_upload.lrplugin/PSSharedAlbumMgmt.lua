@@ -525,16 +525,12 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
     			end
     		end
     		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album '%s' as node %d for addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s' as entry %d due to addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
     				sharedAlbumName			= sharedAlbumName,
-    				sharedAlbumParams 		= {}, 
     				addPhotos 				= {}, 
     				removePhotos 			= {}, 
     			}
-				for key, value in pairs(sharedAlbumsLr[i]) do
-					sharedAlbumUpdate.sharedAlbumParams[key] = value		
-				end
 				
 --[[
     			sharedAlbumUpdate = {
@@ -549,8 +545,17 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
 ]]
     			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
     		end
+
+			if not sharedAlbumUpdate.sharedAlbumParams then
+				sharedAlbumUpdate.sharedAlbumParams = {} 
+				for key, value in pairs(sharedAlbumsLr[i]) do
+					sharedAlbumUpdate.sharedAlbumParams[key] = value		
+				end
+			end
+			
     		local addPhotos = sharedAlbumUpdate.addPhotos
     		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
+   			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note in entry '%s' --> addPhotos[%d]\n", publishedPhotoId, sharedAlbumName, #addPhotos))
     		
    			if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
    				table.insert(newSharedAlbumsPS, photoSharedAlbum)
@@ -572,10 +577,9 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
     		end
 
     		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): adding Shared Album '%s' as node %d for removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s' as entry %d due to removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
     				sharedAlbumName			= sharedAlbumName,
-    				sharedAlbumParams 		= {}, 
     				addPhotos 				= {}, 
     				removePhotos 			= {}, 
     			}
@@ -584,6 +588,7 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
     		end
     		local removePhotos = sharedAlbumUpdate.removePhotos
     		removePhotos[#removePhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
+   			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note in entry '%s' --> removePhotos[%d]\n", publishedPhotoId, sharedAlbumName, #removePhotos))
     		
     		local removeId = findInStringTable(newSharedAlbumsPS, oldSharedAlbumsPS[i])
     		table.remove(newSharedAlbumsPS, removeId)
@@ -652,9 +657,9 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 			end
 		end
 		
-		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumParams.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
+		if #sharedAlbumUpdate.removePhotos > 0 then PSPhotoStationUtils.removePhotosFromSharedAlbum(exportParams.uHandle, sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
 		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n', 
-										sharedAlbumUpdate.sharedAlbumParams.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
+										sharedAlbumUpdate.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
 		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
 	end 
