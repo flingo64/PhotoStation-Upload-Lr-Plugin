@@ -1081,6 +1081,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			
 			nProcessed = nProcessed + 1
 			
+    		-- Cleanup plugin metadata for shared albums, if this is a new photo
+    		if publishedCollection and not publishedPhotoId then
+    			PSLrUtilities.removePhotoPluginMetaLinkedSharedAlbumForCollection(srcPhoto, publishedCollection.localIdentifier)
+    		end
+    		
 			-- evaluate and sanitize dstRoot: 
 			--   substitute metadata tokens
 			--   replace \ by /, remove leading and trailings slashes
