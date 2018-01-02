@@ -788,7 +788,7 @@ function PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
 	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
 		sharedAlbumsPS = split(sharedAlbumPluginMetadata, '/')
 	end
-	writeLogfile(3, string.format("getPhotoPluginMetaLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n", 
+	writeLogfile(4, string.format("getPhotoPluginMetaLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n", 
 									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))    		
 	return sharedAlbumsPS
 end 
@@ -815,6 +815,31 @@ function PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbu
 		return 1
 	end
 
+	return 0
+end 
+
+--------------------------------------------------------------------------------------------
+-- removePhotoPluginMetaLinkedSharedAlbumForCollection(srcPhoto, collectionId)
+--   remove all Shared Albums of a given collection from private plugin metadata 'sharedAlbums'
+function PSLrUtilities.removePhotoPluginMetaLinkedSharedAlbumForCollection(srcPhoto, collectionId)
+	local sharedAlbums 			= PSLrUtilities.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
+	local sharedAlbumsRemoved	= false
+
+	writeLogfile(4, string.format("removePhotoPluginMetaLinkedSharedAlbumForCollection(%s, {%s}): removing all Shared Albums for colletion '%d'\n", 
+									srcPhoto:getRawMetadata('path'), table.concat(ifnil(sharedAlbums, {}), ","), collectionId))
+
+	if sharedAlbums then
+    	for i = #sharedAlbums, 1, -1 do
+    		if string.match(sharedAlbums[i], tostring(collectionId) .. ':.*') then
+    			table.remove(sharedAlbums, i)
+    			sharedAlbumsRemoved = true
+    		end
+    	end
+    	
+    	if sharedAlbumsRemoved then
+    		return PSLrUtilities.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
+    	end
+	end
 	return 0
 end 
 
