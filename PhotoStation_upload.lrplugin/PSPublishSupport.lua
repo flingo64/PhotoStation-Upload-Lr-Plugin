@@ -589,9 +589,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	
 	updateCollectionStatus( collectionSettings )
 	
-	-- manual suggest group_box as outmost container, but nested group_boxes will get an invisible title 
-	--	f:group_box {
-	--	title		= 'Photo StatLr collection settings',
+	-- manual suggests group_box as outmost container, but nested group_boxes will get an invisible title 
+	--	return f:group_box {
 	return f:view {
 		size = 'small',
 		fill_horizontal = 1,
@@ -630,7 +629,6 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     		}, --row
 		}, --column
 	} -- view
-
 end
 
 --------------------------------------------------------------------------------
