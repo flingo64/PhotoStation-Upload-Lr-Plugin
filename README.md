@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.5.2<br>
+Version 6.5.3<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -15,7 +15,7 @@ Forum threads:
 [Donate to a good cause](http://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
 [Get involved: Let Photo StatLr speak your language](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Contributions:-How-to-contribute-a-translation-for-Photo-StatLr.)<br>
  
-Copyright(c) 2017, Martin Messmer<br>
+Copyright(c) 2018, Martin Messmer<br>
 
 Overview
 =========
@@ -39,12 +39,12 @@ Requirements
 	- MacOS X 10.2, 10.3, 10.4, 10.5 
 	- MacOS X 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6
 	- MacOS X 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6
-	- MacOS X 13.0, 13.1
+	- MacOS X 13.0, 13.1, 13.2
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
-	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12, 6.13
-	- Lr 7.0
+	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12, 6.13, 6.14
+	- Lr 7.0, 7.1
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
