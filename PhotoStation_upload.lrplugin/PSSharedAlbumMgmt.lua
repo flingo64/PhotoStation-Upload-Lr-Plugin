@@ -266,6 +266,30 @@ function PSSharedAlbumMgmt.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, shared
 	return 0
 end 
 
+--------------------------------------------------------------------------------------------
+-- removePhotoPluginMetaLinkedSharedAlbumForCollection(srcPhoto, collectionId)
+--   remove all Shared Albums of a given collection from private plugin metadata 'sharedAlbums'
+function PSSharedAlbumMgmt.removePhotoPluginMetaLinkedSharedAlbumForCollection(srcPhoto, collectionId)
+	local sharedAlbums 			= PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
+	local sharedAlbumsRemoved	= false
+
+	writeLogfile(4, string.format("removePhotoPluginMetaLinkedSharedAlbumForCollection(%s, {%s}): removing all Shared Albums for colletion '%d'\n", 
+									srcPhoto:getRawMetadata('path'), table.concat(ifnil(sharedAlbums, {}), ","), collectionId))
+
+	if sharedAlbums then
+    	for i = #sharedAlbums, 1, -1 do
+    		if string.match(sharedAlbums[i], tostring(collectionId) .. ':.*') then
+    			table.remove(sharedAlbums, i)
+    			sharedAlbumsRemoved = true
+    		end
+    	end
+    	
+    	if sharedAlbumsRemoved then
+    		return PSSharedAlbumMgmt.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
+    	end
+	end
+	return 0
+end 
 
 -------------------------------------------------------------------------------
 -- PSSharedAlbumMgmt.readSharedAlbumsFromLr()
