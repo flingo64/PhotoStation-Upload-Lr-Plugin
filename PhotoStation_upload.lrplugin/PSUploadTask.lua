@@ -828,6 +828,7 @@ end
 function PSUploadTask.updateExportSettings(exportParams)
 -- do some initialization stuff
 -- local prefs = LrPrefs.prefsForPlugin()
+--	writeLogfile(2, "updateExportSettings: starting...\n" )
 
 	-- Start Debugging
 	openLogfile(exportParams.logLevel)
@@ -843,6 +844,7 @@ end
 -- PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 -- The export callback called from Lr when the export starts
 function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
+--	writeLogfile(2, "processRenderedPhotos: starting...\n" )
 	-- Make a local reference to the export parameters.
 	local exportSession = exportContext.exportSession
 	local exportParams = exportContext.propertyTable
@@ -1176,4 +1178,5 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		showFinalMessage("Photo StatLr: " .. publishMode .. " done", message, "info")
 		closeLogfile()
 	end
+-- 	writeLogfile(2, "processRenderedPhotos: done.\n" )
 end
