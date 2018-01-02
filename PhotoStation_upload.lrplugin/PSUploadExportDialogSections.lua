@@ -60,6 +60,7 @@ PSUploadExportDialogSections = {}
 
 -- updatExportStatus: do some sanity check on dialog settings
 local function updateExportStatus( propertyTable )
+--	writeLogfile(2, 'updateExportStatus(): starting ...\n')
 	local prefs = LrPrefs.prefsForPlugin()
 	
 	local message = nil
@@ -165,12 +166,14 @@ local function updateExportStatus( propertyTable )
 		propertyTable.hasNoError = true
 		propertyTable.LR_cantExportBecause = nil
 	end
+--	writeLogfile(2, 'updateExportStatus(): done.\n')
 	
 end
 
 -------------------------------------------------------------------------------
 
 function PSUploadExportDialogSections.startDialog( propertyTable )
+	writeLogfile(2, 'startDialog(): starting ...\n')
 	-- check if my custom video output presets are already installed 
 	local myVideoExportPresets = LrExportSettings.videoExportPresetsForPlugin( _PLUGIN )
 
@@ -248,6 +251,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 	propertyTable:addObserver( 'LR_DNG_previewSize', updateExportStatus )
 
 	updateExportStatus( propertyTable )
+	writeLogfile(2, 'startDialog(): done.\n')
 	
 end
 
@@ -270,6 +274,7 @@ end
 -------------------------------------------------------------------------------
 -- function PSUploadExportDialogSections.sectionsForBottomOfDialog( _, propertyTable )
 function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTable )
+--	writeLogfile(2, 'sectionsForBottomOfDialog(): starting....\n')
 
 --	local f = LrView.osFactory()
 	local bind = LrView.bind
@@ -319,5 +324,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 		},
 	}
 
+--	writeLogfile(2, 'sectionsForBottomOfDialog(): done.\n')
 	return result
 end
