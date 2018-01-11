@@ -208,10 +208,10 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
 	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, renderedPhotoPath, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST')
 	then
-		signalSemaphore("PhotoStation")
+		signalSemaphore("PhotoStation", dstFilename)
 		retcode = false
 	else
-		signalSemaphore("PhotoStation")
+		signalSemaphore("PhotoStation", dstFilename)
 		retcode = true
 	end
 
@@ -403,10 +403,10 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
 	or 					   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
-		signalSemaphore("PhotoStation")
+		signalSemaphore("PhotoStation", dstFilename)
 		retcode = false
 	else 
-		signalSemaphore("PhotoStation")
+		signalSemaphore("PhotoStation", dstFilename)
 		retcode = true
 	end
 	
@@ -567,11 +567,11 @@ local function uploadVideoMetadata(functionContext, videosUploaded, exportParams
 									and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
 				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
 			then
-				signalSemaphore("PhotoStation")	
+				signalSemaphore("PhotoStation", dstFilename)	
 				table.insert(failures, srcPhoto:getRawMetadata("path"))
 				writeLogfile(1, logMessage .. ' failed!!!\n')
 			else
-				signalSemaphore("PhotoStation")
+				signalSemaphore("PhotoStation", dstFilename)
 				writeLogfile(2, logMessage .. ' done\n')
 			end
 		else

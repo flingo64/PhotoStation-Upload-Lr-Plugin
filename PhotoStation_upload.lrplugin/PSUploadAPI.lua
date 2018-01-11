@@ -26,9 +26,11 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
 -- Lightroom API
 local LrFileUtils = import 'LrFileUtils'
--- local LrPathUtils = import 'LrPathUtils'
+local LrPathUtils = import 'LrPathUtils'
 local LrHttp = import 'LrHttp'
 -- local LrDate = import 'LrDate'
+
+local lastPhoto
 
 require "PSUtilities"
 
@@ -119,6 +121,15 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 	local seqOption
 	local datetimeOption
 	local retcode,reason
+	
+	local thisPhoto = dstDir .. '/' .. dstFilename
+	if thisPhoto ~= lastPhoto then
+		if position ~= 'FIRST' then 
+			writeLogfile(1, string.format("uploadPictureFile(%s) to (%s - %s - %s) interrupts upload of %s\n", 
+										LrPathUtils.leafName(srcFilename), thisPhoto, position, picType, lastPhoto))
+		end
+		lastPhoto = thisPhoto
+	end
 	
 	datetimeOption = nil
 	seqOption = nil

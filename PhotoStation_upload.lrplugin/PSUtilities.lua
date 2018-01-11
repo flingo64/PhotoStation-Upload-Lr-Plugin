@@ -452,7 +452,7 @@ function closeLogfile()
 end
 
 ---------------------- semaphore operations -----------------------------------------
-
+--[[
 function waitSemaphore(semaName, info)
 	local semaphoreFn = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(semaName, 'sema'))
 
@@ -479,6 +479,37 @@ function signalSemaphore(semaName)
 
 	LrFileUtils.delete(semaphoreFn)
 end
+]]
+
+local semaphores = {}
+
+function waitSemaphore(semaName, owner)
+	while semaphores[semaName] do
+		writeLogfile(3, string.format("waitSemaphore('%s'): '%s' is occupied by '%s' since %d sec\n", 
+							owner, semaName, semaphores[semaName].owner, LrDate.currentTime() - semaphores[semaName].timestamp))
+		-- warn user and exit if we are waiting too long  for a possibly orphaned semaphore
+		if semaphores[semaName].timestamp < LrDate.currentTime() - 300 then
+			writeLogfile(1, string.format("waitSemaphore('%s'): '%s' is blocked by '%s' since %d sec! Please, restart Lr if it this is not going to end!\n", 
+							owner, semaName, semaphores[semaName].owner, LrDate.currentTime() - semaphores[semaName].timestamp))
+			return false
+		end	
+		LrTasks.sleep(1)
+	end
+
+	semaphores[semaName] = {
+		timestamp = LrDate.currentTime(),
+		owner = owner,
+	}
+	return true
+end
+
+function signalSemaphore(semaName, owner)
+	-- make sure, we do not remove a semaphore which we don't possess
+	if semaphores[semaName] and semaphores[semaName].owner == owner then
+		semaphores[semaName] = nil
+	end 
+end
+
 
 ---------------------- OS specific infos -----------------------------------------------------------------------------
 
@@ -855,7 +886,7 @@ function showFinalMessage (title, message, msgType)
 	local updateNotice
 	
 	if ifnil(prefs.updateAvailable, '') ~= '' and ifnil(prefs.updateAvailable, '') ~= pluginVersion then
-		updateNotice = 'This is a very moving moment: Version ' .. prefs.updateAvailable .. ' available!\n'
+		updateNotice = 'This is a very moving moment: Version ' .. prefs.updateAvailable .. ' is available!\n'
 		updateAvail = true
 	end
 	
