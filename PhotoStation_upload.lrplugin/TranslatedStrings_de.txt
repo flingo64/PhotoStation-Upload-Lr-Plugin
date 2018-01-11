@@ -151,7 +151,7 @@
 "$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection/Error=^1 neue/geänderte, ^2 fehlgeschlagene und ^3 abgelehnte Metadatenentfernungen für ^4 von ^5 Fotos in ^6 Sekunden (^7 Pics/s)."
 "$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection=^1 neue/geänderte Metadaten für ^2 von ^3 Fotos heruntergeladen in ^4 Sekunden (^5 Pics/s)."
 "$$$/PSUpload/FinalMsg/Move=^1 von ^2 Fotos bearbeitet in ^3 Sekunden (^4 Pics/s). ^5 Fotos wurden verschoben.^n"
-"$$$/PSUpload/FinalMsg/Upload/Error=^1 von ^2 Fotos hochgeladen in ^3 Sekunden (^4 s/Pic). ^5 konnten nicht hochgeladen werden."
+"$$$/PSUpload/FinalMsg/Upload/Error=^1 von ^2 Fotos bearbeitet in ^3 Sekunden (^4 s/Pic). ^5 konnten nicht hochgeladen werden."
 "$$$/PSUpload/FinalMsg/Upload=^1 von ^2 Fotos hochgeladen in ^3 Sekunden (^4 s/Pic)."
 "$$$/PSUpload/Metadat/LastCommentAuthor=L. Komment.: von"
 "$$$/PSUpload/Metadat/LastCommentDate=L. Komment.: am"
