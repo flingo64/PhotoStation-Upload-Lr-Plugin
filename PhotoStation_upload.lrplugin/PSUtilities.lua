@@ -16,6 +16,9 @@ exported functions:
 	- split
 	- trim
 	
+	- cmdlineQuote()
+	- shellEscape
+	
 	- findInAttrValueTable
 	- findInStringTable
 	- getTableExtract
@@ -149,6 +152,30 @@ function trim(s)
  	return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
 end
 
+---------------------- shell encoding routines ---------------------------------------------------------
+
+function cmdlineQuote()
+	if WIN_ENV then
+		return '"'
+	elseif MAC_ENV then
+		return ''
+	else
+		return ''
+	end
+end
+
+function shellEscape(str)
+	if WIN_ENV then
+--		return(string.gsub(str, '>', '^>'))
+		return(string.gsub(string.gsub(str, '%^ ', '^^ '), '>', '^>'))
+	elseif MAC_ENV then
+--		return("'" .. str .. "'")
+		return(string.gsub(string.gsub(string.gsub(str, '>', '\\>'), '%(', '\\('), '%)', '\\)'))
+	else
+		return str
+	end
+end
+
 ---------------------- table operations ----------------------------------------------------------
 
 -- tableShallowCopy (origTable)
@@ -225,15 +252,18 @@ function findInStringTable(inputTable, string)
 end
 
 --------------------------------------------------------------------------------------------
--- getTableExtract(inputTable, tableField)
---  returns a table with the elements 'tableField' of table 
-function getTableExtract(inputTable, tableField)
+-- getTableExtract(inputTable, tableField, filterAttr, filterPattern)
+--  returns a table with the elements 'tableField' of table, optionally filtered 
+function getTableExtract(inputTable, tableField, filterAttr, filterPattern)
 	if not inputTable then return nil end
 
-	local tableExtract = {}
+	local j, tableExtract = 1, {}
 	
 	for i = 1, #inputTable do
-		tableExtract[i] = inputTable[i][tableField]
+		if not filterAttr or string.match(inputTable[i][filterAttr], filterPattern) then
+			tableExtract[j] = inputTable[i][tableField]
+			j = j + 1
+		end
 	end
 
 	return tableExtract
@@ -262,9 +292,8 @@ function getTableDiff(table1, table2)
 			tableDiff[nDiff] = table1[i]
 		end
 	end
-	if nDiff > 0 then 
-		writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", table.concat(table1, "','"), table.concat(table2, "','"), table.concat(tableDiff, "','")))
-	end
+	writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", table.concat(table1, "','"), table.concat(table2, "','"), table.concat(tableDiff, "','")))
+
 	return tableDiff
 end
 
@@ -731,7 +760,7 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- exiftool: required if Export/Publish and exif translation was selected, or if downloading faces
-	if 	(	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
+	if 	(	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
 		 or	(operation == 'GetRatingsFromPublishedCollection' and exportParams.PS2LrFaces)
 		)
 	and not exportParams.eHandle then 
