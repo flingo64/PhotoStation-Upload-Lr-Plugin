@@ -1340,8 +1340,9 @@ end
 -- publishModeView(f, propertyTable, isAskForMissingParams)
 function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 	local publishModeItems = {
-		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptAsk=Ask me later",																					value 	= 'Ask' },
+		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptAsk=Ask me later",																								value 	= 'Ask' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptUpload=Upload: Normal publishing of photos",														value 	= 'Publish' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMetadata=UploadMetadata: Upload only metadata (for photos already in Photo Station)",				value 	= 'Metadata' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptChkEx=CheckExisting: Set Unpublished to Published if existing in Photo Station.",					value 	= 'CheckExisting' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptChkMv=CheckMoved: Set Published to Unpublished if moved locally.",									value 	= 'CheckMoved' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMove=MovePhotos: Move photos in Photo Station (for photos moved in Lr or changed target album).",	value 	= 'MovePhotos' },
