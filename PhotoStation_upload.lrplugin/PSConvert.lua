@@ -69,30 +69,6 @@ local qtfstart
 -- ffmpeg encoder to use depends on OS
 local audioCodecOpt
 
----------------------- shell encoding routines ---------------------------------------------------------
-
-function cmdlineQuote()
-	if WIN_ENV then
-		return '"'
-	elseif MAC_ENV then
-		return ''
-	else
-		return ''
-	end
-end
-
-function shellEscape(str)
-	if WIN_ENV then
---		return(string.gsub(str, '>', '^>'))
-		return(string.gsub(string.gsub(str, '%^ ', '^^ '), '>', '^>'))
-	elseif MAC_ENV then
---		return("'" .. str .. "'")
-		return(string.gsub(string.gsub(string.gsub(str, '>', '\\>'), '%(', '\\('), '%)', '\\)'))
-	else
-		return str
-	end
-end
-
 ------------------------ initialize ---------------------------------------------------------------------------------
 
 -- initialize: initialize convert program paths
