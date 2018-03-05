@@ -468,12 +468,18 @@ function PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId, add
 					 'version=1&' .. 
 					 'tag_id=' .. tagId .. '&' .. 
 					 'id=' .. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo)
-	if addinfo then
+	if type == 'people' and addinfo then
 		formData = formData .. 
         			 iif(addinfo.xLeft,	'&x=' 		.. ifnil(addinfo.xLeft,''), '') ..  
         			 iif(addinfo.yUp,	'&y=' 		.. ifnil(addinfo.yUp,''), '')  ..
         			 iif(addinfo.width,	'&width=' 	.. ifnil(addinfo.width,''), '') ..  
         			 iif(addinfo.height,'&height='	.. ifnil(addinfo.height,''), '') 
+	elseif type == 'geo' and addinfo then
+		formData = formData .. 
+        			 iif(addinfo.address,	'&address='		.. ifnil(addinfo.address,''), '') ..  
+        			 iif(addinfo.lat,		'&lat=' 		.. ifnil(addinfo.lat,''), '') ..  
+        			 iif(addinfo.lng,		'&lng=' 		.. ifnil(addinfo.lng,''), '')  ..
+        			 iif(addinfo.place_id,	'&place_id=' 	.. ifnil(addinfo.place_id,''), '')
 	end
 		
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
