@@ -271,6 +271,8 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 					  "-XMP-mwg-rs:RegionName -XMP-mwg-rs:RegionType -XMP-mwg-rs:RegionRotation")
 	or not sendCmd(h, photoFilename, noWhitespaceConversion)
 	then
+		writeLogfile(3, string.format("queryLrFaceRegionList for %s failed: could not read XMP data, check if 'Automatically write changes into XMP' is set!\n",
+							photoFilename))
 		return nil
 	end  
 
@@ -291,10 +293,10 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 	photoDimension.height 	= parseResponse(queryResults, 'Image Height')
 	photoDimension.orient 	= parseResponse(queryResults, 'Orientation')
 	photoDimension.hasCrop 	= parseResponse(queryResults, 'Has Crop')
-	photoDimension.cropTop 	= parseResponse(queryResults, 'Crop Top')
-	photoDimension.cropLeft	= parseResponse(queryResults, 'Crop Left')
-	photoDimension.cropBottom 	= parseResponse(queryResults, 'Crop Bottom')
-	photoDimension.cropRight = parseResponse(queryResults, 'Crop Right')
+	photoDimension.cropTop 		= tonumber(ifnil(parseResponse(queryResults, 'Crop Top'), 0))
+	photoDimension.cropLeft		= tonumber(ifnil(parseResponse(queryResults, 'Crop Left'), 0))
+	photoDimension.cropBottom 	= tonumber(ifnil(parseResponse(queryResults, 'Crop Bottom'), 1))
+	photoDimension.cropRight	= tonumber(ifnil(parseResponse(queryResults, 'Crop Right'), 1))
 	local personTagHs 		= parseResponse(queryResults, 'Region Area H', sep)	
 	local personTagWs 		= parseResponse(queryResults, 'Region Area W', sep)	
 	local personTagXs 		= parseResponse(queryResults, 'Region Area X', sep)	
@@ -304,31 +306,54 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 	local personTagRotations= parseResponse(queryResults, 'Region Rotation', sep)		
 
 	if personTagHs and personTagWs and personTagXs and personTagYs then
+    	local photoRotation
+    	if string.find(photoDimension.orient, 'Horizontal') then
+    		photoRotation	= string.format("%1.5f", 0)
+    	elseif string.find(photoDimension.orient, '90') then
+    		photoRotation = string.format("%1.5f", math.rad(-90))
+    	elseif string.find(photoDimension.orient, '180') then
+    		photoRotation	= string.format("%1.5f", math.rad(180))
+    	elseif string.find(photoDimension.orient, '270') then
+    		photoRotation = string.format("%1.5f", math.rad(90))
+    	end
+	
+		local j = 0 
 		for i = 1, #personTagHs do
 			if not personTagTypes or ifnil(personTagTypes[i], 'Face') == 'Face' then
-				foundFaceRegions = true
-				local personTag = {}
+				local x, y, width, height = tonumber(personTagXs[i]), tonumber(personTagYs[i]), tonumber(personTagWs[i]), tonumber(personTagHs[i])
 				
-				personTag.xCenter 	= personTagXs[i]  
-				personTag.yCenter 	= personTagYs[i]
-				personTag.width 	= personTagWs[i]
-				personTag.height 	= personTagHs[i]
-				personTag.rotation 	= personTagRotations[i]
-				if personTagNames then personTag.name = personTagNames[i] end
-				
-				personTags[i] = personTag 
-				
-				writeLogfile(3, string.format("PSExiftoolAPI.queryLrFaceRegionList: found %s %f, %f, %f, %f rot %f\n", 
-												personTags[i].name,
-												personTags[i].xCenter,
-												personTags[i].yCenter,
-												personTags[i].width,
-												personTags[i].height,	
-												personTags[i].rotation	
-											))
-			else
-				writeLogfile(3, "PSExiftoolAPI.queryLrFaceRegionList: found non-face area: " .. personTagTypes[i] .. "\n")
-			end						
+				-- check if person tag is completely within cropped photo area
+				if 	((x - width / 2)  >= photoDimension.cropLeft) and
+					((x + width / 2)  <= photoDimension.cropRight) and
+					((y - height / 2) >= photoDimension.cropTop) and
+					((y + height / 2) <= photoDimension.cropBottom) 
+				then
+					j = j + 1
+    				local personTag = {}
+    				
+    				personTag.xCenter 	= (x - photoDimension.cropLeft) / (photoDimension.cropRight - photoDimension.cropLeft)  
+    				personTag.yCenter 	= (y - photoDimension.cropTop) / (photoDimension.cropBottom - photoDimension.cropTop)
+    				personTag.width 	= width / (photoDimension.cropRight - photoDimension.cropLeft) 
+    				personTag.height 	= height / (photoDimension.cropBottom - photoDimension.cropTop)
+    				personTag.rotation 	= photoRotation
+    				personTag.trotation = personTagRotations[i]
+    				if personTagNames then personTag.name = personTagNames[i] end
+    				
+    				personTags[j] = personTag 
+    				
+    				writeLogfile(3, string.format("PSExiftoolAPI.queryLrFaceRegionList: Area '%s' --> xC:%f yC:%f, w:%f, h:%f, rot:%f, trot:%f\n", 
+    												personTags[j].name,
+    												personTags[j].xCenter,
+    												personTags[j].yCenter,
+    												personTags[j].width,
+    												personTags[j].height,	
+    												personTags[j].rotation,	
+    												personTags[j].trotation	
+    											))
+    			else
+    				writeLogfile(3, string.format("PSExiftoolAPI.queryLrFaceRegionList: Area '%s'(%s) was skipped (wrong type or cropped)\n", personTagNames[i], personTagTypes[i]))
+    			end						
+			end
 		end
 	end
 	
@@ -357,6 +382,12 @@ function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags, origPhotoDim
 		return nil
 	end
 	
+	if not origPhotoDimension or not origPhotoDimension.orient or not origPhotoDimension.width or not origPhotoDimension.height then
+		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: missiong XMP dimension data, check if 'Automatically write changes into XMP' is set!\n",
+							photoFilename))
+		return nil
+	end
+		
 	-- adjust width and height if original photo was cropped 
 	-- Not supported: Lr won't accept face regions for cropped photos
 	--[[
