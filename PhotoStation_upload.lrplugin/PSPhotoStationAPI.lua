@@ -194,7 +194,7 @@ function PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
 	
 	if not respArray then return nil, errorCode end 
 
-	writeTableLogfile(4, 'listAlbum(' .. dstDir .. ')', respArray.data.items)
+--	writeTableLogfile(4, 'listAlbum(' .. dstDir .. ')', respArray.data.items)
 	return respArray.data.items
 end
 
