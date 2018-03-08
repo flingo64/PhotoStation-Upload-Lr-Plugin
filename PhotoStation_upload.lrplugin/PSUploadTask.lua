@@ -158,7 +158,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	local thmb_M_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
 	local thmb_B_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
 	local thmb_S_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
-	local title_Filename  = iif(ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
+	local title_Filename  = iif(string.match(exportParams.LR_embeddedMetadataOption, 'all.*') and ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
 							LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
 	local srcDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	local exifXlatLabelCmd = iif(exportParams.exifXlatLabel and not string.find('none,grey', string.lower(srcPhoto:getRawMetadata('colorNameForLabel'))), "-XMP:Subject+=" .. '+' .. srcPhoto:getRawMetadata('colorNameForLabel'), nil)
@@ -186,7 +186,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
 
 	-- exif translations: avoid calling doExifTranslations() if nothing's there to translate
-	or ((exifXlatLabelCmd or exportParams.exifXlatFaceRegions or exportParams.exifXlatRating) 
+	or (((exportParams.exifXlatFaceRegions and exportParams.psVersion < 65) or exifXlatLabelCmd or exportParams.exifXlatRating) 
 		and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
 --	or (exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
 
@@ -250,8 +250,11 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	local vid_LOW_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt))	--  360p
 	local vid_MED_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MED', vidExt))	--  720p
 	local vid_HIGH_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))	-- 1080p
-	local title_Filename  	= iif(ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
+	local title_Filename  	= iif(string.match(exportParams.LR_embeddedMetadataOption, 'all.*') and ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
 							  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
+	
+	local LrExportLocations	= not exportParams.LR_removeLocationMetadata
+	
 	local realDimension
 	local retcode
 	local convKeyOrig, convKeyAdd
@@ -306,7 +309,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		vid_Add_Filename = convParams[convKeyAdd].filename
 	end
 
-	-- search for "Rotate-nn" in keywords, this will add/overwrite rotation infos from mpeg header
+	-- Meta-Rotation: search for "Rotate-nn" in keywords, this will add/overwrite rotation infos from mpeg header
 	local addRotate = false
 	local keywords = srcPhoto:getRawMetadata("keywords")
 	for i = 1, #keywords do
@@ -327,6 +330,19 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		videoRotation = vinfo.rotation
 	end
 	
+	-- GPS: export only, if nor forbidden by export params
+	if LrExportLocations then
+		-- Lr GPS data has precedence over video embedded GPS data
+		local gpsData = srcPhoto:getRawMetadata("gps")
+		if gpsData and gpsData.latitude and gpsData.longitude then
+			vinfo.latitude =  iif(tonumber(gpsData.latitude)   >= 0 , '+' .. gpsData.latitude, gpsData.latitude) 
+			vinfo.longitude = iif(tonumber(gpsData.longitude)  >= 0 , '+' .. gpsData.longitude, gpsData.longitude)
+		end
+	else
+		vinfo.latitude = nil
+		vinfo.longitude = nil
+	end
+		
 	-- replace original video if:
 	--		- srcVideo is to be rotated (meta or hard)
 	-- 		- srcVideo is mp4, but not h264 (PS would try to open, but does only support h264
@@ -383,7 +399,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
 	-- delete old before uploading new
-	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, true) 
+	-- or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, true) 
 
 	or exportParams.thumbGenerate and (
 		-- upload thumbs, preview videos and original file
@@ -424,6 +440,195 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	return retcode
 end
 
+-----------------
+-- uploadMetadata(srcPhoto, dstPath, exportParams) 
+-- Upload metadata of a photo or video according to upload options:
+-- 	- title 			always
+-- 	- description		always
+-- 	- rating			always
+-- 	- gps				always
+-- 	- keywords			always
+-- 	- faces				if option is set
+-- 	- color label tags	if option is set
+-- 	- rating tags		if option is set
+local function uploadMetadata(srcPhoto, dstPath, exportParams)
+	local isVideo 			= srcPhoto:getRawMetadata("isVideo")
+	local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, dstPath, isVideo, true)
+	local psPhotoTags 		= PSPhotoStationAPI.getPhotoTags(exportParams.uHandle, dstPath, isVideo)
+	local psPhotoKeywords 	= getTableExtract(psPhotoTags, 'name', 'type', 'desc')
+	local psPhotoFaces 		= getTableExtract(psPhotoTags, nil, 'type', 'people')
+	local photoParams 		= {}
+	local LrExportMetadata	= (    exportParams.LR_embeddedMetadataOption and string.match(exportParams.LR_embeddedMetadataOption, 'all.*')) or
+						 	  (not exportParams.LR_embeddedMetadataOption and not exportParams.LR_minimizeEmbeddedMetadata)
+	local LrExportPersons	= not exportParams.LR_removeFaceMetadata
+	local LrExportLocations	= not exportParams.LR_removeLocationMetadata
+	
+	if not psPhotoInfos then return false end
+	
+	-- get title
+	local titleData = ''
+	if LrExportMetadata then titleData = ifnil(srcPhoto:getFormattedMetadata("title"), '') end
+	local psTitle = iif(psPhotoInfos.info.title == LrPathUtils.removeExtension(LrPathUtils.leafName(dstPath)), '', ifnil(psPhotoInfos.info.title, ''))
+	if titleData ~= psTitle then
+		table.insert(photoParams, { attribute =  'title', value = ifnil(titleData, '') })
+	end
+
+	-- get caption
+	local captionData = ''
+	if LrExportMetadata then captionData = ifnil(srcPhoto:getFormattedMetadata("caption"), '') end 
+	if captionData ~= psPhotoInfos.info.description then
+		table.insert(photoParams, { attribute =  'description', value = captionData })
+	end
+
+	-- PS6.5 and later: always get rating
+	local ratingData = 0
+	if LrExportMetadata then ratingData = ifnil(srcPhoto:getFormattedMetadata("rating"), 0) end
+	if exportParams.psVersion >= 65 and ratingData ~= psPhotoInfos.info.rating then
+		table.insert(photoParams, { attribute =  'rating', value = tostring(ratingData) })
+	end
+	
+	-- get GPS: Lr GPS data has precedence over video embedded GPS data
+	local gpsData, videoInfo
+	local latitude, longitude = '0', '0'
+	if LrExportLocations then
+		gpsData = srcPhoto:getRawMetadata("gps")
+		if isVideo then videoInfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto:getRawMetadata('path')) end
+	end
+		
+	if gpsData and gpsData.latitude and gpsData.longitude then
+		latitude = gpsData.latitude
+		longitude = gpsData.longitude
+	elseif videoInfo and videoInfo.latitude and videoInfo.longitude then 
+		latitude = videoInfo.latitude
+		longitude = videoInfo.longitude
+	end
+	
+	if (math.abs(tonumber(latitude) - tonumber(ifnil(psPhotoInfos.info.lat, 0))) > 0.00001) or (math.abs(tonumber(longitude) - tonumber(ifnil(psPhotoInfos.info.lng, 0))) > 0.00001) then
+		table.insert(photoParams, { attribute =  'gps_lat', value = latitude })
+		table.insert(photoParams, { attribute =  'gps_lng', value = longitude }) 
+	end
+			
+	-- get keywords
+	local keywordNamesData, keywordNamesAdd, keywordNamesRemove = {}, nil, nil 
+	if LrExportMetadata then
+		keywordNamesData = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
+	end
+	
+	-- get label if option is set
+	if LrExportMetadata and exportParams.exifXlatLabel then
+		local labelData = srcPhoto:getRawMetadata("colorNameForLabel")
+		if ifnil(labelData, 'grey') ~= 'grey' then table.insert(keywordNamesData, '+' .. labelData) end
+	end
+	
+	-- get ratingTag if option is set
+	if LrExportMetadata and exportParams.exifXlatRating and ratingData ~= 0 then
+		table.insert(keywordNamesData, PSPhotoStationUtils.rating2Stars(ratingData))
+	end
+
+	keywordNamesAdd 	= getTableDiff(keywordNamesData, psPhotoKeywords)
+	keywordNamesRemove	= getTableDiff(psPhotoKeywords, keywordNamesData)
+
+	-- get faces if option is set
+	local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove
+	if not LrExportPersons then
+		facesRemove 	= psPhotoFaces
+		faceNamesRemove = getTableExtract(facesRemove, 'name')
+	else	
+    	if exportParams.exifXlatFaceRegions and not isVideo then
+    		local facesLr, _ = PSExiftoolAPI.queryLrFaceRegionList(exportParams.eHandle, srcPhoto:getRawMetadata('path'))
+    		if facesLr and #facesLr > 0 then
+    			-- function to compare face area in Lr and PS style
+    			local isSameAreaLrPS = function (area1, area2)
+    				local areaLr, areaPS
+    				if area1.additional then
+    					areaPS = area1
+    					areaLr = area2
+    				else
+    					areaPS = area2
+    					areaLr = area1
+    				end
+    
+    				if 	areaPS.type == 'people' and
+    					areaLr.name == areaPS.name and
+    					areaPS.additional and areaPS.additional.info and
+    					areaPS.additional.info.x and areaPS.additional.info.y and areaPS.additional.info.width and areaPS.additional.info.height and
+    					math.abs(areaLr.xLeft	- areaPS.additional.info.x) < 0.001 and
+    					math.abs(areaLr.yUp		- areaPS.additional.info.y) < 0.001 and
+    					math.abs(areaLr.width	- areaPS.additional.info.width) < 0.001 and
+    					math.abs(areaLr.height 	- areaPS.additional.info.height) < 0.001
+    				then 
+    					writeLogfile(3, string.format("isSameAreaLrPS('%s', '%s') returns true\n", areaLr.name, areaPS.name))
+    					return true
+    				else 
+    					-- writeTableLogfile(3, 'areaPS.additional.info', areaPS.additional.info, true)
+    					writeLogfile(3, string.format("isSameAreaLrPS('%s', '%s') returns false\n", areaLr.name, areaPS.name))
+    					return false
+    				end 
+    			end
+    
+    			local faceLrNorm = {}
+    			for i = 1, #facesLr do
+    				faceLrNorm[i] = PSUtilities.normalizeArea(facesLr[i]);
+    			end
+    
+    			facesAdd 		= getTableDiff(faceLrNorm, psPhotoFaces, 'name', isSameAreaLrPS)
+    			facesRemove 	= getTableDiff(psPhotoFaces, faceLrNorm, 'name', isSameAreaLrPS)
+    			faceNamesAdd 	= getTableExtract(facesAdd, 'name')
+    			faceNamesRemove = getTableExtract(facesRemove, 'name')
+    		end 
+    	end
+	end
+		
+	retcode = true
+	
+	-- if any metadata to add
+	if #photoParams > 0 or 
+		(keywordNamesAdd and #keywordNamesAdd > 0) or (keywordNamesRemove and #keywordNamesRemove > 0) or 
+		(facesAdd and #facesAdd > 0) or (facesRemove and #facesRemove > 0) then
+		local logMessage = string.format("Metadata Upload for '%s' -  ", dstPath)
+	
+		for i = 1, #photoParams do
+			logMessage = logMessage .. photoParams[i].attribute .. ": '" .. photoParams[i].value .. "' "
+		end 
+		if (keywordNamesAdd and #keywordNamesAdd > 0) then
+			logMessage = logMessage .. 	"+tags: '" .. table.concat(keywordNamesAdd, "','") .. "' "
+		end
+		if (keywordNamesRemove and #keywordNamesRemove  > 0) then
+			logMessage = logMessage .. 	"-tags: '" .. table.concat(keywordNamesRemove, "','")  .. "' "
+		end
+		if facesAdd and #facesAdd > 0 then
+			logMessage = logMessage .. 	"+faces: '" .. table.concat(faceNamesAdd, "','") .. "' "
+		end
+		if  facesRemove and #facesRemove > 0 then
+			logMessage = logMessage .. 	"-faces: '" .. table.concat(faceNamesRemove, "','") .. "' "
+		end 
+	
+		if (not waitSemaphore("PhotoStation", dstPath)
+			 or (#photoParams > 0 and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstPath, isVideo, photoParams))
+			 or	(keywordNamesRemove and #keywordNamesRemove > 0  
+								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordNamesRemove))
+			 or	(keywordNamesAdd and #keywordNamesAdd > 0  
+								and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordNamesAdd))
+			 or	(facesRemove and #facesRemove > 0  
+								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'people', faceNamesRemove, facesRemove))
+			 or	(facesAdd and #facesAdd > 0  
+								and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstPath, isVideo, 'people', faceNamesAdd, facesAdd))
+			 )
+		then
+			signalSemaphore("PhotoStation", dstPath)	
+			writeLogfile(1, logMessage .. ' failed!!!\n')
+			retcode = false
+		else
+			signalSemaphore("PhotoStation", dstPath)
+			writeLogfile(2, logMessage .. ' done\n')
+		end
+	else
+		writeLogfile(2, string.format("Metadata Upload for '%s' - nothing to do\n", dstPath))
+	end
+
+	return retcode
+end
+ 
 --------------------------------------------------------------------------------
 -- ackRendition(rendition, publishedPhotoId, pubCollectionId)
 local function ackRendition(rendition, publishedPhotoId, publishedCollectionId)
@@ -451,15 +656,13 @@ local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, vide
 end
 
 -----------------
--- uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
+-- batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
 -- upload metadata for videos just uploaded
-local function uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures)
-	local catalog = LrApplication.activeCatalog()
+local function batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures)
 	local nVideos =  #videosUploaded
 	local nProcessed 		= 0 
 		
-	writeLogfile(3, string.format("uploadVideoMetadata: %d videos\n", nVideos))
-	local catalog = LrApplication.activeCatalog()
+	writeLogfile(3, string.format("batchUploadVideoMetadata: %d videos\n", nVideos))
 	local progressScope = LrProgressScope( 
 								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta=Uploading metadata for ^1 videos", nVideos),
 							 		functionContext = functionContext 
@@ -470,114 +673,28 @@ local function uploadVideoMetadata(functionContext, videosUploaded, exportParams
 		local srcPhoto 					= rendition.photo
 		local dstFilename 				= videoUploaded.publishedPhotoId
 		local publishedCollectionId 	= videoUploaded.publishedCollectionId
-		local latitude					= videoUploaded.latitude
-		local longitude					= videoUploaded.longitude
+		local photoThere 
+		local maxWait = 60
 		
 		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
-		-- get caption if requested
-		local captionParam
-		local captionData = srcPhoto:getFormattedMetadata("caption")
-		if ifnil(captionData, '') ~= '' then
-			captionParam = { { attribute =  'description', value = captionData } }
-		end
-
-		-- get label if requested
-		local labelParam
-		if exportParams.exifXlatLabel then
-			local labelData = srcPhoto:getRawMetadata("colorNameForLabel")
-			labelParam = iif(ifnil(labelData, 'grey') ~= 'grey', '+' .. labelData, nil)
-		end
-		
-		-- PS6.5 and later: always get rating
-		local ratingParam
-		local ratingData = srcPhoto:getFormattedMetadata("rating")
-		if exportParams.psVersion >= 65 and ifnil(ratingData, 0) ~= 0 then
-			ratingParam = { { attribute =  'rating', value = tostring(ratingData) } }
-		end
-		
-		-- get ratingTag if requested
-		local ratingTagParam
-		if exportParams.exifXlatRating and ifnil(ratingData, 0) ~= 0 then
-			ratingTagParam =  PSPhotoStationUtils.rating2Stars(ratingData)
-		end
-		
-		-- get keywords if requested
-		local keywordNamesAdd
-		if not exportParams.LR_minimizeEmbeddedMetadata then
-			keywordNamesAdd = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
-		end
-		
-		-- get GPS if requested
-		-- Lr GPS data has precedence over video embedded GPS data
-		local gpsParam
-		if not exportParams.LR_removeLocationMetadata then
-			local gpsData = srcPhoto:getRawMetadata("gps")
-			if gpsData and gpsData.latitude and gpsData.longitude then
-				gpsParam = { 
-					{ attribute =  'gps_lat', value = gpsData.latitude },
-					{ attribute =  'gps_lng', value = gpsData.longitude } 
-				}
-			elseif latitude and longitude then 
-				gpsParam = { 
-					{ attribute =  'gps_lat', value = latitude },
-					{ attribute =  'gps_lng', value = longitude } 
-				}
-			end
-		end
-				
-		-- if any metadata to add: wait for video being indexed by PS and upload metadata thereafter
-		if captionParam or labelParam or ratingParam or ratingTagParam or (keywordNamesAdd and #keywordNamesAdd  > 0) or gpsParam then
-			local photoThere 
-			local maxWait = 60
-			
-			while not photoThere and maxWait > 0 do
-				local isVideo, dontUseCache = true, false
-				if not PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, dstFilename, isVideo, dontUseCache) then
-					LrTasks.sleep(1)
-					maxWait = maxWait - 1
-				else
-					photoThere = true
-				end
-			end
-			
-			local gpsLatLong
-			if gpsParam then
-				gpsLatLong = gpsParam[1].value .. '/' .. gpsParam[2].value
-			end
-			local logMessage = string.format("Metadata Upload for '%s' -  description: '%s', label: '%s', rating: '%d' ratingTag: '%s' keywords: '%s', gps: '%s'", 
-								dstFilename, 
-								ifnil(captionData, ''),
-								ifnil(labelParam, ''),
-								ifnil(ratingData, 0),
-								ifnil(ratingTagParam, ''),
-								table.concat(ifnil(keywordNamesAdd, {}), "','"),
-								ifnil(gpsLatLong, ''))
-			
-			if (not photoThere
-				 or not waitSemaphore("PhotoStation", dstFilename)
-				 or (captionParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, captionParam))
-				 or (gpsParam		and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, gpsParam))
-				 or (ratingParam	and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstFilename, true, ratingParam))
-				 or	(labelParam 	and not PSPhotoStationUtils.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', labelParam))
-				 or	(ratingTagParam and not PSPhotoStationUtils.createAndAddPhotoTag(exportParams.uHandle, dstFilename, true, 'desc', ratingTagParam))
-				 or	(keywordNamesAdd and #keywordNamesAdd > 0  
-									and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstFilename, true, 'desc', keywordNamesAdd))
-				 or (publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
-			then
-				signalSemaphore("PhotoStation", dstFilename)	
-				table.insert(failures, srcPhoto:getRawMetadata("path"))
-				writeLogfile(1, logMessage .. ' failed!!!\n')
+		while not photoThere and maxWait > 0 do
+			local isVideo, dontUseCache = true, false
+			if not PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, dstFilename, isVideo, dontUseCache) then
+				LrTasks.sleep(1)
+				maxWait = maxWait - 1
 			else
-				signalSemaphore("PhotoStation", dstFilename)
-				writeLogfile(2, logMessage .. ' done\n')
+				photoThere = true
 			end
+		end
+		
+		if	(not photoThere or not uploadMetadata(srcPhoto, dstFilename, exportParams) or
+			(publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
+		then
+			table.insert(failures, srcPhoto:getRawMetadata("path"))
+			writeLogfile(1, string.format("batchUploadVideoMetadata('%s') failed!!!\n", dstFilename))
 		else
-			-- no metadata to update, ack rendition if publish anyway
-			writeLogfile(2, string.format("Metadata Upload for '%s' -  nothing to do\n", dstFilename))
-			if publishedCollectionId then
-				ackRendition(rendition, dstFilename, publishedCollectionId)
-			end										
+			writeLogfile(2, string.format("batchUploadVideoMetadata('%s') done.\n", dstFilename))
 		end
    		table.remove(videosUploaded, 1)
    		nProcessed = nProcessed + 1
@@ -1038,8 +1155,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	writeLogfile(2, "--------------------------------------------------------------------\n")
 	
 
-	-- if is Publish process and publish mode is 'CheckExisting' ...
-	if publishMode == 'CheckExisting' then
+	-- if is Publish process and publish mode is 'CheckExisting' or Metadata ...
+	if string.find('CheckExisting,Metadata', publishMode, 1, true) then
 		-- remove all photos from rendering process to speed up the process
 		for i, rendition in exportSession:renditions() do
 			rendition:skipRender()
@@ -1128,6 +1245,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
     					table.insert( failures, srcPath )
 						skipPhoto = true 					
+					elseif publishMode == 'Metadata' then
+						writeLogfile(2, "Upload Metadata: Cannot upload, photo must be moved from '" .. publishedPhotoId .. "' to '" .. newPublishedPhotoId .."' first!\n")
+    					table.insert( failures, srcPath )
+						skipPhoto = true 					
 					else
 						writeLogfile(2, iif(publishMode == 'Publish', 'Deleting', 'CheckExisting: Would delete') .. ' remote photo at old path: ' .. publishedPhotoId .. '\n')							
 					end
@@ -1156,37 +1277,46 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					table.insert( failures, srcPath )
 					break 
 				end	
-			elseif publishMode == 'Export' or publishMode == 'Publish' then
-				-- normal publish or export process 
-				-- check if target Album (dstRoot) should be created 
-				if exportParams.createDstRoot and dstRoot ~= '' and 
-					not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated) then
-					table.insert( failures, srcPath )
-					break 
-				end
-			
-				-- check if tree structure should be preserved
-				if not exportParams.copyTree then
-					-- just put it into the configured destination folder
-					if not dstRoot or dstRoot == '' then
-						dstDir = '/'
-					else
-						dstDir = dstRoot
-					end
-				else
-					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcPath), exportParams.srcRoot, dstRoot, 
-										dirsCreated) 
-				end
+			elseif string.find('Export,Publish,Metadata', publishMode, 1, true) then
 				
-				if not dstDir then 	
-					table.insert( failures, srcPath )
-					break 
+				if publishMode == 'Metadata' then
+					dstDir = string.match(publishedPhotoId , '(.*)\/[^\/]+')
+				else
+    				-- normal publish or export process 
+    				-- check if target Album (dstRoot) should be created 
+    				if exportParams.createDstRoot and dstRoot ~= '' and 
+    					not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated) then
+    					table.insert( failures, srcPath )
+    					break 
+    				end
+    			
+    				-- check if tree structure should be preserved
+    				if not exportParams.copyTree then
+    					-- just put it into the configured destination folder
+    					if not dstRoot or dstRoot == '' then
+    						dstDir = '/'
+    					else
+    						dstDir = dstRoot
+    					end
+    				else
+    					dstDir = createTree(exportParams.uHandle, LrPathUtils.parent(srcPath), exportParams.srcRoot, dstRoot, 
+    										dirsCreated) 
+    				end
+    				
+    				if not dstDir then 	
+    					table.insert( failures, srcPath )
+    					break 
+    				end
 				end
 
 				local videoInfo
 				if srcPhoto:getRawMetadata("isVideo") then videoInfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto:getRawMetadata('path')) end
 				  
-				if (srcPhoto:getRawMetadata("isVideo") 	
+				if (publishMode == 'Metadata' 
+					and (	not	uploadMetadata(srcPhoto, publishedPhotoId, exportParams)
+						 or not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
+					)
+				or (publishMode ~= 'Metadata' and srcPhoto:getRawMetadata("isVideo") 	
 					and	(	not videoInfo or
 							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, additionalVideos, videoInfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
@@ -1195,26 +1325,26 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						 or (not publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, nil)) 
 						)	
 					)
-				or (	not srcPhoto:getRawMetadata("isVideo") 
+				or (publishMode ~= 'Metadata' and not srcPhoto:getRawMetadata("isVideo") 
 					and (
 							not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams)
 						 or 	(publishedCollection and not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
 						)
 					)
 				then
-					writeLogfile(1, 'Upload of "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. dstDir .. "/" .. dstFilename .. '" failed!!!\n')
+					if publishMode ~= 'Metadata' then writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' failed!!!\n") end
 					table.insert( failures, srcPath )
 				else
 					if publishedCollection then
 						PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
 					end 
-					writeLogfile(2, 'Upload of "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. dstDir .. "/" .. dstFilename .. '" done\n')
+					if publishMode ~= 'Metadata' then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' done\n") end
 				end
 			end
 		
 			-- do some video metadata upload in between
 			if #videosUploaded > 9 then 
-				uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
+				batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
 				videosUploaded = {}
 			end
 			
@@ -1223,7 +1353,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 
 	-- deferred metadata upload
-	if #videosUploaded > 0 then uploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) end
+	if #videosUploaded > 0 then batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) end
 	if #sharedAlbumUpdates > 0 then updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) end
 	
 	writeLogfile(2,"--------------------------------------------------------------------\n")
@@ -1244,6 +1374,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		if publishMode == 'CheckExisting' then
 			message = LOC ("$$$/PSUpload/FinalMsg/CheckExist=Checked ^1 of ^2 files in ^3 seconds (^4 pics/sec). ^5 already there, ^6 need export.", 
 											nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec), nNotCopied, nNeedCopy)
+		elseif publishMode == 'Metadata' then
+			message = LOC ("$$$/PSUpload/FinalMsg/Metadata=Uploaded metadata for ^1 of ^2 files in ^3 seconds (^4 secs/pic).", 
+											nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", timePerPic))
 		else
 			message = LOC ("$$$/PSUpload/FinalMsg/Upload=Uploaded ^1 of ^2 files in ^3 seconds (^4 secs/pic).", 
 											nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", timePerPic))
