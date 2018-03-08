@@ -253,7 +253,9 @@ end
 
 --------------------------------------------------------------------------------------------
 -- getTableExtract(inputTable, tableField, filterAttr, filterPattern)
---  returns a table with the elements 'tableField' of table, optionally filtered 
+--  returns a table extract consisting of:
+--   - the elements 'tableField' or the whole structure
+--   - all elements matching filteAttr / filterPattern or all 
 function getTableExtract(inputTable, tableField, filterAttr, filterPattern)
 	if not inputTable then return nil end
 
@@ -261,7 +263,11 @@ function getTableExtract(inputTable, tableField, filterAttr, filterPattern)
 	
 	for i = 1, #inputTable do
 		if not filterAttr or string.match(inputTable[i][filterAttr], filterPattern) then
-			tableExtract[j] = inputTable[i][tableField]
+			if tableField then 
+				tableExtract[j] = inputTable[i][tableField]
+			else
+				tableExtract[j] = inputTable[i]
+			end
 			j = j + 1
 		end
 	end
@@ -270,29 +276,47 @@ function getTableExtract(inputTable, tableField, filterAttr, filterPattern)
 end
 
 --------------------------------------------------------------------------------------------
--- getTableDiff(table1, table2)
---  returns a table of elements in table1, but not in table2 
-function getTableDiff(table1, table2)
-	if not table1 or not table2 then return nil end
-	
-	local tableDiff = {}
-	local nDiff = 0
-	
-	for i = 1, #table1 do
-		local found = false 
-		
-		for j = 1, #table2 do
-			if table1[i] == table2[j] then
-				found = true
-				break
-			end
-		end
-		if not found then
-			nDiff = nDiff + 1
-			tableDiff[nDiff] = table1[i]
-		end
+-- getTableDiff(table1, table2, keyName, isSameCheck)
+--  returns a table of elements in table1, but not in table2
+--  if keyName is given, then tables of structure are compared based on keyName
+--  if isSameCheck function is given, use it as compar operator  
+function getTableDiff(table1, table2, keyName, isSameCheck)
+	local tableDiff
+
+	if not table1 or #table1 == 0 or not table2 or #table2 == 0 then
+		table1 = ifnil(table1, {})
+		table2 = ifnil(table2, {})
+		tableDiff = tableShallowCopy(table1)
+	else
+    	tableDiff = {}
+    	local nDiff = 0
+    	
+    	for i = 1, #table1 do
+    		local found = false 
+    		
+    		for j = 1, #table2 do
+    			if 	(not keyName and table1[i] == table2[j]) or
+    				(	 keyName and 
+    					(not isSameCheck and table1[i][keyName] == table1[i][keyName]) or
+    					(	 isSameCheck and isSameCheck(table1[i], table2[j]))) 
+    			then
+    				found = true
+    				break
+    			end
+    		end
+    		if not found then
+    			nDiff = nDiff + 1
+    			tableDiff[nDiff] = table1[i]
+    		end
+    	end
 	end
-	writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", table.concat(table1, "','"), table.concat(table2, "','"), table.concat(tableDiff, "','")))
+	
+	if keyName then
+		writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", 
+				table.concat(getTableExtract(table1, 'name'), "','"), table.concat(getTableExtract(table2, 'name'), "','"), table.concat(getTableExtract(tableDiff, 'name'), "','")))
+	else
+		writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", table.concat(table1, "','"), table.concat(table2, "','"), table.concat(tableDiff, "','")))
+	end
 
 	return tableDiff
 end
@@ -718,8 +742,8 @@ function openSession(exportParams, publishedCollection, operation)
 --	writeTableLogfile(2, 'exportParams', exportParams["< contents >"], 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"))
 	writeTableLogfile(2, 'exportParams', exportParams, 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"), true)
 
-	-- ConvertAPI: required if Export/Publish 
-	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and not exportParams.cHandle then
+	-- ConvertAPI: required if Export/Publish/Metadata 
+	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.cHandle then
 			exportParams.cHandle = PSConvert.initialize()
 			if not exportParams.cHandle then return false, 'Cannot initialize converters, check path for Syno Photo Station Uploader' end
 	end
@@ -934,4 +958,54 @@ function showFinalMessage (title, message, msgType)
 			LrHttp.openUrlInBrowser(prefs.downloadUrl)
 		end
 	end
+end
+
+PSUtilities = {}
+
+-- normalize area -------------------------------------------
+function PSUtilities.normalizeArea(area)
+	local areaNorm
+	if not area then return nil end
+	
+	areaNorm = tableShallowCopy(area)
+	-- rotate area if required (rotation ~= 0):
+	if area.rotation ~= 0 then
+		--		1) mirror y to get orthogonal coords
+		--		2) shift area (0:1, 0:1) to (-0.5:0.5, -0.5:0.5) (centered)
+		--		3) rotate according to rotation matrix:
+		--			x' = x * cosA - y * sinA 
+		--			y' = x * sinA + y * cosA 
+		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1) 
+		-- 		5) mirror y to get original coords
+		local sinA = math.sin(area.rotation)
+		local cosA = math.cos(area.rotation)
+		
+		-- 1)
+		local x,y = area.xCenter, 1 - area.yCenter
+		
+		-- 2) - 4)
+		areaNorm.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
+		-- 2) - 5)
+		areaNorm.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
+		
+		areaNorm.width		= math.abs(area.width * cosA - area.height * sinA)
+		areaNorm.height		= math.abs(area.width * sinA + area.height * cosA)
+--		writeLogfile(3, string.format("PSUtilities.normalizeArea: sinA:%f, cosA:%f w:%f/%f, h:%f/%f\n", 
+--										sinA, cosA, area.width, areaNorm.width, area.height, areaNorm.height)) 
+		areaNorm.rotation 	= 0
+	end
+	
+	areaNorm.xLeft		= areaNorm.xCenter - (areaNorm.width / 2)
+	areaNorm.yUp		= areaNorm.yCenter - (areaNorm.height / 2)
+
+	writeLogfile(3, string.format("PSUtilities.normalizeArea: '%s' --> xC:%f/xL:%f yC:%f/yU:%f, w:%f, h:%f\n", 
+										areaNorm.name,
+										areaNorm.xCenter,
+										areaNorm.xLeft,
+										areaNorm.yCenter,
+										areaNorm.yUp,
+										areaNorm.width,
+										areaNorm.height	
+									))
+	return areaNorm
 end
