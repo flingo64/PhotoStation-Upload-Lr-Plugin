@@ -605,7 +605,9 @@ end
 function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, type, tagList, addinfoList)
 
 	for i = 1, #tagList do
-		if not PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, tagList[i], addinfoList[i]) then
+		if 	(	 addinfoList and not PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, tagList[i], addinfoList[i])) or
+			(not addinfoList and not PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, tagList[i]))
+		then
 			return false
 		end
 	end
