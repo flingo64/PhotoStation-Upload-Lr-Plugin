@@ -588,7 +588,7 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 		local logMessage = string.format("Metadata Upload for '%s' -  ", dstPath)
 	
 		for i = 1, #photoParams do
-			logMessage = logMessage .. photoParams[i].attribute .. ": '" .. photoParams[i].value .. "' "
+			logMessage = logMessage .. photoParams[i].attribute .. ": '" .. photoParams[i].value .. "',"
 		end 
 		if (keywordNamesAdd and #keywordNamesAdd > 0) then
 			logMessage = logMessage .. 	"+tags: '" .. table.concat(keywordNamesAdd, "','") .. "' "
@@ -694,7 +694,7 @@ local function batchUploadVideoMetadata(functionContext, videosUploaded, exportP
 			table.insert(failures, srcPhoto:getRawMetadata("path"))
 			writeLogfile(1, string.format("batchUploadVideoMetadata('%s') failed!!!\n", dstFilename))
 		else
-			writeLogfile(2, string.format("batchUploadVideoMetadata('%s') done.\n", dstFilename))
+			writeLogfile(3, string.format("batchUploadVideoMetadata('%s') done.\n", dstFilename))
 		end
    		table.remove(videosUploaded, 1)
    		nProcessed = nProcessed + 1
@@ -1246,7 +1246,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
     					table.insert( failures, srcPath )
 						skipPhoto = true 					
 					elseif publishMode == 'Metadata' then
-						writeLogfile(2, "Upload Metadata: Cannot upload, photo must be moved from '" .. publishedPhotoId .. "' to '" .. newPublishedPhotoId .."' first!\n")
+						writeLogfile(1, "Metadata Upload for '" .. publishedPhotoId .. "' - failed, photo must be uploaded to '" .. newPublishedPhotoId .."' at first!\n")
     					table.insert( failures, srcPath )
 						skipPhoto = true 					
 					else
