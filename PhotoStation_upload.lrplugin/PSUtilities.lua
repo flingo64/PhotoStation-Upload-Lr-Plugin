@@ -962,7 +962,8 @@ end
 
 PSUtilities = {}
 
--- normalize area -------------------------------------------
+-- PSUtilities.normalizeArea(area) -------------------------------------------
+-- rotate area if required, add UpperLeft coords
 function PSUtilities.normalizeArea(area)
 	local areaNorm
 	if not area then return nil end
@@ -1008,4 +1009,35 @@ function PSUtilities.normalizeArea(area)
 										areaNorm.height	
 									))
 	return areaNorm
+end
+
+-- PSUtilities.areaCompare(area1, area2)
+-- Compare face area in Lr style with face area in PS style
+-- returns true if identical, false otherwise
+function PSUtilities.areaCompare(area1, area2)
+	local areaLr, areaPS
+	if area1.additional then
+		areaPS = area1
+		areaLr = area2
+	else
+		areaPS = area2
+		areaLr = area1
+	end
+
+	if 	areaPS.type == 'people' and
+		areaLr.name == areaPS.name and
+		areaPS.additional and areaPS.additional.info and
+		areaPS.additional.info.x and areaPS.additional.info.y and areaPS.additional.info.width and areaPS.additional.info.height and
+		math.abs(areaLr.xLeft	- areaPS.additional.info.x) < 0.001 and
+		math.abs(areaLr.yUp		- areaPS.additional.info.y) < 0.001 and
+		math.abs(areaLr.width	- areaPS.additional.info.width) < 0.001 and
+		math.abs(areaLr.height 	- areaPS.additional.info.height) < 0.001
+	then 
+		writeLogfile(3, string.format("areaCompare('%s', '%s') returns true\n", areaLr.name, areaPS.name))
+		return true
+	else 
+		-- writeTableLogfile(3, 'areaPS.additional.info', areaPS.additional.info, true)
+		writeLogfile(3, string.format("areaCompare('%s', '%s') returns false\n", areaLr.name, areaPS.name))
+		return false
+	end 
 end
