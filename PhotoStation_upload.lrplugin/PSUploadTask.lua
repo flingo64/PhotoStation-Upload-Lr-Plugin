@@ -186,7 +186,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
 
 	-- exif translations: avoid calling doExifTranslations() if nothing's there to translate
-	or (((exportParams.exifXlatFaceRegions and exportParams.psVersion < 65) or exifXlatLabelCmd or exportParams.exifXlatRating) 
+	or ((exportParams.exifXlatFaceRegions or exifXlatLabelCmd or exportParams.exifXlatRating) 
 		and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
 --	or (exportParams.exifTranslate and not PSExiftoolAPI.doExifTranslations(exportParams.eHandle, renderedPhotoPath, exifXlatLabelCmd))
 
@@ -509,7 +509,7 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 	end
 			
 	-- get keywords
-	local keywordNamesData, keywordNamesAdd, keywordNamesRemove = {}, nil, nil 
+	local keywordNamesData, keywordNamesAdd, keywordNamesRemove, keywordItemTagIdRemove = {}, nil, nil, nil 
 	if LrExportMetadata then
 		keywordNamesData = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
 	end
@@ -525,11 +525,12 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 		table.insert(keywordNamesData, PSPhotoStationUtils.rating2Stars(ratingData))
 	end
 
-	keywordNamesAdd 	= getTableDiff(keywordNamesData, psPhotoKeywords)
-	keywordNamesRemove	= getTableDiff(psPhotoKeywords, keywordNamesData)
+	keywordNamesAdd 		= getTableDiff(keywordNamesData, psPhotoKeywords)
+	keywordNamesRemove		= getTableDiff(psPhotoKeywords, keywordNamesData)
+	keywordItemTagIdRemove 	= getTableExtract(keywordNamesRemove, 'item_tag_id')
 
 	-- get faces if option is set
-	local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove
+	local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove, faceItemTagIdRemove
 	if not LrExportPersons then
 		facesRemove 	= psPhotoFaces
 		faceNamesRemove = getTableExtract(facesRemove, 'name')
@@ -537,15 +538,20 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
     	if exportParams.exifXlatFaceRegions and not isVideo then
     		local facesLr, _ = PSExiftoolAPI.queryLrFaceRegionList(exportParams.eHandle, srcPhoto:getRawMetadata('path'))
     		if facesLr and #facesLr > 0 then
-    			local faceLrNorm = {}
+    			local j, faceLrNorm = 0, {}
     			for i = 1, #facesLr do
-    				faceLrNorm[i] = PSUtilities.normalizeArea(facesLr[i]);
+    				-- exclude all unnamed face regions, because PS does not support them
+    				if ifnil(facesLr[i].name, '') ~= '' then
+    					j = j + 1
+    					faceLrNorm[j] = PSUtilities.normalizeArea(facesLr[i]);
+    				end
     			end
     
-    			facesAdd 		= getTableDiff(faceLrNorm, psPhotoFaces, 'name', PSUtilities.areaCompare)
-    			facesRemove 	= getTableDiff(psPhotoFaces, faceLrNorm, 'name', PSUtilities.areaCompare)
-    			faceNamesAdd 	= getTableExtract(facesAdd, 'name')
-    			faceNamesRemove = getTableExtract(facesRemove, 'name')
+    			facesAdd 			= getTableDiff(faceLrNorm, psPhotoFaces, 'name', PSUtilities.areaCompare)
+    			facesRemove 		= getTableDiff(psPhotoFaces, faceLrNorm, 'name', PSUtilities.areaCompare)
+    			faceNamesAdd 		= getTableExtract(facesAdd, 'name')
+    			faceNamesRemove 	= getTableExtract(facesRemove, 'name')
+    			faceItemTagIdRemove = getTableExtract(facesRemove, 'item_tag_id')
     		end 
     	end
 	end
@@ -577,11 +583,11 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 		if (not waitSemaphore("PhotoStation", dstPath)
 			 or (#photoParams > 0 and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstPath, isVideo, photoParams))
 			 or	(keywordNamesRemove and #keywordNamesRemove > 0  
-								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordNamesRemove))
+								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordItemTagIdRemove))
 			 or	(keywordNamesAdd and #keywordNamesAdd > 0  
 								and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordNamesAdd))
 			 or	(facesRemove and #facesRemove > 0  
-								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'people', faceNamesRemove, facesRemove))
+								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'people', faceItemTagIdRemove, facesRemove))
 			 or	(facesAdd and #facesAdd > 0  
 								and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstPath, isVideo, 'people', faceNamesAdd, facesAdd))
 			 )
