@@ -365,12 +365,12 @@ function PSPhotoStationUtils.getTagId(h, type, name)
 	
 	for i = 1, #tagsOfType do
 		if tagsOfType[i].name == name then 
-			writeLogfile(3, string.format('getTagId(%s, %s) found  %s.\n', type, name, tagsOfType[i].id))
+			writeLogfile(3, string.format("getTagId(%s, '%s') found  %s.\n", type, name, tagsOfType[i].id))
 			return tagsOfType[i].id 
 		end
 	end
 
-	writeLogfile(3, string.format('getTagId(%s, %s) not found.\n', type, name))
+	writeLogfile(3, string.format("getTagId(%s, '%s') not found.\n", type, name))
 	return nil
 end
 
@@ -627,7 +627,7 @@ function PSPhotoStationUtils.removePhotoTagList(h, dstFilename, isVideo, type, t
 		end
 	end
 	 
-	writeLogfile(3, string.format('removePhotoTagList(%s) returns OK.\n', dstFilename))
+	writeLogfile(3, string.format("removePhotoTagList(%s, %d tags of type '%s') returns OK.\n", dstFilename, #tagList, type))
 	return true	
 end
 
