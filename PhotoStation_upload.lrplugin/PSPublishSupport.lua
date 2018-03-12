@@ -1281,6 +1281,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		if progressScope:isCanceled() then break end
 
 		local srcPhoto 		= photoInfo.photo
+		local isVideo		= srcPhoto:getRawMetadata('isVideo')
+		
 		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
 		local titlePS,		titleChanged
@@ -1317,7 +1319,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.locationDownload
     		then
     			local useCache = true
-    			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'), useCache)
+    			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfo(publishSettings.uHandle, photoInfo.remoteId, isVideo, useCache)
     			local psPhotoInfo, psPhotoAdditional
 				if psPhotoInfos then
 					psPhotoInfo 		= psPhotoInfos.info 
@@ -1360,7 +1362,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.PS2LrLabel 
     			or  collectionSettings.PS2LrRating 
     		then
-    			local photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+    			local photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, isVideo)
     		
         		if not photoTags then
         			writeLogfile(1, string.format("Get ratings/metadata: %s failed!\n", photoInfo.remoteId))
@@ -1411,7 +1413,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	    		-- title can be stored in two places in PS: in title tag (when entered by PS user) and in exif 'Object Name' (when set by Lr)
    				-- title tag overwrites exif tag, get Object Name only, if no title was found
         		if (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
-    				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, photoInfo.photo:getRawMetadata('isVideo'))
+    				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, isVideo)
     				if exifsPS then 
     					local namePS = findInAttrValueTable(exifsPS, 'label', 'Object Name', 'value')
     					if namePS then 
