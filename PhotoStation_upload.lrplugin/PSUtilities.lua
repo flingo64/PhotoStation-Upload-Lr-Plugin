@@ -312,10 +312,15 @@ function getTableDiff(table1, table2, keyName, isSameCheck)
 	end
 	
 	if keyName then
-		writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", 
-				table.concat(getTableExtract(table1, 'name'), "','"), table.concat(getTableExtract(table2, 'name'), "','"), table.concat(getTableExtract(tableDiff, 'name'), "','")))
+		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n", 
+				#table1,	table.concat(getTableExtract(table1, 'name'), "','"), 
+				#table2,	table.concat(getTableExtract(table2, 'name'), "','"), 
+				#tableDiff, table.concat(getTableExtract(tableDiff, 'name'), "','")))
 	else
-		writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", table.concat(table1, "','"), table.concat(table2, "','"), table.concat(tableDiff, "','")))
+		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n", 
+				#table1,	table.concat(table1, "','"), 
+				#table2,	table.concat(table2, "','"), 
+				#tableDiff,	table.concat(tableDiff, "','")))
 	end
 
 	return tableDiff
@@ -1025,7 +1030,7 @@ function PSUtilities.areaCompare(area1, area2)
 	end
 
 	if 	areaPS.type == 'people' and
-		areaLr.name == areaPS.name and
+		ifnil(areaLr.name, '') == ifnil(areaPS.name, '') and
 		areaPS.additional and areaPS.additional.info and
 		areaPS.additional.info.x and areaPS.additional.info.y and areaPS.additional.info.width and areaPS.additional.info.height and
 		math.abs(areaLr.xLeft	- areaPS.additional.info.x) < 0.001 and
@@ -1033,11 +1038,11 @@ function PSUtilities.areaCompare(area1, area2)
 		math.abs(areaLr.width	- areaPS.additional.info.width) < 0.001 and
 		math.abs(areaLr.height 	- areaPS.additional.info.height) < 0.001
 	then 
-		writeLogfile(3, string.format("areaCompare('%s', '%s') returns true\n", areaLr.name, areaPS.name))
+		writeLogfile(3, string.format("PSUtilities.areaCompare('%s', '%s') returns true\n", areaLr.name, areaPS.name))
 		return true
 	else 
 		-- writeTableLogfile(3, 'areaPS.additional.info', areaPS.additional.info, true)
-		writeLogfile(3, string.format("areaCompare('%s', '%s') returns false\n", areaLr.name, areaPS.name))
+		writeLogfile(3, string.format("PSUtilities.areaCompare('%s', '%s') returns false\n", areaLr.name, areaPS.name))
 		return false
 	end 
 end
