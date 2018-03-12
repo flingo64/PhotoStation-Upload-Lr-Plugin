@@ -491,25 +491,20 @@ function PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId, add
 end
 
 ---------------------------------------------------------------------------------------------------------
--- removePhotoTag(h, dstFilename, isVideo, tagType, tagName) 
--- remove a tag_id from a photo
-function PSPhotoStationAPI.removePhotoTag(h, dstFilename, isVideo, tagType, tagName)
-	local tagId = PSPhotoStationUtils.getTagId(h, tagType, tagName)
-	if not tagId then
-		writeLogfile(3, string.format("removePhotoTag('%s', '%s'): tagId not found!\n", dstFilename, tagName))
-		return false
-	end
-	
-	local formData = 'method=' .. 'delete&' ..
+-- removePhotoTag(h, dstFilename, isVideo, tagType, itemTagId) 
+-- remove a tag from a photo
+function PSPhotoStationAPI.removePhotoTag(h, dstFilename, isVideo, tagType, itemTagId)
+	local formData = 'method=delete&' ..
 					 'version=1&' .. 
-					 'tag_id=' .. tagId .. '&' .. 
-					 'id=' .. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo) 
+					 'item_tag_id=' .. itemTagId .. '&' .. 
+					 'id=' .. PSPhotoStationUtils.getPhotoId(dstFilename, isVideo)
+					  
 
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
 	
 	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format("removePhotoTag('%s', '%s') returns %s\n", dstFilename, tagId, respArray.success))
+	writeLogfile(3, string.format("removePhotoTag('%s', '%s') returns %s\n", dstFilename, itemTagId, respArray.success))
 	return respArray.success
 end
 
