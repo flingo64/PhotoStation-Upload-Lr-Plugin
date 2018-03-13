@@ -1033,10 +1033,10 @@ function PSUtilities.areaCompare(area1, area2)
 		ifnil(areaLr.name, '') == ifnil(areaPS.name, '') and
 		areaPS.additional and areaPS.additional.info and
 		areaPS.additional.info.x and areaPS.additional.info.y and areaPS.additional.info.width and areaPS.additional.info.height and
-		math.abs(areaLr.xLeft	- areaPS.additional.info.x) < 0.001 and
-		math.abs(areaLr.yUp		- areaPS.additional.info.y) < 0.001 and
-		math.abs(areaLr.width	- areaPS.additional.info.width) < 0.001 and
-		math.abs(areaLr.height 	- areaPS.additional.info.height) < 0.001
+		math.abs(areaLr.xLeft	- areaPS.additional.info.x) < 0.05 and
+		math.abs(areaLr.yUp		- areaPS.additional.info.y) < 0.05 and
+		math.abs(areaLr.width	- areaPS.additional.info.width) < 0.05 and
+		math.abs(areaLr.height 	- areaPS.additional.info.height) < 0.05
 	then 
 		writeLogfile(3, string.format("PSUtilities.areaCompare('%s', '%s') returns true\n", areaLr.name, areaPS.name))
 		return true
