@@ -263,7 +263,7 @@ end
 function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 
 	-- if photo is RAW then get XMP info from sidecar file where Lr puts it
-	if PSLrUtilities.isRAW(photoFilename) then
+	if PSLrUtilities.isRAW(photoFilename) and string.upper(LrPathUtils.extension(photoFilename)) ~= 'DNG' then
 		photoFilename = LrPathUtils.replaceExtension(photoFilename, 'xmp')
 	end
 
@@ -366,105 +366,35 @@ end
 function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags, origPhotoDimension)
 	local photoFilename = srcPhoto:getRawMetadata('path')
 	local personTagNames, personTagTypes, personTagRotations, personTagXs, personTagYs, personTagWs, personTagHs = '', '', '', '', '', '', ''
-	local width, height, rotation, switchDim
 	local separator = ';'
 	
+	writeLogfile(3, "setLrFaceRegionList() starting...\n")
+	writeTableLogfile(3, "personTags", personTags)
+
 	-- if photo is RAW then put XMP info to sidecar file where Lr is expecting it
-	if PSLrUtilities.isRAW(photoFilename) then
+	if PSLrUtilities.isRAW(photoFilename) and string.upper(LrPathUtils.extension(photoFilename)) ~= 'DNG' then
 		photoFilename = LrPathUtils.replaceExtension(photoFilename, 'xmp')
 	end
 	
-	if srcPhoto:getRawMetadata('isVirtualCopy') or srcPhoto:getRawMetadata('isCropped') then
-		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: %s/%s - not supported!\n",
-							photoFilename,
-							iif(srcPhoto:getRawMetadata('isVirtualCopy'), 'virtual copy', ''), 
-							iif(srcPhoto:getRawMetadata('isCropped'), 'cropped photo', ''))) 
+	if srcPhoto:getRawMetadata('isVirtualCopy') then
+		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: virtual copy not supported!\n", photoFilename))
 		return nil
 	end
 	
-	if not origPhotoDimension or not origPhotoDimension.orient or not origPhotoDimension.width or not origPhotoDimension.height then
-		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: missiong XMP dimension data, check if 'Automatically write changes into XMP' is set!\n",
-							photoFilename))
-		return nil
-	end
-		
-	-- adjust width and height if original photo was cropped 
-	-- Not supported: Lr won't accept face regions for cropped photos
-	--[[
-	if origPhotoDimension.hasCrop == 'True' then
-		origPhotoDimension.width 	= math.floor((origPhotoDimension.cropRight - origPhotoDimension.cropLeft) * origPhotoDimension.width)
-		origPhotoDimension.height 	= math.floor((origPhotoDimension.cropBottom - origPhotoDimension.cropTop) * origPhotoDimension.height)
-	end
-	]]
-	
-	-- if orig photo is rotated, then region info (which was applied to the rotated photo) must be rotated also
-	local appDimOrgW, appDimOrgH
-	if string.find(origPhotoDimension.orient, 'Horizontal') then
-		appDimOrgW = origPhotoDimension.width
-		appDimOrgH = origPhotoDimension.height
-		rotation	= string.format("%1.5f", 0)
-	elseif string.find(origPhotoDimension.orient, '90') then
-		appDimOrgW = origPhotoDimension.height
-		appDimOrgH = origPhotoDimension.width
-		rotation = string.format("-%1.5f", math.rad(90))
-	elseif string.find(origPhotoDimension.orient, '180') then
-		appDimOrgW = origPhotoDimension.width
-		appDimOrgH = origPhotoDimension.height
-		rotation	= string.format("%1.5f", math.rad(180))
-	elseif string.find(origPhotoDimension.orient, '270') then
-		appDimOrgW = origPhotoDimension.height
-		appDimOrgH = origPhotoDimension.width
-		rotation = string.format("%1.5f", math.rad(90))
-	end
-
 	for i = 1, #personTags do
-		local xLr,  yLr,  wLr,  hLr
-		local xOrg, yOrg, wOrg, hOrg
 		local sep = iif(i == 1, '', separator)
 		
 		personTagNames = personTagNames .. sep .. personTags[i].name
 		personTagTypes = personTagTypes .. sep .. 'Face'
-		personTagRotations = personTagRotations .. sep .. rotation
-		
-		-- convert PS (left upper) coordinates to Lr (center) coordinates
-		xLr = personTags[i].x + (personTags[i].width / 2)
-		yLr = personTags[i].y + (personTags[i].height / 2)
-		wLr = personTags[i].width
-		hLr = personTags[i].height
+		personTagRotations = personTagRotations .. sep .. '0'
 
-		-- rotate Lr coordinates if orig photo is rotated
-    	if string.find(origPhotoDimension.orient, 'Horizontal') then
-    		xOrg = xLr
-    		yOrg = yLr
-    		wOrg = wLr
-    		hOrg = hLr
-    	elseif string.find(origPhotoDimension.orient, '90') then
-    		xOrg = yLr
-    		yOrg = 1 - xLr
-    		wOrg = hLr
-    		hOrg = wLr
-    	elseif string.find(origPhotoDimension.orient, '180') then
-    		xOrg = 1 - xLr
-    		yOrg = 1 - yLr
-    		wOrg = wLr
-    		hOrg = hLr
-    	elseif string.find(origPhotoDimension.orient, '270') then
-    		xOrg = 1 - yLr
-    		yOrg = xLr
-    		wOrg = hLr
-    		hOrg = wLr
-    	end
-
-		personTagXs = personTagXs .. sep .. string.format("%1.5f", xOrg)
-		personTagYs = personTagYs .. sep .. string.format("%1.5f", yOrg)
-		personTagWs = personTagWs .. sep .. string.format("%1.5f", wOrg)
-		personTagHs = personTagHs .. sep .. string.format("%1.5f", hOrg)
+		personTagXs = personTagXs .. sep .. string.format("%1.5f", personTags[i].xCenter)
+		personTagYs = personTagYs .. sep .. string.format("%1.5f", personTags[i].yCenter)
+		personTagWs = personTagWs .. sep .. string.format("%1.5f", personTags[i].width)
+		personTagHs = personTagHs .. sep .. string.format("%1.5f", personTags[i].height)
 	end
 
 	if not 	sendCmd(h, "-sep ".. separator)	
--- HACK: Lr writes rotated dimensions as RegionAppliedToDimensions, but won't accept anything other than the original photo dimensions
---	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(appDimOrgW))
---	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(appDimOrgH))
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsW=" .. tostring(origPhotoDimension.width))
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsH=" .. tostring(origPhotoDimension.height))
 	or not 	sendCmd(h, "-XMP-mwg-rs:RegionAppliedToDimensionsUnit=pixel")
@@ -480,10 +410,7 @@ function PSExiftoolAPI.setLrFaceRegionList(h, srcPhoto, personTags, origPhotoDim
 				)
 	or not sendCmd(h, photoFilename, noWhitespaceConversion)
 	then
-		writeLogfile(3, string.format("setLrFaceRegionList for %s failed: isRAW: %s, isRotated: %s, hasCrop: %s\n", 
-					photoFilename, 
-					iif(PSLrUtilities.isRAW(photoFilename), 'yes', 'no'),  
-					ifnil(origPhotoDimension.hasCrop, 'False')))
+		writeLogfile(3, string.format("setLrFaceRegionList for %s failed!\n", photoFilename)) 
 		return nil
 	end  
 
