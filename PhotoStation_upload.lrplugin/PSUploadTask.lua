@@ -455,8 +455,8 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 	local isVideo 			= srcPhoto:getRawMetadata("isVideo")
 	local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, dstPath, isVideo, true)
 	local psPhotoTags 		= PSPhotoStationAPI.getPhotoTags(exportParams.uHandle, dstPath, isVideo)
-	local psPhotoKeywords 	= getTableExtract(psPhotoTags, 'name', 'type', 'desc')
-	local psPhotoFaces 		= getTableExtract(psPhotoTags, nil, 'type', 'people')
+	local keywordsPS 		= getTableExtract(psPhotoTags, nil, 'type', 'desc')
+	local facesPS 			= getTableExtract(psPhotoTags, nil, 'type', 'people')
 	local photoParams 		= {}
 	local LrExportMetadata	= (    exportParams.LR_embeddedMetadataOption and string.match(exportParams.LR_embeddedMetadataOption, 'all.*')) or
 						 	  (not exportParams.LR_embeddedMetadataOption and not exportParams.LR_minimizeEmbeddedMetadata)
@@ -512,51 +512,61 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 	end
 			
 	-- get keywords
-	local keywordNamesData, keywordNamesAdd, keywordNamesRemove, keywordItemTagIdRemove = {}, nil, nil, nil 
+	local keywordsLr, keywordsAdd, keywordNamesAdd, keywordsRemove, keywordNamesRemove, keywordItemTagIdsRemove = {} 
 	if LrExportMetadata then
-		keywordNamesData = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
+		local keywordNamesLr =trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ',')) 
+		if keywordNamesLr then
+			for i = 1, #keywordNamesLr do
+				keywordsLr[i] = {}
+				keywordsLr[i].name = keywordNamesLr[i] 
+			end
+		end
 	end
 	
 	-- get label if option is set
 	if LrExportMetadata and exportParams.exifXlatLabel then
 		local labelData = srcPhoto:getRawMetadata("colorNameForLabel")
-		if ifnil(labelData, 'grey') ~= 'grey' then table.insert(keywordNamesData, '+' .. labelData) end
+		if ifnil(labelData, 'grey') ~= 'grey' then table.insert(keywordsLr, { name = '+' .. labelData}) end
 	end
 	
 	-- get ratingTag if option is set
 	if LrExportMetadata and exportParams.exifXlatRating and ratingData ~= 0 then
-		table.insert(keywordNamesData, PSPhotoStationUtils.rating2Stars(ratingData))
+		table.insert(keywordsLr, { name = PSPhotoStationUtils.rating2Stars(ratingData)})
 	end
 
-	keywordNamesAdd 		= getTableDiff(keywordNamesData, psPhotoKeywords)
-	keywordNamesRemove		= getTableDiff(psPhotoKeywords, keywordNamesData)
-	keywordItemTagIdRemove 	= getTableExtract(keywordNamesRemove, 'item_tag_id')
+	keywordsAdd 			= getTableDiff(keywordsLr, keywordsPS, 'name')
+	keywordsRemove			= getTableDiff(keywordsPS, keywordsLr, 'name')
 
+	keywordNamesAdd		 	= getTableExtract(keywordsAdd, 'name')
+	keywordNamesRemove	 	= getTableExtract(keywordsRemove, 'name')
+	keywordItemTagIdsRemove = getTableExtract(keywordsRemove, 'item_tag_id')
+	
 	-- get faces if option is set
-	local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove, faceItemTagIdRemove
-	if not LrExportPersons then
-		facesRemove 	= psPhotoFaces
-		faceNamesRemove = getTableExtract(facesRemove, 'name')
-	else	
-    	if exportParams.exifXlatFaceRegions and not isVideo then
-    		local facesLr, _ = PSExiftoolAPI.queryLrFaceRegionList(exportParams.eHandle, srcPhoto:getRawMetadata('path'))
-    		if facesLr and #facesLr > 0 then
-    			local j, faceLrNorm = 0, {}
-    			for i = 1, #facesLr do
-    				-- exclude all unnamed face regions, because PS does not support them
-    				if ifnil(facesLr[i].name, '') ~= '' then
-    					j = j + 1
-    					faceLrNorm[j] = PSUtilities.normalizeArea(facesLr[i]);
-    				end
-    			end
-    
-    			facesAdd 			= getTableDiff(faceLrNorm, psPhotoFaces, 'name', PSUtilities.areaCompare)
-    			facesRemove 		= getTableDiff(psPhotoFaces, faceLrNorm, 'name', PSUtilities.areaCompare)
-    			faceNamesAdd 		= getTableExtract(facesAdd, 'name')
-    			faceNamesRemove 	= getTableExtract(facesRemove, 'name')
-    			faceItemTagIdRemove = getTableExtract(facesRemove, 'item_tag_id')
-    		end 
-    	end
+	local facesAdd, faceNamesAdd, facesRemove, faceNamesRemove, faceItemTagIdRemove
+	facesRemove 	= facesPS
+	faceNamesRemove = getTableExtract(facesRemove, 'name')
+	faceItemTagIdRemove = getTableExtract(facesRemove, 'item_tag_id')
+	
+	if 	LrExportPersons and
+    	exportParams.exifXlatFaceRegions and not isVideo then
+		local facesLr, _ = PSExiftoolAPI.queryLrFaceRegionList(exportParams.eHandle, srcPhoto:getRawMetadata('path'))
+		if facesLr and #facesLr > 0 then
+			local j, facesLrNorm = 0, {}
+			for i = 1, #facesLr do
+				-- exclude all unnamed face regions, because PS does not support them
+				if ifnil(facesLr[i].name, '') ~= '' then
+					j = j + 1
+					facesLrNorm[j] = PSUtilities.normalizeArea(facesLr[i]);
+				end
+			end
+
+			facesAdd 			= getTableDiff(facesLrNorm, facesPS, 'name', PSUtilities.areaCompare)
+			facesRemove 		= getTableDiff(facesPS, facesLrNorm, 'name', PSUtilities.areaCompare)
+			
+			faceNamesAdd 		= getTableExtract(facesAdd, 'name')
+			faceNamesRemove 	= getTableExtract(facesRemove, 'name')
+			faceItemTagIdRemove = getTableExtract(facesRemove, 'item_tag_id')
+		end 
 	end
 		
 	retcode = true
@@ -586,7 +596,7 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 		if (not waitSemaphore("PhotoStation", dstPath)
 			 or (#photoParams > 0 and not PSPhotoStationAPI.editPhoto(exportParams.uHandle, dstPath, isVideo, photoParams))
 			 or	(keywordNamesRemove and #keywordNamesRemove > 0  
-								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordItemTagIdRemove))
+								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordItemTagIdsRemove))
 			 or	(keywordNamesAdd and #keywordNamesAdd > 0  
 								and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstPath, isVideo, 'desc', keywordNamesAdd))
 			 or	(facesRemove and #facesRemove > 0  
