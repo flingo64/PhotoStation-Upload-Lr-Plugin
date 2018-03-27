@@ -297,7 +297,7 @@ function getTableDiff(table1, table2, keyName, isSameCheck)
     		for j = 1, #table2 do
     			if 	(not keyName and table1[i] == table2[j]) or
     				(	 keyName and 
-    					(not isSameCheck and table1[i][keyName] == table1[i][keyName]) or
+    					(not isSameCheck and table1[i][keyName] == table2[j][keyName]) or
     					(	 isSameCheck and isSameCheck(table1[i], table2[j]))) 
     			then
     				found = true
@@ -970,10 +970,10 @@ PSUtilities = {}
 -- PSUtilities.normalizeArea(area) -------------------------------------------
 -- rotate area if required, add UpperLeft coords
 function PSUtilities.normalizeArea(area)
-	local areaNorm
+	local areaNew
 	if not area then return nil end
 	
-	areaNorm = tableShallowCopy(area)
+	areaNew = tableShallowCopy(area)
 	-- rotate area if required (rotation ~= 0):
 	if area.rotation ~= 0 then
 		--		1) mirror y to get orthogonal coords
@@ -990,30 +990,101 @@ function PSUtilities.normalizeArea(area)
 		local x,y = area.xCenter, 1 - area.yCenter
 		
 		-- 2) - 4)
-		areaNorm.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
+		areaNew.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
 		-- 2) - 5)
-		areaNorm.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
+		areaNew.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
 		
-		areaNorm.width		= math.abs(area.width * cosA - area.height * sinA)
-		areaNorm.height		= math.abs(area.width * sinA + area.height * cosA)
+		areaNew.width		= math.abs(area.width * cosA - area.height * sinA)
+		areaNew.height		= math.abs(area.width * sinA + area.height * cosA)
 --		writeLogfile(3, string.format("PSUtilities.normalizeArea: sinA:%f, cosA:%f w:%f/%f, h:%f/%f\n", 
---										sinA, cosA, area.width, areaNorm.width, area.height, areaNorm.height)) 
-		areaNorm.rotation 	= 0
+--										sinA, cosA, area.width, areaNew.width, area.height, areaNew.height)) 
+		areaNew.rotation 	= 0
 	end
 	
-	areaNorm.xLeft		= areaNorm.xCenter - (areaNorm.width / 2)
-	areaNorm.yUp		= areaNorm.yCenter - (areaNorm.height / 2)
+	areaNew.xLeft	= areaNew.xCenter - (areaNew.width / 2)
+	areaNew.yUp		= areaNew.yCenter - (areaNew.height / 2)
 
 	writeLogfile(3, string.format("PSUtilities.normalizeArea: '%s' --> xC:%f/xL:%f yC:%f/yU:%f, w:%f, h:%f\n", 
-										areaNorm.name,
-										areaNorm.xCenter,
-										areaNorm.xLeft,
-										areaNorm.yCenter,
-										areaNorm.yUp,
-										areaNorm.width,
-										areaNorm.height	
+										areaNew.name,
+										areaNew.xCenter,
+										areaNew.xLeft,
+										areaNew.yCenter,
+										areaNew.yUp,
+										areaNew.width,
+										areaNew.height	
 									))
-	return areaNorm
+	return areaNew
+end
+
+-- PSUtilities.denormalizeArea(area) -------------------------------------------
+-- rotate and de-crop a normalized area (from PS) to fit a photo which might be rotated in Lr
+function PSUtilities.denormalizeArea(area, photoDimension)
+	if not area or not photoDimension or not photoDimension.orient then return nil end
+
+	writeLogfile(3, string.format("PSUtilities.denormalizeArea: photo - Orient: %s, Crop: %s, Top: %f, Bottom: %f, Left: %f, Right: %f\n", 
+									photoDimension.orient, photoDimension.hasCrop, photoDimension.cropTop, photoDimension.cropBottom, photoDimension.cropLeft, photoDimension.cropRight)) 
+
+	writeLogfile(3, string.format("                             area  - x: %f, y: %f, width: %f, height: %f\n", 
+									area.x, area.y, area.width, area.height)) 
+
+	local areaNew = tableShallowCopy(area)
+	local photoRotation = string.format("%1.5f", 0)
+	
+	if string.find(photoDimension.orient, 'Horizontal') then
+		photoRotation	= string.format("%1.5f", 0)
+	elseif string.find(photoDimension.orient, '90') then
+		photoRotation = string.format("%1.5f", math.rad(90))
+	elseif string.find(photoDimension.orient, '180') then
+		photoRotation	= string.format("%1.5f", math.rad(180))
+	elseif string.find(photoDimension.orient, '270') then
+		photoRotation = string.format("%1.5f", math.rad(-90))
+	end
+
+	--	 transform upper left to center coords
+	areaNew.xCenter = areaNew.x + (areaNew.width / 2)
+	areaNew.yCenter = areaNew.y + (areaNew.height / 2)
+	
+	-- de-crop
+	if photoDimension.hasCrop then
+		areaNew.width	= areaNew.width   * (photoDimension.cropRight - photoDimension.cropLeft) 
+		areaNew.xCenter = areaNew.xCenter * (photoDimension.cropRight - photoDimension.cropLeft) + photoDimension.cropLeft 
+		areaNew.height 	= areaNew.height  * (photoDimension.cropBottom - photoDimension.cropTop)
+		areaNew.yCenter = areaNew.yCenter * (photoDimension.cropBottom - photoDimension.cropTop) + photoDimension.cropTop
+	end
+	 
+	-- if orig photo is rotated:
+	if photoRotation ~= 0 then
+		--		1) mirror y to get orthogonal coords
+		--		2) shift area (0:1, 0:1) to (-0.5:0.5, -0.5:0.5) (centered)
+		--		3) rotate according to rotation matrix:
+		--			x' = x * cosA - y * sinA 
+		--			y' = x * sinA + y * cosA 
+		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1) 
+		-- 		5) mirror y to get original coords
+		local sinA = math.sin(photoRotation)
+		local cosA = math.cos(photoRotation)
+		
+		-- 1)
+		local x,y = areaNew.xCenter, 1 - areaNew.yCenter
+		
+		-- 2) - 4)
+		areaNew.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
+		-- 2) - 5)
+		areaNew.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
+		
+		areaNew.width		= math.abs(areaNew.width * cosA - areaNew.height * sinA)
+		areaNew.height		= math.abs(areaNew.width * sinA + areaNew.height * cosA)
+		areaNew.rotation 	= 0
+	end
+	
+	writeLogfile(3, string.format("PSUtilities.denormalizeArea: '%s' --> xC:%f, yC:%f, w:%f, h:%f\n", 
+										areaNew.name,
+										areaNew.xCenter,
+										areaNew.yCenter,
+										areaNew.width,
+										areaNew.height	
+									))
+	return areaNew
 end
 
 -- PSUtilities.areaCompare(area1, area2)
