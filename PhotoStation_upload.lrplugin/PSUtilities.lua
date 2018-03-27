@@ -1065,15 +1065,15 @@ function PSUtilities.denormalizeArea(area, photoDimension)
 		local cosA = math.cos(photoRotation)
 		
 		-- 1)
-		local x,y = areaNew.xCenter, 1 - areaNew.yCenter
+		local x,y, width, height = areaNew.xCenter, 1 - areaNew.yCenter, areaNew.width, areaNew.height 
 		
 		-- 2) - 4)
 		areaNew.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
 		-- 2) - 5)
 		areaNew.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
 		
-		areaNew.width		= math.abs(areaNew.width * cosA - areaNew.height * sinA)
-		areaNew.height		= math.abs(areaNew.width * sinA + areaNew.height * cosA)
+		areaNew.width		= math.abs(width * cosA - height * sinA)
+		areaNew.height		= math.abs(width * sinA + height * cosA)
 		areaNew.rotation 	= 0
 	end
 	
