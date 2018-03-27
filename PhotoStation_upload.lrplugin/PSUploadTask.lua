@@ -463,7 +463,10 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 	local LrExportPersons	= not exportParams.LR_removeFaceMetadata
 	local LrExportLocations	= not exportParams.LR_removeLocationMetadata
 	
-	if not psPhotoInfos then return false end
+	if not psPhotoInfos then 
+		writeLogfile(1, string.format("Metadata Upload for '%s' - failed, photo not yet in Photo Station, use 'Upload' mode!\n", dstPath))
+		return false 
+	end
 	
 	-- get title
 	local titleData = ''
