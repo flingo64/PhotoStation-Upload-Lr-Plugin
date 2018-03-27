@@ -1295,9 +1295,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local facesPS, 		facesChanged = {}
 		local origPhotoDimension
 		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
-		local facesAdd, facesRemove
+		local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove
 		local resultText = ''
-		local changesRejected = 0		
+		local changesRejected, changesFailed = 0, 0		
 		
 		local needRepublish = false
 		
@@ -1373,7 +1373,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     					
         				-- a people tag has a face region in additional.info structure
         				if collectionSettings.PS2LrFaces and photoTag.type == 'people' then
-    						table.insert(facesPS, photoTag.additional.info)
+--    						table.insert(facesPS, photoTag.additional.info)
+    						table.insert(facesPS, photoTag)
         				
         				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
     					elseif collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '%+(%a+)') then
@@ -1591,44 +1592,53 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     		
     		------------------------------------------------------------------------------------------------------
-    		if collectionSettings.PS2LrFaces then
+    		if collectionSettings.PS2LrFaces and not isVideo then
 				-- get face regions in local photo
-				local facesLr
+				local facesLr 
 				facesLr, origPhotoDimension = PSExiftoolAPI.queryLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'))
 				
-    			-- get delta list: which person tags were added and removed
-				local faceNamesLr = getTableExtract(facesLr, 'name')
-				local faceNamesPS = getTableExtract(facesPS, 'name')
-    			facesAdd 	= getTableDiff(faceNamesPS, faceNamesLr)
-    			facesRemove = getTableDiff(faceNamesLr, faceNamesPS)
-    			
-    			if facesAdd and facesRemove then
-	       			writeLogfile(3, string.format("Get ratings/metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
-    	  											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
-    			end
-    			
-    			if not facesAdd or not facesRemove then
-       				writeLogfile(1, string.format("Get ratings/metadata: %s - error getting face region info: Lr faces: %s, PS faces: %s\n", 
-      												photoInfo.remoteId, iif(facesLr, 'OK', '<nil>'), iif(facesPS, 'OK', 'nil>')))
-      				nFailed = nFailed + 1
-      				
+        		if facesLr and #facesLr > 0 then
+        			local j, faceLrNorm = 0, {}
+        			for i = 1, #facesLr do
+        				-- exclude all unnamed face regions, because PS does not support them
+        				if ifnil(facesLr[i].name, '') ~= '' then
+        					j = j + 1
+        					faceLrNorm[j] = PSUtilities.normalizeArea(facesLr[i]);
+        				end
+        			end
+    
+        			-- compare only names, not the area itself
+        			facesAdd 			= getTableDiff(facesPS, faceLrNorm, 'name')
+        			facesRemove 		= getTableDiff(faceLrNorm, facesPS, 'name')
+
+        			if facesAdd and facesRemove then
+    	       			writeLogfile(3, string.format("Get ratings/metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
+        	  											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
+        			end
+				else
+					facesAdd = facesPS
+					facesRemove = {}
+				end
+       			faceNamesAdd 		= getTableExtract(facesAdd, 'name')
+       			faceNamesRemove 	= getTableExtract(facesRemove, 'name')
+								
     			-- allow update of faces only if faces were added or changed, not if faces were removed 
-    			elseif (#facesAdd > 0) and (#facesAdd >= #facesRemove) then
+    			if (#facesAdd > 0) and (#facesAdd >= #facesRemove) then
     				facesChanged = true
     				table.insert(reloadPhotos, srcPhoto:getRawMetadata('path'))
     				nChanges = nChanges + #facesAdd + #facesRemove 
-    				if #facesAdd > 0 then resultText = resultText ..  string.format(" faces to add: '%s',", table.concat(facesAdd, "','")) end
-    				if #facesRemove > 0 then resultText = resultText ..  string.format(" faces to remove: '%s',", table.concat(facesRemove, "','")) end
+    				if #facesAdd > 0 then resultText = resultText ..  string.format(" faces to add: '%s',", table.concat(faceNamesAdd, "','")) end
+    				if #facesRemove > 0 then resultText = resultText ..  string.format(" faces to remove: '%s',", table.concat(faceNamesRemove, "','")) end
     				writeLogfile(3, string.format("Get ratings/metadata: %s - faces to add: %s, faces to remove: %s\n", 
-    										photoInfo.remoteId, table.concat(facesAdd, ','), table.concat(facesRemove, ',')))
+    										photoInfo.remoteId, table.concat(faceNamesAdd, ','), table.concat(faceNamesRemove, ',')))
 				elseif #facesAdd < #facesRemove then
-        			resultText = resultText ..  string.format(" faces %s removal ignored,", table.concat(facesRemove, "','"))
+        			resultText = resultText ..  string.format(" faces %s removal ignored,", table.concat(faceNamesRemove, "','"))
         			writeLogfile(3, string.format("Get ratings/metadata: %s - faces %s were removed in PS, setting photo to edited (removal rejected).\n", 
-      											photoInfo.remoteId, table.concat(facesRemove, "','")))
+      											photoInfo.remoteId, table.concat(faceNamesRemove, "','")))
         			needRepublish = true
         			changesRejected = changesRejected + 1        		
         			nRejectedChanges = nRejectedChanges + 1
-    			end
+        		end
     		end
     		
     		------------------------------------------------------------------------------------------------------
@@ -1690,15 +1700,30 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     		
    			-- overwrite all existing face regions in local photo
-    		if facesChanged and not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesPS, origPhotoDimension) then
-   				nChanges = nChanges - (#facesAdd + #facesRemove)
-   				nFailed = nFailed + 1 
+    		if facesChanged then
+				if not origPhotoDimension then
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - cannot download added face regions, no local XMP data file!\n", 
+      											photoInfo.remoteId))
+        			changesFailed = changesFailed + 1        		
+        			nFailed = nFailed + 1				
+    			else
+    				-- take over the complete PS face list
+        			local facesLrAdd = {}
+        			for i = 1, #facesPS do
+        				facesLrAdd[i] = PSUtilities.denormalizeArea(facesPS[i].additional.info, origPhotoDimension)
+        			end
+        			if not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesLrAdd, origPhotoDimension) then
+    	   				nChanges = nChanges - (#facesAdd + #facesRemove)
+       					changesFailed = changesFailed +1
+       					nFailed = nFailed + 1
+       				end 
+				end
 	    	end  
 
     		if titleChanged	or captionChanged or ratingChanged or labelChanged or ratingTagChanged or tagsChanged or facesChanged or gpsChanged then
         		writeLogfile(2, string.format("Get ratings/metadata: %s - %s %s%s%s.\n", 
         												photoInfo.remoteId, resultText,
-        												iif(nFailed > 0, 'failed', 'done'), 
+        												iif(changesFailed > 0, 'failed', 'done'), 
         												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', ''),
         												iif(needRepublish, ', Re-publish needed', '')))
     		else
