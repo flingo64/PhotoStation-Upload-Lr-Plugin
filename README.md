@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.5.4<br>
+Version 6.6.0<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -11,8 +11,8 @@ Forum threads:
 - [English Synology forum](http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
 - [German Synology forum](http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
-[Support Page](http://messmer-online.de/index.php/software/11-photo-statlr)<br>
-[Donate to a good cause](http://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
+[Support Page](https://messmer-online.de/index.php/software/11-photo-statlr)<br>
+[Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
 [Get involved: Let Photo StatLr speak your language](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Contributions:-How-to-contribute-a-translation-for-Photo-StatLr.)<br>
  
 Copyright(c) 2018, Martin Messmer<br>
@@ -39,12 +39,12 @@ Requirements
 	- MacOS X 10.2, 10.3, 10.4, 10.5 
 	- MacOS X 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6
 	- MacOS X 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6
-	- MacOS X 13.0, 13.1, 13.2
+	- MacOS X 13.0, 13.1, 13.2, 13.3, 13.4
 * Lightroom: 
   	- Lr 4.2, 4.3, 4.4, 4.4.1
 	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
 	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12, 6.13, 6.14
-	- Lr 7.0, 7.1
+	- Lr 7.0, 7.1, 7.2
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
 * For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
@@ -211,6 +211,8 @@ Publish Functionality:
 - __Different Publish modes__ (Published Collection dialog):
 	- __Upload__:<br>
  	  Upload unpublished photos to target Album in target Photo Station. This is the expected normal publish method.
+	- __MetaDataUpload__:<br>
+	  Upload only modified metadata (title, description, rating, keywords/tags, GPS coords, face regions) to Photo Station. This publish mode is useful when photos have been tagged after the last publishing, because uploading of metadata is must faster than uploading a photo plus its thumbnails. Note, that the plugin cannot identify whether the photo was edited (has modified development settings) or just tagged. So, if you use this publish mode for an edited photo, only the modified tags will be uploaded to Photo Station, but not the changed photo itself. 
 	- __CheckExisting__:<br>
   	  Unpublished or To re-publish photos will not be uploaded, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   	  This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the defined target but not through the newly defined Published Collection (e.g. via Export).
@@ -615,6 +617,18 @@ Version 6.5
 -----------
 - Support for mirroring of Published Collection Set hierarchies via metadata placeholder __'{LrPC:...}'__<br>
   Contributed by Filip Kis
+
+Version 6.6
+-----------
+- Added publish mode __'Metadata Upload'__
+- Video Metadata Upload: 
+    - __GPS coords stored in Lr__ (not in the video itself) will now be uploaded. Lr GPS coords take precedence over GPS coords stored in the video. 
+	- Lr __metadata privacy settings__ configured in the Export/Publish Service settings (e.g.'Remove Person Info') will be honored now
+- Face region translations:
+    - photos with __named and unnamed face regions__ will now be handled correctly: unnamed regions will be dropped, named regions will keep the correct name
+	- __cropped photos__ will now be handled correctly
+	- photos in __DNG format__ will now be handled correctly
+- Update check now uses https
 
 Copyright
 ==========

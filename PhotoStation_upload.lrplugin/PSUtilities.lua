@@ -16,6 +16,9 @@ exported functions:
 	- split
 	- trim
 	
+	- cmdlineQuote()
+	- shellEscape
+	
 	- findInAttrValueTable
 	- findInStringTable
 	- getTableExtract
@@ -149,6 +152,30 @@ function trim(s)
  	return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
 end
 
+---------------------- shell encoding routines ---------------------------------------------------------
+
+function cmdlineQuote()
+	if WIN_ENV then
+		return '"'
+	elseif MAC_ENV then
+		return ''
+	else
+		return ''
+	end
+end
+
+function shellEscape(str)
+	if WIN_ENV then
+--		return(string.gsub(str, '>', '^>'))
+		return(string.gsub(string.gsub(str, '%^ ', '^^ '), '>', '^>'))
+	elseif MAC_ENV then
+--		return("'" .. str .. "'")
+		return(string.gsub(string.gsub(string.gsub(str, '>', '\\>'), '%(', '\\('), '%)', '\\)'))
+	else
+		return str
+	end
+end
+
 ---------------------- table operations ----------------------------------------------------------
 
 -- tableShallowCopy (origTable)
@@ -227,46 +254,77 @@ function findInStringTable(inputTable, string, isPattern)
 end
 
 --------------------------------------------------------------------------------------------
--- getTableExtract(inputTable, tableField)
---  returns a table with the elements 'tableField' of table 
-function getTableExtract(inputTable, tableField)
+-- getTableExtract(inputTable, tableField, filterAttr, filterPattern)
+--  returns a table extract consisting of:
+--   - the elements 'tableField' or the whole structure
+--   - all elements matching filteAttr / filterPattern or all 
+function getTableExtract(inputTable, tableField, filterAttr, filterPattern)
 	if not inputTable then return nil end
 
-	local tableExtract = {}
+	local j, tableExtract = 1, {}
 	
 	for i = 1, #inputTable do
-		tableExtract[i] = inputTable[i][tableField]
+		if not filterAttr or string.match(inputTable[i][filterAttr], filterPattern) then
+			if tableField then 
+				tableExtract[j] = inputTable[i][tableField]
+			else
+				tableExtract[j] = inputTable[i]
+			end
+			j = j + 1
+		end
 	end
 
 	return tableExtract
 end
 
 --------------------------------------------------------------------------------------------
--- getTableDiff(table1, table2)
---  returns a table of elements in table1, but not in table2 
-function getTableDiff(table1, table2)
-	if not table1 or not table2 then return nil end
-	
-	local tableDiff = {}
-	local nDiff = 0
-	
-	for i = 1, #table1 do
-		local found = false 
-		
-		for j = 1, #table2 do
-			if table1[i] == table2[j] then
-				found = true
-				break
-			end
-		end
-		if not found then
-			nDiff = nDiff + 1
-			tableDiff[nDiff] = table1[i]
-		end
+-- getTableDiff(table1, table2, keyName, isSameCheck)
+--  returns a table of elements in table1, but not in table2
+--  if keyName is given, then tables of structure are compared based on keyName
+--  if isSameCheck function is given, use it as compar operator  
+function getTableDiff(table1, table2, keyName, isSameCheck)
+	local tableDiff
+
+	if not table1 or #table1 == 0 or not table2 or #table2 == 0 then
+		table1 = ifnil(table1, {})
+		table2 = ifnil(table2, {})
+		tableDiff = tableShallowCopy(table1)
+	else
+    	tableDiff = {}
+    	local nDiff = 0
+    	
+    	for i = 1, #table1 do
+    		local found = false 
+    		
+    		for j = 1, #table2 do
+    			if 	(not keyName and table1[i] == table2[j]) or
+    				(	 keyName and 
+    					(not isSameCheck and table1[i][keyName] == table2[j][keyName]) or
+    					(	 isSameCheck and isSameCheck(table1[i], table2[j]))) 
+    			then
+    				found = true
+    				break
+    			end
+    		end
+    		if not found then
+    			nDiff = nDiff + 1
+    			tableDiff[nDiff] = table1[i]
+    		end
+    	end
 	end
-	if nDiff > 0 then 
-		writeLogfile(3, string.format("getTableDiff: t1('%s') - t2('%s') = tDiff('%s')\n", table.concat(table1, "','"), table.concat(table2, "','"), table.concat(tableDiff, "','")))
+	
+	if keyName then
+		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n", 
+				#table1,	table.concat(getTableExtract(table1, 'name'), "','"), 
+				#table2,	table.concat(getTableExtract(table2, 'name'), "','"), 
+				#tableDiff, table.concat(getTableExtract(tableDiff, 'name'), "','")))
+	else
+		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n", 
+				#table1,	table.concat(table1, "','"), 
+				#table2,	table.concat(table2, "','"), 
+				#tableDiff,	table.concat(tableDiff, "','")))
 	end
+
 	return tableDiff
 end
 
@@ -701,8 +759,8 @@ function openSession(exportParams, publishedCollection, operation)
 --	writeTableLogfile(2, 'exportParams', exportParams["< contents >"], 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"))
 	writeTableLogfile(2, 'exportParams', exportParams, 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"), true)
 
-	-- ConvertAPI: required if Export/Publish 
-	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and not exportParams.cHandle then
+	-- ConvertAPI: required if Export/Publish/Metadata 
+	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.cHandle then
 			exportParams.cHandle = PSConvert.initialize()
 			if not exportParams.cHandle then return false, 'Cannot initialize converters, check path for Syno Photo Station Uploader' end
 	end
@@ -743,7 +801,7 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- exiftool: required if Export/Publish and exif translation was selected, or if downloading faces
-	if 	(	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
+	if 	(	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
 		 or	(operation == 'GetRatingsFromPublishedCollection' and exportParams.PS2LrFaces)
 		)
 	and not exportParams.eHandle then 
@@ -917,4 +975,157 @@ function showFinalMessage (title, message, msgType)
 			LrHttp.openUrlInBrowser(prefs.downloadUrl)
 		end
 	end
+end
+
+PSUtilities = {}
+
+-- PSUtilities.normalizeArea(area) -------------------------------------------
+-- rotate area if required, add UpperLeft coords
+function PSUtilities.normalizeArea(area)
+	local areaNew
+	if not area then return nil end
+	
+	areaNew = tableShallowCopy(area)
+	-- rotate area if required (rotation ~= 0):
+	if area.rotation ~= 0 then
+		--		1) mirror y to get orthogonal coords
+		--		2) shift area (0:1, 0:1) to (-0.5:0.5, -0.5:0.5) (centered)
+		--		3) rotate according to rotation matrix:
+		--			x' = x * cosA - y * sinA 
+		--			y' = x * sinA + y * cosA 
+		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1) 
+		-- 		5) mirror y to get original coords
+		local sinA = math.sin(area.rotation)
+		local cosA = math.cos(area.rotation)
+		
+		-- 1)
+		local x,y = area.xCenter, 1 - area.yCenter
+		
+		-- 2) - 4)
+		areaNew.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
+		-- 2) - 5)
+		areaNew.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
+		
+		areaNew.width		= math.abs(area.width * cosA - area.height * sinA)
+		areaNew.height		= math.abs(area.width * sinA + area.height * cosA)
+--		writeLogfile(3, string.format("PSUtilities.normalizeArea: sinA:%f, cosA:%f w:%f/%f, h:%f/%f\n", 
+--										sinA, cosA, area.width, areaNew.width, area.height, areaNew.height)) 
+		areaNew.rotation 	= 0
+	end
+	
+	areaNew.xLeft	= areaNew.xCenter - (areaNew.width / 2)
+	areaNew.yUp		= areaNew.yCenter - (areaNew.height / 2)
+
+	writeLogfile(3, string.format("PSUtilities.normalizeArea: '%s' --> xC:%f/xL:%f yC:%f/yU:%f, w:%f, h:%f\n", 
+										areaNew.name,
+										areaNew.xCenter,
+										areaNew.xLeft,
+										areaNew.yCenter,
+										areaNew.yUp,
+										areaNew.width,
+										areaNew.height	
+									))
+	return areaNew
+end
+
+-- PSUtilities.denormalizeArea(area) -------------------------------------------
+-- rotate and de-crop a normalized area (from PS) to fit a photo which might be rotated in Lr
+function PSUtilities.denormalizeArea(area, photoDimension)
+	if not area or not photoDimension or not photoDimension.orient then return nil end
+
+	writeLogfile(3, string.format("PSUtilities.denormalizeArea: photo - Orient: %s, Crop: %s, Top: %f, Bottom: %f, Left: %f, Right: %f\n", 
+									photoDimension.orient, photoDimension.hasCrop, photoDimension.cropTop, photoDimension.cropBottom, photoDimension.cropLeft, photoDimension.cropRight)) 
+
+	writeLogfile(3, string.format("                             area  - x: %f, y: %f, width: %f, height: %f\n", 
+									area.x, area.y, area.width, area.height)) 
+
+	local areaNew = tableShallowCopy(area)
+	local photoRotation = string.format("%1.5f", 0)
+	
+	if string.find(photoDimension.orient, 'Horizontal') then
+		photoRotation	= string.format("%1.5f", 0)
+	elseif string.find(photoDimension.orient, '90') then
+		photoRotation = string.format("%1.5f", math.rad(90))
+	elseif string.find(photoDimension.orient, '180') then
+		photoRotation	= string.format("%1.5f", math.rad(180))
+	elseif string.find(photoDimension.orient, '270') then
+		photoRotation = string.format("%1.5f", math.rad(-90))
+	end
+
+	--	 transform upper left to center coords
+	areaNew.xCenter = areaNew.x + (areaNew.width / 2)
+	areaNew.yCenter = areaNew.y + (areaNew.height / 2)
+	
+	-- de-crop
+	if photoDimension.hasCrop then
+		areaNew.width	= areaNew.width   * (photoDimension.cropRight - photoDimension.cropLeft) 
+		areaNew.xCenter = areaNew.xCenter * (photoDimension.cropRight - photoDimension.cropLeft) + photoDimension.cropLeft 
+		areaNew.height 	= areaNew.height  * (photoDimension.cropBottom - photoDimension.cropTop)
+		areaNew.yCenter = areaNew.yCenter * (photoDimension.cropBottom - photoDimension.cropTop) + photoDimension.cropTop
+	end
+	 
+	-- if orig photo is rotated:
+	if photoRotation ~= 0 then
+		--		1) mirror y to get orthogonal coords
+		--		2) shift area (0:1, 0:1) to (-0.5:0.5, -0.5:0.5) (centered)
+		--		3) rotate according to rotation matrix:
+		--			x' = x * cosA - y * sinA 
+		--			y' = x * sinA + y * cosA 
+		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1) 
+		-- 		5) mirror y to get original coords
+		local sinA = math.sin(photoRotation)
+		local cosA = math.cos(photoRotation)
+		
+		-- 1)
+		local x,y, width, height = areaNew.xCenter, 1 - areaNew.yCenter, areaNew.width, areaNew.height 
+		
+		-- 2) - 4)
+		areaNew.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
+		-- 2) - 5)
+		areaNew.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
+		
+		areaNew.width		= math.abs(width * cosA - height * sinA)
+		areaNew.height		= math.abs(width * sinA + height * cosA)
+		areaNew.rotation 	= 0
+	end
+	
+	writeLogfile(3, string.format("PSUtilities.denormalizeArea: '%s' --> xC:%f, yC:%f, w:%f, h:%f\n", 
+										areaNew.name,
+										areaNew.xCenter,
+										areaNew.yCenter,
+										areaNew.width,
+										areaNew.height	
+									))
+	return areaNew
+end
+
+-- PSUtilities.areaCompare(area1, area2)
+-- Compare face area in Lr style with face area in PS style
+-- returns true if identical, false otherwise
+function PSUtilities.areaCompare(area1, area2)
+	local areaLr, areaPS
+	if area1.additional then
+		areaPS = area1
+		areaLr = area2
+	else
+		areaPS = area2
+		areaLr = area1
+	end
+
+	if 	areaPS.type == 'people' and
+		ifnil(areaLr.name, '') == ifnil(areaPS.name, '') and
+		areaPS.additional and areaPS.additional.info and
+		areaPS.additional.info.x and areaPS.additional.info.y and areaPS.additional.info.width and areaPS.additional.info.height and
+		math.abs(areaLr.xLeft	- areaPS.additional.info.x) < 0.05 and
+		math.abs(areaLr.yUp		- areaPS.additional.info.y) < 0.05 and
+		math.abs(areaLr.width	- areaPS.additional.info.width) < 0.05 and
+		math.abs(areaLr.height 	- areaPS.additional.info.height) < 0.05
+	then 
+		writeLogfile(3, string.format("PSUtilities.areaCompare('%s', '%s') returns true\n", areaLr.name, areaPS.name))
+		return true
+	else 
+		-- writeTableLogfile(3, 'areaPS.additional.info', areaPS.additional.info, true)
+		writeLogfile(3, string.format("PSUtilities.areaCompare('%s', '%s') returns false\n", areaLr.name, areaPS.name))
+		return false
+	end 
 end

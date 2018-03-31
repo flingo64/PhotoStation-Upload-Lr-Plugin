@@ -41,9 +41,9 @@ require "PSUtilities"
 
 PSUpdate = {}
 
-PSUpdate.updateCheckUrl		= 'http://messmer-online.de/LrPSUploadCheckForUpdate.php'
-PSUpdate.defaultSupportUrl	= 'http://messmer-online.de/index.php/software/11-photo-statlr'
-PSUpdate.defaultFeedbackUrl	= 'http://messmer-online.de/index.php/kontakt/contact-photo-statlr'
+PSUpdate.updateCheckUrl		= 'https://messmer-online.de/LrPSUploadCheckForUpdate.php'
+PSUpdate.defaultSupportUrl	= 'https://messmer-online.de/index.php/software/11-photo-statlr'
+PSUpdate.defaultFeedbackUrl	= 'https://messmer-online.de/index.php/kontakt/contact-photo-statlr'
 
 ---------------------------------------------------------------------------------------------------------
 
