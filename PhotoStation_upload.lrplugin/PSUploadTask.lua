@@ -194,7 +194,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	or not waitSemaphore("PhotoStation", dstFilename)
 
 	-- delete old before uploading new
---	or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, false) 
+--	or not PSPhotoStationAPI.deletePhoto (exportParams.uHandle, dstDir .. '/' .. dstFilename, false) 
 	
 	-- upload thumbnails and original file
 	or exportParams.thumbGenerate and (
@@ -399,7 +399,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	or not waitSemaphore("PhotoStation", dstFilename)
 	
 	-- delete old before uploading new
-	-- or not PSPhotoStationAPI.deletePic (exportParams.uHandle, dstDir .. '/' .. dstFilename, true) 
+	-- or not PSPhotoStationAPI.deletePhoto (exportParams.uHandle, dstDir .. '/' .. dstFilename, true) 
 
 	or exportParams.thumbGenerate and (
 		-- upload thumbs, preview videos and original file
@@ -964,7 +964,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
     				end
 					
 					if not dstDir
-					or not PSPhotoStationAPI.movePic(exportParams.uHandle, publishedPhotoId, dstDir, srcPhoto:getRawMetadata('isVideo')) then
+					or not PSPhotoStationAPI.movePhoto(exportParams.uHandle, publishedPhotoId, dstDir, srcPhoto:getRawMetadata('isVideo')) then
 						writeLogfile(1, 'MovePhotos: Cannot move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
 						skipPhoto = true 					
 					else
@@ -1231,7 +1231,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- if photo was moved ... 
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
-					if publishMode == 'Publish' and not PSPhotoStationAPI.deletePic(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
+					if publishMode == 'Publish' and not PSPhotoStationAPI.deletePhoto(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
 						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
     					table.insert( failures, srcPath )
 						skipPhoto = true 					
