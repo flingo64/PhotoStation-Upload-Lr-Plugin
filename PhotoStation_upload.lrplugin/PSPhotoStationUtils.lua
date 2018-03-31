@@ -345,7 +345,7 @@ end
 
 local tagMapping = {
 	['desc']	= {},
-	['person']	= {},
+	['people']	= {},
 	['geo']		= {},
 }
 
@@ -355,27 +355,6 @@ local function tagMappingUpdate(h, type)
 	writeLogfile(3, string.format('tagMappingUpdate(%s).\n', type))
 	tagMapping[type] = PSPhotoStationAPI.getTags(h, type)
 	return tagMapping[type]
-end
-
----------------------------------------------------------------------------------------------------------
--- tagMappingFind(h, type, name) 
-local function tagMappingFind(h, type, name)
-	local tagsOfType = tagMapping[type]
-
-	if (#tagsOfType == 0) and not tagMappingUpdate(h, type) then
-		return nil 
-	end
-	tagsOfType = tagMapping[type]
-	
-	for i = 1, #tagsOfType do
-		if tagsOfType[i].name == name then 
-			writeLogfile(3, string.format('tagMappingFind(%s, %s) found  %s.\n', type, name, tagsOfType[i].id))
-			return tagsOfType[i].id 
-		end
-	end
-
-	writeLogfile(3, string.format('tagMappingFind(%s, %s) not found.\n', type, name))
-	return nil
 end
 
 --================================= global functions ====================================================--
@@ -485,6 +464,27 @@ function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 --	writeLogfile(4, string.format("getPhotoId(%s) returns %s\n", photoPath, photoId))
 	
 	return photoId
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getTagId(h, type, name) 
+function PSPhotoStationUtils.getTagId(h, type, name)
+	local tagsOfType = tagMapping[type]
+
+	if (#tagsOfType == 0) and not tagMappingUpdate(h, type) then
+		return nil 
+	end
+	tagsOfType = tagMapping[type]
+	
+	for i = 1, #tagsOfType do
+		if tagsOfType[i].name == name then 
+			writeLogfile(3, string.format("getTagId(%s, '%s') found  %s.\n", type, name, tagsOfType[i].id))
+			return tagsOfType[i].id 
+		end
+	end
+
+	writeLogfile(3, string.format("getTagId(%s, '%s') not found.\n", type, name))
+	return nil
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -631,46 +631,62 @@ end
 
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotoTag (h, dstFilename, isVideo, type, name) 
+-- createAndAddPhotoTag (h, dstFilename, isVideo, type, name, addinfo) 
 -- create and add a new tag (desc,people,geo) to a photo
-function PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, name)
-	local tagId = tagMappingFind(h, type, name)
+function PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, name, addinfo)
+	local tagId = PSPhotoStationUtils.getTagId(h, type, name)
 	if not tagId then 
 		tagId = PSPhotoStationAPI.createTag(h, type, name)
 		tagMappingUpdate(h, type)
 	end
-		
 	
 	if not tagId then return false end
 	
-	local photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId)
+	local photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId, addinfo)
 	
 	if not photoTagIds and errorCode == 467 then
 		-- tag was deleted, cache wasn't up to date
 		tagId = PSPhotoStationAPI.createTag(h, type, name)
 		tagMappingUpdate(h, type)
-	 	photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId)
+	 	photoTagIds, errorCode = PSPhotoStationAPI.addPhotoTag(h, dstFilename, isVideo, type, tagId, addinfo)
 	end 
 	
 	-- errorCode 468: duplicate tag (tag already there)
 	if not photoTagIds and errorCode ~= 468 then return false end
 	
-	writeLogfile(3, string.format('createAndAddPhotoTag(%s, %s, %s) returns OK.\n', dstFilename, type, name))
+	writeLogfile(3, string.format("createAndAddPhotoTag('%s', '%s', '%s') returns OK.\n", dstFilename, type, name))
 	return true	
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotoTagList (h, dstFilename, isVideo, type, tagList) 
+-- createAndAddPhotoTagList (h, dstFilename, isVideo, type, tagList, addinfoList) 
 -- create and add a list of new tags (general,people,geo) to a photo
-function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, type, tagList)
+function PSPhotoStationUtils.createAndAddPhotoTagList(h, dstFilename, isVideo, type, tagList, addinfoList)
+
+	for i = 1, #tagList do
+		if 	(	 addinfoList and not PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, tagList[i], addinfoList[i])) or
+			(not addinfoList and not PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, tagList[i]))
+		then
+			return false
+		end
+	end
+
+	writeLogfile(3, string.format("createAndAddPhotoTagList('%s', %d tags of type '%s') returns OK.\n", dstFilename, #tagList, type))
+	return true	
+end
+
+---------------------------------------------------------------------------------------------------------
+-- removePhotoTagList (h, dstFilename, isVideo, type, tagList) 
+-- remove a list of tags of type (general,people,geo) from a photo
+function PSPhotoStationUtils.removePhotoTagList(h, dstFilename, isVideo, type, tagList)
 	
 	for i = 1, #tagList do
-		if not PSPhotoStationUtils.createAndAddPhotoTag(h, dstFilename, isVideo, type, tagList[i]) then
+		if not PSPhotoStationAPI.removePhotoTag(h, dstFilename, isVideo, type, tagList[i]) then
 			return false
 		end
 	end
 	 
-	writeLogfile(3, string.format('createAndAddPhotoTagList(%s) returns OK.\n', dstFilename))
+	writeLogfile(3, string.format("removePhotoTagList(%s, %d tags of type '%s') returns OK.\n", dstFilename, #tagList, type))
 	return true	
 end
 
