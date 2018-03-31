@@ -389,7 +389,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
 		
 		
-		if PSPhotoStationAPI.deletePic (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
+		if PSPhotoStationAPI.deletePhoto (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, "deletePhotosFromPublishedCollection: '" .. photoId .. "': successfully deleted.\n")
 			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, photoId)
 			
@@ -813,7 +813,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 		return false
 	end
 	
-	PSPhotoStationAPI.sortPics(publishSettings.uHandle, albumPath, remoteIdSequence)
+	PSPhotoStationAPI.sortAlbumPhotos(publishSettings.uHandle, albumPath, remoteIdSequence)
 
 	showFinalMessage("Photo StatLr: Sort Photos in Album done", "Sort Photos in Album done.", "info")
 
@@ -920,8 +920,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 
 		writeLogfile(3, string.format("deletePublishedCollection: deleting %s from  %s\n", publishedPath, info.name ))
 
---			if publishedPath ~= nil then PSFileStationAPI.deletePic(publishSettings.fHandle, publishedPath) end
-		if PSPhotoStationAPI.deletePic(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
+		if PSPhotoStationAPI.deletePhoto(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
 			writeLogfile(2, publishedPath .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
 			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPath)
@@ -1114,7 +1113,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	    									 	 PSPhotoStationUtils.getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo')), 
 	    									 	 'name')
 					then
-        				local sharedCommentsPS 	= PSPhotoStationAPI.getSharedPhotoComments(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+        				local sharedCommentsPS 	= PSPhotoStationAPI.getPublicSharedPhotoComments(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
         
                 		if sharedCommentsPS and #sharedCommentsPS > 0 then
         		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album '%s'\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
