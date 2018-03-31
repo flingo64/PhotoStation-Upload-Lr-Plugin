@@ -69,30 +69,6 @@ local qtfstart
 -- ffmpeg encoder to use depends on OS
 local audioCodecOpt
 
----------------------- shell encoding routines ---------------------------------------------------------
-
-function cmdlineQuote()
-	if WIN_ENV then
-		return '"'
-	elseif MAC_ENV then
-		return ''
-	else
-		return ''
-	end
-end
-
-function shellEscape(str)
-	if WIN_ENV then
---		return(string.gsub(str, '>', '^>'))
-		return(string.gsub(string.gsub(str, '%^ ', '^^ '), '>', '^>'))
-	elseif MAC_ENV then
---		return("'" .. str .. "'")
-		return(string.gsub(string.gsub(string.gsub(str, '>', '\\>'), '%(', '\\('), '%)', '\\)'))
-	else
-		return str
-	end
-end
-
 ------------------------ initialize ---------------------------------------------------------------------------------
 
 -- initialize: initialize convert program paths
@@ -579,11 +555,11 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 	-- add creation_time metadata to destination video
 	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(vinfo.srcDateTime), '"%Y-%m-%d %H:%M:%S" ', false)
 		
-	-- add location metadata to destination video: doesn't work w/ ffmpeg 3.3.2
---	local locationInfoOpt = ''
---	if vinfo.latitude then
---		 locationInfoOpt = '-metadata location="' .. vinfo.latitude .. vinfo.longitude .. ifnil(vinfo.gpsHeight, '') .. '/" '
---	end
+	-- add location metadata to destination video: doesn't work w/ ffmpeg 3.3.2, see ffmpeg #4209
+	local locationInfoOpt = ''
+	if vinfo.latitude then
+		 locationInfoOpt = '-metadata location="' .. vinfo.latitude .. vinfo.longitude .. ifnil(vinfo.gpsHeight, '') .. '/" '
+	end
 		
 	-- transcoding pass 1 
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
@@ -593,6 +569,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 				'-i "' 	.. srcVideoFilename .. '" ' .. 
 				'-y ' 	.. audioCodecOpt .. 
 				createTimeOpt ..  
+				locationInfoOpt ..
 				rotateOpt ..
 				'-pix_fmt yuv420p ' ..
 				videoConversion[convKey].pass1Params .. ' ' ..
@@ -601,7 +578,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 				'"' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
 				cmdlineQuote()
 				
-	writeLogfile(4, cmdline .. "\n")
+	writeLogfile(3, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
 		writeLogfile(3, "ffmpeg report:\n" .. 
@@ -625,6 +602,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 				noAutoRotateOpt ..
 				'-i "' ..	srcVideoFilename .. '" ' .. 
 				createTimeOpt ..  
+				locationInfoOpt ..
 				'-y ' .. audioCodecOpt ..
 				rotateOpt ..
 				'-pix_fmt yuv420p ' ..
@@ -634,7 +612,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 				'"' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
 				cmdlineQuote()
 
-	writeLogfile(4, cmdline .. "\n")
+	writeLogfile(3, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(tmpVideoFilename) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
 		writeLogfile(3, "ffmpeg report:\n" .. 
