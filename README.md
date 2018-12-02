@@ -211,8 +211,8 @@ Publish Functionality:
 - __Different Publish modes__ (Published Collection dialog):
 	- __Upload__:<br>
  	  Upload unpublished photos to target Album in target Photo Station. This is the expected normal publish method.
-	- __MetaDataUpload__:<br>
-	  Upload only modified metadata (title, description, rating, keywords/tags, GPS coords, face regions) to Photo Station. This publish mode is useful when photos have been tagged after the last publishing, because uploading of metadata is must faster than uploading a photo plus its thumbnails. Note, that the plugin cannot identify whether the photo was edited (has modified development settings) or just tagged. So, if you use this publish mode for an edited photo, only the modified tags will be uploaded to Photo Station, but not the changed photo itself. 
+	- __MetadataUpload__:<br>
+	  Upload only modified metadata (title, description, rating, color label, keywords/tags, GPS coords, face regions) to Photo Station. This publish mode is useful when photos have been tagged, but not edited after the last publishing, because uploading of metadata is must faster than uploading of a photo plus its thumbnails. Note, that the plugin cannot identify whether the photo was edited (has modified development settings) or just tagged. So, if you use this publish mode for an edited photo, only the modified tags will be uploaded to Photo Station, but not the changed photo itself. 
 	- __CheckExisting__:<br>
   	  Unpublished or To re-publish photos will not be uploaded, but will be checked whether they already exist in the target Album and if so, set them to 'Published'. 
   	  This operation mode is useful when initializing a new Published Collection: if you have exported the latest version of thoses photos before to the defined target but not through the newly defined Published Collection (e.g. via Export).
@@ -620,7 +620,7 @@ Version 6.5
 
 Version 6.6
 -----------
-- Added publish mode __'Metadata Upload'__
+- Added publish mode __'MetadataUpload'__
 - Video Metadata Upload: 
     - __GPS coords stored in Lr__ (not in the video itself) will now be uploaded. Lr GPS coords take precedence over GPS coords stored in the video. 
 	- Lr __metadata privacy settings__ configured in the Export/Publish Service settings (e.g.'Remove Person Info') will be honored now
@@ -632,7 +632,7 @@ Version 6.6
 
 Copyright
 ==========
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2018, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
