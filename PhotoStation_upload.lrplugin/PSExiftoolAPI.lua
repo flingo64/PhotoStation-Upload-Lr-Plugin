@@ -337,7 +337,10 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
     				personTag.height 	= height / (photoDimension.cropBottom - photoDimension.cropTop)
     				personTag.rotation 	= photoRotation
     				personTag.trotation = region.Rotation
-    				personTag.name 		= region.Name
+					personTag.name 		= region.Name
+					
+					if personTag.trotation == nil then personTag.trotation = 0 end
+					if personTag.rotation == nil  then personTag.rotation = 0  end
     				
     				personTags[j] = personTag 
     				
