@@ -414,10 +414,11 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
 				dataType = dataTypeAndPattern
 			end
 
-			writeLogfile(4, string.format("evaluatePathOrFilename: '%s': type='%s' pattern='%s'\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataPattern, '<Nil>'))) 
+			writeLogfile(4, string.format("substituteCollectionNameOrPath: '%s'--> type='%s', pattern='%s', default='%s'\n", 
+											ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataPattern, '<Nil>'), ifnil(dataDefault, '<Nil>'))) 
 			
 			if not dataType or not string.find('name,path', dataType, 1, true) then 
-				writeLogfile(3, string.format("evaluatePathOrFilename:  '%s': type='%s' not valid  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
+				writeLogfile(3, string.format("substituteCollectionNameOrPath:  '%s': type='%s' not valid  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
 				return contCollParam 
 			end
 			
@@ -437,23 +438,16 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
 					dataString = collectionPath[i]
 				end
 			
-				local dataStringExtracted = dataString
-				if dataString == '' then
-					dataStringExtracted = ifnil(dataDefault, '')
+				local dataStringExtracted = (dataPattern and string.match(dataString, dataPattern)) or (not dataPattern and dataString) 
+
+				if not dataStringExtracted then
+					writeLogfile(3, string.format("substituteCollectionNameOrPath: '%s' collection '%s' --> no match\n", ifnil(contCollParam, '<Nil>'), collectionPath[i])) 
 				else
-					if dataPattern then
-						dataStringExtracted = string.match(dataString, dataPattern)
-					end
-					if not dataStringExtracted then 
-						dataStringExtracted = ifnil(dataDefault, '')
-					else
-						dataStringExtracted = dataStringExtracted
-					end 
+					writeLogfile(3, string.format("substituteCollectionNameOrPath: '%s' collection '%s'  --> '%s' \n", ifnil(contCollParam, '<Nil>'), collectionPath[i], ifnil(dataStringExtracted, ''))) 
+					return dataStringExtracted
 				end
-				writeLogfile(3, string.format("evaluatePathOrFilename: %s  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataStringExtracted, ''))) 
-				return dataStringExtracted
 			end
-			writeLogfile(3, string.format("evaluatePathOrFilename:  %s: no match  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
+			writeLogfile(3, string.format("substituteCollectionNameOrPath:  %s: no matching collection, defaulting to  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataDefault,''))) 
 			return ifnil(dataDefault,'')  
 		end
 	end
