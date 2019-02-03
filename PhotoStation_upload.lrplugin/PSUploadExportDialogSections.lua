@@ -55,121 +55,7 @@ require "PSDialogs"
 PSUploadExportDialogSections = {}
 
 -------------------------------------------------------------------------------
-
--------------------------------------------------------------------------------
-
--- updatExportStatus: do some sanity check on dialog settings
-local function updateExportStatus( propertyTable )
-	local prefs = LrPrefs.prefsForPlugin()
-	
-	local message = nil
-	
-	repeat
-		-- Use a repeat loop to allow easy way to "break" out.
-		-- (It only goes through once.)
-		
-		if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
-			break
-		end
-
-		if propertyTable.servername == "" or propertyTable.servername == nil  then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/ServernameMissing=Enter a servername"
-			break
-		end
-
-		if propertyTable.username == "" or propertyTable.username == nil  then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/UsernameMissing=Enter a username"
-			break
-		end
-
-		if propertyTable.copyTree and not PSDialogs.validateDirectory(nil, propertyTable.srcRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
-			break
-		end
-				
-		if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
-			break
-		end
-				
-		if propertyTable.usePersonalPS and (propertyTable.personalPSOwner == "" or propertyTable.personalPSOwner == nil ) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Photo Station to upload to"
-			break
-		end
-
-		-- Check file format: PSD not supported by Photo Station, DNG only supported w/ embedded full-size jpg preview
-		if (propertyTable.LR_format == 'PSD') or  (propertyTable.LR_format == 'DNG' and ifnil(propertyTable.LR_DNG_previewSize, '') ~= 'large') then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/FileFormatNoSupp=File format not supported! Select: [JPEG], [TIFF], [DNG w/ full-size JPEG preview] or [Original]."
-			break
-		end
-
-		-- renaming: either Lr or plugin renaming can be active
-		if not propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn and propertyTable.renameDstFile then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenameOption=Use either Lr File Renaming or Photo StatLr File Renaming, not both!"
-			break
-		end
-
-		-- renaming: renaming dstFilename must contain at least one metadata placeholder
-		if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
-			break
-		end
-
-		-- Publish Servic Provider start
-
-		if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
-			break
-		end
-
-		if propertyTable.useSecondAddress and ifnil(propertyTable.servername2, "") == "" then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/Servername2Missing=Enter a secondary servername"
-			break
-		end
-
-		-- Publish Service Provider end
-
-		-- Exif translation start
-		
-		-- if at least one translation is activated then set exifTranslate
-		if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
-			propertyTable.exifTranslate = true
-		end
-		
-		-- if no translation is activated then set exifTranslate to off
-		if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
-			propertyTable.exifTranslate = false
-		end
-				
-		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
-			break
-		end
-		-- Exif translation end
-
-		propertyTable.serverUrl = 	propertyTable.proto .. "://" .. propertyTable.servername
-		propertyTable.psPath = 		iif(propertyTable.usePersonalPS, "/~" .. ifnil(propertyTable.personalPSOwner, "unknown") .. "/photo/", "/photo/")
-		propertyTable.psUrl = 		propertyTable.serverUrl .. propertyTable.psPath
-		propertyTable.isPS6 = 		iif(propertyTable.psVersion >= 60, true, false)
-	until true
-	
-	if message then
-		propertyTable.message = message
-		propertyTable.hasError = true
-		propertyTable.hasNoError = false
-		propertyTable.LR_cantExportBecause = 'Booo!! ' .. message
-	else
-		propertyTable.message = nil
-		propertyTable.hasError = false
-		propertyTable.hasNoError = true
-		propertyTable.LR_cantExportBecause = nil
-	end
-	
-end
-
--------------------------------------------------------------------------------
-
+-- startDialog 
 function PSUploadExportDialogSections.startDialog( propertyTable )
 	-- check if my custom video output presets are already installed 
 	local myVideoExportPresets = LrExportSettings.videoExportPresetsForPlugin( _PLUGIN )
@@ -219,35 +105,37 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 		writeLogfile(2, "PSUploadExportDialogSections.startDialog(): Successfully added " .. #origSizeVideoPreset .. " custom video export presets.\n")
 	end
 
-	propertyTable:addObserver( 'thumbGenerate', updateExportStatus )
+	propertyTable:addObserver( 'thumbGenerate', PSDialogs.updateDialogStatus )
 
-	propertyTable:addObserver( 'proto', updateExportStatus )
-	propertyTable:addObserver( 'servername', updateExportStatus )
-	propertyTable:addObserver( 'username', updateExportStatus )
-	propertyTable:addObserver( 'srcRoot', updateExportStatus )
-	propertyTable:addObserver( 'dstRoot', updateExportStatus )
-	propertyTable:addObserver( 'copyTree', updateExportStatus )
-	propertyTable:addObserver( 'usePersonalPS', updateExportStatus )
-	propertyTable:addObserver( 'personalPSOwner', updateExportStatus )
-	propertyTable:addObserver( 'psVersion', updateExportStatus )
+	propertyTable:addObserver( 'proto', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'servername', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'username', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'srcRoot', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'dstRoot', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'copyTree', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'usePersonalPS', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'personalPSOwner', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'psVersion', PSDialogs.updateDialogStatus )
 
-	propertyTable:addObserver( 'useSecondAddress', updateExportStatus )
-	propertyTable:addObserver( 'servername2', updateExportStatus )
+	propertyTable:addObserver( 'useSecondAddress', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'servername2', PSDialogs.updateDialogStatus )
 
-	propertyTable:addObserver( 'exifXlatFaceRegions', updateExportStatus )
-	propertyTable:addObserver( 'exifXlatLabel', updateExportStatus )
-	propertyTable:addObserver( 'exifXlatRating', updateExportStatus )
+	propertyTable:addObserver( 'exifXlatFaceRegions', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'exifXlatLabel', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'exifXlatRating', PSDialogs.updateDialogStatus )
 
-	propertyTable:addObserver( 'renameDstFile', updateExportStatus )
-	propertyTable:addObserver( 'dstFilename', updateExportStatus )
+	propertyTable:addObserver( 'locationTagSeperator', PSDialogs.updateDialogStatus )
 
-	propertyTable:addObserver( 'LR_renamingTokensOn', updateExportStatus )
-	propertyTable:addObserver( 'LR_tokens', updateExportStatus )
+	propertyTable:addObserver( 'renameDstFile', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'dstFilename', PSDialogs.updateDialogStatus )
+
+	propertyTable:addObserver( 'LR_renamingTokensOn', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'LR_tokens', PSDialogs.updateDialogStatus )
 	
-	propertyTable:addObserver( 'LR_format', updateExportStatus )
-	propertyTable:addObserver( 'LR_DNG_previewSize', updateExportStatus )
+	propertyTable:addObserver( 'LR_format', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'LR_DNG_previewSize', PSDialogs.updateDialogStatus )
 
-	updateExportStatus( propertyTable )
+	PSDialogs.updateDialogStatus( propertyTable )
 	
 end
 
