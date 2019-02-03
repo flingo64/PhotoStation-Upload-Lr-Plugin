@@ -447,80 +447,6 @@ function publishServiceProvider.metadataThatTriggersRepublish( publishSettings )
 	}
 end
 
--- updatCollectionStatus: do some sanity checks on Published Collection dialog settings
-local function updateCollectionStatus( collectionSettings )
-	local prefs = LrPrefs.prefsForPlugin()
-
-	local message = nil
---	local albumPath = PSLrUtilities.getCollectionUploadPath(collectionSettings)
-	
-	
-	repeat
-		-- Use a repeat loop to allow easy way to "break" out.
-		-- (It only goes through once.)
-		
-		if collectionSettings.copyTree and not PSDialogs.validateDirectory(nil, collectionSettings.srcRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
-			break
-		end
-				
-		if not PSDialogs.validateAlbumPath(nil, collectionSettings.dstRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
-			break
-		end
-				
-		-- renaming: renaming dstFilename must contain at least one metadata placeholder
-		if collectionSettings.renameDstFile  and not PSDialogs.validateMetadataPlaceholder(nil, collectionSettings.dstFilename) then 
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
-			break
-		end
-
-		-- Exif translation start
-		-- if at least one translation is activated then set exifTranslate
-		if collectionSettings.exifXlatFaceRegions or collectionSettings.exifXlatLabel or collectionSettings.exifXlatRating then
-			collectionSettings.exifTranslate = true
-		end
-		
-		-- if no translation is activated then set exifTranslate to off
-		if not (collectionSettings.exifXlatFaceRegions or collectionSettings.exifXlatLabel or collectionSettings.exifXlatRating) then
-			collectionSettings.exifTranslate = false
-		end
-		
-		if collectionSettings.exifTranslate and not PSDialogs.validateProgram( nil, prefs.exiftoolprog ) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
-			break
-		end
-
-		-- downloading translated tags makes only sense if we upload them also, otherwise they would dissappear after re-publish
-		if not collectionSettings.exifXlatFaceRegions 	then collectionSettings.PS2LrFaces = false end
-		if not collectionSettings.exifXlatLabel 		then collectionSettings.PS2LrLabel = false end
-		if not collectionSettings.exifXlatRating 		then collectionSettings.PS2LrRating = false end
-		
-		-- Exif translation end
-
-		-- exclusive or: rating download or rating tag download
-		if collectionSettings.ratingDownload and collectionSettings.PS2LrRating then 
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
-			break
-		end
-		
-		-- location tag download (blue pin): only possible if location download is enabled
-		if not collectionSettings.locationDownload then  collectionSettings.locationTagDownload = false end
-		 
-	until true
-	
-	if message then
-		collectionSettings.hasError = true
-		collectionSettings.message = 'Booo!! ' .. message
-		collectionSettings.LR_canSaveCollection = false
-	else
-		collectionSettings.hasError = false
-		collectionSettings.message = nil
-		collectionSettings.LR_canSaveCollection = true
-	end
-	
-end
-
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
  -- creates a new published collection or edits an existing one. It can add
@@ -549,6 +475,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	exifXlatFaceRegions	= publishSettings.exifXlatFaceRegions,
     	exifXlatRating		= publishSettings.exifXlatRating,
     	exifXlatLabel		= publishSettings.exifXlatLabel,
+    	locationTagTemplate = publishSettings.locationTagTemplate,
     
     	titleDownload		= false,
     	captionDownload		= false,
@@ -588,21 +515,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	end
 		
 	--============= observe changes in collection setiings dialog ==============
-	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
-	collectionSettings:addObserver( 'dstRoot', updateCollectionStatus )
-	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
-	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
-	collectionSettings:addObserver( 'renameDstFile', updateCollectionStatus )
-	collectionSettings:addObserver( 'dstFilename', updateCollectionStatus )
-	collectionSettings:addObserver( 'exifXlatFaceRegions', updateCollectionStatus )
-	collectionSettings:addObserver( 'exifXlatLabel', updateCollectionStatus )
-	collectionSettings:addObserver( 'exifXlatRating', updateCollectionStatus )
-	collectionSettings:addObserver( 'locationDownload', updateCollectionStatus )
-	collectionSettings:addObserver( 'ratingDownload', updateCollectionStatus )
-	collectionSettings:addObserver( 'PS2LrRating', updateCollectionStatus )
-	
-	updateCollectionStatus( collectionSettings )
-	
+	PSDialogs.addObservers( collectionSettings )
+
 	-- manual suggest group_box as outmost container, but nested group_boxes will get an invisible title 
 	--	f:group_box {
 	--	title		= 'Photo StatLr collection settings',
