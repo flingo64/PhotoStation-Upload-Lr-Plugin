@@ -105,37 +105,7 @@ function PSUploadExportDialogSections.startDialog( propertyTable )
 		writeLogfile(2, "PSUploadExportDialogSections.startDialog(): Successfully added " .. #origSizeVideoPreset .. " custom video export presets.\n")
 	end
 
-	propertyTable:addObserver( 'thumbGenerate', PSDialogs.updateDialogStatus )
-
-	propertyTable:addObserver( 'proto', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'servername', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'username', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'srcRoot', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'dstRoot', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'copyTree', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'usePersonalPS', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'personalPSOwner', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'psVersion', PSDialogs.updateDialogStatus )
-
-	propertyTable:addObserver( 'useSecondAddress', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'servername2', PSDialogs.updateDialogStatus )
-
-	propertyTable:addObserver( 'exifXlatFaceRegions', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'exifXlatLabel', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'exifXlatRating', PSDialogs.updateDialogStatus )
-
-	propertyTable:addObserver( 'locationTagSeperator', PSDialogs.updateDialogStatus )
-
-	propertyTable:addObserver( 'renameDstFile', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'dstFilename', PSDialogs.updateDialogStatus )
-
-	propertyTable:addObserver( 'LR_renamingTokensOn', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'LR_tokens', PSDialogs.updateDialogStatus )
-	
-	propertyTable:addObserver( 'LR_format', PSDialogs.updateDialogStatus )
-	propertyTable:addObserver( 'LR_DNG_previewSize', PSDialogs.updateDialogStatus )
-
-	PSDialogs.updateDialogStatus( propertyTable )
+	PSDialogs.addObservers( propertyTable )
 	
 end
 
