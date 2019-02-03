@@ -114,19 +114,11 @@ JSON.onDecodeOfHTMLError = JSON.onDecodeError
 ---------------------- useful helpers ----------------------------------------------------------
 
 function ifnil(str, subst)
-	if str == nil then
-		return subst
-	else
-		return str
-	end
+	return ((str == nil) and subst) or str
 end 
 
 function iif(condition, thenExpr, elseExpr)
-	if condition then
-		return thenExpr
-	else
-		return elseExpr
-	end
+	return (condition and thenExpr) or (not condition and elseExpr)
 end 
 
 --------------------------------------------------------------------------------------------
@@ -706,6 +698,7 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.exifXlatFaceRegions 	= collectionSettings.exifXlatFaceRegions
     	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
     	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
+    	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
 
 		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
     	if operation == 'GetCommentsFromPublishedCollection' then
