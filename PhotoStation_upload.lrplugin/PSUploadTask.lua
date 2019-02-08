@@ -656,11 +656,11 @@ local function ackRendition(rendition, publishedPhotoId, publishedCollectionId)
 end
 
 -----------------
--- noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
-local function noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
+-- noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
+local function noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
 	local videoUploaded = {}
 	
-	writeLogfile(3, string.format("noteVideoUpload(%s)\n", publishedPhotoId))
+	writeLogfile(3, string.format("noteForDeferredMetadataUpload(%s)\n", publishedPhotoId))
 	videoUploaded.rendition 			= rendition
 	videoUploaded.publishedPhotoId 		= publishedPhotoId
 	videoUploaded.publishedCollectionId = publishedCollectionId
@@ -1076,20 +1076,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	
 	writeLogfile(2, "processRenderedPhotos starting\n" )
 	
---[[
-	local devPresetFolders = LrApplication.developPresetFolders()
-	for i = 1, #devPresetFolders do
-		writeLogfile(2, string.format("developPresetFolder: %s -  %s\n", devPresetFolders[i]:getName(), devPresetFolders[i]:getPath()))
-	end
-	
-	local watermarkFile = io.open('C:\\\Users\\\martin\\\AppData\\\Roaming\\\Adobe\\\Lightroom\\\Watermarks\\\SM.lrtemplate', 'r')
-	if not watermarkFile then
-		writeLogfile(1, "updateExportSettings: Cannot read watermark file!\n" )
-		return
-	end
-	writeLogfile(2, "Watermark begins with: " .. watermarkFile:read() .. "\n")
-]]
-	
 	-- check if this rendition process is an export or a publish
 	local publishedCollection = exportContext.publishedCollection
 	if publishedCollection then
@@ -1337,8 +1323,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, additionalVideos, videoInfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
-						 or (    publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
-						 or (not publishedCollection and not noteVideoUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, nil)) 
+						 or (    publishedCollection and not noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
+						 or (not publishedCollection and not noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, nil)) 
 						)	
 					)
 				or (publishMode ~= 'Metadata' and not srcPhoto:getRawMetadata("isVideo") 
