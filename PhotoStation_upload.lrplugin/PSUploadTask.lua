@@ -605,9 +605,10 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 	if  facesRemove and #facesRemove > 0 then
 		logChanges = logChanges .. 	"-faces: '" .. table.concat(faceNamesRemove, "','") .. "' "
 	end 
-	if locationTagNamesAdd and # locationTagNamesAdd > 0 then
+	if locationTagNamesAdd and #locationTagNamesAdd > 0 then
 		logChanges = logChanges .. 	"+loc: '" .. table.concat(locationTagNamesAdd, "','") .. "' "
-	elseif locationTagNamesRemove then
+	end
+	if locationTagNamesRemove and #locationTagNamesRemove > 0 then
 		logChanges = logChanges .. 	"-loc: '" .. table.concat(locationTagNamesRemove, "','") .. "' "
 	end
 	
@@ -627,7 +628,7 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 								and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'people', faceItemTagIdsRemove, facesRemove))
 		 or	(facesAdd and #facesAdd > 0  
 								and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstPath, isVideo, 'people', faceNamesAdd, facesAdd))
-		 or (locationTagIdsRemove 	and #locationTagIdsRemove > 0 
+		 or (locationTagNamesRemove and #locationTagNamesRemove > 0 
 		 							and not PSPhotoStationUtils.removePhotoTagList(exportParams.uHandle, dstPath, isVideo, 'geo', locationTagIdsRemove, nil))
 		 or (locationTagNamesAdd	and #locationTagNamesAdd > 0
 		 							and not PSPhotoStationUtils.createAndAddPhotoTagList(exportParams.uHandle, dstPath, isVideo, 'geo', locationTagNamesAdd, nil))
@@ -1328,14 +1329,17 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, additionalVideos, videoInfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
-						 or (    publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
 						 or (not publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, nil)) 
+						 or (    publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
 						)	
 					)
 				or (string.find('Export,Publish', publishMode, 1, true) and not srcPhoto:getRawMetadata("isVideo") 
 					and (
-							not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams)
-						 or 	(publishedCollection and not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
+							 not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams)
+						 -- (not exportParams.xlatLocationTags and not publishedCollection) --> OK, no more actions required
+						 or (not exportParams.xlatLocationTags and     publishedCollection and not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
+						 or (	 exportParams.xlatLocationTags and not publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, nil, nil))
+						 or (	 exportParams.xlatLocationTags and     publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, nil, publishedCollection.localIdentifier))
 						)
 					)
 				then
