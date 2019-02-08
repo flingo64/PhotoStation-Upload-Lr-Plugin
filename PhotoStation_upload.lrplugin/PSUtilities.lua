@@ -698,6 +698,7 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.exifXlatFaceRegions 	= collectionSettings.exifXlatFaceRegions
     	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
     	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
+    	exportParams.xlatLocationTags		= collectionSettings.xlatLocationTags
     	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
 
 		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
