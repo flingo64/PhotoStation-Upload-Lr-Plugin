@@ -1323,7 +1323,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					and (	not	uploadMetadata(srcPhoto, publishedPhotoId, exportParams)
 						 or not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
 					)
-				or (publishMode ~= 'Metadata' and srcPhoto:getRawMetadata("isVideo") 	
+				or (string.find('Export,Publish', publishMode, 1, true) and srcPhoto:getRawMetadata("isVideo") 	
 					and	(	not videoInfo or
 							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, additionalVideos, videoInfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
@@ -1332,20 +1332,20 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						 or (not publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, nil)) 
 						)	
 					)
-				or (publishMode ~= 'Metadata' and not srcPhoto:getRawMetadata("isVideo") 
+				or (string.find('Export,Publish', publishMode, 1, true) and not srcPhoto:getRawMetadata("isVideo") 
 					and (
 							not	uploadPhoto(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams)
 						 or 	(publishedCollection and not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
 						)
 					)
 				then
-					if publishMode ~= 'Metadata' then writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' failed!!!\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' failed!!!\n") end
 					table.insert( failures, srcPath )
 				else
 					if publishedCollection then
 						PSLrUtilities.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
 					end 
-					if publishMode ~= 'Metadata' then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' done\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' done\n") end
 				end
 			end
 		
