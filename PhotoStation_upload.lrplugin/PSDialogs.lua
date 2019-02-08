@@ -69,6 +69,7 @@ require "PSUpdate"
 local bind 				= LrView.bind
 local share 			= LrView.share
 local negativeOfKey 	= LrBinding.negativeOfKey
+local keyIsNotNil 		= LrBinding.keyIsNotNil
 local conditionalItem 	= LrView.conditionalItem
 
 
@@ -228,7 +229,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 				break
 			end
 
-			-- Publish Servic Provider start ------------------------
+			-- Publish Service Provider start ------------------------
 			
 			if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
@@ -285,24 +286,34 @@ function PSDialogs.updateDialogStatus( propertyTable )
 
 		-- Exif translation end -------------------
 
+		-- Location tag translation -------------------
 		if propertyTable.xlatLocationTags then
 			if string.len(propertyTable.locationTagSeperator) > 1 then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
 				break
 			end
-			propertyTable.locationTagTemplate = 
-				table.concat(
-						{	propertyTable.locationTagField1,
-							propertyTable.locationTagField2,
-							propertyTable.locationTagField3,
-							propertyTable.locationTagField4, 
-							propertyTable.locationTagField5, 
-						}, 
-						propertyTable.locationTagSeperator)
+			propertyTable.locationTagField2 = propertyTable.locationTagField1 and propertyTable.locationTagField2 or nil
+			propertyTable.locationTagField3 = propertyTable.locationTagField2 and propertyTable.locationTagField3 or nil
+			propertyTable.locationTagField4 = propertyTable.locationTagField3 and propertyTable.locationTagField4 or nil
+			propertyTable.locationTagField5 = propertyTable.locationTagField4 and propertyTable.locationTagField5 or nil
+
+			propertyTable.locationTagTemplate =	
+				table.concat(	{ propertyTable.locationTagField1,
+                				  propertyTable.locationTagField2,
+                				  propertyTable.locationTagField3,
+                				  propertyTable.locationTagField4,
+                				  propertyTable.locationTagField5
+                				},
+                				propertyTable.locationTagSeperator
+                			)
 		else
+			propertyTable.locationTagField1 = nil
+			propertyTable.locationTagField2 = nil
+			propertyTable.locationTagField3 = nil
+			propertyTable.locationTagField4 = nil
+			propertyTable.locationTagField5 = nil
 			propertyTable.locationTagTemplate = ''
 		end
-		writeLogfile(1, "locationTagTemplate: " .. propertyTable.locationTagTemplate .. "\n")
 
 		-- ############### Pure Collection Settings ##########################
 		if propertyTable.isCollection then
@@ -1470,14 +1481,15 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				value 			= bind 'locationTagField1',
 				visible 		= bind 'xlatLocationTags',
 				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
 --   				fill_horizontal = 0.1,
 			},
 
 			f:combo_box {
-				value 			= bind 'locationTagSeperator',
-				enabled 		= bind 'xlatLocationTags',
-				visible 		= bind 'xlatLocationTags',
+				value 			= bind 			'locationTagSeperator',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField2',
 				items 			= locationTagSepItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagSeperatorTT=Enter a tag seperator character",
 				immediate 		= true,
@@ -1486,54 +1498,62 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			},
 
 			f:popup_menu {
-				value 			= bind 'locationTagField2',
-				visible 		= bind 'xlatLocationTags',
+				value 			= bind 			'locationTagField2',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField1',
 				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
 --   				fill_horizontal = 0.1,
 			},
 
 			f:static_text {
-				title 			= bind 'locationTagSeperator',
-				visible 		= bind 'xlatLocationTags',
+				title 			= bind 			'locationTagSeperator',
+				visible 		= keyIsNotNil	'locationTagField3',
    				alignment 		= 'center',
    				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
-				value 			= bind 'locationTagField3',
-				visible 		= bind 'xlatLocationTags',
+				value 			= bind 			'locationTagField3',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField2',
 				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
 --   				fill_horizontal = 0.1,
 			},
 
 			f:static_text {
-				title 			= bind 'locationTagSeperator',
-				visible 		= bind 'xlatLocationTags',
+				title 			= bind 			'locationTagSeperator',
+				visible 		= keyIsNotNil	'locationTagField4',
    				alignment 		= 'center',
    				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
-				value 			= bind 'locationTagField4',
-				visible 		= bind 'xlatLocationTags',
+				value 			= bind 			'locationTagField4',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField3',
 				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
 --   				fill_horizontal = 0.1,
 			},
 
 			f:static_text {
-				title 			= bind 'locationTagSeperator',
-				visible 		= bind 'xlatLocationTags',
+				title 			= bind 			'locationTagSeperator',
+				visible 		= keyIsNotNil	'locationTagField5',
    				alignment 		= 'center',
    				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
-				value 			= bind 'locationTagField5',
-				visible 		= bind 'xlatLocationTags',
+				value 			= bind 			'locationTagField5',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField4',
 				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
 --   				fill_horizontal = 0.1,
 			},
