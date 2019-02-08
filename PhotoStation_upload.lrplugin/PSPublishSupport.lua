@@ -475,7 +475,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	exifXlatFaceRegions	= publishSettings.exifXlatFaceRegions,
     	exifXlatRating		= publishSettings.exifXlatRating,
     	exifXlatLabel		= publishSettings.exifXlatLabel,
-    	locationTagTemplate = publishSettings.locationTagTemplate,
+		xlatLocationTags	= publishSettings.xlatLocationTags,
+		locationTagTemplate = publishSettings.locationTagTemplate,
     
     	titleDownload		= false,
     	captionDownload		= false,
