@@ -267,7 +267,8 @@ end
 -- 	Params:
 -- 		path		- the placeholder string
 -- 		srcPhoto	- LrPhoto of the belonging photo
--- 		type		- filename, path or tag (e.g.)location tag) 
+-- 		type		- filename, path or tag (e.g.location tag)
+-- 		publishedCollection	- publishedCollection params
 --	Metadata placeholders look in general like: {<category>:<type> <options>|<defaultValue_or_mandatory>}
 --	'?' stands for mandatory, no default available. 
 --	- unrecognized placeholders will be left unchanged, they might be intended path components
