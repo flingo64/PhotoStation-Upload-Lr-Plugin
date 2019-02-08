@@ -656,46 +656,51 @@ local function ackRendition(rendition, publishedPhotoId, publishedCollectionId)
 end
 
 -----------------
--- noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
-local function noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
-	local videoUploaded = {}
+-- noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
+local function noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
+	local photoInfo = {}
 	
 	writeLogfile(3, string.format("noteForDeferredMetadataUpload(%s)\n", publishedPhotoId))
-	videoUploaded.rendition 			= rendition
-	videoUploaded.publishedPhotoId 		= publishedPhotoId
-	videoUploaded.publishedCollectionId = publishedCollectionId
-	videoUploaded.latitude 				= videoInfo.latitude
-	videoUploaded.longitude 			= videoInfo.longitude
-	table.insert(videosUploaded, videoUploaded)
+	photoInfo.rendition 			= rendition
+	photoInfo.publishedPhotoId 		= publishedPhotoId
+	photoInfo.publishedCollectionId = publishedCollectionId
+	if videoInfo then
+		photoInfo.isVideo			= true
+		photoInfo.latitude 			= videoInfo.latitude
+		photoInfo.longitude 		= videoInfo.longitude
+	else
+		photoInfo.isVideo			= false
+	end
+	table.insert(deferredMetadataUploads, photoInfo)
 	
 	return true
 end
 
 -----------------
--- batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
--- upload metadata for videos just uploaded
-local function batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures)
-	local nVideos =  #videosUploaded
+-- batchUploadMetadata(functionContext, deferredMetadataUploads, exportParams, failures) 
+-- deferred upload of metadata for videos or photos w/ location tags which were uploaded before
+local function batchUploadMetadata(functionContext, deferredMetadataUploads, exportParams, failures)
+	local nPhotos =  #deferredMetadataUploads
 	local nProcessed 		= 0 
 		
-	writeLogfile(3, string.format("batchUploadVideoMetadata: %d videos\n", nVideos))
+	writeLogfile(3, string.format("batchUploadMetadata: %d photos\n", nPhotos))
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta=Uploading metadata for ^1 videos", nVideos),
+								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta=Uploading metadata for ^1 photos/videos", nPhotos),
 							 		functionContext = functionContext 
 							 	})    
-	while #videosUploaded > 0 do
-		local videoUploaded 			= videosUploaded[1]
-		local rendition 				= videoUploaded.rendition
+	while #deferredMetadataUploads > 0 do
+		local photoInfo 				= deferredMetadataUploads[1]
+		local rendition 				= photoInfo.rendition
 		local srcPhoto 					= rendition.photo
-		local dstFilename 				= videoUploaded.publishedPhotoId
-		local publishedCollectionId 	= videoUploaded.publishedCollectionId
+		local dstFilename 				= photoInfo.publishedPhotoId
+		local publishedCollectionId 	= photoInfo.publishedCollectionId
 		local photoThere 
 		local maxWait = 60
 		
 		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
 		while not photoThere and maxWait > 0 do
-			local isVideo, dontUseCache = true, false
+			local isVideo, dontUseCache = photoInfo.isVideo, false
 			if not PSPhotoStationUtils.getPhotoInfo(exportParams.uHandle, dstFilename, isVideo, dontUseCache) then
 				LrTasks.sleep(1)
 				maxWait = maxWait - 1
@@ -708,13 +713,13 @@ local function batchUploadVideoMetadata(functionContext, videosUploaded, exportP
 			(publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
 		then
 			table.insert(failures, srcPhoto:getRawMetadata("path"))
-			writeLogfile(1, string.format("batchUploadVideoMetadata('%s') failed!!!\n", dstFilename))
+			writeLogfile(1, string.format("batchUploadMetadata('%s') failed!!!\n", dstFilename))
 		else
-			writeLogfile(3, string.format("batchUploadVideoMetadata('%s') done.\n", dstFilename))
+			writeLogfile(3, string.format("batchUploadMetadata('%s') done.\n", dstFilename))
 		end
-   		table.remove(videosUploaded, 1)
+   		table.remove(deferredMetadataUploads, 1)
    		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nVideos) 						    
+   		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
 	end 
 	progressScope:done()
 	 
@@ -1165,11 +1170,11 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		end 
 	end
 	-- Iterate through photo renditions.
-	local failures 				= {}
-	local dirsCreated 			= {}
-	local videosUploaded 		= {}	-- videos need a second run for metadata upload
-	local sharedAlbumUpdates 	= {}	-- Shared Photo/Album handling is done after all uploads
-	local sharedPhotoUpdates	= {}	-- Shared Photo/Album handling is done after all uploads
+	local failures 					= {}
+	local dirsCreated 				= {}
+	local deferredMetadataUploads	= {}	-- videos and photos w/ location tags need a second run for metadata upload
+	local sharedAlbumUpdates 		= {}	-- Shared Photo/Album handling is done after all uploads
+	local sharedPhotoUpdates		= {}	-- Shared Photo/Album handling is done after all uploads
 	local skipPhoto = false 		-- continue flag
 	
 	for _, rendition in exportContext:renditions{ stopIfCanceled = true } do
@@ -1323,8 +1328,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, additionalVideos, videoInfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
-						 or (    publishedCollection and not noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
-						 or (not publishedCollection and not noteForDeferredMetadataUpload(videosUploaded, rendition, publishedPhotoId, videoInfo, nil)) 
+						 or (    publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
+						 or (not publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, nil)) 
 						)	
 					)
 				or (publishMode ~= 'Metadata' and not srcPhoto:getRawMetadata("isVideo") 
@@ -1345,9 +1350,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			end
 		
 			-- do some video metadata upload in between
-			if #videosUploaded > 9 then 
-				batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) 
-				videosUploaded = {}
+			if #deferredMetadataUploads > 9 then 
+				batchUploadMetadata(functionContext, deferredMetadataUploads, exportParams, failures) 
+				deferredMetadataUploads = {}
 			end
 			
 			LrFileUtils.delete( pathOrMessage )
@@ -1355,7 +1360,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	end
 
 	-- deferred metadata upload
-	if #videosUploaded > 0 then batchUploadVideoMetadata(functionContext, videosUploaded, exportParams, failures) end
+	if #deferredMetadataUploads > 0 then batchUploadMetadata(functionContext, deferredMetadataUploads, exportParams, failures) end
 	if #sharedAlbumUpdates > 0 then updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) end
 	
 	writeLogfile(2,"--------------------------------------------------------------------\n")
