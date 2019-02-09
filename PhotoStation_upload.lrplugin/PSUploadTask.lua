@@ -160,7 +160,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	local thmb_S_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
 	local title_Filename  = iif(string.match(exportParams.LR_embeddedMetadataOption, 'all.*') and ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
 							LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
-	local dstFileTimestamp = iif(exportParams.uploadTimestamp == 'capture', 
+	local dstFileTimestamp = iif(ifnil(exportParams.uploadTimestamp, 'capture') == 'capture', 
 								 PSLrUtilities.getDateTimeOriginal(srcPhoto), 
 								 LrDate.timeToPosixDate(LrDate.currentTime()))
 	local exifXlatLabelCmd = iif(exportParams.exifXlatLabel and not string.find('none,grey', string.lower(srcPhoto:getRawMetadata('colorNameForLabel'))), "-XMP:Subject+=" .. '+' .. srcPhoto:getRawMetadata('colorNameForLabel'), nil)
@@ -281,7 +281,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	end
 	
 	local dstFileTimestamp
-	if exportParams.uploadTimestamp == 'capture' then
+	if ifnil(exportParams.uploadTimestamp, 'capture') == 'capture' then
     	-- restore the capture time for the rendered video
     	vinfo.srcDateTime = orgVideoInfo.srcDateTime
     	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
