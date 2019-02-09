@@ -84,7 +84,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'password', 		default = '' },		-- guess what...
 		{ key = 'psVersion', 		default = 68 },		-- Photo Station version: default PS 6.8
 		{ key = 'isPS6', 			default = true },	-- derived from psVersion: use upload optimization for Photo Station 6 (not THUMB_L required)
-		{ key = 'uploadTimestamp',	default = 'photo' },-- file timestamp for uploaded photos: photo (creation date) or now
+		{ key = 'uploadTimestamp',	default = 'capture' },-- file timestamp for uploaded photos: 'capture'(photo capture date) or 'upload' (upload timestamp)
 
 		-- target album parameters
 		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
