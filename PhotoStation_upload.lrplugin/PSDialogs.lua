@@ -811,6 +811,11 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         { title	= 'Photo Station 6.8', value 	= 68 },
 	}
 	
+	local fileTimestampItems = {
+        { title	= 'Photo Capture Date/Time',	value 	= 'photo' },
+        { title	= 'Upload Date/Time',   		value 	= 'now' },
+	}
+
 	return
         f:group_box {
         	fill_horizontal = 1,
@@ -994,6 +999,23 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					value 			= bind 'password',
 				},
 			},
+
+			f:separator { fill_horizontal = 1 },
+
+			f:row {
+				f:static_text {
+					title 			= LOC "$$$/PSUpload/ExportDialog/DstFileTimestamp=Timestamp of uploaded files:",
+					alignment 		= 'right',
+					width 			= share 'labelWidth'
+				},
+	
+    			f:popup_menu {
+    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DstFileTimestampTT=Choose the file timestamp for the uploaded photo/video",
+    				items 			= fileTimestampItems,
+    				alignment 		= 'left',
+    				value 			= bind 'uploadTimestamp',
+    			},
+    		},
 		}
 end
 

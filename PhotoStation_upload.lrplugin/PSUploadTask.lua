@@ -40,16 +40,16 @@ of it requires the prior written permission of Adobe.
 
 
 -- Lightroom API
-local LrApplication = import 'LrApplication'
-local LrFileUtils = import 'LrFileUtils'
-local LrPathUtils = import 'LrPathUtils'
-local LrDate = import 'LrDate'
-local LrDialogs = import 'LrDialogs'
-local LrProgressScope = import 'LrProgressScope'
-local LrShell = import 'LrShell'
-local LrPrefs = import 'LrPrefs'
-local LrTasks = import 'LrTasks'
-local LrView = import 'LrView'
+local LrApplication		= import 'LrApplication'
+local LrFileUtils		= import 'LrFileUtils'
+local LrPathUtils		= import 'LrPathUtils'
+local LrDate			= import 'LrDate'
+local LrDialogs			= import 'LrDialogs'
+local LrProgressScope 	= import 'LrProgressScope'
+local LrShell 			= import 'LrShell'
+local LrPrefs			= import 'LrPrefs'
+local LrTasks			= import 'LrTasks'
+local LrView			= import 'LrView'
 
 require "PSUtilities"
 require "PSLrUtilities"
@@ -160,7 +160,9 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	local thmb_S_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
 	local title_Filename  = iif(string.match(exportParams.LR_embeddedMetadataOption, 'all.*') and ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
 							LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
-	local srcDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
+	local dstFileTimestamp = iif(exportParams.uploadTimestamp == 'photo', 
+								 PSLrUtilities.getDateTimeOriginal(srcPhoto), 
+								 LrDate.timeToPosixDate(LrDate.currentTime()))
 	local exifXlatLabelCmd = iif(exportParams.exifXlatLabel and not string.find('none,grey', string.lower(srcPhoto:getRawMetadata('colorNameForLabel'))), "-XMP:Subject+=" .. '+' .. srcPhoto:getRawMetadata('colorNameForLabel'), nil)
 	local retcode
 	
@@ -198,14 +200,14 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	
 	-- upload thumbnails and original file
 	or exportParams.thumbGenerate and (
-		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
+		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
-	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
-	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, renderedPhotoPath, srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST')
+	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, dstFileTimestamp, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
+	or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, renderedPhotoPath, dstFileTimestamp, dstDir, dstFilename, 'ORIG_FILE', 'image/jpeg', 'LAST')
 	then
 		signalSemaphore("PhotoStation", dstFilename)
 		retcode = false
@@ -278,15 +280,21 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		return false
 	end
 	
-	-- restore the capture time for the rendered video
-	vinfo.srcDateTime = orgVideoInfo.srcDateTime
-	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
-	-- overwrite the ffmpeg DateTimeOrig 
-	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
-	if isOrigDateTime or not vinfo.srcDateTime then
-		vinfo.srcDateTime = metaDateTime
+	local dstFileTimestamp
+	if exportParams.uploadTimestamp == 'photo' then
+    	-- restore the capture time for the rendered video
+    	vinfo.srcDateTime = orgVideoInfo.srcDateTime
+    	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
+    	-- overwrite the ffmpeg DateTimeOrig 
+    	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
+    	if isOrigDateTime or not vinfo.srcDateTime then
+    		vinfo.srcDateTime = metaDateTime
+    	end
+    	dstFileTimestamp = vinfo.srcDateTime 
+	else
+		dstFileTimestamp = LrDate.timeToPosixDate(LrDate.currentTime())
 	end
-	
+
 	-- get the real dimension: may be different from dimension if dar is set
 	-- dimension: NNNxMMM
 	local srcHeight = tonumber(string.sub(vinfo.dimension, string.find(vinfo.dimension,'x') + 1, -1))
@@ -403,20 +411,20 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 
 	or exportParams.thumbGenerate and (
 		-- upload thumbs, preview videos and original file
-		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
-		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
-		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
+		   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_B_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_M_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_S_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+		or (not exportParams.isPS6 and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_L_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE')) 
+		or not PSUploadAPI.uploadPictureFile(exportParams.uHandle, thmb_XL_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 	) 
-	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convParams[convKeyAdd].type, 'video/mpeg', 'MIDDLE'))
+	or ((convKeyAdd ~= 'None') and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Add_Filename, dstFileTimestamp, dstDir, dstFilename, 'MP4_'.. convParams[convKeyAdd].type, 'video/mpeg', 'MIDDLE'))
 	-- add mp4 version in original resolution fo Non-MP4s 
-	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
+	or (addOrigAsMp4	 	   and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Replace_Filename, dstFileTimestamp, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
 	-- upload at least one mp4 file to avoid the generation of a flash video by synomediaparserd 
 	or ((convKeyAdd == 'None') 	and not addOrigAsMp4
-	 	   						and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
-	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
-	or 					   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, vinfo.srcDateTime, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
+	 	   						and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, dstFileTimestamp, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
+	or (title_Filename and not PSUploadAPI.uploadPictureFile(exportParams.uHandle, title_Filename, dstFileTimestamp, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
+	or 					   not PSUploadAPI.uploadPictureFile(exportParams.uHandle, vid_Orig_Filename, dstFileTimestamp, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
 	then 
 		signalSemaphore("PhotoStation", dstFilename)
 		retcode = false
