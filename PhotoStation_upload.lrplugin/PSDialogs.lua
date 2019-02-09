@@ -1502,6 +1502,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			f:popup_menu {
 				value 			= bind 'locationTagField1',
 				visible 		= bind 'xlatLocationTags',
+				enabled 		= keyIsNotNil 'xlatLocationTags',
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
