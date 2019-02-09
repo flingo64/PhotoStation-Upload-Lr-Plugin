@@ -530,7 +530,8 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 			-- there may be more than one PS location tag, but only one Lr location tag
 			local locationTagsLrUntrimmed = PSLrUtilities.evaluatePlaceholderString(exportParams.locationTagTemplate, srcPhoto, 'tag', nil)
 			local locationTagsLrTrimmed = trim(locationTagsLrUntrimmed, exportParams.locationTagSeperator)
-			local locationTagsLr = { { name = unduplicate(locationTagsLrTrimmed, exportParams.locationTagSeperator) }}
+			local locationTagsLrCleaned = unduplicate(locationTagsLrTrimmed, exportParams.locationTagSeperator)
+			local locationTagsLr = iif(locationTagsLrCleaned == '', {}, { { name = locationTagsLrCleaned }})
 			
 			local locationTagsAdd		= getTableDiff(locationTagsLr, locationsPS, 'name')
 			local locationTagsRemove	= getTableDiff(locationsPS, locationTagsLr, 'name')
