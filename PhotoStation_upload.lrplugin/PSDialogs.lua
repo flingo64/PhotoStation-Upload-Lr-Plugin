@@ -812,8 +812,8 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 	}
 	
 	local fileTimestampItems = {
-        { title	= 'Photo Capture Date/Time',	value 	= 'photo' },
-        { title	= 'Upload Date/Time',   		value 	= 'now' },
+        { title	= 'Photo Capture Date/Time',	value 	= 'capture' },
+        { title	= 'Upload Date/Time',   		value 	= 'upload' },
 	}
 
 	return
