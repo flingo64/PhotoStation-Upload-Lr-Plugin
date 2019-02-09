@@ -2,7 +2,7 @@
 
 PSPluginInfoProvider.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2019, Martin Messmer
 
 Plugin info provider description for Lightroom Photo StatLr
 
