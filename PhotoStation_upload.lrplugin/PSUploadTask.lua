@@ -694,7 +694,7 @@ local function batchUploadMetadata(functionContext, deferredMetadataUploads, exp
 		
 	writeLogfile(3, string.format("batchUploadMetadata: %d photos\n", nPhotos))
 	local progressScope = LrProgressScope( 
-								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta=Uploading metadata for ^1 photos/videos", nPhotos),
+								{ 	title = LOC( "$$$/PSUpload/Progress/UploadVideoMeta2=Uploading metadata for ^1 photos/videos", nPhotos),
 							 		functionContext = functionContext 
 							 	})    
 	while #deferredMetadataUploads > 0 do
