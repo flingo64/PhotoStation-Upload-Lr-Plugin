@@ -138,10 +138,25 @@ function split(inputstr, sep)
 end
 
 --------------------------------------------------------------------------------------------
--- trim(s)
--- trims leading and trailing white spaces from a string
-function trim(s)
- 	return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
+-- trim(s, trimChar)
+-- trims leading and trailing white spaces (default) or given character from a string
+function trim(s, trimChar)
+	if not trimChar then
+ 		return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
+ 	else
+ 		return (string.gsub(s, "^" .. trimChar .. "*(.-)" .. trimChar .. "*$", "%1"))
+ 	end
+end
+
+--------------------------------------------------------------------------------------------
+-- unduplicate(s, dupChar)
+-- unduplicates repeated white spaces (default) or given character from a string
+function unduplicate(s, dupChar)
+	if not dupChar then
+ 		return (string.gsub(s, "%s+", "%s"))
+ 	else
+ 		return (string.gsub(s, dupChar .. "+", dupChar))
+ 	end
 end
 
 ---------------------- shell encoding routines ---------------------------------------------------------
@@ -699,6 +714,7 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
     	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
     	exportParams.xlatLocationTags		= collectionSettings.xlatLocationTags
+    	exportParams.locationTagSeperator	= collectionSettings.locationTagSeperator
     	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
 
 		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  

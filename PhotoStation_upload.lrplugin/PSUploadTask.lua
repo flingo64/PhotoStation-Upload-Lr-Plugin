@@ -525,10 +525,12 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
     		table.insert(photoParams, { attribute =  'gps_lng', value = longitude }) 
     	end
 			
-		-- check location tags, if upload/translation option is set__ -----------------------
+		-- check location tags, if upload/translation option is set -----------------------
 		if exportParams.xlatLocationTags then
-			-- there may be more than one PS location tag, but only one Lr location tag 
-			local locationTagsLr = { { name = PSLrUtilities.evaluatePlaceholderString(exportParams.locationTagTemplate, srcPhoto, 'tag', nil) }}
+			-- there may be more than one PS location tag, but only one Lr location tag
+			local locationTagsLrUntrimmed = PSLrUtilities.evaluatePlaceholderString(exportParams.locationTagTemplate, srcPhoto, 'tag', nil)
+			local locationTagsLrTrimmed = trim(locationTagsLrUntrimmed, exportParams.locationTagSeperator)
+			local locationTagsLr = { { name = unduplicate(locationTagsLrTrimmed, exportParams.locationTagSeperator) }}
 			
 			local locationTagsAdd		= getTableDiff(locationTagsLr, locationsPS, 'name')
 			local locationTagsRemove	= getTableDiff(locationsPS, locationTagsLr, 'name')
