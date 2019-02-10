@@ -639,7 +639,8 @@ Version 6.7
 - Added configurable __upload file timestamp__: capture date or upload date
 - Added metadata translation for __Location tags__: you can define how the Lr location tags are combined to a single PS Location tag<br>
 Uploading of the combined PS Location tag is done during a second MetadataUpload pass.
-- Bugfix: Fixed an issue where the __{LrCC}__ placeholder with a matching pattern would only evaluate the first contained collection of a photo. 
+- Bugfixes: 
+	- Fixed an issue where the __{LrCC}__ placeholder with a matching pattern would only evaluate the first contained collection of a photo. 
 Thanks to Gildas Marsaly for not only reporting the bug but also offering a patch!
 
 Copyright

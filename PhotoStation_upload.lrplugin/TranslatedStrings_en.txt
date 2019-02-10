@@ -15,6 +15,7 @@
 "$$$/PSUpload/CollectionSettings/LoglevelOptNormal=Normal"
 "$$$/PSUpload/CollectionSettings/LoglevelOptNothing=Nothing"
 "$$$/PSUpload/CollectionSettings/LoglevelOptTrace=Trace"
+"$$$/PSUpload/CollectionSettings/LoglevelOptXDebug=X-Debug"
 "$$$/PSUpload/CollectionSettings/PSTranslateFaces=Faces"
 "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download and translate Photo Station People Tags to Lightroom Faces^nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr^n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise^nyou will loose you Lr changes when re-loading faces metadata!!!'"
 "$$$/PSUpload/CollectionSettings/PSTranslateLabel=Color Label Tag"
