@@ -346,6 +346,7 @@ local loglevel
 	2 - info
 	3 - tracing
 	4 - debug
+	5 - extended debug
 ]]	
 
 local loglevelname = {
@@ -353,6 +354,7 @@ local loglevelname = {
 	'INFO ',
 	'TRACE',
 	'DEBUG',
+	'XDBUG',
 }
 
 -- getLogFilename: return the filename of the logfile
