@@ -1781,6 +1781,7 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptNormal=Normal",		value 	= 2 },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptTrace=Trace",			value 	= 3 },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptDebug=Debug",			value 	= 4 },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptXDebug=X-Debug",		value 	= 5 },
 	}
 	
 	if isAskForMissingParams then
