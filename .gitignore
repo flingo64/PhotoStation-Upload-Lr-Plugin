@@ -43,3 +43,17 @@ Temporary Items
 .apdisk
 *.json
 *.project
+=======
+
+# =============
+# Eclipse files
+# =============
+.buildpath
+.project
+.settings
+
+# ============
+# Backups
+# ============
+*.old
+*.bak

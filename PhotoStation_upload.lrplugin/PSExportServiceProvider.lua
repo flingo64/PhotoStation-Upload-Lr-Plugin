@@ -2,7 +2,7 @@
 
 PSExportServiceProvider.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2019, Martin Messmer
 
 Export service provider description for Lightroom Photo StatLr
 
@@ -84,6 +84,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'password', 		default = '' },		-- guess what...
 		{ key = 'psVersion', 		default = 68 },		-- Photo Station version: default PS 6.8
 		{ key = 'isPS6', 			default = true },	-- derived from psVersion: use upload optimization for Photo Station 6 (not THUMB_L required)
+		{ key = 'uploadTimestamp',	default = 'capture' },-- file timestamp for uploaded photos: 'capture'(photo capture date) or 'upload' (upload timestamp)
 
 		-- target album parameters
 		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
@@ -98,6 +99,15 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'exifXlatFaceRegions',	default = false },	-- translate Lr/Picasa face regions to PS face regions
 		{ key = 'exifXlatLabel', 		default = false },	-- translate Lr label (red, green, ...) to PS keyword
 		{ key = 'exifXlatRating', 		default = false},	-- translate Lr star rating (XMP:rating) to PS keywords
+
+		{ key = 'xlatLocationTags',		default = false},					-- translate Lr location tags to single PS locaton tag
+		{ key = 'locationTagSeperator',	default = '-' },					-- output seperator for locaton tags  
+		{ key = 'locationTagField1',	default = '{LrFM:isoCountryCode}' },-- field 1 of location tag template
+		{ key = 'locationTagField2',	default = '{LrFM:country}' }, 		-- field 2 of location tag template
+		{ key = 'locationTagField3',	default = '{LrFM:stateProvince}' }, -- field 3 of location tag template
+		{ key = 'locationTagField4',	default = '{LrFM:city}' }, 			-- field 4 of location tag template
+		{ key = 'locationTagField5',	default = '{LrFM:location}' }, 		-- field 5 of location tag template
+		{ key = 'locationTagTemplate',	default = '' },						-- the resulting location tag template 
 
 		-- thumbnail parameters
 		{ key = 'thumbGenerate',	default = true },	-- generate thumbs: yes or nos

@@ -2,7 +2,7 @@
 
 PSDialogs.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2019, Martin Messmer
 
 Dialogs and validations for Photo StatLr
 	- validatePort
@@ -69,6 +69,7 @@ require "PSUpdate"
 local bind 				= LrView.bind
 local share 			= LrView.share
 local negativeOfKey 	= LrBinding.negativeOfKey
+local keyIsNotNil 		= LrBinding.keyIsNotNil
 local conditionalItem 	= LrView.conditionalItem
 
 
@@ -77,6 +78,16 @@ local conditionalItem 	= LrView.conditionalItem
 PSDialogs = {}
 
 --============================ validate functions ===========================================================
+
+-------------------------------------------------------------------------------
+-- validateSeperator: check if a string is a valid string seperator (must be exactly 1 char)
+function PSDialogs.validateSeperator( view, value )
+	if string.match(value, '(.)') ~= value then 
+		return false, string.sub(value, 1)
+	end
+	
+ 	return true, value
+end
 
 -------------------------------------------------------------------------------
 -- validatePort: check if a string is numeric
@@ -169,6 +180,233 @@ function PSDialogs.validateMetadataPlaceholder( view, string )
 	end
 	
 	return true, string
+end
+
+--============================ Dialog control ===================================================================
+
+-------------------------------------------------------------------------------
+-- updateDialogStatus: do some sanity check on dialog settings
+function PSDialogs.updateDialogStatus( propertyTable )
+	local prefs = LrPrefs.prefsForPlugin()
+
+	local message = nil
+	
+	repeat
+		-- Use a repeat loop to allow easy way to "break" out.
+		-- (It only goes through once.)
+		
+		-- ############### Pure Export/Publish Settings ##########################
+		if not propertyTable.isCollection then
+			if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+				break
+			end
+
+			if propertyTable.servername == "" or propertyTable.servername == nil  then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/ServernameMissing=Enter a servername"
+				break
+			end
+
+			if propertyTable.username == "" or propertyTable.username == nil  then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/UsernameMissing=Enter a username"
+				break
+			end
+
+			if propertyTable.usePersonalPS and (propertyTable.personalPSOwner == "" or propertyTable.personalPSOwner == nil ) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Photo Station to upload to"
+				break
+			end
+
+			-- Check file format: PSD not supported by Photo Station, DNG only supported w/ embedded full-size jpg preview
+			if (propertyTable.LR_format == 'PSD') or  (propertyTable.LR_format == 'DNG' and ifnil(propertyTable.LR_DNG_previewSize, '') ~= 'large') then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/FileFormatNoSupp=File format not supported! Select: [JPEG], [TIFF], [DNG w/ full-size JPEG preview] or [Original]."
+				break
+			end
+
+			-- Export - renaming: either Lr or plugin renaming can be active
+			if not propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn and propertyTable.renameDstFile then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/RenameOption=Use either Lr File Renaming or Photo StatLr File Renaming, not both!"
+				break
+			end
+
+			-- Publish Service Provider start ------------------------
+			
+			if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
+				break
+			end
+
+			if propertyTable.useSecondAddress and ifnil(propertyTable.servername2, "") == "" then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/Servername2Missing=Enter a secondary servername"
+				break
+			end
+			
+			-- Publish Service Provider end ---------------------
+
+			propertyTable.serverUrl = 	propertyTable.proto .. "://" .. propertyTable.servername
+			propertyTable.psPath = 		iif(propertyTable.usePersonalPS, "/~" .. ifnil(propertyTable.personalPSOwner, "unknown") .. "/photo/", "/photo/")
+			propertyTable.psUrl = 		propertyTable.serverUrl .. propertyTable.psPath
+			propertyTable.isPS6 = 		iif(propertyTable.psVersion >= 60, true, false)
+		end
+
+		-- ###############  Export/Publish or Collection Settings ##########################
+
+		if propertyTable.copyTree and not PSDialogs.validateDirectory(nil, propertyTable.srcRoot) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
+			break
+		end
+				
+		if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
+			break
+		end
+				
+		-- renaming: renaming dstFilename must contain at least one metadata placeholder
+		if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
+			break
+		end
+
+		-- Exif translation start -------------------
+
+		-- if at least one translation is activated then set exifTranslate
+		if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
+			propertyTable.exifTranslate = true
+		end
+		
+		-- if no translation is activated then set exifTranslate to off
+		if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
+			propertyTable.exifTranslate = false
+		end
+
+		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
+			break
+		end
+
+		-- Exif translation end -------------------
+
+		-- Location tag translation -------------------
+		if propertyTable.xlatLocationTags then
+			if string.len(propertyTable.locationTagSeperator) > 1 then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
+				break
+			end
+			propertyTable.locationTagField2 = propertyTable.locationTagField1 and propertyTable.locationTagField2 or nil
+			propertyTable.locationTagField3 = propertyTable.locationTagField2 and propertyTable.locationTagField3 or nil
+			propertyTable.locationTagField4 = propertyTable.locationTagField3 and propertyTable.locationTagField4 or nil
+			propertyTable.locationTagField5 = propertyTable.locationTagField4 and propertyTable.locationTagField5 or nil
+
+			propertyTable.locationTagTemplate =	
+				table.concat(	{ propertyTable.locationTagField1,
+                				  propertyTable.locationTagField2,
+                				  propertyTable.locationTagField3,
+                				  propertyTable.locationTagField4,
+                				  propertyTable.locationTagField5
+                				},
+                				propertyTable.locationTagSeperator
+                			)
+		else
+			propertyTable.locationTagField1 = nil
+			propertyTable.locationTagField2 = nil
+			propertyTable.locationTagField3 = nil
+			propertyTable.locationTagField4 = nil
+			propertyTable.locationTagField5 = nil
+			propertyTable.locationTagTemplate = ''
+		end
+
+		-- ############### Pure Collection Settings ##########################
+		if propertyTable.isCollection then
+			-- downloading translated tags makes only sense if we upload them also, otherwise they would dissappear after re-publish
+			if not propertyTable.exifXlatFaceRegions 	then propertyTable.PS2LrFaces = false end
+			if not propertyTable.exifXlatLabel 		then propertyTable.PS2LrLabel = false end
+			if not propertyTable.exifXlatRating 		then propertyTable.PS2LrRating = false end
+			
+			-- exclusive or: rating download or rating tag download
+			if propertyTable.ratingDownload and propertyTable.PS2LrRating then 
+				message = LOC "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
+				break
+			end
+			
+			-- location tag download (blue pin): only possible if location download is enabled
+			if not propertyTable.locationDownload then  propertyTable.locationTagDownload = false end
+		end
+   
+	until true
+	
+	if message then
+		propertyTable.hasError = true
+		propertyTable.hasNoError = false
+		propertyTable.message = 'Booo!! ' .. message
+		if propertyTable.isCollection then
+			propertyTable.LR_canSaveCollection = false
+		else
+			propertyTable.LR_cantExportBecause = 'Booo!! ' .. message
+		end
+	else
+		propertyTable.hasError = false
+		propertyTable.message = nil
+		if propertyTable.isCollection then
+			propertyTable.LR_canSaveCollection = true
+		else
+			propertyTable.hasNoError = true
+			propertyTable.LR_cantExportBecause = nil
+		end
+	end
+	
+end
+
+-------------------------------------------------------------------------------
+-- addObservers: do some sanity check on dialog settings
+function PSDialogs.addObservers( propertyTable )
+
+	-- ############### Pure Export/Publish Settings ##########################
+
+	if not propertyTable.isCollection then
+    	propertyTable:addObserver( 'LR_renamingTokensOn', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'LR_tokens', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'LR_format', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'LR_DNG_previewSize', PSDialogs.updateDialogStatus )
+    
+    	propertyTable:addObserver( 'psVersion', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'proto', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'servername', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'useSecondAddress', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'servername2', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'username', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'usePersonalPS', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'personalPSOwner', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'thumbGenerate', PSDialogs.updateDialogStatus )
+	end
+	
+	-- ###############  Export/Publish or Collection Settings ##########################
+
+	propertyTable:addObserver( 'srcRoot', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'dstRoot', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'copyTree', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'renameDstFile', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'dstFilename', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'exifXlatFaceRegions', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'exifXlatLabel', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'exifXlatRating', PSDialogs.updateDialogStatus )
+
+	propertyTable:addObserver( 'xlatLocationTags', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'locationTagSeperator', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'locationTagField1', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'locationTagField2', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'locationTagField3', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'locationTagField4', PSDialogs.updateDialogStatus )
+	propertyTable:addObserver( 'locationTagField5', PSDialogs.updateDialogStatus )
+
+	-- ############### Pure Collection Settings ##########################
+	if propertyTable.isCollection then
+    	propertyTable:addObserver( 'publishMode', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'locationDownload', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'ratingDownload', PSDialogs.updateDialogStatus )
+    	propertyTable:addObserver( 'PS2LrRating', PSDialogs.updateDialogStatus )
+	end	
+
+	PSDialogs.updateDialogStatus( propertyTable )
 end
 
 --============================ views ===================================================================
@@ -573,6 +811,11 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         { title	= 'Photo Station 6.8', value 	= 68 },
 	}
 	
+	local fileTimestampItems = {
+        { title	= 'Photo Capture Date/Time',	value 	= 'capture' },
+        { title	= 'Upload Date/Time',   		value 	= 'upload' },
+	}
+
 	return
         f:group_box {
         	fill_horizontal = 1,
@@ -756,6 +999,23 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					value 			= bind 'password',
 				},
 			},
+
+			f:separator { fill_horizontal = 1 },
+
+			f:row {
+				f:static_text {
+					title 			= LOC "$$$/PSUpload/ExportDialog/DstFileTimestamp=Timestamp of uploaded files:",
+					alignment 		= 'right',
+					width 			= share 'labelWidth'
+				},
+	
+    			f:popup_menu {
+    				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DstFileTimestampTT=Choose the file timestamp for the uploaded photo/video",
+    				items 			= fileTimestampItems,
+    				alignment 		= 'left',
+    				value 			= bind 'uploadTimestamp',
+    			},
+    		},
 		}
 end
 
@@ -1152,70 +1412,173 @@ end
 -------------------------------------------------------------------------------
 -- uploadOptionsView(f, propertyTable)
 function PSDialogs.uploadOptionsView(f, propertyTable)
+	local locationTagItems	= {
+		{ title	= '',				value 	= nil },
+		{ title	= 'ISO Code',		value 	= '{LrFM:isoCountryCode}' },
+		{ title	= 'Country',		value 	= '{LrFM:country}' },
+		{ title	= 'State',			value 	= '{LrFM:stateProvince}' },
+		{ title	= 'City',			value 	= '{LrFM:city}' },
+		{ title	= 'Location',		value 	= '{LrFM:location}' },
+	}
+	local locationTagSepItems	= { ' ', '-', '_', ':', ';', '/', '|',',', '.', '+', '#' }
+	
+
 	return	f:group_box {
 		fill_horizontal = 1,
 		title = LOC "$$$/PSUpload/ExportDialog/UploadOpt=Metadata Upload Options /Translations (To Photo Station)",
 
-		conditionalItem(propertyTable.isCollection, 
-			f:row {
-    			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/ExportDialog/TitleUpload=Title (always)",
-    				fill_horizontal = 1,
-    				value 			= true,
-    				enabled 		= false,
-    			},
-    
-    			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/ExportDialog/CaptionUpload=Decription (always)",
-    				fill_horizontal = 1,
-    				value 			= true,
-    				enabled 		= false,
-    			},
-    
-    			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/ExportDialog/LocationUpload=GPS (always)",
-    				fill_horizontal = 1,
-    				value 			= true,
-    				enabled 		= false,
-    			},
-    
-    			f:checkbox {
-    				title 			= LOC "$$$/PSUpload/ExportDialog/RatingUpload=Rating (always)",
-    				fill_horizontal = 1,
-    				value 			= true,
-    				enabled 		= false,
-    			},
-    
-    		}
-		), 
-		
 		f:row {
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/KeywordUpload=Keywords (always)",
+				title 			= LOC "$$$/PSUpload/ExportDialog/TitleUpload=Title (always)",
 				fill_horizontal = 1,
 				value 			= true,
 				enabled 		= false,
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegions=Faces",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Station person tags\n(Useful for Photo Station version < 6.5)",
+				title 			= LOC "$$$/PSUpload/ExportDialog/CaptionUpload=Decription (always)",
 				fill_horizontal = 1,
-				value 			= bind 'exifXlatFaceRegions',
-			},
-		
-			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLabel=Color Label Tag",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
-				fill_horizontal = 1,
-				value 			= bind 'exifXlatLabel',
+				value 			= true,
+				enabled 		= false,
 			},
 
 			f:checkbox {
-				title 			= LOC "$$$/PSUpload/ExportDialog/TranslateRating=Rating Tag",
-				tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag\n(Useful for Photo Station version < 6.5)",
+				title 			= LOC "$$$/PSUpload/ExportDialog/LocationUpload=GPS (always)",
 				fill_horizontal = 1,
-				value 			= bind 'exifXlatRating',
+				value 			= true,
+				enabled 		= false,
+			},
+
+			f:checkbox {
+				title 			= LOC "$$$/PSUpload/ExportDialog/RatingUpload=Rating (always)",
+				fill_horizontal = 1,
+				value 			= true,
+				enabled 		= false,
+			},
+
+		},
+		
+    	f:row {
+    		f:checkbox {
+    			title 			= LOC "$$$/PSUpload/ExportDialog/KeywordUpload=Keywords (always)",
+    			fill_horizontal = 1,
+    			value 			= true,
+    			enabled 		= false,
+    		},
+    
+    		f:checkbox {
+    			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegions=Faces",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Station person tags\n(Useful for Photo Station version < 6.5)",
+    			fill_horizontal = 1,
+    			value 			= bind 'exifXlatFaceRegions',
+    		},
+    	
+    		f:checkbox {
+    			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLabel=Color Label Tag",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
+    			fill_horizontal = 1,
+    			value 			= bind 'exifXlatLabel',
+    		},
+    
+    		f:checkbox {
+    			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateRating=Rating Tag",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag\n(Useful for Photo Station version < 6.5)",
+    			fill_horizontal = 1,
+    			value 			= bind 'exifXlatRating',
+    		},
+    	},
+    	
+    	f:separator { fill_horizontal = 1 },
+    	
+    	f:row {
+			fill_horizontal = 0.8,
+
+    		f:checkbox {
+    			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLocation=Location Tag:",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLocationTT=Translate Lr location tags to Photo Station location tag",
+    			value 			= bind 'xlatLocationTags',
+    		},
+
+			f:popup_menu {
+				value 			= bind 'locationTagField1',
+				visible 		= bind 'xlatLocationTags',
+				enabled 		= keyIsNotNil 'xlatLocationTags',
+				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
+   				alignment 		= 'center',
+--   				fill_horizontal = 0.1,
+			},
+
+			f:combo_box {
+				value 			= bind 			'locationTagSeperator',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField2',
+				items 			= locationTagSepItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagSeperatorTT=Enter a tag seperator character",
+				immediate 		= true,
+				validate 		= PSDialogs.validateSeperator,
+   				fill_horizontal = 0.08,
+			},
+
+			f:popup_menu {
+				value 			= bind 			'locationTagField2',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField1',
+				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
+   				alignment 		= 'center',
+--   				fill_horizontal = 0.1,
+			},
+
+			f:static_text {
+				title 			= bind 			'locationTagSeperator',
+				visible 		= keyIsNotNil	'locationTagField3',
+   				alignment 		= 'center',
+   				fill_horizontal = 0.05,
+			},
+
+			f:popup_menu {
+				value 			= bind 			'locationTagField3',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField2',
+				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
+   				alignment 		= 'center',
+--   				fill_horizontal = 0.1,
+			},
+
+			f:static_text {
+				title 			= bind 			'locationTagSeperator',
+				visible 		= keyIsNotNil	'locationTagField4',
+   				alignment 		= 'center',
+   				fill_horizontal = 0.05,
+			},
+
+			f:popup_menu {
+				value 			= bind 			'locationTagField4',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField3',
+				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
+   				alignment 		= 'center',
+--   				fill_horizontal = 0.1,
+			},
+
+			f:static_text {
+				title 			= bind 			'locationTagSeperator',
+				visible 		= keyIsNotNil	'locationTagField5',
+   				alignment 		= 'center',
+   				fill_horizontal = 0.05,
+			},
+
+			f:popup_menu {
+				value 			= bind 			'locationTagField5',
+				visible 		= bind 			'xlatLocationTags',
+				enabled			= keyIsNotNil	'locationTagField4',
+				items 			= locationTagItems,
+				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
+   				alignment 		= 'center',
+--   				fill_horizontal = 0.1,
 			},
 		},
 		
@@ -1418,6 +1781,7 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptNormal=Normal",		value 	= 2 },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptTrace=Trace",			value 	= 3 },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptDebug=Debug",			value 	= 4 },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptXDebug=X-Debug",		value 	= 5 },
 	}
 	
 	if isAskForMissingParams then

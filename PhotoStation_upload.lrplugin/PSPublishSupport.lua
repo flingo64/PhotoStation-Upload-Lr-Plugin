@@ -2,7 +2,7 @@
 
 PSPublishSupport.lua
 Publish support for Lightroom Photo StatLr
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2019, Martin Messmer
 
 This file is part of Photo StatLr - Lightroom plugin.
 
@@ -513,6 +513,8 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	exifXlatFaceRegions	= publishSettings.exifXlatFaceRegions,
     	exifXlatRating		= publishSettings.exifXlatRating,
     	exifXlatLabel		= publishSettings.exifXlatLabel,
+		xlatLocationTags	= publishSettings.xlatLocationTags,
+		locationTagTemplate = publishSettings.locationTagTemplate,
     
     	titleDownload		= false,
     	captionDownload		= false,
@@ -553,23 +555,11 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	end
 		
 	--============= observe changes in collection setiings dialog ==============
-	collectionSettings:addObserver( 'srcRoot', updateCollectionStatus )
-	collectionSettings:addObserver( 'dstRoot', updateCollectionStatus )
-	collectionSettings:addObserver( 'copyTree', updateCollectionStatus )
-	collectionSettings:addObserver( 'publishMode', updateCollectionStatus )
-	collectionSettings:addObserver( 'renameDstFile', updateCollectionStatus )
-	collectionSettings:addObserver( 'dstFilename', updateCollectionStatus )
-	collectionSettings:addObserver( 'exifXlatFaceRegions', updateCollectionStatus )
-	collectionSettings:addObserver( 'exifXlatLabel', updateCollectionStatus )
-	collectionSettings:addObserver( 'exifXlatRating', updateCollectionStatus )
-	collectionSettings:addObserver( 'locationDownload', updateCollectionStatus )
-	collectionSettings:addObserver( 'ratingDownload', updateCollectionStatus )
-	collectionSettings:addObserver( 'PS2LrRating', updateCollectionStatus )
-	
-	updateCollectionStatus( collectionSettings )
-	
-	-- manual suggests group_box as outmost container, but nested group_boxes will get an invisible title 
-	--	return f:group_box {
+	PSDialogs.addObservers( collectionSettings )
+
+	-- manual suggest group_box as outmost container, but nested group_boxes will get an invisible title 
+	--	f:group_box {
+	--	title		= 'Photo StatLr collection settings',
 	return f:view {
 		size = 'small',
 		fill_horizontal = 1,

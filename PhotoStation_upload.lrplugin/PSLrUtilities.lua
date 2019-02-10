@@ -2,7 +2,7 @@
 
 PSLrUtilities.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2019, Martin Messmer
 
 Lightroom utilities:
 	- printError
@@ -18,7 +18,7 @@ Lightroom utilities:
 	- getCollectionUploadPath
 	
 	- isDynamicAlbumPath
-	- evaluatePathOrFilename
+	- evaluatePlaceholderString
 
 	- getPublishServiceByName
 	
@@ -283,23 +283,30 @@ end
 
 --------------------------------------------------------------------------------------------
 -- evaluatePathOrFilename(path, srcPhoto, type, publishedCollection)
--- 	Substitute metadata placeholders by actual values from the photo and sanitize a given directory path.
+-- 	Substitute metadata placeholders in a placeholder string by actual values from the photo. 
+-- 	If type = filename or dir, sanitize the resulting directory path.
+-- 	Params:
+-- 		path		- the placeholder string
+-- 		srcPhoto	- LrPhoto of the belonging photo
+-- 		type		- filename, path or tag (e.g.location tag)
+-- 		publishedCollection	- publishedCollection params
 --	Metadata placeholders look in general like: {<category>:<type> <options>|<defaultValue_or_mandatory>}
 --	'?' stands for mandatory, no default available. 
 --	- unrecognized placeholders will be left unchanged, they might be intended path components
 --	- undefined mandatory metadata will be substituted by ?
 --	- undefined optional metadata will be substituted by their default or '' if no default
-function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCollection)
-
-	writeLogfile(3, string.format("evaluatePathOrFilename(path '%s', type '%s' \n", ifnil(path, '<Nil>'), type)) 
+function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, publishedCollection)
+	local pathOrig = path
+	
+	writeLogfile(3, string.format("evaluatePlaceholderString(photo '%s', path '%s', type '%s')\n", srcPhoto:getFormattedMetadata('fileName'), ifnil(pathOrig, '<Nil>'), type)) 
 
 	if (not path or not string.find(path, "{", 1, true)) then
-		return normalizeDirname(path)
+		return iif(type ~= 'tag', normalizeDirname(path), path)
 	end
 
 	if 	type == 'filename' 
 	and (string.find(path, "/", 1, true) or string.find(path, "\\", 1, true)) then
-		writeLogfile(3, string.format("evaluatePathOrFilename: filename %s must not contain / or \\ \n", path)) 
+		writeLogfile(3, string.format("evaluatePlaceholderString: filename %s must not contain / or \\ \n", path)) 
 		return '?'
 	end
 
@@ -315,7 +322,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
 				end
 				local dateString = LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), dateFormat, false)
 				
-				writeLogfile(3, string.format("evaluatePathOrFilename: date format '%s' --> '%s'\n", ifnil(dateFormat, '<Nil>'), ifnil(dateString, '<Nil>'))) 
+				writeLogfile(3, string.format("evaluatePlaceholderString: date format '%s' --> '%s'\n", ifnil(dateFormat, '<Nil>'), ifnil(dateString, '<Nil>'))) 
 				return iif(ifnil(dateString, '') ~= '',  dateString, ifnil(dataDefault, '')) 
 			end);
 	end
@@ -349,7 +356,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
     					metadataStringExtracted = mkLegalFilename(metadataStringExtracted)
     				end 
     			end
-    			writeLogfile(3, string.format("evaluatePathOrFilename: LrFM:%s = '%s', pattern='%s' --> '%s'\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
+    			writeLogfile(3, string.format("evaluatePlaceholderString: LrFM:%s = '%s', pattern='%s' --> '%s'\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
     			return metadataStringExtracted
     		end);
 	end
@@ -383,7 +390,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
     					metadataStringExtracted = mkLegalFilename(metadataStringExtracted)
     				end 
     			end
-    			writeLogfile(3, string.format("evaluatePathOrFilename: LrRM:%s = '%s', pattern='%s' --> '%s'\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
+    			writeLogfile(3, string.format("evaluatePlaceholderString: LrRM:%s = '%s', pattern='%s' --> '%s'\n", ifnil(metadataName, '<Nil>'), ifnil(metadataString, '<Nil>'), ifnil(metadataPattern, '<Nil>'), metadataStringExtracted)) 
     			return metadataStringExtracted
     		end);
 	end
@@ -419,7 +426,7 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
     					pathLevelExtracted = mkLegalFilename(pathLevelExtracted)
     				end 
     			end
-    			writeLogfile(3, string.format("evaluatePathOrFilename: {Path %d}('%s') = '%s', pattern '%s' --> '%s'\n", pathLevel, srcPhotoPath, ifnil(pathLevelString, '<Nil>'), ifnil(pathPattern, '<Nil>'), pathLevelExtracted)) 
+    			writeLogfile(3, string.format("evaluatePlaceholderString: {Path %d}('%s') = '%s', pattern '%s' --> '%s'\n", pathLevel, srcPhotoPath, ifnil(pathLevelString, '<Nil>'), ifnil(pathPattern, '<Nil>'), pathLevelExtracted)) 
     			return pathLevelExtracted
     		end);
 	end
@@ -435,15 +442,16 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
 				dataType = dataTypeAndPattern
 			end
 
-			writeLogfile(4, string.format("evaluatePathOrFilename: '%s': type='%s' pattern='%s'\n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataPattern, '<Nil>'))) 
+			writeLogfile(4, string.format("substituteCollectionNameOrPath: '%s'--> type='%s', pattern='%s', default='%s'\n", 
+											ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataPattern, '<Nil>'), ifnil(dataDefault, '<Nil>'))) 
 			
 			if not dataType or not string.find('name,path', dataType, 1, true) then 
-				writeLogfile(3, string.format("evaluatePathOrFilename:  '%s': type='%s' not valid  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
+				writeLogfile(3, string.format("substituteCollectionNameOrPath:  '%s': type='%s' not valid  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
 				return contCollParam 
 			end
 			
 			if not collectionPath or not collectionPath[1] then
-				writeLogfile(4, string.format("evaluatePathOrFilename:  '%s': no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
+				writeLogfile(4, string.format("evaluatePlaceholderString:  '%s': no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
 				return ifnil(dataDefault,'')  
 			end
 			
@@ -458,23 +466,16 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
 					dataString = collectionPath[i]
 				end
 			
-				local dataStringExtracted = dataString
-				if dataString == '' then
-					dataStringExtracted = ifnil(dataDefault, '')
+				local dataStringExtracted = (dataPattern and string.match(dataString, dataPattern)) or (not dataPattern and dataString) 
+
+				if not dataStringExtracted then
+					writeLogfile(3, string.format("substituteCollectionNameOrPath: '%s' collection '%s' --> no match\n", ifnil(contCollParam, '<Nil>'), collectionPath[i])) 
 				else
-					if dataPattern then
-						dataStringExtracted = string.match(dataString, dataPattern)
-					end
-					if not dataStringExtracted then 
-						dataStringExtracted = ifnil(dataDefault, '')
-					else
-						dataStringExtracted = dataStringExtracted
-					end 
+					writeLogfile(3, string.format("substituteCollectionNameOrPath: '%s' collection '%s'  --> '%s' \n", ifnil(contCollParam, '<Nil>'), collectionPath[i], ifnil(dataStringExtracted, ''))) 
+					return dataStringExtracted
 				end
-				writeLogfile(3, string.format("evaluatePathOrFilename: %s  --> %s \n", ifnil(contCollParam, '<Nil>'), ifnil(dataStringExtracted, ''))) 
-				return dataStringExtracted
 			end
-			writeLogfile(3, string.format("evaluatePathOrFilename:  %s: no match  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
+			writeLogfile(3, string.format("substituteCollectionNameOrPath:  %s: no matching collection, defaulting to  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataDefault,''))) 
 			return ifnil(dataDefault,'')  
 		end
 	end
@@ -503,7 +504,12 @@ function PSLrUtilities.evaluatePathOrFilename(path, srcPhoto, type, publishedCol
 	if 	type == 'filename'	then
 		path = LrPathUtils.addExtension(path, LrPathUtils.extension(srcPhoto:getFormattedMetadata('fileName')))
 	end
-	return normalizeDirname(path)
+	if type ~= 'tag' then
+		path = normalizeDirname(path)
+	end 
+	writeLogfile(3, string.format("evaluatePlaceholderString(photo '%s', path '%s', type '%s') --> '%s' \n", srcPhoto:getFormattedMetadata('fileName'), ifnil(pathOrig, '<Nil>'), type, path)) 
+	
+	return path
 end 
 
 --------------------------------------------------------------------------------------------

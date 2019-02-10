@@ -2,7 +2,7 @@
 
 PSUtilities.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2019, Martin Messmer
 
 Utilities for Lightroom Photo StatLr
 
@@ -114,19 +114,11 @@ JSON.onDecodeOfHTMLError = JSON.onDecodeError
 ---------------------- useful helpers ----------------------------------------------------------
 
 function ifnil(str, subst)
-	if str == nil then
-		return subst
-	else
-		return str
-	end
+	return ((str == nil) and subst) or str
 end 
 
 function iif(condition, thenExpr, elseExpr)
-	if condition then
-		return thenExpr
-	else
-		return elseExpr
-	end
+	return (condition and thenExpr) or (not condition and elseExpr)
 end 
 
 --------------------------------------------------------------------------------------------
@@ -146,10 +138,25 @@ function split(inputstr, sep)
 end
 
 --------------------------------------------------------------------------------------------
--- trim(s)
--- trims leading and trailing white spaces from a string
-function trim(s)
- 	return (string.gsub(s,"^%s*(.-)%s*$", "%1"))
+-- trim(s, trimChar)
+-- trims leading and trailing white spaces (default) or given character from a string
+function trim(s, trimChar)
+	if not trimChar then
+ 		return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
+ 	else
+ 		return (string.gsub(s, "^" .. trimChar .. "*(.-)" .. trimChar .. "*$", "%1"))
+ 	end
+end
+
+--------------------------------------------------------------------------------------------
+-- unduplicate(s, dupChar)
+-- unduplicates repeated white spaces (default) or given character from a string
+function unduplicate(s, dupChar)
+	if not dupChar then
+ 		return (string.gsub(s, "%s+", "%s"))
+ 	else
+ 		return (string.gsub(s, dupChar .. "+", dupChar))
+ 	end
 end
 
 ---------------------- shell encoding routines ---------------------------------------------------------
@@ -341,6 +348,7 @@ local loglevel
 	2 - info
 	3 - tracing
 	4 - debug
+	5 - extended debug
 ]]	
 
 local loglevelname = {
@@ -348,6 +356,7 @@ local loglevelname = {
 	'INFO ',
 	'TRACE',
 	'DEBUG',
+	'XDBUG',
 }
 
 -- getLogFilename: return the filename of the logfile
@@ -716,6 +725,9 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.exifXlatFaceRegions 	= collectionSettings.exifXlatFaceRegions
     	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
     	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
+    	exportParams.xlatLocationTags		= collectionSettings.xlatLocationTags
+    	exportParams.locationTagSeperator	= collectionSettings.locationTagSeperator
+    	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
 
 		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
     	if operation == 'GetCommentsFromPublishedCollection' then

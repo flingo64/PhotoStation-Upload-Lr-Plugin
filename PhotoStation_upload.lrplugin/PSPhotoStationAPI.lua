@@ -2,7 +2,7 @@
 
 PSPhotoStationAPI.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2017, Martin Messmer
+Copyright(c) 2019, Martin Messmer
 
 Photo Station API functions:
 	- initialize
@@ -97,7 +97,8 @@ local function callSynoAPI (h, synoAPI, formData)
       		return nil, 1001
     	end
 	end
-	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
+	writeLogfile(4, "Got Body:\n" .. string.sub(respBody, 1, 4096) .. iif(string.len(respBody) > 4096, "...", "") .. "\n")
+	writeLogfile(5, "Got Body(full):\n" .. respBody .. "\n")
 	
 	local respArray = JSON:decode(respBody)
 
@@ -425,7 +426,7 @@ function PSPhotoStationAPI.listAlbum(h, dstDir, listItems)
 	
 	if not respArray then return nil, errorCode end 
 
---	writeTableLogfile(4, 'listAlbum(' .. dstDir .. ')', respArray.data.items)
+	writeTableLogfile(5, 'listAlbum(' .. dstDir .. ')', respArray.data.items)
 	return respArray.data.items
 end
 
@@ -520,7 +521,7 @@ function PSPhotoStationAPI.listSharedAlbum(h, sharedAlbumName, listItems)
 	
 	if not respArray then return nil, errorCode end 
 
-	writeTableLogfile(4, 'listAlbum', respArray.data.items)
+	writeTableLogfile(5, 'listSharedAlbum', respArray.data.items)
 	return respArray.data.items
 end
 
@@ -714,7 +715,7 @@ function PSPhotoStationAPI.listPublicSharedAlbum(h, sharedAlbumName, listItems)
 	
 	if not respArray then return nil, errorCode end 
 
-	writeTableLogfile(4, 'listAlbum', respArray.data.items)
+	writeTableLogfile(5, 'listPublicSharedAlbum', respArray.data.items)
 	return respArray.data.items
 end
 
