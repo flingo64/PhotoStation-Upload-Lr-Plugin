@@ -123,7 +123,7 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 	
 	local thisPhoto = dstDir .. '/' .. dstFilename
 	if thisPhoto ~= lastPhoto then
-		if lastPhoto and position ~= 'FIRST' then 
+		if position ~= 'FIRST' then 
 			writeLogfile(1, string.format("uploadPictureFile(%s) to (%s - %s - %s) interrupts upload of %s\n", 
 										LrPathUtils.leafName(srcFilename), thisPhoto, position, picType, lastPhoto))
 		end
