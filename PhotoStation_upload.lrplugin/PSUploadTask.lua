@@ -579,6 +579,8 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 	if 	LrExportPersons and
     	exportParams.exifXlatFaceRegions and not isVideo then
 		local facesLr, _ = PSExiftoolAPI.queryLrFaceRegionList(exportParams.eHandle, srcPhoto:getRawMetadata('path'))
+		-- we don't need to filter faces by keyword export flag, because Lr won't write 
+		-- faceRegions for person keys with export flag turned off
 		if facesLr and #facesLr > 0 then
 			local j, facesLrNorm = 0, {}
 			for i = 1, #facesLr do
@@ -1051,7 +1053,7 @@ function PSUploadTask.updateExportSettings(exportParams)
 -- do some initialization stuff
 -- local prefs = LrPrefs.prefsForPlugin()
 
-	-- Start Debugging
+	-- Start logging
 	openLogfile(exportParams.logLevel)
 	
 	-- check for updates once a day
