@@ -197,7 +197,7 @@ local function sharedAlbumContentCacheList(h, dstDir, listItems)
 		and errorCode ~= 417	-- no such dir for non-administrative users , see GitHub issue 17
 		and errorCode ~= 101	-- no such dir in PS 6.6
 		then
-			writeLogfile(2, string.format('sharedAlbumContentCacheList: Error on listSharedAlbum: %d\n', errorCode))
+			writeLogfile(2, string.format("sharedAlbumContentCacheList: Error on listSharedAlbum('%s', '%s'): %d\n", dstDir, listItems, errorCode))
 		   	return nil, errorCode
 		end
 		albumItems = {} -- avoid re-requesting non-existing album 
