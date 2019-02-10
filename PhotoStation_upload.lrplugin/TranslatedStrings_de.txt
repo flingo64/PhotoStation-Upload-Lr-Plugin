@@ -15,6 +15,7 @@
 "$$$/PSUpload/CollectionSettings/LoglevelOptNormal=Normal"
 "$$$/PSUpload/CollectionSettings/LoglevelOptNothing=Nichts"
 "$$$/PSUpload/CollectionSettings/LoglevelOptTrace=Trace"
+"$$$/PSUpload/CollectionSettings/LoglevelOptXDebug=X-Debug"
 "$$$/PSUpload/CollectionSettings/PSTranslateFaces=Gesichter"
 "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download und Übersetzen von Photo Station Personenmarkierungen zu Lightroom Gesichtsbereichen^nHinweis: Gesichtsbereiche werden als Metadaten in die Originalfotoss geschrieben und müssen anschließend in Lr neu eingelesen werden^n!!! Stell sicher, dass 'Änderungen automatisch in XMP speichern' aktiviert ist,^nansonsten gehen beim Neu-Einlesen der Gesichtsbereiche alle Lr-Änderungen verloren!!!"
 "$$$/PSUpload/CollectionSettings/PSTranslateLabel=Farbmarkierung (Tag)"

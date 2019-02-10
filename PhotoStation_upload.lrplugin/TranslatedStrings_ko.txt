@@ -15,6 +15,7 @@
 "$$$/PSUpload/CollectionSettings/LoglevelOptNormal/PleaseTranslate=Normal"
 "$$$/PSUpload/CollectionSettings/LoglevelOptNothing/PleaseTranslate=Nothing"
 "$$$/PSUpload/CollectionSettings/LoglevelOptTrace/PleaseTranslate=Trace"
+"$$$/PSUpload/CollectionSettings/LoglevelOptXDebug/PleaseTranslate=X-Debug"
 "$$$/PSUpload/CollectionSettings/PSTranslateFaces=사람 태그"
 "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT/PleaseTranslate=Download and translate Photo Station People Tags to Lightroom Faces^nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr^n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise^nyou will loose you Lr changes when re-loading faces metadata!!!'"
 "$$$/PSUpload/CollectionSettings/PSTranslateLabel=컬러 라벨 태그"
