@@ -120,12 +120,12 @@ local function updateActiveAlbumStatus( propertyTable )
 		end
 		
 		if ifnil(propertyTable.startTime, '') ~= '' and not PSSharedAlbumDialog.validateDate(nil, propertyTable.startTime) then
-			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/StartDateIncorrect=From Date must be 'YYYY-mm-dd'!" 
+			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/DateIncorrect=Date must be 'YYYY-mm-dd'!" 
 			break
 		end
 
 		if ifnil(propertyTable.stopTime, '') ~= '' and not PSSharedAlbumDialog.validateDate(nil, propertyTable.stopTime) then
-			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/StartDateIncorrect=Until Date must be 'YYYY-mm-dd'!" 
+			message = LOC "$$$/PSUpload/SharedAlbumMgmt/Messages/DateIncorrect=Date must be 'YYYY-mm-dd'!" 
 			break
 		end
 
@@ -443,7 +443,8 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 		   			
                		f:row {
             			f:static_text {
-					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album:",
+					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album"
+					  								.. ":",
                     		alignment		= 'left',
             				width 			= columnWidth.label,
             		   },
@@ -462,7 +463,8 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 							fill_horizontal 	= 1,
 							
                    			f:static_text  {
-                		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service:",
+                		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service"
+                		  							   .. ":",
     --            				width 			= columnWidth.label,
                    			},
                    			 
@@ -860,7 +862,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
     		   
     			f:static_text {
     				width 			= columnWidth.area,
-    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AreaTool=Area^nTool",
+       		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AreaTool=Area",
             		alignment		= 'left',
     		  	},
     		   
