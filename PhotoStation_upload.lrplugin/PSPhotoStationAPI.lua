@@ -97,7 +97,7 @@ local function callSynoAPI (h, synoAPI, formData)
       		return nil, 1001
     	end
 	end
-	writeLogfile(4, "Got Body:\n" .. string.sub(respBody, 1, 4096) .. iif(string.len(respBody) > 1024, "...", "") .. "\n")
+	writeLogfile(4, "Got Body:\n" .. string.sub(respBody, 1, 4096) .. iif(string.len(respBody) > 4096, "...", "") .. "\n")
 	writeLogfile(5, "Got Body(full):\n" .. respBody .. "\n")
 	
 	local respArray = JSON:decode(respBody)
