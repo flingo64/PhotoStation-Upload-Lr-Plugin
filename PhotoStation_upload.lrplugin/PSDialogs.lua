@@ -815,8 +815,8 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 	
 	local fileTimestampItems = {
         { title	= 'Photo Capture Date/Time', 							value = 'capture' },
-        { title	= 'Upload Date/Time', 									value 	= 'upload' },
-        { title = 'Upload Date for Photos, Capture Date for Videos',	value   = 'mixed' },
+        { title	= 'Upload Date/Time', 									value = 'upload' },
+        { title = 'Upload Date for Photos, Capture Date for Videos',	value = 'mixed' },
 	}
 
 	return
@@ -1174,12 +1174,12 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 --					fill_horizontal = 1,
 	
 					f:static_text {
-						title 			= LOC "$$$/PSUpload/ExportDialog/VideoConv=Convert video:",
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgConv=Convert video:",
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
-						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoConvTT=What to do with the original video",
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgConvTT=What to do with the original video",
 						items 			= orgVideoForceConvItems,
 						alignment 		= 'left',
 --						fill_horizontal = 1,
@@ -1191,12 +1191,12 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 --					alignment = 'left',
 --					fill_horizontal = 1,
 					f:static_text {
-						title 			= LOC "$$$/PSUpload/ExportDialog/OrgVideoQuality=Qualitity:",
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgQuality=Qualitity:",
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
-						tooltip 		= LOC "$$$/PSUpload/ExportDialog/OrgVideoQualityTT=Video quality for converted original video",
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgQualityTT=Video quality for converted original video",
 						items 			= videoConvQualityItems,
 						alignment 		= 'left',
 --						fill_horizontal = 1,
@@ -1217,12 +1217,12 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 --					fill_horizontal = 1,
 	
 					f:static_text {
-						title 			= LOC "$$$/PSUpload/ExportDialog/AddVideoQuality=Add. Video Qualitity:",
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoAddQuality=Add. Video Qualitity:",
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
-						tooltip 		= LOC "$$$/PSUpload/ExportDialog/OrigVideoQualityTT=Video quality for converted original video",
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoAddQualityTT=Video quality for converted original video",
 						items 			= addVideoConvQualityItems,
 						alignment 		= 'left',
 --						fill_horizontal = 1,
