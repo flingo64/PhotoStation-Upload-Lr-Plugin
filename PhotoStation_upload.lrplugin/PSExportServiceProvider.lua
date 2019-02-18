@@ -84,7 +84,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'password', 		default = '' },		-- guess what...
 		{ key = 'psVersion', 		default = 68 },		-- Photo Station version: default PS 6.8
 		{ key = 'isPS6', 			default = true },	-- derived from psVersion: use upload optimization for Photo Station 6 (not THUMB_L required)
-		{ key = 'uploadTimestamp',	default = 'capture' },-- file timestamp for uploaded photos: 'capture'(photo capture date) or 'upload' (upload timestamp)
+		{ key = 'uploadTimestamp',	default = 'capture' },-- file timestamp for uploaded photos: 'capture', 'upload' or 'mixed' (photos=upload, videos=capture)
 
 		-- target album parameters
 		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
@@ -121,11 +121,17 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
 
 		-- video parameters
-		{ key = 'addVideoUltra', 	default = 'None' },	-- additional video resolution for ULTRA res videos
-		{ key = 'addVideoHigh', 	default = 'None' },	-- additional video resolution for HIGH res videos
-		{ key = 'addVideoMed',		default = 'None' }, -- additional video resolution for MEDIUM res videos
-		{ key = 'addVideoLow', 		default = 'None' },	-- additional video resolution for LOW res videos	
-		{ key = 'hardRotate', 		default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos 
+		{ key = 'videoConversionsFn',	default = 'PSVideoConversions.json' },  -- filename of the video conversion settings config file 
+		
+		{ key = 'orgVideoForceConv',	default = false },  -- force orig video conversion even if video format is supported by PS 
+		{ key = 'orgVideoQuality',		default = 'high' },  -- video conversion quality for orig video 
+		{ key = 'hardRotate', 			default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos 
+
+		{ key = 'addVideoQuality',		default = 'medium' },  -- video conversion quality for the additional video  
+		{ key = 'addVideoUltra', 		default = 'None' },	-- additional video resolution for ULTRA res videos
+		{ key = 'addVideoHigh', 		default = 'None' },	-- additional video resolution for HIGH res videos
+		{ key = 'addVideoMed',			default = 'None' }, -- additional video resolution for MEDIUM res videos
+		{ key = 'addVideoLow', 			default = 'None' },	-- additional video resolution for LOW res videos	
 
 		-- logging/debugging parameters
 		{ key = 'logLevel', 		default = 2 },		-- loglevel 
