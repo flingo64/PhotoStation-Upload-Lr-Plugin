@@ -563,11 +563,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 	local dstWidth = math.floor(((dstHeight * arw / arh) + 0.5) / 2) * 2  -- make sure width is an even integer
 	local dstDim = string.format("%dx%d", dstWidth, dstHeight)
 	local dstAspect = string.gsub(dstDim, 'x', ':')
---	local convKey = PSConvert.getConvertKey(h, dstHeight) 		-- get the conversionParams
 
---	writeLogfile(3, string.format("convertVideo: %s aspectR %s, dstHeight: %d hardRotate %s rotation %s using conversion %d/%s (%dp)\n", 
---								srcVideoFilename, vinfo.dar, dstHeight, tostring(hardRotate), rotation,
---								convKey, videoConversion[convKey].id, videoConversion[convKey].upToHeight))
 	writeLogfile(3, string.format("convertVideo: %s aspectR %s, dstHeight: %d hardRotate %s rotation %s\n", 
 								srcVideoFilename, vinfo.dar, dstHeight, tostring(hardRotate), rotation))
 	
@@ -589,22 +585,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 		
 	-- transcoding pass 1 
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
---[[
-	local cmdline =  cmdlineQuote() ..
-				'"' .. h.ffmpeg .. '" ' .. 
-				noAutoRotateOpt ..
-				'-i "' 	.. srcVideoFilename .. '" ' .. 
-				'-y ' 	.. audioCodecOpt .. 
-				createTimeOpt ..  
-				locationInfoOpt ..
-				rotateOpt ..
-				'-pix_fmt yuv420p ' ..
-				videoConversion[convKey].pass1Params .. ' ' ..
-				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
-				'-passlogfile "' .. passLogfile .. '" ' .. 
-				'"' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
-				cmdlineQuote()
-]]
+
 	local cmdline =  cmdlineQuote() ..
 				'"' .. h.ffmpeg .. '" ' .. 
 				noAutoRotateOpt ..
@@ -641,24 +622,6 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 --					"===========================================================================\n")
 
 	-- transcoding pass 2 
---[[
-	if videoConversion[convKey].pass2Params then
-    	cmdline =   cmdlineQuote() ..
-    				'"' .. h.ffmpeg .. '" ' .. 
-    				noAutoRotateOpt ..
-    				'-i "' ..	srcVideoFilename .. '" ' .. 
-    				createTimeOpt ..  
-    				locationInfoOpt ..
-    				'-y ' .. audioCodecOpt ..
-    				rotateOpt ..
-    				'-pix_fmt yuv420p ' ..
-    				videoConversion[convKey].pass2Params .. ' ' ..
-    				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
-    				'-passlogfile "' .. passLogfile .. '" ' .. 
-    				'"' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
-    				cmdlineQuote()
-    
-]]
 	if videoConversion.video_options_pass_2 then
     	cmdline =   cmdlineQuote() ..
     				'"' .. h.ffmpeg .. '" ' .. 
