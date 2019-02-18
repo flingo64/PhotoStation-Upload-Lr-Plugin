@@ -1,0 +1,17 @@
+{
+  "low": {
+    "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
+    "video_options": "c:v libx264 -preset veryfast -crf 26",
+    "video_options_pass_2": null
+  },
+  "medium": {
+    "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
+    "video_options": "c:v libx264 -preset medium -crf 23",
+    "video_options_pass_2": null
+  },
+  "high": {
+    "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
+    "video_options": "c:v libx264 -preset medium -crf 20",
+    "video_options_pass_2": null
+  }
+}
