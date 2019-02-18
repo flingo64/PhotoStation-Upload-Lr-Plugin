@@ -249,70 +249,72 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			propertyTable.isPS6 = 		iif(propertyTable.psVersion >= 60, true, false)
 		end
 
-		-- ###############  Export/Publish or Collection Settings ##########################
+		-- ###############  Export or Collection Settings ##########################
 
-		if propertyTable.copyTree and not PSDialogs.validateDirectory(nil, propertyTable.srcRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
-			break
-		end
-				
-		if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
-			break
-		end
-				
-		-- renaming: renaming dstFilename must contain at least one metadata placeholder
-		if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
-			break
-		end
-
-		-- Exif translation start -------------------
-
-		-- if at least one translation is activated then set exifTranslate
-		if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
-			propertyTable.exifTranslate = true
-		end
-		
-		-- if no translation is activated then set exifTranslate to off
-		if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
-			propertyTable.exifTranslate = false
-		end
-
-		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
-			break
-		end
-
-		-- Exif translation end -------------------
-
-		-- Location tag translation -------------------
-		if propertyTable.xlatLocationTags then
-			if string.len(propertyTable.locationTagSeperator) > 1 then
-				message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
+		if not propertyTable.LR_isExportForPublish or propertyTable.isCollection then
+			if propertyTable.copyTree and not PSDialogs.validateDirectory(nil, propertyTable.srcRoot) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
 				break
 			end
-			propertyTable.locationTagField2 = propertyTable.locationTagField1 and propertyTable.locationTagField2 or nil
-			propertyTable.locationTagField3 = propertyTable.locationTagField2 and propertyTable.locationTagField3 or nil
-			propertyTable.locationTagField4 = propertyTable.locationTagField3 and propertyTable.locationTagField4 or nil
-			propertyTable.locationTagField5 = propertyTable.locationTagField4 and propertyTable.locationTagField5 or nil
+					
+			if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
+				break
+			end
+					
+			-- renaming: renaming dstFilename must contain at least one metadata placeholder
+			if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
+				break
+			end
 
-			propertyTable.locationTagTemplate =	
-				table.concat(	{ propertyTable.locationTagField1,
-                				  propertyTable.locationTagField2,
-                				  propertyTable.locationTagField3,
-                				  propertyTable.locationTagField4,
-                				  propertyTable.locationTagField5
-                				},
-                				propertyTable.locationTagSeperator
-                			)
-		else
-			propertyTable.locationTagField1 = nil
-			propertyTable.locationTagField2 = nil
-			propertyTable.locationTagField3 = nil
-			propertyTable.locationTagField4 = nil
-			propertyTable.locationTagField5 = nil
-			propertyTable.locationTagTemplate = ''
+			-- Exif translation start -------------------
+
+			-- if at least one translation is activated then set exifTranslate
+			if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
+				propertyTable.exifTranslate = true
+			end
+			
+			-- if no translation is activated then set exifTranslate to off
+			if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
+				propertyTable.exifTranslate = false
+			end
+
+			if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
+				break
+			end
+
+			-- Exif translation end -------------------
+
+			-- Location tag translation -------------------
+			if propertyTable.xlatLocationTags then
+				if string.len(propertyTable.locationTagSeperator) > 1 then
+					message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
+					break
+				end
+				propertyTable.locationTagField2 = propertyTable.locationTagField1 and propertyTable.locationTagField2 or nil
+				propertyTable.locationTagField3 = propertyTable.locationTagField2 and propertyTable.locationTagField3 or nil
+				propertyTable.locationTagField4 = propertyTable.locationTagField3 and propertyTable.locationTagField4 or nil
+				propertyTable.locationTagField5 = propertyTable.locationTagField4 and propertyTable.locationTagField5 or nil
+
+				propertyTable.locationTagTemplate =	
+					table.concat(	{ propertyTable.locationTagField1,
+									  propertyTable.locationTagField2,
+									  propertyTable.locationTagField3,
+									  propertyTable.locationTagField4,
+									  propertyTable.locationTagField5
+									},
+									propertyTable.locationTagSeperator
+								)
+			else
+				propertyTable.locationTagField1 = nil
+				propertyTable.locationTagField2 = nil
+				propertyTable.locationTagField3 = nil
+				propertyTable.locationTagField4 = nil
+				propertyTable.locationTagField5 = nil
+				propertyTable.locationTagTemplate = ''
+			end
 		end
 
 		-- ############### Pure Collection Settings ##########################
@@ -812,8 +814,9 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 	}
 	
 	local fileTimestampItems = {
-        { title	= 'Photo Capture Date/Time',	value 	= 'capture' },
-        { title	= 'Upload Date/Time',   		value 	= 'upload' },
+        { title	= 'Photo Capture Date/Time', 							value = 'capture' },
+        { title	= 'Upload Date/Time', 									value 	= 'upload' },
+        { title = 'Upload Date for Photos, Capture Date for Videos',	value   = 'mixed' },
 	}
 
 	return
@@ -1125,9 +1128,25 @@ end
 -------------------------------------------------------------------------------
 -- videoOptionsView(f, propertyTable)
 function PSDialogs.videoOptionsView(f, propertyTable)
+	local orgVideoForceConvItems = {
+		{ title	= 'If required',		value 	= false },
+		{ title	= 'Always',				value 	= true },
+	}
+
+	local videoConvQualityItems = {
+		{ title	= 'High',			value 	= 'high' },
+		{ title	= 'Medium',			value 	= 'medium' },
+		{ title	= 'Low',			value 	= 'low' },
+	}
+	
+	local addVideoConvQualityItems 	= tableShallowCopy(videoConvQualityItems)
+	table.insert(addVideoConvQualityItems,
+		{ title	= 'No add. video',	value 	= nil }
+	)
+
 	local lowResAddVideoItems	= {
 		{ title	= 'None',			value 	= 'None' },
-		{ title	= 'Mobile/240p',		value 	= 'MOBILE' },
+		{ title	= 'Mobile/240p',	value 	= 'MOBILE' },
 	}
 	
 	local medResAddVideoItems	= tableShallowCopy(lowResAddVideoItems)
@@ -1136,7 +1155,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	
 	local highResAddVideoItems	= tableShallowCopy(medResAddVideoItems)
 	table.insert(highResAddVideoItems,
-		{ title	= 'Medium/720p',		value 	= 'MEDIUM' })
+		{ title	= 'Medium/720p',	value 	= 'MEDIUM' })
 
 	local ultraResAddVideoItems	= tableShallowCopy(highResAddVideoItems)
 	table.insert(ultraResAddVideoItems, 
@@ -1144,23 +1163,91 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 	return
 		f:group_box {
-			title 			= LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options: Additional video resolutions for ...-Res Videos",
+			title 			= LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options / Additional video resolutions for ...-Res Original Videos",
 			fill_horizontal = 1,
 
 			f:row {
+--				fill_horizontal = 1,
+
+--				f:row {
+--					alignment = 'left',
+--					fill_horizontal = 1,
+	
+					f:static_text {
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoConv=Convert video:",
+						alignment 		= 'right',
+					},
+						
+					f:popup_menu {
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoConvTT=What to do with the original video",
+						items 			= orgVideoForceConvItems,
+						alignment 		= 'left',
+--						fill_horizontal = 1,
+						value 			= bind 'orgVideoForceConv',
+					},
+--				},					
+
+--				f:row {
+--					alignment = 'left',
+--					fill_horizontal = 1,
+					f:static_text {
+						title 			= LOC "$$$/PSUpload/ExportDialog/OrgVideoQuality=Qualitity:",
+						alignment 		= 'right',
+					},
+						
+					f:popup_menu {
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/OrgVideoQualityTT=Video quality for converted original video",
+						items 			= videoConvQualityItems,
+						alignment 		= 'left',
+--						fill_horizontal = 1,
+						value 			= bind 'orgVideoQuality',
+					},
+--				},					
+
+				f:checkbox {
+					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Hard-rotation",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
+					alignment 		= 'left',
+--					fill_horizontal = 1,
+					value 			= bind 'hardRotate',
+				},
+
+--				f:row {
+--					alignment = 'left',
+--					fill_horizontal = 1,
+	
+					f:static_text {
+						title 			= LOC "$$$/PSUpload/ExportDialog/AddVideoQuality=Add. Video Qualitity:",
+						alignment 		= 'right',
+					},
+						
+					f:popup_menu {
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/OrigVideoQualityTT=Video quality for converted original video",
+						items 			= addVideoConvQualityItems,
+						alignment 		= 'left',
+--						fill_horizontal = 1,
+						value 			= bind 'addVideoQuality',
+					},
+				},
+	
+			f:row {
 				fill_horizontal = 1,
+				
 				f:row {
 					alignment = 'left',
 					fill_horizontal = 1,
-
+	
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:",
+						visible			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'right',
 					},
-					
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoUltraTT=Generate additional video for Ultra-Hi-Res (2160p) videos",
 						items 			= ultraResAddVideoItems,
+						visible			= keyIsNotNil 'addVideoQuality',
+						enabled			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoUltra',
@@ -1173,65 +1260,65 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoHigh=High:",
+						visible			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'right',
 					},
-					
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
 						items 			= highResAddVideoItems,
+						visible			= keyIsNotNil 'addVideoQuality',
+						enabled			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoHigh',
 					},
 				},					
-
+	
 				f:row {
 					alignment 			= 'right',
 					fill_horizontal 	= 1,
-
+	
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium:",
+						visible			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'right',
 					},
-					
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
 						items 			= medResAddVideoItems,
+						visible			= keyIsNotNil 'addVideoQuality',
+						enabled			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoMed',
 					},
 				},					
-
+	
 				f:row {
 					alignment 			= 'right',
 					fill_horizontal 	= 1,
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoLow=Low:",
+						visible			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'right',
 					},
-					
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
 						items 			= lowResAddVideoItems,
+						visible			= keyIsNotNil 'addVideoQuality',
+						enabled			= keyIsNotNil 'addVideoQuality',
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoLow',
 					},
 				},					
 			},
-			
-			f:row {
-				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Hard-rotation",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
-					alignment 		= 'left',
-					fill_horizontal = 1,
-					value 			= bind 'hardRotate',
-				},
-			},
 		}
+
 end
 
 -------------------------------------------------------------------------------
