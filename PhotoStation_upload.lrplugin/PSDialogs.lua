@@ -140,6 +140,16 @@ function PSDialogs.validateProgram( view, path )
 end
 
 -------------------------------------------------------------------------------
+-- validatePluginFile: check if a given filenam exists in the PLUGIN dir 
+function PSDialogs.validatePluginFile( view, path )
+	if LrFileUtils.exists(LrPathUtils.child(_PLUGIN.path, path)) ~= 'file' then
+		return false, path
+	end
+
+	return true, path	
+end
+
+-------------------------------------------------------------------------------
 -- validatePSUploadProgPath:
 --	check if a given path points to the root directory of the Synology Photo Station Uploader tool 
 --		we require the following converters that ship with the Uploader:
@@ -682,6 +692,71 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 end
 
 -------------------------------------------------------------------------------
+-- videoConfPresetsView(f, propertyTable)
+function PSDialogs.videoConfPresetsView(f, propertyTable)
+	return
+        f:group_box {
+			title	= LOC "$$$/PSUpload/PluginDialog/VideoPresets=Video Conversion Presets",
+			fill_horizontal = 1,
+			
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoPresetsDescription=Enter the filename of the video conversion presets file (.json).\n", 
+    			},
+    		},
+    
+    		f:row {
+    			f:static_text {
+    				title 			= "Presets file:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+    
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 1,
+    				value 			= bind 'videoConversionsFn',
+    				validate 		= PSDialogs.validatePluginFile,
+    			},
+    		},
+    		f:row {   			
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ButtonDefault=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ButtonDefaultTT=Set to Default.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+    					propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
+    				end,
+    			},
+
+--[[    
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+    					LrShell.revealInShell(getRootPath())
+    				end,
+    			},   			
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+   						LrHttp.openUrlInBrowser(PSConvert.downloadUrl)
+    				end,
+    			},   			
+]]
+    		},
+    	}
+end
+
+-------------------------------------------------------------------------------
 -- convertPhotosView(f, propertyTable)
 function PSDialogs.convertPhotosView(f, propertyTable)
 	return
@@ -1133,17 +1208,6 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 		{ title	= 'Always',				value 	= true },
 	}
 
-	local videoConvQualityItems = {
-		{ title	= 'High',			value 	= 'high' },
-		{ title	= 'Medium',			value 	= 'medium' },
-		{ title	= 'Low',			value 	= 'low' },
-	}
-	
-	local addVideoConvQualityItems 	= tableShallowCopy(videoConvQualityItems)
-	table.insert(addVideoConvQualityItems,
-		{ title	= 'No add. video',	value 	= nil }
-	)
-
 	local lowResAddVideoItems	= {
 		{ title	= 'None',			value 	= 'None' },
 		{ title	= 'Mobile/240p',	value 	= 'MOBILE' },
@@ -1160,6 +1224,28 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	local ultraResAddVideoItems	= tableShallowCopy(highResAddVideoItems)
 	table.insert(ultraResAddVideoItems, 
 		{ title	= 'High/1080p',		value 	= 'HIGH' })
+
+	-- TODO: store convOptions in a global accessible location
+	local prefs = LrPrefs.prefsForPlugin()	
+	local videoConvPath = LrPathUtils.child(_PLUGIN.path ,prefs.videoConversionsFn)
+	local convOptions = JSON:decode(LrFileUtils.readFile(videoConvPath))	
+	if not convOptions then
+		writeTableLogfile(1, string.format("PSDialogs.videoOptionsView: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
+		return nil
+	end	
+
+	local videoConvQualityItems = {}
+	
+	for key, val in pairs(convOptions) do
+		table.insert(videoConvQualityItems,
+			{ title	= val.title,	value 	= key }
+		)
+	end
+	
+	local addVideoConvQualityItems 	= tableShallowCopy(videoConvQualityItems)
+	table.insert(addVideoConvQualityItems,
+		{ title	= 'No add. video',	value 	= nil }
+	)
 
 	return
 		f:group_box {

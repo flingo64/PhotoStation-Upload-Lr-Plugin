@@ -52,40 +52,12 @@ require "PSUtilities"
 
 PSConvert = {}
 
-PSConvert.downloadUrl = 'https://www.synology.com/support/download' 
-PSConvert.defaultInstallPath = iif(WIN_ENV, 
-    								'C:\\\Program Files (x86)\\\Synology\\\Photo Station Uploader',
+PSConvert.downloadUrl 			= 'https://www.synology.com/support/download' 
+PSConvert.defaultInstallPath 	= iif(WIN_ENV, 
+    								'C:/Program Files (x86)/Synology/Photo Station Uploader',
     								'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
-
--- !!! don't use local variable for settings that may differ for export sessions!
--- only w/ "reload plug-in on each export", each export task will get its own copy of these variables
---[[
-local conv
-local dcraw
-local ffmpeg
-local qtfstart
-]]
-
--- ffmpeg encoder to use depends on OS
-local audioCodecOpt
-
-local convOptions = {
-  low =  {
-    audio_options = "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    video_options = "c:v libx264 -preset veryfast -crf 26",
-    video_options_pass_2 = null
-  },
-  medium = {
-    audio_options = "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    video_options = "c:v libx264 -preset medium -crf 23",
-    video_options_pass_2 = null
-  },
-  high = {
-    audio_options = "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    video_options = "c:v libx264 -preset medium -crf 20",
-    video_options_pass_2 = null
-  }
-}
+PSConvert.defaultVideoPresetsFn = "PSVideoConversions.json"
+PSConvert.convOptions			= nil
 
 ------------------------ initialize ---------------------------------------------------------------------------------
 
@@ -93,6 +65,7 @@ local convOptions = {
 function PSConvert.initialize()
 	local prefs = LrPrefs.prefsForPlugin()
 	local PSUploaderPath = prefs.PSUploaderPath
+	local videoConvPath = LrPathUtils.child(_PLUGIN.path ,prefs.videoConversionsFn)
 	local h = {} -- the handle
 
 	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")
@@ -121,9 +94,14 @@ function PSConvert.initialize()
 	h.ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
 	h.qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
 
--- 	audioCodecOpt = iif(WIN_ENV, '-acodec libvo_aacenc ',  '-strict experimental -acodec aac ')
-	audioCodecOpt = '-strict experimental -acodec aac '
+	PSConvert.convOptions = JSON:decode(LrFileUtils.readFile(videoConvPath))
 	
+	if not PSConvert.convOptions then
+		writeTableLogfile(1, string.format("PSConvert.initialize: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
+		return nil
+	end
+	writeTableLogfile(3, "VideoConvPresets", PSConvert.convOptions)
+
 	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. h.conv .. "\n\t\t\tdcraw: " .. h.dcraw .. 
 										 "\n\t\t\tffmpeg: " .. h.ffmpeg .. "\n\t\t\tqt-faststart: " .. h.qtfstart .. "\n")
 	return h
@@ -515,6 +493,7 @@ local videoConversion = {
 	},
 }
 
+
 ---------------- getConvertKey --------------------------------------------------------------------
 function PSConvert.getConvertKey(h, height)
 	
@@ -595,9 +574,9 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 				locationInfoOpt ..
 				rotateOpt ..
 				'-pix_fmt yuv420p ' ..
-				convOptions[videoQuality].audio_options .. ' ' ..
-				iif(convOptions[videoQuality].video_options_pass_2, '-pass 1 ', '') ..
-				convOptions[videoQuality].video_options .. ' ' ..
+				PSConvert.convOptions[videoQuality].audio_options .. ' ' ..
+				iif(PSConvert.convOptions[videoQuality].video_options_pass_2, '-pass 1 ', '') ..
+				PSConvert.convOptions[videoQuality].video_options .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
 				'-passlogfile "' .. passLogfile .. '" ' .. 
 				'"' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
@@ -632,9 +611,9 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
     				locationInfoOpt ..
     				rotateOpt ..
     				'-pix_fmt yuv420p ' ..
-					convOptions[videoQuality].audio_options .. ' ' ..
-					'-pass 2 '
-					convOptions[videoQuality].video_options_pass_2 .. ' ' ..
+					PSConvert.convOptions[videoQuality].audio_options .. ' ' ..
+					'-pass 2 ' ..
+					PSConvert.convOptions[videoQuality].video_options_pass_2 .. ' ' ..
     				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
     				'-passlogfile "' .. passLogfile .. '" ' .. 
     				'"' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
