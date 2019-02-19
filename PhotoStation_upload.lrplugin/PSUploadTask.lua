@@ -1192,8 +1192,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local skipPhoto = false 		-- continue flag
 	
 	for _, rendition in exportContext:renditions{ stopIfCanceled = true } do
-		local publishedPhotoId = rendition.publishedPhotoId		-- only required for publishing
-		local newPublishedPhotoId = nil
+		local publishedPhotoId = rendition.publishedPhotoId		-- the remote photo path: required for publishing
+		local newPublishedPhotoId = nil							-- the new remote photo path
 		
 		-- Wait for next photo to render.
 
@@ -1252,7 +1252,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 										publishMode, srcPhoto:getFormattedMetadata("fileName"), dstRoot, dstFilename))
 				
 				table.insert( failures, srcPath )
-			elseif publishMode ~= 'Export' or srcPhoto:getRawMetadata("isVideo") then
+			else
 				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
 				-- use the relative destination pathname, so we are able to identify moved pictures
 	    		localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot)
