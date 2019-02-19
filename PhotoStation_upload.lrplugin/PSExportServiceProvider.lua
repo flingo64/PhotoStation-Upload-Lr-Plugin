@@ -121,8 +121,6 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
 
 		-- video parameters
-		{ key = 'videoConversionsFn',	default = 'PSVideoConversions.json' },  -- filename of the video conversion settings config file 
-		
 		{ key = 'orgVideoForceConv',	default = false },  -- force orig video conversion even if video format is supported by PS 
 		{ key = 'orgVideoQuality',		default = 'high' },  -- video conversion quality for orig video 
 		{ key = 'hardRotate', 			default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos 

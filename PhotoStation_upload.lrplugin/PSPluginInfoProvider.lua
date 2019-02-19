@@ -60,12 +60,17 @@ local function updatePluginStatus( propertyTable )
 		-- (It only goes through once.)
 		
 		if propertyTable.PSUploaderPath ~= '' and not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or incorrect Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 			break
 		end
 
 		if propertyTable.exiftoolprog ~= '' and not PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Wrong exiftool path." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Incorrect exiftool path." 
+			break
+		end
+
+		if propertyTable.videoConversionsFn ~= '' and not PSDialogs.validatePluginFile(nil, propertyTable.videoConversionsFn) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/VideoPresetsMissing=Incorrect video presets file." 
 			break
 		end
 
@@ -98,14 +103,21 @@ function pluginInfoProvider.startDialog( propertyTable )
     	propertyTable.PSUploaderPath =  PSConvert.defaultInstallPath
 	end
 	
-	-- exiftool program path: used  for metadata translations on upload
+	-- exiftool program path: used for metadata translations on upload
 	propertyTable.exiftoolprog = prefs.exiftoolprog
 	if not propertyTable.exiftoolprog then
 		propertyTable.exiftoolprog = PSExiftoolAPI.defaultInstallPath
 	end
 
+	-- video presets file: used for video conversions
+	propertyTable.videoConversionsFn = prefs.videoConversionsFn
+	if not propertyTable.videoConversionsFn then
+		propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
+	end
+
 	propertyTable:addObserver('PSUploaderPath', updatePluginStatus )
 	propertyTable:addObserver('exiftoolprog', updatePluginStatus )
+	propertyTable:addObserver('videoConversionsFn', updatePluginStatus )
 
 	updatePluginStatus(propertyTable)
 end
@@ -116,8 +128,9 @@ function pluginInfoProvider.endDialog( propertyTable )
 	writeLogfile(4, "pluginInfoProvider.endDialog\n")
 	local prefs = LrPrefs.prefsForPlugin()
 
-	prefs.PSUploaderPath = propertyTable.PSUploaderPath
-	prefs.exiftoolprog = propertyTable.exiftoolprog
+	prefs.PSUploaderPath		= propertyTable.PSUploaderPath
+	prefs.exiftoolprog 			= propertyTable.exiftoolprog
+	prefs.videoConversionsFn 	= propertyTable.videoConversionsFn
 
 	if propertyTable.convertAllPhotos then
 --		LrTasks.startAsyncTask(PSLrUtilities.convertAllPhotos, 'ConvertAllPhotos')
@@ -215,7 +228,8 @@ function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
 				
     			PSDialogs.psUploaderProgView(f, propertyTable),
 				PSDialogs.exiftoolProgView(f, propertyTable),
-				PSDialogs.convertPhotosView(f, propertyTable)
+				PSDialogs.videoConfPresetsView(f, propertyTable),
+				PSDialogs.convertPhotosView(f, propertyTable),
     		}
 		}
 	}
