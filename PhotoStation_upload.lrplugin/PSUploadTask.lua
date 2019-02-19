@@ -366,8 +366,9 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	--		- srcVideo is to be rotated (meta or hard)
 	-- 		- srcVideo is mp4, but not h264 (PS would try to open, but does only support h264
 	local replaceOrgVideo = false
-	if 	videoRotation ~= '0' or 
-		(PSConvert.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264') then
+	if videoRotation ~= '0' 
+	or (PSConvert.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264') 
+	or exportParams.orgVideoForceConv then
 		replaceOrgVideo = true
 		vid_Orig_Filename = vid_Replace_Filename
 	else
