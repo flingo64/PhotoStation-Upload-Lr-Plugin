@@ -60,12 +60,10 @@ PSConvert.defaultVideoPresetsFn = "PSVideoConversions.json"
 PSConvert.convOptions			= nil
 
 ------------------------ initialize ---------------------------------------------------------------------------------
-
 -- initialize: initialize convert program paths
 function PSConvert.initialize()
 	local prefs = LrPrefs.prefsForPlugin()
 	local PSUploaderPath = prefs.PSUploaderPath
-	local videoConvPath = LrPathUtils.child(_PLUGIN.path ,prefs.videoConversionsFn)
 	local h = {} -- the handle
 
 	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")
@@ -94,19 +92,27 @@ function PSConvert.initialize()
 	h.ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
 	h.qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
 
-	PSConvert.convOptions = JSON:decode(LrFileUtils.readFile(videoConvPath))
+	PSConvert.convOptions = PSConvert.getVideoConvPresets()
 	
 	if not PSConvert.convOptions then
-		writeTableLogfile(1, string.format("PSConvert.initialize: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
+		writeLogfile(1, string.format("PSConvert.initialize: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
 		return nil
 	end
-	writeTableLogfile(3, "VideoConvPresets", PSConvert.convOptions)
+	writeTableLogfile(4, "VideoConvPresets", PSConvert.convOptions)
 
 	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. h.conv .. "\n\t\t\tdcraw: " .. h.dcraw .. 
 										 "\n\t\t\tffmpeg: " .. h.ffmpeg .. "\n\t\t\tqt-faststart: " .. h.qtfstart .. "\n")
 	return h
 end
 
+------------------------ initialize ---------------------------------------------------------------------------------
+-- initialize: initialize convert program paths
+function PSConvert.getVideoConvPresets()
+	local prefs = LrPrefs.prefsForPlugin()
+	local videoConvPath = LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn)
+
+	return JSON:decode(LrFileUtils.readFile(videoConvPath))
+end
 ---------------------- picture conversion functions ----------------------------------------------------------
 -- getRawParams(picExt, srcPhoto, exportFormat)
 -- 	picExt			- filename extension of the photo
