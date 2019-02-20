@@ -263,12 +263,14 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		MOBILE =	{ height = 240,		type = 'MOBILE',	filename = vid_MOB_Filename },
 	}
 	
+	writeLogfile(3, string.format("uploadVideo: addVideoQuality is %d\n", exportParams.addVideoQuality)) 
+
 	--  user selected additional video resolutions based or original video resolution
 	local addVideoResolution = {
-		ULTRA = 	exportParams.addVideoUltra,
-		HIGH = 		exportParams.addVideoHigh,
-		MEDIUM = 	exportParams.addVideoMed,
-		LOW = 		exportParams.addVideoLow,
+		ULTRA = 	iif(exportParams.addVideoQuality > 0, exportParams.addVideoUltra, 'None'),
+		HIGH = 		iif(exportParams.addVideoQuality > 0, exportParams.addVideoHigh, 'None'),
+		MEDIUM = 	iif(exportParams.addVideoQuality > 0, exportParams.addVideoMed, 'None'),
+		LOW = 		iif(exportParams.addVideoQuality > 0, exportParams.addVideoLow, 'None'),
 		MOBILE = 	'None',
 	}
 	

@@ -122,10 +122,10 @@ exportServiceProvider.exportPresetFields = {
 
 		-- video parameters
 		{ key = 'orgVideoForceConv',	default = false },  -- force orig video conversion even if video format is supported by PS 
-		{ key = 'orgVideoQuality',		default = 'high' },  -- video conversion quality for orig video 
+		{ key = 'orgVideoQuality',		default = 3 },  	-- video conversion quality for orig video 
 		{ key = 'hardRotate', 			default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos 
 
-		{ key = 'addVideoQuality',		default = 'medium' },  -- video conversion quality for the additional video  
+		{ key = 'addVideoQuality',		default = 2 },  	-- video conversion quality for the additional video  
 		{ key = 'addVideoUltra', 		default = 'None' },	-- additional video resolution for ULTRA res videos
 		{ key = 'addVideoHigh', 		default = 'None' },	-- additional video resolution for HIGH res videos
 		{ key = 'addVideoMed',			default = 'None' }, -- additional video resolution for MEDIUM res videos

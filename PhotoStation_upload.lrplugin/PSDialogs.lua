@@ -69,6 +69,7 @@ require "PSUpdate"
 local bind 				= LrView.bind
 local share 			= LrView.share
 local negativeOfKey 	= LrBinding.negativeOfKey
+local keyIsNot 			= LrBinding.keyIsNot
 local keyIsNotNil 		= LrBinding.keyIsNotNil
 local conditionalItem 	= LrView.conditionalItem
 
@@ -670,7 +671,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -680,7 +681,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -694,6 +695,8 @@ end
 -------------------------------------------------------------------------------
 -- videoConfPresetsView(f, propertyTable)
 function PSDialogs.videoConfPresetsView(f, propertyTable)
+	local prefs = LrPrefs.prefsForPlugin()
+
 	return
         f:group_box {
 			title	= LOC "$$$/PSUpload/PluginDialog/VideoPresets=Video Conversion Presets",
@@ -701,7 +704,7 @@ function PSDialogs.videoConfPresetsView(f, propertyTable)
 			
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoPresetsDescription=Enter the filename of the video conversion presets file (.json).\n", 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoPresetsDescription=Enter the filename of the video conversion presets filel.\nMust be a JSON file in the plugin dir.\n", 
     			},
     		},
     
@@ -722,8 +725,8 @@ function PSDialogs.videoConfPresetsView(f, propertyTable)
     		},
     		f:row {   			
      			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ButtonDefault=Default",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ButtonDefaultTT=Set to Default.",
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -731,27 +734,15 @@ function PSDialogs.videoConfPresetsView(f, propertyTable)
     				end,
     			},
 
---[[    
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
-    					LrShell.revealInShell(getRootPath())
+    					LrShell.revealInShell(LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn))
     				end,
     			},   			
-
-    			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
-    				alignment 		= 'right',
-    				fill_horizontal = 1,
-    				action 			= function()
-   						LrHttp.openUrlInBrowser(PSConvert.downloadUrl)
-    				end,
-    			},   			
-]]
     		},
     	}
 end
@@ -837,7 +828,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -847,7 +838,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download program from Web.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -1225,26 +1216,22 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	table.insert(ultraResAddVideoItems, 
 		{ title	= 'High/1080p',		value 	= 'HIGH' })
 
-	-- TODO: store convOptions in a global accessible location
-	local prefs = LrPrefs.prefsForPlugin()	
-	local videoConvPath = LrPathUtils.child(_PLUGIN.path ,prefs.videoConversionsFn)
-	local convOptions = JSON:decode(LrFileUtils.readFile(videoConvPath))	
+	local videoConvQualityItems = {}
+	local convOptions = PSConvert.getVideoConvPresets()	
+
 	if not convOptions then
-		writeTableLogfile(1, string.format("PSDialogs.videoOptionsView: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
-		return nil
+		writeLogfile(1, "PSDialogs.videoOptionsView: video preset file is not a valid JSON file!\n")
+		table.insert(videoConvQualityItems,	{ title	= 'Invalid presets file',	value 	= nil })
+	else
+		for key, val in ipairs(convOptions) do
+			table.insert(videoConvQualityItems,	{ title	= val.title,	value 	= key })
+		end
 	end	
 
-	local videoConvQualityItems = {}
-	
-	for key, val in pairs(convOptions) do
-		table.insert(videoConvQualityItems,
-			{ title	= val.title,	value 	= key }
-		)
-	end
 	
 	local addVideoConvQualityItems 	= tableShallowCopy(videoConvQualityItems)
 	table.insert(addVideoConvQualityItems,
-		{ title	= 'No add. video',	value 	= nil }
+		{ title	= 'No add. video',	value 	= -1 }
 	)
 
 	return
@@ -1325,15 +1312,15 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:",
-						visible			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoUltraTT=Generate additional video for Ultra-Hi-Res (2160p) videos",
 						items 			= ultraResAddVideoItems,
-						visible			= keyIsNotNil 'addVideoQuality',
-						enabled			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoUltra',
@@ -1346,15 +1333,15 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoHigh=High:",
-						visible			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
 						items 			= highResAddVideoItems,
-						visible			= keyIsNotNil 'addVideoQuality',
-						enabled			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoHigh',
@@ -1367,15 +1354,15 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium:",
-						visible			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
 						items 			= medResAddVideoItems,
-						visible			= keyIsNotNil 'addVideoQuality',
-						enabled			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoMed',
@@ -1388,15 +1375,15 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoLow=Low:",
-						visible			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
 						items 			= lowResAddVideoItems,
-						visible			= keyIsNotNil 'addVideoQuality',
-						enabled			= keyIsNotNil 'addVideoQuality',
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoLow',
