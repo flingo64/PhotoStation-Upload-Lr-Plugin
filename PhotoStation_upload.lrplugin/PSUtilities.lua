@@ -118,7 +118,11 @@ function ifnil(str, subst)
 end 
 
 function iif(condition, thenExpr, elseExpr)
-	return (condition and thenExpr) or (not condition and elseExpr)
+	if condition then
+		return thenExpr
+	else
+		return elseExpr
+	end
 end 
 
 --------------------------------------------------------------------------------------------
@@ -433,7 +437,7 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 		return
 	end
 	
-	-- the pairs() iterator is different for observebale tables
+	-- the pairs() iterator is different for observable tables
 	local pairs_r1, pairs_r2, pairs_r3
 	if isObservableTable then
 		pairs_r1, pairs_r2, pairs_r3 = printTable:pairs()
@@ -756,7 +760,6 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- dump current session parameters to logfile
---	writeTableLogfile(2, 'exportParams', exportParams["< contents >"], 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"))
 	writeTableLogfile(2, 'exportParams', exportParams, 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"), true)
 
 	-- ConvertAPI: required if Export/Publish/Metadata 
