@@ -41,9 +41,11 @@ Photo StatLr uses the following free software to do its job:
 -- Lightroom API
 -- local LrFileUtils = import 'LrFileUtils'
 local LrDate 		= import 'LrDate'
+local LrDialogs 		= import 'LrDialogs'
 local LrFileUtils 	= import 'LrFileUtils'
 local LrPathUtils 	= import 'LrPathUtils'
 local LrPrefs	 	= import 'LrPrefs'
+local LrShell 		= import 'LrShell'
 local LrTasks 		= import 'LrTasks'
 
 require "PSUtilities"
@@ -96,8 +98,13 @@ function PSConvert.initialize()
 	
 	if not PSConvert.convOptions then
 		writeLogfile(1, string.format("PSConvert.initialize: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
+		local action = LrDialogs.confirm(title, 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
+		if action == "ok" then
+			LrShell.revealInShell(getLogFilename())
+		end	
 		return nil
 	end
+	
 	writeTableLogfile(4, "VideoConvPresets", PSConvert.convOptions)
 
 	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. h.conv .. "\n\t\t\tdcraw: " .. h.dcraw .. 
@@ -111,7 +118,7 @@ function PSConvert.getVideoConvPresets()
 	local prefs = LrPrefs.prefsForPlugin()
 	local videoConvPath = LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn)
 
-	return JSON:decode(LrFileUtils.readFile(videoConvPath))
+	return JSON:decode(LrFileUtils.readFile(videoConvPath), prefs.videoConversionsFn)
 end
 ---------------------- picture conversion functions ----------------------------------------------------------
 -- getRawParams(picExt, srcPhoto, exportFormat)
@@ -450,51 +457,36 @@ end
 local videoConversion = {
 	{	
 		id = 'MOBILE',
-		upToHeight 	= 240,
-		
---		pass1Params =	"-ar 44100 -b:a 64k -ac 2 -pass 1 -vcodec libx264 -b:v 1024k -bt 1024k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
-		pass1Params =	"-ar 44100 -b:a 64k -ac 2 -c:v libx264 -preset medium -crf 20 -f mp4",
-		
+		upToHeight 	= 240,	
+--		pass1Params =	"-ar 44100 -b:a 64k -ac 2 -pass 1 -vcodec libx264 -b:v 1024k -bt 1024k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",		
 --		pass2Params =	"-ar 44100 -b:a 64k -ac 2 -pass 2 -vcodec libx264 -b:v 1024k -bt 1024k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
---		pass2Params =	"-ar 44100 -b:a 64k -ac 2 -pass 2 -vcodec libx264 -crf 23 -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
 	},
 
 	{	
 		id = 'LOW',
 		upToHeight 	= 360,
-		
 --		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
-		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -c:v libx264 -preset medium -crf 20 -f mp4",
-
 --		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
 	},
 
 	{	
 		id = 'MEDIUM',
 		upToHeight 	= 720,
-		
 --		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 1000k -bt 1000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vsync 2 -level 31 -coder 0 -refs 4 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
-		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -c:v libx264 -preset medium -crf 20 -f mp4",
-
 --		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 1000k -bt 1000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vsync 2 -level 31 -coder 0 -refs 4 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
 	},
 
 	{	
 		id = 'HIGH',
 		upToHeight	= 1080,
-		
 --		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
-		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -c:v libx264 -preset medium -crf 20 -f mp4",
-
 --		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
 	},	
 
 	{	
 		id = 'ULTRA',
 		upToHeight	= 2160,
-		
-		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -c:v libx264 -preset medium -f -crf 20 mp4",
-
+--		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
 --		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
 	},
 }
@@ -567,23 +559,25 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 	if vinfo.latitude then
 		 locationInfoOpt = '-metadata location="' .. vinfo.latitude .. vinfo.longitude .. ifnil(vinfo.gpsHeight, '') .. '/" '
 	end
-		
+
+	local convOptions = PSConvert.convOptions[videoQuality]
 	-- transcoding pass 1 
 --	LrFileUtils.copy(srcVideoFilename, srcVideoFilename ..".bak")
 
 	local cmdline =  cmdlineQuote() ..
 				'"' .. h.ffmpeg .. '" ' .. 
 				noAutoRotateOpt ..
+				ifnil(convOptions.input_options, "") .. " " ..
 				'-i "' 	.. srcVideoFilename .. '" ' .. 
 				'-y ' 	..  -- override output file
 				createTimeOpt ..  
 				locationInfoOpt ..
 				rotateOpt ..
-				'-pix_fmt yuv420p ' ..
-				PSConvert.convOptions[videoQuality].audio_options .. ' ' ..
-				iif(PSConvert.convOptions[videoQuality].video_options_pass_2, '-pass 1 ', '') ..
-				PSConvert.convOptions[videoQuality].video_options .. ' ' ..
+				convOptions.audio_options .. ' ' ..
+				iif(convOptions.video_options_pass_2, '-pass 1 ', '') ..
+				convOptions.video_options .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
+				ifnil(convOptions.output_options, "") .. " " ..
 				'-passlogfile "' .. passLogfile .. '" ' .. 
 				'"' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
 				cmdlineQuote()
@@ -607,20 +601,21 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 --					"===========================================================================\n")
 
 	-- transcoding pass 2 
-	if videoConversion.video_options_pass_2 then
+	if convOptions.video_options_pass_2 then
     	cmdline =   cmdlineQuote() ..
     				'"' .. h.ffmpeg .. '" ' .. 
     				noAutoRotateOpt ..
+					ifnil(convOptions.input_options, "") .. " " ..
     				'-i "' ..	srcVideoFilename .. '" ' .. 
 					'-y ' 	..  -- override output file
     				createTimeOpt ..  
     				locationInfoOpt ..
     				rotateOpt ..
-    				'-pix_fmt yuv420p ' ..
 					PSConvert.convOptions[videoQuality].audio_options .. ' ' ..
 					'-pass 2 ' ..
 					PSConvert.convOptions[videoQuality].video_options_pass_2 .. ' ' ..
     				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
+					ifnil(convOptions.output_options, "") .. " " ..
     				'-passlogfile "' .. passLogfile .. '" ' .. 
     				'"' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
     				cmdlineQuote()
