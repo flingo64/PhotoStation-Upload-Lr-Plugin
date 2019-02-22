@@ -67,11 +67,13 @@ require "PSUtilities"
 require "PSUpdate"
 
 local bind 				= LrView.bind
+local conditionalItem 	= LrView.conditionalItem
 local share 			= LrView.share
+
 local negativeOfKey 	= LrBinding.negativeOfKey
 local keyIsNot 			= LrBinding.keyIsNot
 local keyIsNotNil 		= LrBinding.keyIsNotNil
-local conditionalItem 	= LrView.conditionalItem
+local andAllKeys		= LrBinding.andAllKeys
 
 
 --============================================================================--
@@ -304,27 +306,30 @@ function PSDialogs.updateDialogStatus( propertyTable )
 					message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
 					break
 				end
-				propertyTable.locationTagField2 = propertyTable.locationTagField1 and propertyTable.locationTagField2 or nil
-				propertyTable.locationTagField3 = propertyTable.locationTagField2 and propertyTable.locationTagField3 or nil
-				propertyTable.locationTagField4 = propertyTable.locationTagField3 and propertyTable.locationTagField4 or nil
-				propertyTable.locationTagField5 = propertyTable.locationTagField4 and propertyTable.locationTagField5 or nil
+				propertyTable.locationTagField2 = iif(propertyTable.locationTagField1, propertyTable.locationTagField2, false)
+				propertyTable.locationTagField3 = iif(propertyTable.locationTagField2, propertyTable.locationTagField3, false)
+				propertyTable.locationTagField4 = iif(propertyTable.locationTagField3, propertyTable.locationTagField4, false)
+				propertyTable.locationTagField5 = iif(propertyTable.locationTagField4, propertyTable.locationTagField5, false)
 
+--[[
+				writeLogfile(2, string.format("updateDialogStatus(2): Location fields: %s %s %s %s %s\n",
+					tostring(propertyTable.locationTagField1),
+					tostring(propertyTable.locationTagField2),
+					tostring(propertyTable.locationTagField3),
+					tostring(propertyTable.locationTagField4),
+					tostring(propertyTable.locationTagField5)
+				))
+]]
 				propertyTable.locationTagTemplate =	
-					table.concat(	{ propertyTable.locationTagField1,
-									  propertyTable.locationTagField2,
-									  propertyTable.locationTagField3,
-									  propertyTable.locationTagField4,
-									  propertyTable.locationTagField5
+					table.concat(	{ iif(propertyTable.locationTagField1, propertyTable.locationTagField1, nil),
+									  iif(propertyTable.locationTagField2, propertyTable.locationTagField2, nil),
+									  iif(propertyTable.locationTagField3, propertyTable.locationTagField3, nil),
+									  iif(propertyTable.locationTagField4, propertyTable.locationTagField4, nil),
+									  iif(propertyTable.locationTagField5, propertyTable.locationTagField5, nil),
 									},
 									propertyTable.locationTagSeperator
 								)
-			else
-				propertyTable.locationTagField1 = nil
-				propertyTable.locationTagField2 = nil
-				propertyTable.locationTagField3 = nil
-				propertyTable.locationTagField4 = nil
-				propertyTable.locationTagField5 = nil
-				propertyTable.locationTagTemplate = ''
+				writeLogfile(4, string.format("updateDialogStatus: Location tag: %s\n", tostring(propertyTable.locationTagTemplate)))
 			end
 		end
 
@@ -1201,27 +1206,31 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 	local lowResAddVideoItems	= {
 		{ title	= 'None',			value 	= 'None' },
-		{ title	= 'Mobile/240p',	value 	= 'MOBILE' },
+		{ title	= 'Mobile/240',		value 	= 'MOBILE' },
 	}
 	
 	local medResAddVideoItems	= tableShallowCopy(lowResAddVideoItems)
 	table.insert(medResAddVideoItems,
-		{ title	= 'Low/360p',		value 	= 'LOW' })
+		{ title	= 'Low/360',		value 	= 'LOW' })
 	
 	local highResAddVideoItems	= tableShallowCopy(medResAddVideoItems)
 	table.insert(highResAddVideoItems,
-		{ title	= 'Medium/720p',	value 	= 'MEDIUM' })
+		{ title	= 'Medium/720',		value 	= 'MEDIUM' })
 
 	local ultraResAddVideoItems	= tableShallowCopy(highResAddVideoItems)
 	table.insert(ultraResAddVideoItems, 
-		{ title	= 'High/1080p',		value 	= 'HIGH' })
+		{ title	= 'High/1080',		value 	= 'HIGH' })
 
 	local videoConvQualityItems = {}
 	local convOptions = PSConvert.getVideoConvPresets()	
 
 	if not convOptions then
 		writeLogfile(1, "PSDialogs.videoOptionsView: video preset file is not a valid JSON file!\n")
-		table.insert(videoConvQualityItems,	{ title	= 'Invalid presets file',	value 	= nil })
+		table.insert(videoConvQualityItems,	{ title	= 'Invalid presets file',	value 	= -1 })
+		local action = LrDialogs.confirm(title, 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
+		if action == "ok" then
+			LrShell.revealInShell(getLogFilename())
+		end	
 	else
 		for key, val in ipairs(convOptions) do
 			table.insert(videoConvQualityItems,	{ title	= val.title,	value 	= key })
@@ -1230,9 +1239,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 	
 	local addVideoConvQualityItems 	= tableShallowCopy(videoConvQualityItems)
-	table.insert(addVideoConvQualityItems,
-		{ title	= 'No add. video',	value 	= -1 }
-	)
+	table.insert(addVideoConvQualityItems, 1, { title	= 'None',	value 	= -1 })
 
 	return
 		f:group_box {
@@ -1240,12 +1247,11 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 			fill_horizontal = 1,
 
 			f:row {
---				fill_horizontal = 1,
+				fill_horizontal = 1,
 
---				f:row {
---					alignment = 'left',
---					fill_horizontal = 1,
-	
+				f:row {
+					fill_horizontal = 1,
+					
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgConv=Convert video:",
 						alignment 		= 'right',
@@ -1255,54 +1261,56 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgConvTT=What to do with the original video",
 						items 			= orgVideoForceConvItems,
 						alignment 		= 'left',
---						fill_horizontal = 1,
 						value 			= bind 'orgVideoForceConv',
 					},
---				},					
+				},					
 
---				f:row {
---					alignment = 'left',
---					fill_horizontal = 1,
+				f:row {
+					fill_horizontal = 1,
+
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgQuality=Qualitity:",
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
-						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgQualityTT=Video quality for converted original video",
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoAddQualityTT=Video quality for converted original video",
 						items 			= videoConvQualityItems,
 						alignment 		= 'left',
---						fill_horizontal = 1,
 						value 			= bind 'orgVideoQuality',
 					},
---				},					
+				},					
 
 				f:checkbox {
+					fill_horizontal = 1,
 					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Hard-rotation",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
 					alignment 		= 'left',
---					fill_horizontal = 1,
 					value 			= bind 'hardRotate',
 				},
 
---				f:row {
---					alignment = 'left',
---					fill_horizontal = 1,
-	
+				f:separator { fill_vertical = 1 },
+				
+				f:row {
+					fill_horizontal = 1,
+
 					f:static_text {
-						title 			= LOC "$$$/PSUpload/ExportDialog/VideoAddQuality=Add. Video Qualitity:",
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoAddQuality=Add. video:",
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
-						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoAddQualityTT=Video quality for converted original video",
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoAddQualityTT=Video quality for additional video",
 						items 			= addVideoConvQualityItems,
 						alignment 		= 'left',
---						fill_horizontal = 1,
 						value 			= bind 'addVideoQuality',
+						fill_horizontal = 1,
 					},
 				},
-	
+			},
+				
+			f:separator { fill_horizontal = 0.75 },
+			
 			f:row {
 				fill_horizontal = 1,
 				
@@ -1573,7 +1581,7 @@ end
 -- uploadOptionsView(f, propertyTable)
 function PSDialogs.uploadOptionsView(f, propertyTable)
 	local locationTagItems	= {
-		{ title	= '',				value 	= nil },
+		{ title	= '',				value 	= false }, -- Note: Export Presets cannot store Nil values!
 		{ title	= 'ISO Code',		value 	= '{LrFM:isoCountryCode}' },
 		{ title	= 'Country',		value 	= '{LrFM:country}' },
 		{ title	= 'State',			value 	= '{LrFM:stateProvince}' },
@@ -1582,7 +1590,6 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 	}
 	local locationTagSepItems	= { ' ', '-', '_', ':', ';', '/', '|',',', '.', '+', '#' }
 	
-
 	return	f:group_box {
 		fill_horizontal = 1,
 		title = LOC "$$$/PSUpload/ExportDialog/UploadOpt=Metadata Upload Options /Translations (To Photo Station)",
@@ -1651,12 +1658,13 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     	f:separator { fill_horizontal = 1 },
     	
     	f:row {
-			fill_horizontal = 0.8,
+			fill_horizontal = 1,
 
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLocation=Location Tag:",
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLocationTT=Translate Lr location tags to Photo Station location tag",
     			value 			= bind 'xlatLocationTags',
+   				fill_horizontal = 1,
     		},
 
 			f:popup_menu {
@@ -1666,7 +1674,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:combo_box {
@@ -1687,14 +1695,14 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= keyIsNotNil	'locationTagField3',
+				visible 		= andAllKeys('xlatLocationTags', 'locationTagField3'),
    				alignment 		= 'center',
-   				fill_horizontal = 0.05,
+--   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
@@ -1704,14 +1712,14 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= keyIsNotNil	'locationTagField4',
+				visible 		= andAllKeys('xlatLocationTags', 'locationTagField4'),
    				alignment 		= 'center',
-   				fill_horizontal = 0.05,
+--   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
@@ -1721,14 +1729,14 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= keyIsNotNil	'locationTagField5',
+				visible 		= andAllKeys('xlatLocationTags', 'locationTagField5'),
    				alignment 		= 'center',
-   				fill_horizontal = 0.05,
+--   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
@@ -1738,7 +1746,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 		},
 		
