@@ -59,17 +59,22 @@ local function updatePluginStatus( propertyTable )
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 		
-		if propertyTable.PSUploaderPath ~= '' and not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
+		if not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
 			message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or incorrect Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 			break
 		end
 
-		if propertyTable.exiftoolprog ~= '' and not PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
+		if PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
 			message = LOC "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Incorrect exiftool path." 
 			break
 		end
 
-		if propertyTable.videoConversionsFn ~= '' and not PSDialogs.validatePluginFile(nil, propertyTable.videoConversionsFn) then
+		if not PSDialogs.validateProgram(nil, propertyTable.ffmpegprog) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/VideoFfmpegMissing=Incorrect ffmpeg path." 
+			break
+		end
+
+		if not PSDialogs.validatePluginFile(nil, propertyTable.videoConversionsFn) then
 			message = LOC "$$$/PSUpload/Dialogs/Messages/VideoPresetsMissing=Incorrect video presets file." 
 			break
 		end
@@ -109,6 +114,12 @@ function pluginInfoProvider.startDialog( propertyTable )
 		propertyTable.exiftoolprog = PSExiftoolAPI.defaultInstallPath
 	end
 
+	-- ffmpeg program path: default is <PSUploaderPath>/ffmpeg/ffmpeg(.exe)
+	propertyTable.ffmpegprog = prefs.ffmpegprog
+	if not propertyTable.ffmpegprog then
+		propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), iif(getProgExt(), LrPathUtils.addExtension('ffmpeg', getProgExt()), 'ffmpeg'))
+	end
+	 
 	-- video presets file: used for video conversions
 	propertyTable.videoConversionsFn = prefs.videoConversionsFn
 	if not propertyTable.videoConversionsFn then
@@ -117,6 +128,7 @@ function pluginInfoProvider.startDialog( propertyTable )
 
 	propertyTable:addObserver('PSUploaderPath', updatePluginStatus )
 	propertyTable:addObserver('exiftoolprog', updatePluginStatus )
+	propertyTable:addObserver('ffmpegprog', updatePluginStatus )
 	propertyTable:addObserver('videoConversionsFn', updatePluginStatus )
 
 	updatePluginStatus(propertyTable)
@@ -130,6 +142,7 @@ function pluginInfoProvider.endDialog( propertyTable )
 
 	prefs.PSUploaderPath		= propertyTable.PSUploaderPath
 	prefs.exiftoolprog 			= propertyTable.exiftoolprog
+	prefs.ffmpegprog 			= propertyTable.ffmpegprog
 	prefs.videoConversionsFn 	= propertyTable.videoConversionsFn
 
 	if propertyTable.convertAllPhotos then
@@ -228,7 +241,7 @@ function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
 				
     			PSDialogs.psUploaderProgView(f, propertyTable),
 				PSDialogs.exiftoolProgView(f, propertyTable),
-				PSDialogs.videoConfPresetsView(f, propertyTable),
+				PSDialogs.videoConvSettingsView(f, propertyTable),
 				PSDialogs.convertPhotosView(f, propertyTable),
     		}
 		}
