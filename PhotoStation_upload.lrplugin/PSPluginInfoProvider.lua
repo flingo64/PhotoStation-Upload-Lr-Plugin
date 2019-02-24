@@ -94,7 +94,7 @@ function pluginInfoProvider.startDialog( propertyTable )
 	local prefs = LrPrefs.prefsForPlugin()
 	
 	openLogfile(4)
-	writeLogfile(4, "pluginInfoProvider.startDialog\n")
+--	writeLogfile(4, "pluginInfoProvider.startDialog\n")
 	LrTasks.startAsyncTaskWithoutErrorHandler(PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
 
 	-- local path to Synology Photo Station Uploader: required for thumb generation an video handling
@@ -125,7 +125,7 @@ end
 -------------------------------------------------------------------------------
 -- pluginInfoProvider.endDialog( propertyTable )
 function pluginInfoProvider.endDialog( propertyTable )
-	writeLogfile(4, "pluginInfoProvider.endDialog\n")
+--	writeLogfile(4, "pluginInfoProvider.endDialog\n")
 	local prefs = LrPrefs.prefsForPlugin()
 
 	prefs.PSUploaderPath		= propertyTable.PSUploaderPath
