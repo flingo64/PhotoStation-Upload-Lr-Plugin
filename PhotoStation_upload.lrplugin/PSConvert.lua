@@ -570,13 +570,13 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 				ifnil(convOptions.input_options, "") .. " " ..
 				'-i "' 	.. srcVideoFilename .. '" ' .. 
 				'-y ' 	..  -- override output file
-				createTimeOpt ..  
-				locationInfoOpt ..
-				rotateOpt ..
 				convOptions.audio_options .. ' ' ..
 				iif(convOptions.video_options_pass_2, '-pass 1 ', '') ..
 				convOptions.video_options .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
+				rotateOpt ..
+				createTimeOpt ..  
+				locationInfoOpt ..
 				ifnil(convOptions.output_options, "") .. " " ..
 				'-passlogfile "' .. passLogfile .. '" ' .. 
 				'"' .. tmpVideoFilename .. '" 2> "' .. outfile .. '"' ..
@@ -608,13 +608,13 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 					ifnil(convOptions.input_options, "") .. " " ..
     				'-i "' ..	srcVideoFilename .. '" ' .. 
 					'-y ' 	..  -- override output file
-    				createTimeOpt ..  
-    				locationInfoOpt ..
-    				rotateOpt ..
 					PSConvert.convOptions[videoQuality].audio_options .. ' ' ..
 					'-pass 2 ' ..
 					PSConvert.convOptions[videoQuality].video_options_pass_2 .. ' ' ..
     				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
+    				rotateOpt ..
+    				createTimeOpt ..  
+    				locationInfoOpt ..
 					ifnil(convOptions.output_options, "") .. " " ..
     				'-passlogfile "' .. passLogfile .. '" ' .. 
     				'"' .. tmpVideoFilename .. '" 2> "' .. outfile ..'"' ..
