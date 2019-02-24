@@ -55,6 +55,8 @@ return {
 
 	LrPluginName = "Photo StatLr",
 	
+	LrInitPlugin = "PSInitPlugin.lua",
+	
 	LrPluginInfoUrl = "https://messmer-online.de/index.php/software/11-photo-statlr",
 	
 	LrPluginInfoProvider = 'PSPluginInfoProvider.lua',
