@@ -689,99 +689,6 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 end
 
 -------------------------------------------------------------------------------
--- videoConfPresetsView(f, propertyTable)
-function PSDialogs.videoConfPresetsView(f, propertyTable)
-	local prefs = LrPrefs.prefsForPlugin()
-
-	return
-        f:group_box {
-			title	= LOC "$$$/PSUpload/PluginDialog/VideoPresets=Video Conversion Presets",
-			fill_horizontal = 1,
-			
-    		f:row {
-    			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoPresetsDescription=Enter the filename of the video conversion presets filel.\nMust be a JSON file in the plugin dir.\n", 
-    			},
-    		},
-    
-    		f:row {
-    			f:static_text {
-    				title 			= "Presets file:",
-    				alignment 		= 'right',
-    				width 			= share 'labelWidth',
-    			},
-    
-    			f:edit_field {
-    				truncation 		= 'middle',
-    				immediate 		= true,
-    				fill_horizontal = 1,
-    				value 			= bind 'videoConversionsFn',
-    				validate 		= PSDialogs.validatePluginFile,
-    			},
-    		},
-    		f:row {   			
-     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
-    				alignment 		= 'right',
-    				fill_horizontal = 1,
-    				action 			= function()
-    					propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
-    				end,
-    			},
-
-    			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
-    				alignment 		= 'right',
-    				fill_horizontal = 1,
-    				action 			= function()
-    					LrShell.revealInShell(LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn))
-    				end,
-    			},   			
-    		},
-    	}
-end
-
--------------------------------------------------------------------------------
--- convertPhotosView(f, propertyTable)
-function PSDialogs.convertPhotosView(f, propertyTable)
-	return
-        f:group_box {
-			title	= LOC "$$$/PSUpload/PluginDialog/Convert=Convert published photos to Photo StatLr format",
-			fill_horizontal = 1,
-
-    		f:row {
-    			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n", 
-    				alignment 		= 'center',
-					fill_horizontal = 1,
-    			},
-    		},
-
-    		f:row {   			
-	
-				f: spacer {	fill_horizontal = 1,}, 
-				
-     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertAll=Convert all photos",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ConvertAllTT=Convert all published photos to new format.",
-    				alignment 		= 'center',
-    				fill_horizontal = 1,
-    				action 			= function ()
-    								propertyTable.convertAllPhotos = true
-    								LrDialogs.message('Photo StatLr', 'Conversion will start after closing the Plugin Manager dialog.', 'info')
-    								
-    				end,
-    			},   			
-
-				f: spacer {	fill_horizontal = 1,}, 
-				
-			},
-		}
-end
-
--------------------------------------------------------------------------------
 -- exiftoolProgView(f, propertyTable)
 function PSDialogs.exiftoolProgView(f, propertyTable)
 	return
@@ -843,6 +750,115 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			},   			
     		},
     	}
+end
+
+-------------------------------------------------------------------------------
+-- videoConvSettingsView(f, propertyTable)
+function PSDialogs.videoConvSettingsView(f, propertyTable)
+	local prefs = LrPrefs.prefsForPlugin()
+
+	return
+        f:group_box {
+			title	= "FFmpeg",
+			fill_horizontal = 1,
+			
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoConvSettingsDescription=Enter the path where the 'ffmpeg' program is installed.\nEnter the filename of the video conversion presets file (must be a JSON file in the plugin dir).\n", 
+    			},
+    		},
+    
+    		f:row {
+    			f:static_text {
+    				title 			= "ffmpeg:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+    
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 1,
+    				value 			= bind 'ffmpegprog',
+    				validate 		= PSDialogs.validateProgram,
+    			},
+			},
+    		f:row {
+    			f:static_text {
+    				title 			= "Presets file:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+    
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 1,
+    				value 			= bind 'videoConversionsFn',
+    				validate 		= PSDialogs.validatePluginFile,
+    			},
+    		},
+    		f:row {   			
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+    					propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), iif(getProgExt(), LrPathUtils.addExtension('ffmpeg', getProgExt()), 'ffmpeg'))
+    					propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
+    				end,
+    			},
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+    					LrShell.revealInShell(LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn))
+    				end,
+    			},   			
+    		},
+    	}
+end
+
+-------------------------------------------------------------------------------
+-- convertPhotosView(f, propertyTable)
+function PSDialogs.convertPhotosView(f, propertyTable)
+	return
+        f:group_box {
+			title	= LOC "$$$/PSUpload/PluginDialog/Convert=Convert published photos to Photo StatLr format",
+			fill_horizontal = 1,
+
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n", 
+    				alignment 		= 'center',
+					fill_horizontal = 1,
+    			},
+    		},
+
+    		f:row {   			
+	
+				f: spacer {	fill_horizontal = 1,}, 
+				
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertAll=Convert all photos",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ConvertAllTT=Convert all published photos to new format.",
+    				alignment 		= 'center',
+    				fill_horizontal = 1,
+    				action 			= function ()
+    								propertyTable.convertAllPhotos = true
+    								LrDialogs.message('Photo StatLr', 'Conversion will start after closing the Plugin Manager dialog.', 'info')
+    								
+    				end,
+    			},   			
+
+				f: spacer {	fill_horizontal = 1,}, 
+				
+			},
+		}
 end
 
 -------------------------------------------------------------------------------
