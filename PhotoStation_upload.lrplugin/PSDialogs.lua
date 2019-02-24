@@ -311,15 +311,6 @@ function PSDialogs.updateDialogStatus( propertyTable )
 				propertyTable.locationTagField4 = iif(propertyTable.locationTagField3, propertyTable.locationTagField4, false)
 				propertyTable.locationTagField5 = iif(propertyTable.locationTagField4, propertyTable.locationTagField5, false)
 
---[[
-				writeLogfile(2, string.format("updateDialogStatus(2): Location fields: %s %s %s %s %s\n",
-					tostring(propertyTable.locationTagField1),
-					tostring(propertyTable.locationTagField2),
-					tostring(propertyTable.locationTagField3),
-					tostring(propertyTable.locationTagField4),
-					tostring(propertyTable.locationTagField5)
-				))
-]]
 				propertyTable.locationTagTemplate =	
 					table.concat(	{ iif(propertyTable.locationTagField1, propertyTable.locationTagField1, nil),
 									  iif(propertyTable.locationTagField2, propertyTable.locationTagField2, nil),
@@ -329,7 +320,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 									},
 									propertyTable.locationTagSeperator
 								)
-				writeLogfile(4, string.format("updateDialogStatus: Location tag: %s\n", tostring(propertyTable.locationTagTemplate)))
+--				writeLogfile(4, string.format("updateDialogStatus: Location tag: %s\n", tostring(propertyTable.locationTagTemplate)))
 			end
 		end
 
