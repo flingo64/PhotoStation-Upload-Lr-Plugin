@@ -53,7 +53,7 @@ PSExiftoolAPI = {}
 
 PSExiftoolAPI.downloadUrl = 'http://www.sno.phy.queensu.ca/~phil/exiftool/' 
 PSExiftoolAPI.defaultInstallPath = iif(WIN_ENV, 
-								'C:\\\Windows\\\exiftool.exe', 
+								'C:/Windows/exiftool.exe', 
 								'/usr/local/bin/exiftool') 
 
 --========================= locals =================================================================================
