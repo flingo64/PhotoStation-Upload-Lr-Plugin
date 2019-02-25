@@ -8,15 +8,14 @@ Photo Station utilities:
 	- getErrorMsg
 
 	- getAlbumId
-	- getPhotoId
-
-	- isSharedAlbumPublic
-	- getSharedAlbumId
-	- getSharedAlbumShareId
-	
 	- getAlbumUrl
+	- getPhotoId
 	- getPhotoUrl
 
+	- getSharedAlbumId
+	- isSharedAlbumPublic
+	- getSharedAlbumShareId
+	
 	- getPhotoInfo
 	
 	- createAndAddPhotoTag
@@ -65,33 +64,151 @@ local PSAPIerrorMsgs = {
     [105] = 'The logged in session does not have permission',
     [106] = 'Session timeout',
     [107] = 'Session interrupted by duplicate login',
-	[400] = 'Invalid parameter',
-	[401] = 'Unknown error of file operation',
-	[402] = 'System is too busy',
-	[403] = 'Invalid user does this file operation',
-	[404] = 'Invalid group does this file operation',
-	[405] = 'Invalid user and group does this file operation',
-	[406] = 'Can’t get user/group information from the account server',
-	[407] = 'Operation not permitted',
-	[408] = 'No such file or directory',
-	[409] = 'Non-supported file system',
-	[410] = 'Failed to connect internet-based file system (ex: CIFS)',
-	[411] = 'Read-only file system',
-	[412] = 'Filename too long in the non-encrypted file system',
-	[413] = 'Filename too long in the encrypted file system',
-	[414] = 'File already exists',
-	[415] = 'Disk quota exceeded',
-	[416] = 'No space left on device',
-	[417] = 'Input/output error',
-	[418] = 'Illegal name or path',
-	[419] = 'Illegal file name',
-	[420] = 'Illegal file name on FAT filesystem',
-	[421] = 'Device or resource busy',
-	[467] = 'No such tag',
-	[468] = 'Duplicate tag',
-	[470] = 'No such file',
-	[555] = 'No such shared album',
-	[599] = 'No such task of the file operation',
+
+    -- SYNO.PhotoStation.Info (401-405)
+
+    -- SYNO.PhotoStation.Auth (406-415)
+	[406] = 'PHOTOSTATION_AUTH_LOGIN_NOPRIVILEGE',
+	[407] = 'PHOTOSTATION_AUTH_LOGIN_ERROR',
+	[408] = 'PHOTOSTATION_AUTH_LOGIN_DISABLE_ACCOUNT',
+	[409] = 'PHOTOSTATION_AUTH_LOGIN_GUEST_ERROR',
+	[410] = 'PHOTOSTATION_AUTH_LOGIN_MAX_TRIES',
+
+    -- SYNO.PhotoStaion.Album (416-425)
+	[416] = 'PHOTOSTATION_ALBUM_PASSWORD_ERROR',
+	[417] = 'PHOTOSTATION_ALBUM_NO_ACCESS_RIGHT',
+	[418] = 'PHOTOSTATION_ALBUM_NO_UPLOAD_RIGHT',
+	[419] = 'PHOTOSTATION_ALBUM_NO_MANAGE_RIGHT',
+	[420] = 'PHOTOSTATION_ALBUM_NOT_ADMIN',
+	[421] = 'PHOTOSTATION_ALBUM_HAS_EXIST',
+	[422] = 'PHOTOSTATION_ALBUM_CREATE_FAIL',
+	[423] = 'PHOTOSTATION_ALBUM_EDIT_FAIL',
+	[424] = 'PHOTOSTATION_ALBUM_DELETE_FAIL',
+	[425] = 'PHOTOSTATION_ALBUM_SELECT_CONFLICT',
+
+    -- SYNO.PhotoStation.Permission (426-435)
+	[426] = 'PHOTOSTATION_PERMISSION_BAD_PARAMS',
+	[427] = 'PHOTOSTATION_PERMISSION_ACCESS_DENY',
+
+    -- SYNO.PhotoStation.Tag (436-445)
+	[436] = 'PHOTOSTATION_TAG_LIST_FAIL',
+	[437] = 'PHOTOSTATION_TAG_GETINFO_FAIL',
+	[438] = 'PHOTOSTATION_TAG_CREATE_FAIL',
+	[439] = 'PHOTOSTATION_TAG_EDIT_FAIL',
+	[440] = 'PHOTOSTATION_TAG_ACCESS_DENY',
+	[441] = 'PHOTOSTATION_TAG_HAS_EXIST',
+	[442] = 'PHOTOSTATION_TAG_SEARCH_FAIL',
+
+    -- SYNO.PhotoStation.SmartAlbum (446-455)
+	[446] = 'PHOTOSTATION_SMARTALBUM_CREATE_FAIL',
+	[447] = 'PHOTOSTATION_SMARTALBUM_EDIT_FAIL',
+	[448] = 'PHOTOSTATION_SMARTALBUM_ACCESS_DENY',
+	[449] = 'PHOTOSTATION_SMARTALBUM_NOT_EXIST',
+	[450] = 'PHOTOSTATION_SMARTALBUM_TAG_NOT_EXIST',
+	[451] = 'PHOTOSTATION_SMARTALBUM_CREATE_FAIL_EXIST',
+
+    -- SYNO.PhotoStation.Photo (456-465)
+	[456] = 'PHOTOSTATION_PHOTO_BAD_PARAMS',
+	[457] = 'PHOTOSTATION_PHOTO_ACCESS_DENY',
+	[458] = 'PHOTOSTATION_PHOTO_SELECT_CONFLICT',
+
+    -- SYNO.PhotoStation.PhotoTag (466-475)
+	[466] = 'PHOTOSTATION_PHOTO_TAG_ACCESS_DENY',
+	[467] = 'PHOTOSTATION_PHOTO_TAG_NOT_EXIST',
+	[468] = 'PHOTOSTATION_PHOTO_TAG_DUPLICATE',
+	[469] = 'PHOTOSTATION_PHOTO_TAG_VIDEO_NOT_EXIST',
+	[470] = 'PHOTOSTATION_PHOTO_TAG_ADD_GEO_DESC_FAIL',
+	[471] = 'PHOTOSTATION_PHOTO_TAG_ADD_PEOPLE_FAIL',
+	[472] = 'PHOTOSTATION_PHOTO_TAG_DELETE_FAIL',
+	[473] = 'PHOTOSTATION_PHOTO_TAG_PEOPLE_TAG_CONFIRM_FAIL',
+
+    -- SYNO.PhotoStation.Category (476-490)
+	[476] = 'PHOTOSTATION_CATEGORY_ACCESS_DENY',
+	[477] = 'PHOTOSTATION_CATEGORY_WRONG_ID_FORMAT',
+	[478] = 'PHOTOSTATION_CATEGORY_GETINFO_FAIL',
+	[479] = 'PHOTOSTATION_CATEGORY_CREATE_FAIL',
+	[480] = 'PHOTOSTATION_CATEGORY_DELETE_FAIL',
+	[481] = 'PHOTOSTATION_CATEGORY_EDIT_FAIL',
+	[482] = 'PHOTOSTATION_CATEGORY_ARRANGE_FAIL',
+	[483] = 'PHOTOSTATION_CATEGORY_ADD_ITEM_FAIL',
+	[484] = 'PHOTOSTATION_CATEGORY_LIST_ITEM_FAIL',
+	[485] = 'PHOTOSTATION_CATEGORY_REMOVE_ITEM_FAIL',
+	[486] = 'PHOTOSTATION_CATEGORY_ARRANGE_ITEM_FAIL',
+	[487] = 'PHOTOSTATION_CATEGORY_DUPLICATE',
+
+    -- SYNO.PhotoStation.Comment (491-495)
+	[491] = 'PHOTOSTATION_COMMENT_VALIDATE_FAIL',
+	[492] = 'PHOTOSTATION_COMMENT_ACCESS_DENY',
+	[493] = 'PHOTOSTATION_COMMENT_CREATE_FAIL',
+
+    -- SYNO.PhotoStation.Thumb (496-505)
+	[501] = 'PHOTOSTATION_THUMB_BAD_PARAMS',
+	[502] = 'PHOTOSTATION_THUMB_ACCESS_DENY',
+	[503] = 'PHOTOSTATION_THUMB_NO_COVER',
+	[504] = 'PHOTOSTATION_THUMB_FILE_NOT_EXISTS',
+
+    -- SYNO.PhotoStation.Download (506-515)
+	[506] = 'PHOTOSTATION_DOWNLOAD_BAD_PARAMS',
+	[507] = 'PHOTOSTATION_DOWNLOAD_ACCESS_DENY',
+	[508] = 'PHOTOSTATION_DOWNLOAD_CHDIR_ERROR',
+
+    -- SYNO.PhotoStation.File (516-525)
+	[516] = 'PHOTOSTATION_FILE_BAD_PARAMS',
+	[517] = 'PHOTOSTATION_FILE_ACCESS_DENY',
+	[518] = 'PHOTOSTATION_FILE_FILE_EXT_ERR',
+	[519] = 'PHOTOSTATION_FILE_DIR_NOT_EXISTS',
+	[520] = 'PHOTOSTATION_FILE_UPLOAD_ERROR',
+	[521] = 'PHOTOSTATION_FILE_NO_FILE',
+	[522] = 'PHOTOSTATION_FILE_UPLOAD_CANT_WRITE',
+
+    -- SYNO.PhotoStation.Cover (526-530)
+	[526] = 'PHOTOSTATION_COVER_ACCESS_DENY',
+	[527] = 'PHOTOSTATION_COVER_ALBUM_NOT_EXIST',
+	[528] = 'PHOTOSTATION_COVER_PHOTO_VIDEO_NOT_EXIST',
+	[529] = 'PHOTOSTATION_COVER_PHOTO_VIDEO_NOT_IN_ALBUM',
+	[530] = 'PHOTOSTATION_COVER_SET_FAIL',
+
+    -- SYNO.PhotoStation.Rotate (531-535)
+	[531] = 'PHOTOSTATION_ROTATE_ACCESS_DENY',
+	[532] = 'PHOTOSTATION_ROTATE_SET_FAIL',
+
+    -- SYNO.PhotoStation.SlideshowMusic (536-545)
+	[536] = 'PHOTOSTATION_SLIDESHOWMUSIC_ACCESS_DENY',
+	[537] = 'PHOTOSTATION_SLIDESHOWMUSIC_SET_FAIL',
+	[538] = 'PHOTOSTATION_SLIDESHOWMUSIC_FILE_EXT_ERR',
+	[539] = 'PHOTOSTATION_SLIDESHOWMUSIC_UPLOAD_ERROR',
+	[540] = 'PHOTOSTATION_SLIDESHOWMUSIC_NO_FILE',
+	[541] = 'PHOTOSTATION_SLIDESHOWMUSIC_EXCEED_LIMIT',
+
+    -- SYNO.PhotoStation.DsmShare (546-550)
+	[546] = 'PHOTOSTATION_DSMSHARE_UPLOAD_ERROR',
+	[547] = 'PHOTOSTATION_DSMSHARE_ACCESS_DENY',
+
+    -- SYNO.PhotoStation.SharedAlbum (551-560)
+	[551] = 'PHOTOSTATION_SHARED_ALBUM_ACCESS_DENY',
+	[552] = 'PHOTOSTATION_SHARED_ALBUM_BAD_PARAMS',
+	[553] = 'PHOTOSTATION_SHARED_ALBUM_HAS_EXISTED',
+	[554] = 'PHOTOSTATION_SHARED_ALBUM_CREATE_FAIL',
+	[555] = 'PHOTOSTATION_SHARED_ALBUM_NOT_EXISTS',
+	[556] = 'PHOTOSTATION_SHARED_ALBUM_GET_INFO_ERROR',
+	[557] = 'PHOTOSTATION_SHARED_ALBUM_LIST_ERROR',
+
+    -- SYNO.PhotoStation.Log (561-565)
+	[561] = 'PHOTOSTATION_LOG_ACCESS_DENY',
+
+    -- SYNO.PhotoStation.PATH (566-570)
+	[566] = 'PHOTOSTATION_PATH_ACCESS_DENY',
+
+    -- SYNO.PhotoStation.ACL (571-580)
+	[571] = 'PHOTOSTATION_ACL_NOT_SUPPORT',
+	[572] = 'PHOTOSTATION_ACL_CONVERT_FAIL',
+
+    -- SYNO.PhotoStation.AdvancedShare (581-590)
+	[581] = 'PHOTOSTATION_PHOTO_AREA_TAG_ADD_FAIL',
+	[582] = 'PHOTOSTATION_PHOTO_AREA_TAG_NOT_ENABLED',
+	[583] = 'PHOTOSTATION_PHOTO_AREA_TAG_DELETE_FAIL',
+
+    -- Lr HTTP errors
 	[1001]  = 'Http error: no response body, no response header',
 	[1002]  = 'Http error: no response data, no errorcode in response header',
 	[1003]  = 'Http error: No JSON response data',
@@ -292,16 +409,15 @@ function PSPhotoStationUtils.getErrorMsg(errorCode)
 end
 
 
---[[ 
-PSPhotoStationUtils.getAlbumId(albumPath)
-	returns the AlbumId of a given Album path (not leading and trailing slashes) in Photo Station
-	AlbumId looks like:
-	album_<AlbumPathInHex>
-	E.g. Album Path:
-		Albums-->Test/2007
-	yields AlbumId:
-		album_546573742f32303037
-]]
+---------------------------------------------------------------------------------------------------------
+-- PSPhotoStationUtils.getAlbumId(albumPath)
+--	returns the AlbumId of a given Album path (not leading and trailing slashes) in Photo Station
+--	AlbumId looks like:
+--		album_<AlbumPathInHex>
+--	E.g. Album Path:
+--		Albums-->Test/2007
+--  yields AlbumId:
+--  	album_546573742f32303037
 function PSPhotoStationUtils.getAlbumId(albumPath)
 	local i
 	local albumId = 'album_'
@@ -317,17 +433,49 @@ function PSPhotoStationUtils.getAlbumId(albumPath)
 	return albumId
 end
 
---[[ 
-getPhotoId(photoPath, isVideo)
-	returns the PhotoId of a given photo path in Photo Station
-	PhotoId looks like:
-		photo_<AlbumPathInHex>_<PhotoPathInHex> or 
-		video_<AlbumPathInHex>_<PhotoPathInHex> or
-	E.g. Photo Path:
-		Albums --> Test/2007/2007_08_13_IMG_7415.JPG
-	yields PhotoId:
-		photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
-]]
+---------------------------------------------------------------------------------------------------------
+-- getAlbumUrl(h, albumPath)
+--	returns the URL of an album in the Photo Station
+--	URL of an album in PS is:
+--		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
+--	E.g. Album Path:
+--		Server: http://diskstation; Standard Photo Station; Album Breadcrumb: Albums/Test/2007
+--	yields PS Photo-URL:
+--		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
+function PSPhotoStationUtils.getAlbumUrl(h, albumPath) 
+	local i
+	local albumUrl
+	local subDirPath = ''
+	local subDirUrl  = ''
+	
+	local albumDirname = split(albumPath, '/')
+	
+	albumUrl = h.serverUrl .. h.psAlbumRoot
+	
+	for i = 1, #albumDirname do
+		if i > 1 then  
+			subDirPath = subDirPath .. '/'
+		end
+		subDirPath = subDirPath .. albumDirname[i]
+		subDirUrl = PSPhotoStationUtils.getAlbumId(subDirPath) 
+		albumUrl = albumUrl .. '/' .. subDirUrl
+	end
+	
+	writeLogfile(3, string.format("getAlbumUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, albumPath, albumUrl))
+	
+	return albumUrl
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getPhotoId(photoPath, isVideo)
+-- 	returns the PhotoId of a given photo path in Photo Station
+-- 	PhotoId looks like:
+-- 		photo_<AlbumPathInHex>_<PhotoPathInHex> or
+-- 		video_<AlbumPathInHex>_<PhotoPathInHex>
+-- 	E.g. Photo Path:
+--		Albums --> Test/2007/2007_08_13_IMG_7415.JPG
+--  yields PhotoId:
+--  	photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 	local i
 	local photoDir, photoFilename = string.match(photoPath , '(.*)\/([^\/]+)')
@@ -418,39 +566,6 @@ function PSPhotoStationUtils.getSharedAlbumShareId(h, sharedAlbumName)
 	end
 
 	return sharedAlbumInfo.additional.public_share.shareid
-end
-
----------------------------------------------------------------------------------------------------------
--- getAlbumUrl(h, albumPath)
---	returns the URL of an album in the Photo Station
---	URL of an album in PS is:
---		http(s)://<PS-Server>/<PSBasedir>/#!Albums/<AlbumId_1rstLevelDir>/<AlbumId_1rstLevelAndSecondLevelDir>/.../AlbumId_1rstToLastLevelDir>
---	E.g. Album Path:
---		Server: http://diskstation; Standard Photo Station; Album Breadcrumb: Albums/Test/2007
---	yields PS Photo-URL:
---		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
-function PSPhotoStationUtils.getAlbumUrl(h, albumPath) 
-	local i
-	local albumUrl
-	local subDirPath = ''
-	local subDirUrl  = ''
-	
-	local albumDirname = split(albumPath, '/')
-	
-	albumUrl = h.serverUrl .. h.psAlbumRoot
-	
-	for i = 1, #albumDirname do
-		if i > 1 then  
-			subDirPath = subDirPath .. '/'
-		end
-		subDirPath = subDirPath .. albumDirname[i]
-		subDirUrl = PSPhotoStationUtils.getAlbumId(subDirPath) 
-		albumUrl = albumUrl .. '/' .. subDirUrl
-	end
-	
-	writeLogfile(3, string.format("getAlbumUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, albumPath, albumUrl))
-	
-	return albumUrl
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -558,10 +673,10 @@ function PSPhotoStationUtils.getSharedPhotoColorLabel(h, sharedAlbumName, dstFil
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getSharedPhotoPublicUrl (h, sharedAlbumName, dstFilename, isVideo) 
+-- getSharedPhotoPublicUrl (h, albumName, photoName, isVideo) 
 -- returns the public share url of a shared photo
-function PSPhotoStationUtils.getSharedPhotoPublicUrl(h, sharedAlbumName, dstFilename, isVideo)
-	local photoInfos, errorCode = PSPhotoStationUtils.getSharedPhotoInfo(h, sharedAlbumName, dstFilename, isVideo, true)
+function PSPhotoStationUtils.getSharedPhotoPublicUrl(h, albumName, photoName, isVideo)
+	local photoInfos, errorCode = PSPhotoStationUtils.getPhotoInfoFromList(h, 'sharedAlbum', albumName, photoName, isVideo, true)
 
 	if not photoInfos then return nil, errorCode end 
 
@@ -720,14 +835,14 @@ function PSPhotoStationUtils.createAndAddPhotosToSharedAlbum(h, sharedAlbumName,
 end
 
 ---------------------------------------------------------------------------------------------------------
--- removePhotosFromSharedAlbumIfExists(h, sharedAlbumName, photos) 
+-- removePhotosFromSharedAlbum(h, sharedAlbumName, photos) 
 -- remove a list of photos from a Shared Album
 -- ignore error if Shared Album doesn't exist
-function PSPhotoStationUtils.removePhotosFromSharedAlbumIfExists(h, sharedAlbumName, photos)
+function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
 	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
 	
 	if not sharedAlbumInfo then 
-		writeLogfile(3, string.format('removePhotosFromSharedAlbumIfExists(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
+		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end
 	
@@ -736,13 +851,13 @@ function PSPhotoStationUtils.removePhotosFromSharedAlbumIfExists(h, sharedAlbumN
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumsCacheUpdate(h)
-		writeLogfile(3, string.format('removePhotosFromSharedAlbumIfExists(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
+		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end 
 	
 	if not success then return false end 
 	
-	writeLogfile(3, string.format('removePhotosFromSharedAlbumIfExists(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
+	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true	
 end
 
