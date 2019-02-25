@@ -211,7 +211,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 		-- ############### Pure Export/Publish Settings ##########################
 		if not propertyTable.isCollection then
 			if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
-				message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+				message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or incorrect Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 				break
 			end
 
@@ -1281,7 +1281,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					},
 						
 					f:popup_menu {
-						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoAddQualityTT=Video quality for converted original video",
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgQualityTT=Video quality for converted original video",
 						items 			= videoConvQualityItems,
 						alignment 		= 'left',
 						value 			= bind 'orgVideoQuality',
