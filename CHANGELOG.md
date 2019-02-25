@@ -10,7 +10,7 @@ Version 6.8.0
 	- Support for user-definable video conversion presets 
 	- Support for configurable conversion input and output options such as HW acceleration options
 	- Configurable ffmpeg program path
-- Upload file timestamp: added 'Mixed' value (upload timestamp for photos, capture timestamp for videos)
+- Upload file timestamp: added 'Mixed' setting (upload timestamp for photos, capture timestamp for videos)
 - Bugfixes:
 	- Fixed an issue where the Export dialog would exit with an Lr error message "AgPreferemces: can't store ..." when the Export provider was changed to Photo StatLr
 	- Fixed an issue where the pass-2 Metadata Upload (Location Tag or Metadata for videos) would fail
