@@ -107,11 +107,12 @@ local albumContentCache = {}
 local albumContentCacheTimeout = 60	-- 60 seconds cache time
  
 ---------------------------------------------------------------------------------------------------------
--- albumContentCacheCleanup: remove old entries from cache
-local function albumContentCacheCleanup()
+-- albumContentCacheCleanup: remove old entries and entries for given item from cache
+local function albumContentCacheCleanup(albumPath)
 	for i = #albumContentCache, 1, -1 do
 		local cachedAlbum = albumContentCache[i]
-		if cachedAlbum.validUntil < LrDate.currentTime() then 
+		if (cachedAlbum.validUntil < LrDate.currentTime()) 
+		or (albumPath and cachedAlbum.albumPath == albumPath)then 
 			writeLogfile(3, string.format("albumContentCacheCleanup(); removing %s\n", cachedAlbum.albumPath))
 			table.remove(albumContentCache, i)
 		end
@@ -123,8 +124,8 @@ end
 -- returns
 --		albumItems:		table of photo infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-local function albumContentCacheList(h, dstDir, listItems)
-	albumContentCacheCleanup()
+local function albumContentCacheList(h, dstDir, listItems, updateCache)
+	albumContentCacheCleanup(iif(updateCache, dstDir, nil))
 	
 	for i = 1, #albumContentCache do
 		local cachedAlbum = albumContentCache[i]
@@ -499,12 +500,8 @@ end
 -- 		nil,		errorCode	on error
 function PSPhotoStationUtils.getPhotoInfo(h, dstFilename, isVideo, useCache)
 	local dstAlbum = ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
-	local photoInfos, errorCode
-	if useCache then
-		photoInfos, errorCode=  albumContentCacheList(h, dstAlbum, 'photo,video')
-	else
-		photoInfos, errorCode=  PSPhotoStationAPI.listAlbum(h, dstAlbum, 'photo,video')
-	end
+	local updateCache = not useCache
+	local photoInfos, errorCode =  albumContentCacheList(h, dstAlbum, 'photo,video', updateCache)
 	
 	if not photoInfos then return nil, errorCode end 
 
