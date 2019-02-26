@@ -1265,7 +1265,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					},
 						
 					f:popup_menu {
-						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgConvTT=What to do with the original video",
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgConvTT=When to convert the original video",
 						items 			= orgVideoForceConvItems,
 						alignment 		= 'left',
 						value 			= bind 'orgVideoForceConv',
@@ -1276,7 +1276,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					fill_horizontal = 1,
 
 					f:static_text {
-						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgQuality=Qualitity:",
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgQuality=Quality:",
 						alignment 		= 'right',
 					},
 						
