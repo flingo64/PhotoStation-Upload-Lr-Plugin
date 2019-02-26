@@ -151,7 +151,7 @@
 "$$$/PSUpload/ExportDialog/VideoOrgConvTT=When to convert the original video"
 "$$$/PSUpload/ExportDialog/VideoOrgQuality=Quality:"
 "$$$/PSUpload/ExportDialog/VideoOrgQualityTT=Video quality for converted original video"
-"$$$/PSUpload/ExportDialog/Videos=Video Upload Options / Additional video resolutions for ...-Res Original Videos"
+"$$$/PSUpload/ExportDialog/Videos=Video Upload Options / Additional video resolutions for ...-Res Videos"
 "$$$/PSUpload/ExportDialog/VideoSection/OrigSizePreset/TargetInfo=original resolution, high bitrate"
 "$$$/PSUpload/ExportDialog/VideoSection/OrigSizePreset2/TargetInfo=original resolution, medium bitrate"
 "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:"

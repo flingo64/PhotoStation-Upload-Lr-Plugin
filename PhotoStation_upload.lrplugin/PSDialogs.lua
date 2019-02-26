@@ -1250,7 +1250,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 	return
 		f:group_box {
-			title 			= LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options / Additional video resolutions for ...-Res Original Videos",
+			title 			= LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options / Additional video resolutions for ...-Res Videos",
 			fill_horizontal = 1,
 
 			f:row {
