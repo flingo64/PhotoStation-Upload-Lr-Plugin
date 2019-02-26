@@ -54,3 +54,8 @@ Temporary Items
 # ============
 *.old
 *.bak
+
+# ============
+# Private files
+# ============
+My*
