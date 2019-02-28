@@ -30,10 +30,40 @@ Photo StatLr uses the following free software to do its job:
 -- Lightroom SDK
 local LrExportSettings 	= import 'LrExportSettings'
 local LrPathUtils 		= import 'LrPathUtils'
+local LrPrefs			= import 'LrPrefs'
 
 require "PSUtilities"
 
---============================================================================--
+--========== Initialize plugin preference ==================================================================--
+local prefs = LrPrefs.prefsForPlugin()
+
+-- local path to Synology Photo Station Uploader: required for thumb generation an video handling
+if not prefs.PSUploaderPath then 
+   	prefs.PSUploaderPath =  PSConvert.defaultInstallPath
+end
+	
+-- exiftool program path: used for metadata translations on upload
+if not prefs.exiftoolprog then
+	prefs.exiftoolprog = PSExiftoolAPI.defaultInstallPath
+end
+
+-- ffmpeg program path: default is <PSUploaderPath>/ffmpeg/ffmpeg(.exe)
+if not prefs.ffmpegprog then
+	if getProgExt() then
+		prefs.ffmpegprog = LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ffmpeg'), LrPathUtils.addExtension('ffmpeg', getProgExt()))
+	else
+		prefs.ffmpegprog = LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ffmpeg'), 'ffmpeg')
+	end
+end
+
+-- video presets file: used for video conversions
+if not prefs.videoConversionsFn then
+	prefs.videoConversionsFn = PSConvert.defaultVideoPresetsFn
+end
+
+writeLogfile(2, string.format("PSInitPlugin:\n\t\tPSUploader: '%s'\n\t\texiftool:   '%s'\n\t\tffmpeg:     '%s'\n", prefs.PSUploaderPath, prefs.exiftoolprog, prefs.ffmpegprog))
+
+--=========== Install Lr video conversion presets =================================================================--
 
 -- check if my custom video output presets are already installed 
 local myVideoExportPresets = LrExportSettings.videoExportPresetsForPlugin( _PLUGIN )
@@ -44,7 +74,7 @@ if myVideoExportPresets and #myVideoExportPresets > 0 then
 --		writeLogfile(2, 'PSInitPlugin: found my custom video export presets.\n')
   	end
  
- 	-- (re-)install my video export presets 	
+-- (re-)install my video export presets 	
 local pluginDir = _PLUGIN.path
 local presetFile = 'OrigSizeHiBit.epr'
 local presetFile2 = 'OrigSizeMedBit.epr'
