@@ -64,9 +64,10 @@ PSConvert.convOptions			= nil
 ------------------------ initialize ---------------------------------------------------------------------------------
 -- initialize: initialize convert program paths
 function PSConvert.initialize()
-	local prefs = LrPrefs.prefsForPlugin()
-	local PSUploaderPath = prefs.PSUploaderPath
-	local h = {} -- the handle
+	local prefs 			= LrPrefs.prefsForPlugin()
+	local PSUploaderPath 	= prefs.PSUploaderPath
+	local ffmpegprog 		= prefs.ffmpegprog
+	local h 				= {} -- the handle
 
 	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")
 	if not PSDialogs.validatePSUploadProgPath(nil, PSUploaderPath) then
@@ -74,25 +75,23 @@ function PSConvert.initialize()
 		return nil
 	end
 
-	local convertprog = 'convert'
-	local dcrawprog = 'dcraw'
-	local ffmpegprog = 'ffmpeg'
-	local qtfstartprog = 'qt-faststart'
+	local convertprog	= 'convert'
+	local dcrawprog		= 'dcraw'
+	local qtfstartprog	= 'qt-faststart'
 
-	if getProgExt() then
- 		local progExt = getProgExt()
+	local progExt = getProgExt()
+	if progExt then
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		dcrawprog = LrPathUtils.addExtension(dcrawprog, progExt)
-		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
 	end
 	
-	h.conv = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
-	h.dcraw = iif(WIN_ENV, 
-					LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
-					LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
-	h.ffmpeg = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), ffmpegprog)
-	h.qtfstart = LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
+	h.conv =		LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
+	h.dcraw = 		iif(WIN_ENV, 
+						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
+						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
+	h.qtfstart = 	LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
+	h.ffmpeg = 		ffmpegprog
 
 	PSConvert.convOptions = PSConvert.getVideoConvPresets()
 	
@@ -107,8 +106,8 @@ function PSConvert.initialize()
 	
 	writeTableLogfile(4, "VideoConvPresets", PSConvert.convOptions)
 
-	writeLogfile(4, "PSConvert.initialize:\n\t\t\tconv: " .. h.conv .. "\n\t\t\tdcraw: " .. h.dcraw .. 
-										 "\n\t\t\tffmpeg: " .. h.ffmpeg .. "\n\t\t\tqt-faststart: " .. h.qtfstart .. "\n")
+	writeLogfile(3, "PSConvert.initialize:\n\t\tconv:         '" .. h.conv ..   "'\n\t\tdcraw:        '" .. h.dcraw .. "'" .. 
+										 "\n\t\tffmpeg:       '" .. h.ffmpeg .. "'\n\t\tqt-faststart: '" .. h.qtfstart .. "'\n")
 	return h
 end
 
