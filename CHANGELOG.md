@@ -1,5 +1,5 @@
-Changelog
-=========
+Photo StatLr Changelog
+======================
 
 Version 6.8.0
 -------------
