@@ -117,7 +117,12 @@ function pluginInfoProvider.startDialog( propertyTable )
 	-- ffmpeg program path: default is <PSUploaderPath>/ffmpeg/ffmpeg(.exe)
 	propertyTable.ffmpegprog = prefs.ffmpegprog
 	if not propertyTable.ffmpegprog then
-		propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), iif(getProgExt(), LrPathUtils.addExtension('ffmpeg', getProgExt()), 'ffmpeg'))
+		local progExt = getProgExt()
+		if progExt then
+			propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), LrPathUtils.addExtension('ffmpeg', progExt))
+		else
+			propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), 'ffmpeg')
+		end
 	end
 	 
 	-- video presets file: used for video conversions

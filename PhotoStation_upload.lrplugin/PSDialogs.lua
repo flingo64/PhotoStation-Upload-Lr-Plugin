@@ -164,8 +164,8 @@ function PSDialogs.validatePSUploadProgPath(view, path)
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
 
-	if getProgExt() then
-		local progExt = getProgExt()
+	local progExt = getProgExt()
+	if progExt then
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
@@ -805,7 +805,12 @@ function PSDialogs.videoConvSettingsView(f, propertyTable)
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
-    					propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), iif(getProgExt(), LrPathUtils.addExtension('ffmpeg', getProgExt()), 'ffmpeg'))
+						local progExt = getProgExt()
+						if progExt then
+							propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), LrPathUtils.addExtension('ffmpeg', progExt))
+						else
+							propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), 'ffmpeg')
+						end
     					propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
     				end,
     			},
