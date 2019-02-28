@@ -1,6 +1,11 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.8.1
+-------------
+- Bugfix: Fixed an issue where the plugin could not be loaded on MacOS, exception:<br>
+"PSPluginInfoProvider.lua:120: bad argument #2 to 'addExtension' (string expected, got nil)"
+
 Version 6.8.0
 -------------
 - __Video Conversion__:
