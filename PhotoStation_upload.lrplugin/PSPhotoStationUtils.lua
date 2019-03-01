@@ -246,12 +246,13 @@ local contentCache = {
 
 ---------------------------------------------------------------------------------------------------------
 -- contentCacheCleanup: remove old entries from cache
-local function contentCacheCleanup(cacheName)
+local function contentCacheCleanup(cacheName, albumPath)
 	local albumContentCache = contentCache[cacheName].cache
 	
 	for i = #albumContentCache, 1, -1 do
 		local cachedAlbum = albumContentCache[i]
-		if cachedAlbum.validUntil < LrDate.currentTime() then 
+		if (cachedAlbum.validUntil < LrDate.currentTime()) 
+		or (albumPath and cachedAlbum.albumPath == albumPath)then 
 			writeLogfile(3, string.format("contentCacheCleanup(%s); removing %s\n", cacheName, cachedAlbum.albumPath))
 			table.remove(albumContentCache, i)
 		end
@@ -263,8 +264,8 @@ end
 -- returns
 --		albumItems:		table of photo infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-local function contentCacheList(cacheName, h, albumName, listItems)
-	contentCacheCleanup(cacheName)
+local function contentCacheList(cacheName, h, albumName, listItems, updateCache)
+	contentCacheCleanup(cacheName, iif(updateCache, albumName, nil))
 	local albumContentCache = contentCache[cacheName].cache
 	
 	for i = 1, #albumContentCache do
@@ -533,12 +534,8 @@ end
 -- 		nil,					if remote photo was not found
 -- 		nil,		errorCode	on error
 function PSPhotoStationUtils.getPhotoInfoFromList(h, albumType, albumName, photoName, isVideo, useCache)
-	local photoInfos, errorCode
-	if useCache then
-		photoInfos, errorCode=  contentCacheList(albumType, h, albumName, 'photo,video')
-	else
-		photoInfos, errorCode=  contentCache[albumType].listFunction(h, albumName, 'photo,video')
-	end
+	local updateCache = not useCache
+	local photoInfos, errorCode = contentCacheList(albumType, h, albumName, 'photo,video', updateCache)
 	
 	if not photoInfos then return nil, errorCode end 
 

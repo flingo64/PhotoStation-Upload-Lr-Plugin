@@ -230,14 +230,14 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 end
 
 -----------------
--- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo, orgVideoInfo) 
+-- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, orgVideoInfo) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, Photo Station will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
 ]]
-local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, addVideo, orgVideoInfo) 
+local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, orgVideoInfo) 
 	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
 	local vidExtOrg = LrPathUtils.extension(renderedVideoPath)
 	local picDir = LrPathUtils.parent(renderedVideoPath)
@@ -254,7 +254,26 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	local vid_MED_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MED', vidExt))	--  720p
 	local vid_HIGH_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))	-- 1080p
 	local title_Filename  	= iif(string.match(exportParams.LR_embeddedMetadataOption, 'all.*') and ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '', 
-							  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
+							  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)	
+
+	local convParams = { 
+		ULTRA =  	{ height = 2160,	type = 'HIGH',		filename = vid_HIGH_Filename },
+		HIGH =  	{ height = 1080,	type = 'HIGH',		filename = vid_HIGH_Filename },
+		MEDIUM = 	{ height = 720, 	type = 'MEDIUM',	filename = vid_MED_Filename },
+		LOW =		{ height = 360, 	type = 'LOW',		filename = vid_LOW_Filename },
+		MOBILE =	{ height = 240,		type = 'MOBILE',	filename = vid_MOB_Filename },
+	}
+	
+	writeLogfile(3, string.format("uploadVideo: addVideoQuality is %d\n", exportParams.addVideoQuality)) 
+
+	--  user selected additional video resolutions based or original video resolution
+	local addVideoResolution = {
+		ULTRA = 	iif(exportParams.addVideoQuality > 0, exportParams.addVideoUltra, 'None'),
+		HIGH = 		iif(exportParams.addVideoQuality > 0, exportParams.addVideoHigh, 'None'),
+		MEDIUM = 	iif(exportParams.addVideoQuality > 0, exportParams.addVideoMed, 'None'),
+		LOW = 		iif(exportParams.addVideoQuality > 0, exportParams.addVideoLow, 'None'),
+		MOBILE = 	'None',
+	}
 	
 	local LrExportLocations	= not exportParams.LR_removeLocationMetadata
 	
@@ -265,14 +284,6 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	
 	writeLogfile(3, string.format("uploadVideo: %s\n", renderedVideoPath)) 
 
-	local convParams = { 
-		ULTRA =  	{ height = 2160,	type = 'HIGH',		filename = vid_HIGH_Filename },
-		HIGH =  	{ height = 1080,	type = 'HIGH',		filename = vid_HIGH_Filename },
-		MEDIUM = 	{ height = 720, 	type = 'MEDIUM',	filename = vid_MED_Filename },
-		LOW =		{ height = 360, 	type = 'LOW',		filename = vid_LOW_Filename },
-		MOBILE =	{ height = 240,		type = 'MOBILE',	filename = vid_MOB_Filename },
-	}
-	
 	-- there is no way to identify whether the video is exported as original or rendered
 	-- --> get both video infos 
 	-- get rendered video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
@@ -281,8 +292,10 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		return false
 	end
 	
+	-- upload file timestamp: PS uses the file timestamp as capture date for videos
 	local dstFileTimestamp
-	if ifnil(exportParams.uploadTimestamp, 'capture') == 'capture' then
+	if string.find('capture,mixed', ifnil(exportParams.uploadTimestamp, 'capture'), 1, true) then
+		writeLogfile(3, string.format("uploadVideo: %s - using capture date as file timestamp\n", renderedVideoPath)) 
     	-- restore the capture time for the rendered video
     	vinfo.srcDateTime = orgVideoInfo.srcDateTime
     	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
@@ -313,7 +326,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	-- get the right conversion settings (depending on Height)
 	_, convKeyOrig = PSConvert.getConvertKey(exportParams.cHandle, srcHeight)
 	vid_Replace_Filename = convParams[convKeyOrig].filename
-	convKeyAdd = addVideo[convKeyOrig]
+	convKeyAdd = addVideoResolution[convKeyOrig]
 	if convKeyAdd ~= 'None' then
 		vid_Add_Filename = convParams[convKeyAdd].filename
 	end
@@ -356,8 +369,9 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	--		- srcVideo is to be rotated (meta or hard)
 	-- 		- srcVideo is mp4, but not h264 (PS would try to open, but does only support h264
 	local replaceOrgVideo = false
-	if 	videoRotation ~= '0' or 
-		(PSConvert.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264') then
+	if videoRotation ~= '0' 
+	or (PSConvert.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264') 
+	or exportParams.orgVideoForceConv then
 		replaceOrgVideo = true
 		vid_Orig_Filename = vid_Replace_Filename
 	else
@@ -396,10 +410,10 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	)
 
 	-- generate mp4 in original size if srcVideo is not already mp4/h264 or if video is rotated
-	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, srcHeight, exportParams.hardRotate, videoRotation, vid_Replace_Filename))
+	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, srcHeight, exportParams.hardRotate, videoRotation, exportParams.orgVideoQuality, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, exportParams.addVideoQuality, vid_Add_Filename))
 
 	-- if photo has a title: generate a title file  	
 	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
@@ -1014,15 +1028,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local timePerPic, picPerSec
 	local publishMode
 
-	-- additionalVideo table: user selected additional video resolutions
-	local additionalVideos = {
-		ULTRA = 	exportParams.addVideoUltra,
-		HIGH = 		exportParams.addVideoHigh,
-		MEDIUM = 	exportParams.addVideoMed,
-		LOW = 		exportParams.addVideoLow,
-		MOBILE = 	'None',
-	}
-	
 	writeLogfile(2, "processRenderedPhotos starting\n" )
 	
 	-- check if this rendition process is an export or a publish
@@ -1122,8 +1127,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local skipPhoto = false 		-- continue flag
 	
 	for _, rendition in exportContext:renditions{ stopIfCanceled = true } do
-		local publishedPhotoId = rendition.publishedPhotoId		-- only required for publishing
-		local newPublishedPhotoId = nil
+		local publishedPhotoId = rendition.publishedPhotoId		-- the remote photo path: required for publishing
+		local newPublishedPhotoId = nil							-- the new remote photo path
 		
 		-- Wait for next photo to render.
 
@@ -1182,7 +1187,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 										publishMode, srcPhoto:getFormattedMetadata("fileName"), dstRoot, dstFilename))
 				
 				table.insert( failures, srcPath )
-			elseif publishMode ~= 'Export' or srcPhoto:getRawMetadata("isVideo") then
+			else
 				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
 				-- use the relative destination pathname, so we are able to identify moved pictures
 	    		localPath, newPublishedPhotoId = PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot)
@@ -1271,7 +1276,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					)
 				or (string.find('Export,Publish', publishMode, 1, true) and srcPhoto:getRawMetadata("isVideo") 	
 					and	(	not videoInfo or
-							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, additionalVideos, videoInfo)
+							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, videoInfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
 						 or (not publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, nil)) 

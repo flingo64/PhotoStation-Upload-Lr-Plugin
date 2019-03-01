@@ -74,6 +74,7 @@ Photo StatLr uses the following free software to do its job:
 local LrApplication 	= import 'LrApplication'
 local LrDate 			= import 'LrDate'
 local LrDialogs 		= import 'LrDialogs'
+local LrErrors 			= import 'LrErrors'
 local LrFileUtils 		= import 'LrFileUtils'
 local LrHttp	 		= import 'LrHttp'
 local LrPathUtils 		= import 'LrPathUtils'
@@ -94,22 +95,24 @@ tmpdir = LrPathUtils.getStandardFilePath("temp")
 ----------------------- JSON helper --------------------------------------------------------------
 -- Overwrite JSON.assert() to redirect output to logfile
 --[[
-JSON.assert = function (assert, message)
+function JSON:assert(assert, message)
 	writeLogfile(4, string.format("JSON-Assert: msg=%s\n",ifnil(message, '<Nil>')))
+	LrErrors.throwUserError("Internal Error: invalid JSON data")
 end
 ]]
 
--- overwriting of onDecodeError did not work (requires new JSON object ???)
---[[
-]]
-JSON.onDecodeError = function (message, text, location, etc) 
-	writeLogfile(3, string.format("JSON-DecodeError: msg=%s, txt=%s\n", 
-									ifnil(message, '<Nil>'), ifnil(text, '<Nil>')))
-	writeLogfile(4, string.format("JSON-DecodeError: loc=%s, etc=%s\n", 
-									ifnil(location, '<Nil>'),ifnil(etc, '<Nil>')))
+-- overwriting of JSON:onDecodeError() to write error message to logfile
+function JSON:onDecodeError (message, text, location, etc) 
+	writeLogfile(1, string.format("JSON-DecodeError('%s')%s at character %s\n", 
+									ifnil(etc, 'Unknown object'), ifnil(message, '<Nil>'), ifnil(location, '<Nil>')))
+	local action = LrDialogs.confirm(title, 'Booo!!\n' .. "Internal Error: Invalid JSON data in " .. ifnil(etc, 'Unknown object'), "Go to Logfile", "Never mind")
+	if action == "ok" then
+		LrShell.revealInShell(getLogFilename())
+	end	
 end
 JSON.onDecodeOfNilError  = JSON.onDecodeError
 JSON.onDecodeOfHTMLError = JSON.onDecodeError
+
 
 ---------------------- useful helpers ----------------------------------------------------------
 
@@ -118,7 +121,11 @@ function ifnil(str, subst)
 end 
 
 function iif(condition, thenExpr, elseExpr)
-	return (condition and thenExpr) or (not condition and elseExpr)
+	if condition then
+		return thenExpr
+	else
+		return elseExpr
+	end
 end 
 
 --------------------------------------------------------------------------------------------
@@ -435,7 +442,7 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 		return
 	end
 	
-	-- the pairs() iterator is different for observebale tables
+	-- the pairs() iterator is different for observable tables
 	local pairs_r1, pairs_r2, pairs_r3
 	if isObservableTable then
 		pairs_r1, pairs_r2, pairs_r3 = printTable:pairs()
@@ -768,13 +775,12 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- dump current session parameters to logfile
---	writeTableLogfile(2, 'exportParams', exportParams["< contents >"], 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"))
 	writeTableLogfile(2, 'exportParams', exportParams, 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"), true)
 
 	-- ConvertAPI: required if Export/Publish/Metadata 
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.cHandle then
 			exportParams.cHandle = PSConvert.initialize()
-			if not exportParams.cHandle then return false, 'Cannot initialize converters, check path for Syno Photo Station Uploader' end
+			if not exportParams.cHandle then return false, 'Cannot initialize converters, check logfile for detailed information' end
 	end
 
 	-- Login to Photo Station: not required for CheckMoved, not required on Download if Download was disabled

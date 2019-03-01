@@ -53,7 +53,7 @@ PSExiftoolAPI = {}
 
 PSExiftoolAPI.downloadUrl = 'http://www.sno.phy.queensu.ca/~phil/exiftool/' 
 PSExiftoolAPI.defaultInstallPath = iif(WIN_ENV, 
-								'C:\\\Windows\\\exiftool.exe', 
+								'C:/Windows/exiftool.exe', 
 								'/usr/local/bin/exiftool') 
 
 --========================= locals =================================================================================
@@ -281,7 +281,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 		return nil
 	end
 	
-	local results = JSON:decode(queryResults)
+	local results = JSON:decode(queryResults, "PSExiftoolAPI.queryLrFaceRegionList(" .. photoFilename .. ")")
 	if not results or #results < 1 then
 		writeLogfile(3, "PSExiftoolAPI.queryLrFaceRegionList: JSON decode of results failed\n")
 		return nil

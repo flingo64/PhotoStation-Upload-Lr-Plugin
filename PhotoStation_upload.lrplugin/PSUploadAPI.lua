@@ -55,7 +55,7 @@ local function checkPSUploadAPIAnswer(funcAndParams, respHeaders, respBody)
 	end
 	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")	
 
-	local respArray = JSON:decode(respBody)
+	local respArray = JSON:decode(respBody, "checkPSUploadAPIAnswer(" .. funcAndParams .. ")")
 
 	if not respArray then
 		success = false

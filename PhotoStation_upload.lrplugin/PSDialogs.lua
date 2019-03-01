@@ -67,10 +67,13 @@ require "PSUtilities"
 require "PSUpdate"
 
 local bind 				= LrView.bind
-local share 			= LrView.share
-local negativeOfKey 	= LrBinding.negativeOfKey
-local keyIsNotNil 		= LrBinding.keyIsNotNil
 local conditionalItem 	= LrView.conditionalItem
+local share 			= LrView.share
+
+local negativeOfKey 	= LrBinding.negativeOfKey
+local keyIsNot 			= LrBinding.keyIsNot
+local keyIsNotNil 		= LrBinding.keyIsNotNil
+local andAllKeys		= LrBinding.andAllKeys
 
 
 --============================================================================--
@@ -140,6 +143,16 @@ function PSDialogs.validateProgram( view, path )
 end
 
 -------------------------------------------------------------------------------
+-- validatePluginFile: check if a given filenam exists in the PLUGIN dir 
+function PSDialogs.validatePluginFile( view, path )
+	if LrFileUtils.exists(LrPathUtils.child(_PLUGIN.path, path)) ~= 'file' then
+		return false, path
+	end
+
+	return true, path	
+end
+
+-------------------------------------------------------------------------------
 -- validatePSUploadProgPath:
 --	check if a given path points to the root directory of the Synology Photo Station Uploader tool 
 --		we require the following converters that ship with the Uploader:
@@ -151,8 +164,8 @@ function PSDialogs.validatePSUploadProgPath(view, path)
 	local ffmpegprog = 'ffmpeg'
 	local qtfstartprog = 'qt-faststart'
 
-	if getProgExt() then
-		local progExt = getProgExt()
+	local progExt = getProgExt()
+	if progExt then
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
 		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
@@ -198,7 +211,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 		-- ############### Pure Export/Publish Settings ##########################
 		if not propertyTable.isCollection then
 			if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
-				message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or wrong Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+				message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or incorrect Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
 				break
 			end
 
@@ -249,70 +262,66 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			propertyTable.isPS6 = 		iif(propertyTable.psVersion >= 60, true, false)
 		end
 
-		-- ###############  Export/Publish or Collection Settings ##########################
+		-- ###############  Export or Collection Settings ##########################
 
-		if propertyTable.copyTree and not PSDialogs.validateDirectory(nil, propertyTable.srcRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
-			break
-		end
-				
-		if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
-			break
-		end
-				
-		-- renaming: renaming dstFilename must contain at least one metadata placeholder
-		if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
-			break
-		end
-
-		-- Exif translation start -------------------
-
-		-- if at least one translation is activated then set exifTranslate
-		if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
-			propertyTable.exifTranslate = true
-		end
-		
-		-- if no translation is activated then set exifTranslate to off
-		if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
-			propertyTable.exifTranslate = false
-		end
-
-		if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
-			break
-		end
-
-		-- Exif translation end -------------------
-
-		-- Location tag translation -------------------
-		if propertyTable.xlatLocationTags then
-			if string.len(propertyTable.locationTagSeperator) > 1 then
-				message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
+		if not propertyTable.LR_isExportForPublish or propertyTable.isCollection then
+			if propertyTable.copyTree and not PSDialogs.validateDirectory(nil, propertyTable.srcRoot) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
 				break
 			end
-			propertyTable.locationTagField2 = propertyTable.locationTagField1 and propertyTable.locationTagField2 or nil
-			propertyTable.locationTagField3 = propertyTable.locationTagField2 and propertyTable.locationTagField3 or nil
-			propertyTable.locationTagField4 = propertyTable.locationTagField3 and propertyTable.locationTagField4 or nil
-			propertyTable.locationTagField5 = propertyTable.locationTagField4 and propertyTable.locationTagField5 or nil
+					
+			if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
+				break
+			end
+					
+			-- renaming: renaming dstFilename must contain at least one metadata placeholder
+			if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
+				break
+			end
 
-			propertyTable.locationTagTemplate =	
-				table.concat(	{ propertyTable.locationTagField1,
-                				  propertyTable.locationTagField2,
-                				  propertyTable.locationTagField3,
-                				  propertyTable.locationTagField4,
-                				  propertyTable.locationTagField5
-                				},
-                				propertyTable.locationTagSeperator
-                			)
-		else
-			propertyTable.locationTagField1 = nil
-			propertyTable.locationTagField2 = nil
-			propertyTable.locationTagField3 = nil
-			propertyTable.locationTagField4 = nil
-			propertyTable.locationTagField5 = nil
-			propertyTable.locationTagTemplate = ''
+			-- Exif translation start -------------------
+
+			-- if at least one translation is activated then set exifTranslate
+			if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
+				propertyTable.exifTranslate = true
+			end
+			
+			-- if no translation is activated then set exifTranslate to off
+			if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
+				propertyTable.exifTranslate = false
+			end
+
+			if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."
+				break
+			end
+
+			-- Exif translation end -------------------
+
+			-- Location tag translation -------------------
+			if propertyTable.xlatLocationTags then
+				if string.len(propertyTable.locationTagSeperator) > 1 then
+					message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
+					break
+				end
+				propertyTable.locationTagField2 = iif(propertyTable.locationTagField1, propertyTable.locationTagField2, false)
+				propertyTable.locationTagField3 = iif(propertyTable.locationTagField2, propertyTable.locationTagField3, false)
+				propertyTable.locationTagField4 = iif(propertyTable.locationTagField3, propertyTable.locationTagField4, false)
+				propertyTable.locationTagField5 = iif(propertyTable.locationTagField4, propertyTable.locationTagField5, false)
+
+				propertyTable.locationTagTemplate =	
+					table.concat(	{ iif(propertyTable.locationTagField1, propertyTable.locationTagField1, nil),
+									  iif(propertyTable.locationTagField2, propertyTable.locationTagField2, nil),
+									  iif(propertyTable.locationTagField3, propertyTable.locationTagField3, nil),
+									  iif(propertyTable.locationTagField4, propertyTable.locationTagField4, nil),
+									  iif(propertyTable.locationTagField5, propertyTable.locationTagField5, nil),
+									},
+									propertyTable.locationTagSeperator
+								)
+--				writeLogfile(4, string.format("updateDialogStatus: Location tag: %s\n", tostring(propertyTable.locationTagTemplate)))
+			end
 		end
 
 		-- ############### Pure Collection Settings ##########################
@@ -658,7 +667,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search the program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -668,7 +677,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download the program from Web.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -677,44 +686,6 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     			},   			
     		},
     	}
-end
-
--------------------------------------------------------------------------------
--- convertPhotosView(f, propertyTable)
-function PSDialogs.convertPhotosView(f, propertyTable)
-	return
-        f:group_box {
-			title	= LOC "$$$/PSUpload/PluginDialog/Convert=Convert published photos to Photo StatLr format",
-			fill_horizontal = 1,
-
-    		f:row {
-    			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n", 
-    				alignment 		= 'center',
-					fill_horizontal = 1,
-    			},
-    		},
-
-    		f:row {   			
-	
-				f: spacer {	fill_horizontal = 1,}, 
-				
-     			f:push_button {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertAll=Convert all photos",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ConvertAllTT=Convert all published photos to new format.",
-    				alignment 		= 'center',
-    				fill_horizontal = 1,
-    				action 			= function ()
-    								propertyTable.convertAllPhotos = true
-    								LrDialogs.message('Photo StatLr', 'Conversion will start after closing the Plugin Manager dialog.', 'info')
-    								
-    				end,
-    			},   			
-
-				f: spacer {	fill_horizontal = 1,}, 
-				
-			},
-		}
 end
 
 -------------------------------------------------------------------------------
@@ -760,7 +731,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search the program in Explorer/Finder.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -770,7 +741,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
-    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download the program from Web.",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download from Web.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
@@ -779,6 +750,120 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     			},   			
     		},
     	}
+end
+
+-------------------------------------------------------------------------------
+-- videoConvSettingsView(f, propertyTable)
+function PSDialogs.videoConvSettingsView(f, propertyTable)
+	local prefs = LrPrefs.prefsForPlugin()
+
+	return
+        f:group_box {
+			title	= "FFmpeg",
+			fill_horizontal = 1,
+			
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoConvSettingsDescription=Enter the path where the 'ffmpeg' program is installed.\nEnter the filename of the video conversion presets file (must be a JSON file in the plugin dir).\n", 
+    			},
+    		},
+    
+    		f:row {
+    			f:static_text {
+    				title 			= "ffmpeg:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+    
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 1,
+    				value 			= bind 'ffmpegprog',
+    				validate 		= PSDialogs.validateProgram,
+    			},
+			},
+    		f:row {
+    			f:static_text {
+    				title 			= "Presets file:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+    
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 1,
+    				value 			= bind 'videoConversionsFn',
+    				validate 		= PSDialogs.validatePluginFile,
+    			},
+    		},
+    		f:row {   			
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+						local progExt = getProgExt()
+						if progExt then
+							propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), LrPathUtils.addExtension('ffmpeg', progExt))
+						else
+							propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), 'ffmpeg')
+						end
+    					propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
+    				end,
+    			},
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+    					LrShell.revealInShell(LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn))
+    				end,
+    			},   			
+    		},
+    	}
+end
+
+-------------------------------------------------------------------------------
+-- convertPhotosView(f, propertyTable)
+function PSDialogs.convertPhotosView(f, propertyTable)
+	return
+        f:group_box {
+			title	= LOC "$$$/PSUpload/PluginDialog/Convert=Convert published photos to Photo StatLr format",
+			fill_horizontal = 1,
+
+    		f:row {
+    			f:static_text {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n", 
+    				alignment 		= 'center',
+					fill_horizontal = 1,
+    			},
+    		},
+
+    		f:row {   			
+	
+				f: spacer {	fill_horizontal = 1,}, 
+				
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertAll=Convert all photos",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ConvertAllTT=Convert all published photos to new format.",
+    				alignment 		= 'center',
+    				fill_horizontal = 1,
+    				action 			= function ()
+    								propertyTable.convertAllPhotos = true
+    								LrDialogs.message('Photo StatLr', 'Conversion will start after closing the Plugin Manager dialog.', 'info')
+    								
+    				end,
+    			},   			
+
+				f: spacer {	fill_horizontal = 1,}, 
+				
+			},
+		}
 end
 
 -------------------------------------------------------------------------------
@@ -812,8 +897,9 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 	}
 	
 	local fileTimestampItems = {
-        { title	= 'Photo Capture Date/Time',	value 	= 'capture' },
-        { title	= 'Upload Date/Time',   		value 	= 'upload' },
+        { title	= 'Photo Capture Date/Time', 							value = 'capture' },
+        { title	= 'Upload Date/Time', 									value = 'upload' },
+        { title = 'Upload Date for Photos, Capture Date for Videos',	value = 'mixed' },
 	}
 
 	return
@@ -1125,42 +1211,136 @@ end
 -------------------------------------------------------------------------------
 -- videoOptionsView(f, propertyTable)
 function PSDialogs.videoOptionsView(f, propertyTable)
+	local orgVideoForceConvItems = {
+		{ title	= 'If required',		value 	= false },
+		{ title	= 'Always',				value 	= true },
+	}
+
 	local lowResAddVideoItems	= {
 		{ title	= 'None',			value 	= 'None' },
-		{ title	= 'Mobile/240p',		value 	= 'MOBILE' },
+		{ title	= 'Mobile/240',		value 	= 'MOBILE' },
 	}
 	
 	local medResAddVideoItems	= tableShallowCopy(lowResAddVideoItems)
 	table.insert(medResAddVideoItems,
-		{ title	= 'Low/360p',		value 	= 'LOW' })
+		{ title	= 'Low/360',		value 	= 'LOW' })
 	
 	local highResAddVideoItems	= tableShallowCopy(medResAddVideoItems)
 	table.insert(highResAddVideoItems,
-		{ title	= 'Medium/720p',		value 	= 'MEDIUM' })
+		{ title	= 'Medium/720',		value 	= 'MEDIUM' })
 
 	local ultraResAddVideoItems	= tableShallowCopy(highResAddVideoItems)
 	table.insert(ultraResAddVideoItems, 
-		{ title	= 'High/1080p',		value 	= 'HIGH' })
+		{ title	= 'High/1080',		value 	= 'HIGH' })
+
+	local videoConvQualityItems = {}
+	local convOptions = PSConvert.getVideoConvPresets()	
+
+	if not convOptions then
+		writeLogfile(1, "PSDialogs.videoOptionsView: video preset file is not a valid JSON file!\n")
+		table.insert(videoConvQualityItems,	{ title	= 'Invalid presets file',	value 	= -1 })
+		local action = LrDialogs.confirm(title, 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
+		if action == "ok" then
+			LrShell.revealInShell(getLogFilename())
+		end	
+	else
+		for key, val in ipairs(convOptions) do
+			table.insert(videoConvQualityItems,	{ title	= val.title,	value 	= key })
+		end
+	end	
+
+	
+	local addVideoConvQualityItems 	= tableShallowCopy(videoConvQualityItems)
+	table.insert(addVideoConvQualityItems, 1, { title	= 'None',	value 	= -1 })
 
 	return
 		f:group_box {
-			title 			= LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options: Additional video resolutions for ...-Res Videos",
+			title 			= LOC "$$$/PSUpload/ExportDialog/Videos=Video Upload Options / Additional video resolutions for ...-Res Videos",
 			fill_horizontal = 1,
 
 			f:row {
 				fill_horizontal = 1,
+
 				f:row {
-					alignment = 'left',
+					fill_horizontal = 1,
+					
+					f:static_text {
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgConv=Convert video:",
+						alignment 		= 'right',
+					},
+						
+					f:popup_menu {
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgConvTT=When to convert the original video",
+						items 			= orgVideoForceConvItems,
+						alignment 		= 'left',
+						value 			= bind 'orgVideoForceConv',
+					},
+				},					
+
+				f:row {
 					fill_horizontal = 1,
 
 					f:static_text {
-						title 			= LOC "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:",
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgQuality=Quality:",
 						alignment 		= 'right',
 					},
-					
+						
+					f:popup_menu {
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgQualityTT=Video quality for converted original video",
+						items 			= videoConvQualityItems,
+						alignment 		= 'left',
+						value 			= bind 'orgVideoQuality',
+					},
+				},					
+
+				f:checkbox {
+					fill_horizontal = 1,
+					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Hard-rotation",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
+					alignment 		= 'left',
+					value 			= bind 'hardRotate',
+				},
+
+				f:separator { fill_vertical = 1 },
+				
+				f:row {
+					fill_horizontal = 1,
+
+					f:static_text {
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoAddQuality=Add. video:",
+						alignment 		= 'right',
+					},
+						
+					f:popup_menu {
+						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoAddQualityTT=Video quality for additional video",
+						items 			= addVideoConvQualityItems,
+						alignment 		= 'left',
+						value 			= bind 'addVideoQuality',
+						fill_horizontal = 1,
+					},
+				},
+			},
+				
+			f:separator { fill_horizontal = 0.75 },
+			
+			f:row {
+				fill_horizontal = 1,
+				
+				f:row {
+					alignment = 'left',
+					fill_horizontal = 1,
+	
+					f:static_text {
+						title 			= LOC "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:",
+						visible			= keyIsNot('addVideoQuality', -1),
+						alignment 		= 'right',
+					},
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoUltraTT=Generate additional video for Ultra-Hi-Res (2160p) videos",
 						items 			= ultraResAddVideoItems,
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoUltra',
@@ -1173,65 +1353,65 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoHigh=High:",
+						visible			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'right',
 					},
-					
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
 						items 			= highResAddVideoItems,
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoHigh',
 					},
 				},					
-
+	
 				f:row {
 					alignment 			= 'right',
 					fill_horizontal 	= 1,
-
+	
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium:",
+						visible			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'right',
 					},
-					
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
 						items 			= medResAddVideoItems,
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoMed',
 					},
 				},					
-
+	
 				f:row {
 					alignment 			= 'right',
 					fill_horizontal 	= 1,
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoLow=Low:",
+						visible			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'right',
 					},
-					
+						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
 						items 			= lowResAddVideoItems,
+						visible			= keyIsNot('addVideoQuality', -1),
+						enabled			= keyIsNot('addVideoQuality', -1),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoLow',
 					},
 				},					
 			},
-			
-			f:row {
-				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/HardRotate=Hard-rotation",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/HardRotateTT=Use hard-rotation for better player compatibility,\nwhen a video is soft-rotated or meta-rotated\n(keywords include: 'Rotate-90', 'Rotate-180' or 'Rotate-270')",
-					alignment 		= 'left',
-					fill_horizontal = 1,
-					value 			= bind 'hardRotate',
-				},
-			},
 		}
+
 end
 
 -------------------------------------------------------------------------------
@@ -1413,7 +1593,7 @@ end
 -- uploadOptionsView(f, propertyTable)
 function PSDialogs.uploadOptionsView(f, propertyTable)
 	local locationTagItems	= {
-		{ title	= '',				value 	= nil },
+		{ title	= '',				value 	= false }, -- Note: Export Presets cannot store Nil values!
 		{ title	= 'ISO Code',		value 	= '{LrFM:isoCountryCode}' },
 		{ title	= 'Country',		value 	= '{LrFM:country}' },
 		{ title	= 'State',			value 	= '{LrFM:stateProvince}' },
@@ -1422,7 +1602,6 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 	}
 	local locationTagSepItems	= { ' ', '-', '_', ':', ';', '/', '|',',', '.', '+', '#' }
 	
-
 	return	f:group_box {
 		fill_horizontal = 1,
 		title = LOC "$$$/PSUpload/ExportDialog/UploadOpt=Metadata Upload Options /Translations (To Photo Station)",
@@ -1491,12 +1670,13 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     	f:separator { fill_horizontal = 1 },
     	
     	f:row {
-			fill_horizontal = 0.8,
+			fill_horizontal = 1,
 
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLocation=Location Tag:",
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLocationTT=Translate Lr location tags to Photo Station location tag",
     			value 			= bind 'xlatLocationTags',
+   				fill_horizontal = 1,
     		},
 
 			f:popup_menu {
@@ -1506,7 +1686,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:combo_box {
@@ -1527,14 +1707,14 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= keyIsNotNil	'locationTagField3',
+				visible 		= andAllKeys('xlatLocationTags', 'locationTagField3'),
    				alignment 		= 'center',
-   				fill_horizontal = 0.05,
+--   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
@@ -1544,14 +1724,14 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= keyIsNotNil	'locationTagField4',
+				visible 		= andAllKeys('xlatLocationTags', 'locationTagField4'),
    				alignment 		= 'center',
-   				fill_horizontal = 0.05,
+--   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
@@ -1561,14 +1741,14 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= keyIsNotNil	'locationTagField5',
+				visible 		= andAllKeys('xlatLocationTags', 'locationTagField5'),
    				alignment 		= 'center',
-   				fill_horizontal = 0.05,
+--   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
@@ -1578,7 +1758,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
---   				fill_horizontal = 0.1,
+   				fill_horizontal = 1,
 			},
 		},
 		
