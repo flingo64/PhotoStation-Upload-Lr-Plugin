@@ -1,6 +1,10 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.8.2
+-------------
+- Merged video conversion preset "Small-QSV" (support for Intel QuickSync) from stepman0 to default video presets file 
+
 Version 6.8.1
 -------------
 - Bugfix: Fixed an issue where the plugin could not be loaded on MacOS, exception:<br>
