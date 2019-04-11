@@ -1,5 +1,14 @@
 [
   {
+  	"title": "Small-QSV",
+  	"comment": "Medium quality, fast conversion via Intel QSV",
+	  "input_options": "-hwaccel qsv",
+    "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
+    "video_options": "-vf format=yuv420p -c:v h264_qsv -global_quality 36 -look_ahead 1 -preset veryslow -r 30",
+    "video_options_pass_2": null,
+	"output_options": null
+  },
+  {
   	"title": "Low",
   	"comment": "Low quality, fast conversion",
 	"input_options": null,
