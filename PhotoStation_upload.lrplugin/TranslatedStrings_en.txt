@@ -55,7 +55,7 @@
 "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Incorrect exiftool path."
 "$$$/PSUpload/Dialogs/Messages/FileFormatNoSupp=File format not supported! Select: [JPEG], [TIFF], [DNG w/ full-size JPEG preview] or [Original]."
 "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
-"$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
+"$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag separator must be empty or a single character"
 "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or incorrect Synology Photo Station Uploader path. Fix it in Plugin Manager settings section."
 "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
 "$$$/PSUpload/Dialogs/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
