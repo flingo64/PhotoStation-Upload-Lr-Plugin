@@ -3,8 +3,9 @@ Photo StatLr Changelog
 
 Version 6.8.3
 -------------
-- Bugfix: Fixed exception '[string "PSDialogs.lua"]:305:bad argument #1 to len(string expected, got nil)'
-- Published Collection settings dialog: disable fields also if predeccesor field is blank function 
+- Bugfix: Fixed exception '[string "PSDialogs.lua"]:305:bad argument #1 to len(string expected, got nil)' 
+when openening a Published Collection that was saved with Location Tags enabled, but no separator specified.
+- Published Collection settings dialog: disable fields also if predecessor field is blank 
 
 Version 6.8.2
 -------------
