@@ -93,8 +93,8 @@ end
 -- getSharedAlbumParams(sharedAlbumKeyword, publishSettings)
 --   returns Shared Album params for the given Shared Album keyowrd as stored in the keyword and in plugin prefs
 function PSSharedAlbumMgmt.getSharedAlbumParams(sharedAlbumKeyword, publishSettings)
-	local keywordSynonyms = sharedAlbumKeyword:getSynonyms()
-	local myPrefs = LrPrefs.prefsForPlugin(_PLUGIN)
+	local keywordSynonyms	= sharedAlbumKeyword:getSynonyms()
+	local myPrefs 			= LrPrefs.prefsForPlugin()
  
 	local privateUrlIndex = findInStringTable(keywordSynonyms, '.*#!SharedAlbums.*', true)
 	local privateUrl
@@ -134,7 +134,7 @@ function PSSharedAlbumMgmt.getSharedAlbumParams(sharedAlbumKeyword, publishSetti
 		end
 	else
 		for _, key in ipairs(sharedAlbumPrefKeys) do
-			sharedAlbumParams[key] = iif(sharedAlbumParams.isAdvanced, true, false)
+			sharedAlbumParams[key] = iif(string.find('startTime,stopTime', key, 1, true), '', iif(sharedAlbumParams.isAdvanced, true, false))
 		end
 	end
 
@@ -179,9 +179,9 @@ end
 -- getPublishServiceSharedAlbums(pubServiceName)
 --   returns a list of all Shared Album for a Publish Service, i.e. derived from keywords below "Photo StatLr"|"Shared Albums"
 function PSSharedAlbumMgmt.getPublishServiceSharedAlbums(pubServiceName)
-	local sharedAlbumParamsList		= {} 	
-	local pubService 				= PSLrUtilities.getPublishServiceByName(pubServiceName)
-	local pubServiceSettings 		= pubService:getPublishSettings()
+	local sharedAlbumParamsList					= {} 	
+	local pubService 							= PSLrUtilities.getPublishServiceByName(pubServiceName)
+	local pubServiceSettings 					= pubService:getPublishSettings()
 	local pubServiceSharedAlbumPath 			= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(pubServiceName, nil)
 	local _, pubServiceSharedAlbumRootKeyword	= PSLrUtilities.getKeywordByPath(pubServiceSharedAlbumPath)
 
@@ -302,8 +302,8 @@ function PSSharedAlbumMgmt.readSharedAlbumsFromLr()
 	local sharedAlbums = {}
 	
     for i = 1, #publishServices	do
-    	local publishService = publishServices[i]
-		publishServiceNames[i] = publishService:getName()
+    	local publishService 		= publishServices[i]
+		publishServiceNames[i] 		= publishService:getName()
     	local publishServiceSettings= publishService:getPublishSettings()
    	
     	writeLogfile(3, string.format("getAllSharedAlbums: publish service '%s': psVersion: %d\n", publishServiceNames[i], publishServiceSettings.psVersion))
@@ -337,7 +337,7 @@ end
 -- PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
 function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
 	local isPattern = true
-	local myPrefs = LrPrefs.prefsForPlugin(_PLUGIN)
+	local myPrefs = LrPrefs.prefsForPlugin()
 	
 	for i = 1, #sharedAlbumParamsList do
 		local sharedAlbum = sharedAlbumParamsList[i]
