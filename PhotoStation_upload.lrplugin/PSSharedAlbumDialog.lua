@@ -1110,6 +1110,7 @@ function PSSharedAlbumDialog.doDialog( )
 			rowsPropertyTable[i].sharedAlbumNameOld	= rowsPropertyTable[i].sharedAlbumName	    	
     	end
 
+--		writeTableLogfile(4, "allSharedAlbums", allSharedAlbums, false, 'Password')
 		activateRow(props, 1)
 
 		local saveSharedAlbums 		= false
