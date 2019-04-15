@@ -302,8 +302,8 @@ function PSDialogs.updateDialogStatus( propertyTable )
 
 			-- Location tag translation -------------------
 			if propertyTable.xlatLocationTags then
-				if string.len(propertyTable.locationTagSeperator) > 1 then
-					message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag seperator must be empty or a single character"
+				if string.len(ifnil(propertyTable.locationTagSeperator, '')) > 1 then
+					message = LOC "$$$/PSUpload/Dialogs/Messages/LocationTagSeperator=Tag separator must be empty or a single character"
 					break
 				end
 				propertyTable.locationTagField2 = iif(propertyTable.locationTagField1, propertyTable.locationTagField2, false)
@@ -1692,7 +1692,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			f:combo_box {
 				value 			= bind 			'locationTagSeperator',
 				visible 		= bind 			'xlatLocationTags',
-				enabled			= keyIsNotNil	'locationTagField2',
+				enabled			= andAllKeys	('locationTagField2'),
 				items 			= locationTagSepItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagSeperatorTT=Enter a tag seperator character",
 				immediate 		= true,
@@ -1703,7 +1703,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			f:popup_menu {
 				value 			= bind 			'locationTagField2',
 				visible 		= bind 			'xlatLocationTags',
-				enabled			= keyIsNotNil	'locationTagField1',
+				enabled			= andAllKeys	('locationTagField1'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
@@ -1720,7 +1720,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			f:popup_menu {
 				value 			= bind 			'locationTagField3',
 				visible 		= bind 			'xlatLocationTags',
-				enabled			= keyIsNotNil	'locationTagField2',
+				enabled			= andAllKeys	('locationTagField2'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
@@ -1737,7 +1737,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			f:popup_menu {
 				value 			= bind 			'locationTagField4',
 				visible 		= bind 			'xlatLocationTags',
-				enabled			= keyIsNotNil	'locationTagField3',
+				enabled			= andAllKeys	('locationTagField3'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
@@ -1754,7 +1754,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			f:popup_menu {
 				value 			= bind 			'locationTagField5',
 				visible 		= bind 			'xlatLocationTags',
-				enabled			= keyIsNotNil	'locationTagField4',
+				enabled			= andAllKeys	('locationTagField4'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
    				alignment 		= 'center',
