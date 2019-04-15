@@ -87,6 +87,7 @@ function PSConvert.initialize()
 	end
 	
 	h.conv =		LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
+--	h.conv =		"C:/Program Files/ImageMagick-7.0.8-Q16/convert.exe"
 	h.dcraw = 		iif(WIN_ENV, 
 						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
 						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
