@@ -1,6 +1,11 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.8.3
+-------------
+- Bugfix: Fixed exception '[string "PSDialogs.lua"]:305:bad argument #1 to len(string expected, got nil)'
+- Published Collection settings dialog: disable fields also if predeccesor field is blank function 
+
 Version 6.8.2
 -------------
 - Merged video conversion preset "Small-QSV" (support for Intel QuickSync) from stepman0 to default video presets file 
