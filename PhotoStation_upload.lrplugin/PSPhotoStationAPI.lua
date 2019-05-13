@@ -256,7 +256,7 @@ function PSPhotoStationAPI.editPhoto(h, dstFilename, isVideo, attrValPairs)
 	local logMessage = ''
 
 	for i = 1, #attrValPairs do
-	 	formData = formData .. '&' 		.. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value
+	 	formData = formData .. '&' 		.. attrValPairs[i].attribute .. '=' .. urlencode(attrValPairs[i].value)
 	 	logMessage = logMessage .. ', ' .. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value  
 	end
 

@@ -1,6 +1,10 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.8.4
+-------------
+- Bugfix: Fixed an issue where MetadataUpload mode would not correctly upload captions or descriptions with special characters in it
+
 Version 6.8.3
 -------------
 - Bugfix: Fixed exception '[string "PSDialogs.lua"]:305:bad argument #1 to len(string expected, got nil)' 
