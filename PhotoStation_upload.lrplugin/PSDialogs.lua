@@ -1239,7 +1239,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	if not convOptions then
 		writeLogfile(1, "PSDialogs.videoOptionsView: video preset file is not a valid JSON file!\n")
 		table.insert(videoConvQualityItems,	{ title	= 'Invalid presets file',	value 	= -1 })
-		local action = LrDialogs.confirm(title, 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
+		local action = LrDialogs.confirm("Video Conversion", 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(getLogFilename())
 		end	

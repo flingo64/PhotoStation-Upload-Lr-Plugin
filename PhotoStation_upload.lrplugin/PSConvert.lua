@@ -97,7 +97,7 @@ function PSConvert.initialize()
 	
 	if not PSConvert.convOptions then
 		writeLogfile(1, string.format("PSConvert.initialize: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
-		local action = LrDialogs.confirm(title, 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
+		local action = LrDialogs.confirm("Video Conversion", 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(getLogFilename())
 		end	
