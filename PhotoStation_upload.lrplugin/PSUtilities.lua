@@ -105,7 +105,7 @@ end
 function JSON:onDecodeError (message, text, location, etc) 
 	writeLogfile(1, string.format("JSON-DecodeError('%s')%s at character %s\n", 
 									ifnil(etc, 'Unknown object'), ifnil(message, '<Nil>'), ifnil(location, '<Nil>')))
-	local action = LrDialogs.confirm(title, 'Booo!!\n' .. "Internal Error: Invalid JSON data in " .. ifnil(etc, 'Unknown object'), "Go to Logfile", "Never mind")
+	local action = LrDialogs.confirm("JSON Decoder", 'Booo!!\n' .. "Internal Error: Invalid JSON data in " .. ifnil(etc, 'Unknown object'), "Go to Logfile", "Never mind")
 	if action == "ok" then
 		LrShell.revealInShell(getLogFilename())
 	end	
