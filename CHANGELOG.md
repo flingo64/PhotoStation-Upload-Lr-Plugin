@@ -1,6 +1,10 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.8.5
+-------------
+- Bugfix: Fixed an issue where an invalid/malformed video conversion presets file might cause an exception in Lr 8.x
+
 Version 6.8.4
 -------------
 - Bugfix: Fixed an issue where MetadataUpload mode would not correctly upload captions or descriptions with special characters in it
