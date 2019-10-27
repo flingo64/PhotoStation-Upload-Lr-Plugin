@@ -381,33 +381,33 @@ function PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dimension, asp
 	if hardRotate then
 		-- hard-rotation: rotate video stream, calculate rotated dimension, remove rotation flag from metadata
 		if rotation == "90" then
-			rotateOpt = '-vf "transpose=1" -metadata:s:v:0 rotate=0 '
+			rotateOpt = ',transpose=1 -metadata:s:v:0 rotate=0'
 			newDimension = string.format("%sx%s", 
 										string.sub(dimension, string.find(dimension,'x') + 1, -1),
 										string.sub(dimension, 1, string.find(dimension,'x') - 1))
 			newAspectRatio = string.gsub(newDimension, 'x', ':')
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 90\n")
 		elseif rotation == "270" then
-			rotateOpt = '-vf "transpose=2" -metadata:s:v:0 rotate=0 '
+			rotateOpt = ',transpose=2 -metadata:s:v:0 rotate=0'
 			newDimension = string.format("%sx%s", 
 										string.sub(dimension, string.find(dimension,'x') + 1, -1),
 										string.sub(dimension, 1, string.find(dimension,'x') - 1))
 			newAspectRatio = string.gsub(newDimension, 'x', ':')
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 270\n")
 		elseif rotation == "180" then
-			rotateOpt = '-vf "hflip,vflip" -metadata:s:v:0 rotate=0 '
+			rotateOpt = ',hflip,vflip -metadata:s:v:0 rotate=0'
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 180\n")
 		end
 	else
 		-- soft-rotation: add rotation flag to metadata
 		if rotation == "90" then
-			rotateOpt = '-metadata:s:v:0 rotate=90 '
+			rotateOpt = ' -metadata:s:v:0 rotate=90'
 			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 90\n")
 		elseif rotation == "180" then
-			rotateOpt = '-metadata:s:v:0 rotate=180 '
+			rotateOpt = ' -metadata:s:v:0 rotate=180'
 			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 180\n")
 		elseif rotation == "270" then
-			rotateOpt = '-metadata:s:v:0 rotate=270 '
+			rotateOpt = ' -metadata:s:v:0 rotate=270'
 			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 270\n")
 		end 
 	end
@@ -430,12 +430,12 @@ function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, ffinfo, thumbFi
 						'"' .. h.ffmpeg .. '" ' .. 
 						iif(ffinfo.version == '1.2.1', '', '-noautorotate ') ..  
 						'-i "' .. srcVideoFilename .. '" ' ..
-						'-y -vframes 1 -ss ' .. snapshotTime .. ' -an -qscale 0 -f mjpeg '.. rotateOpt ..
+						'-y -vframes 1 -ss ' .. snapshotTime .. ' -an -qscale 0 -f mjpeg -vf format=yuv420p'.. rotateOpt .. ' ' ..
 						'-s ' .. newDim .. ' -aspect ' .. aspectRatio .. ' ' ..
 						'"' .. thumbFilename .. '" 2> "' .. outfile .. '"' ..
 					cmdlineQuote()
 
-	writeLogfile(4, cmdline .. "\n")
+	writeLogfile(3, cmdline .. "\n")
 	if LrTasks.execute(cmdline) > 0 or not LrFileUtils.exists(thumbFilename) then
 		writeLogfile(3, "  error on: " .. cmdline .. "\n")
 		writeLogfile(3, "ffmpeg report:\n" .. 
@@ -570,9 +570,11 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 				ifnil(convOptions.input_options, "") .. " " ..
 				'-i "' 	.. srcVideoFilename .. '" ' .. 
 				'-y ' 	..  -- override output file
-				rotateOpt ..
+				
 				convOptions.audio_options .. ' ' ..
 				iif(convOptions.video_options_pass_2, '-pass 1 ', '') ..
+				convOptions.video_filters ..
+				rotateOpt .. ' ' ..
 				convOptions.video_options .. ' ' ..
 				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
 				createTimeOpt ..  
@@ -608,9 +610,11 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 					ifnil(convOptions.input_options, "") .. " " ..
     				'-i "' ..	srcVideoFilename .. '" ' .. 
 					'-y ' 	..  -- override output file
-    				rotateOpt ..
+					
 					PSConvert.convOptions[videoQuality].audio_options .. ' ' ..
 					'-pass 2 ' ..
+					convOptions.video_filters ..
+					rotateOpt .. ' ' ..
 					PSConvert.convOptions[videoQuality].video_options_pass_2 .. ' ' ..
     				'-s ' .. dstDim .. ' -aspect ' .. dstAspect .. ' ' ..
     				createTimeOpt ..  
