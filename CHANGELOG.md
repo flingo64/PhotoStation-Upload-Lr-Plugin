@@ -1,6 +1,11 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.8.6
+-------------
+- Bugfix: Fixed broken Video hard-rotation (see issue #42) 
+- Added documentation folder and included Wiki posts 
+
 Version 6.8.5
 -------------
 - Bugfix: Fixed an issue where an invalid/malformed video conversion presets file might cause an exception in Lr 8.x
