@@ -4,7 +4,8 @@
   	"comment": "Low quality, fast conversion",
 	"input_options": null,
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v libx264 -preset veryfast -crf 26",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v libx264 -preset veryfast -crf 26",
     "video_options_pass_2": null,
 	"output_options": null
   },
@@ -12,28 +13,32 @@
   	"title": "Medium",
   	"comment": "Medium quality, reasonable fast conversion",
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v libx264 -preset medium -crf 23",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v libx264 -preset medium -crf 23",
 	"output_options": null
   },
   {
    	"title": "High",
   	"comment": "High quality, reasonable fast conversion: good for converting the original video",
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v libx264 -preset medium -crf 20",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v libx264 -preset medium -crf 20",
 	"output_options": null
   },
   {
    	"title": "Higher",
   	"comment": "Higher quality, reasonable fast conversion: very good for converting the original video",
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v libx264 -preset medium -crf 18",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v libx264 -preset medium -crf 18",
 	"output_options": null
   },
   {
    	"title": "Highest",
   	"comment": "Very high quality, very slow conversion: best quality for converting the original video",
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v libx264 -preset slow -crf 16",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v libx264 -preset slow -crf 16",
 	"output_options": null
   },
    {
@@ -41,7 +46,8 @@
   	"comment": "Low quality, fast conversion via NVIDIA CUDA",
 	"input_options": null,
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v h264_nvenc -preset medium -qp 30",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v h264_nvenc -preset medium -qp 30",
     "video_options_pass_2": null,
 	"output_options": null
   },
@@ -50,7 +56,8 @@
   	"comment": "Medium quality, fast conversion via NVIDIA CUDA",
 	"input_options": null,
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v h264_nvenc -preset medium -qp 26",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v h264_nvenc -preset medium -qp 26",
     "video_options_pass_2": null,
 	"output_options": null
   },
@@ -59,7 +66,8 @@
   	"comment": "High quality, fast conversion via NVIDIA CUDA",
 	"input_options": null,
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v h264_nvenc -preset medium -qp 24",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v h264_nvenc -preset medium -qp 24",
     "video_options_pass_2": null,
 	"output_options": null
   },
@@ -68,16 +76,18 @@
   	"comment": "Higher quality, fast conversion via NVIDIA CUDA",
 	"input_options": null,
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v h264_nvenc -preset medium -qp 21",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v h264_nvenc -preset medium -qp 21",
     "video_options_pass_2": null,
 	"output_options": null
   },
   {
   	"title": "Small-QSV",
   	"comment": "Medium quality, fast conversion via Intel QSV",
-	  "input_options": "-hwaccel qsv",
+    "input_options": "-hwaccel qsv",
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
-    "video_options": "-vf format=yuv420p -c:v h264_qsv -global_quality 36 -look_ahead 1 -preset veryslow -r 30",
+    "video_filters": "-vf format=yuv420p", 
+    "video_options": "-c:v h264_qsv -global_quality 36 -look_ahead 1 -preset veryslow -r 30",
     "video_options_pass_2": null,
 	"output_options": null
   }
