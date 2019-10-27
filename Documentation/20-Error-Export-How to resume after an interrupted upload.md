@@ -1,0 +1,5 @@
+**Q: How can I resume the export when there was an error in between? Is there a way to skip files already exported? What order does the folders get exported?**
+
+**A:** Lr decides about the ordering, the plugin works on the list photo by photo as it is forwarded by the Lr Export/Publish process. You may look into the logfile of the plugin. If you set loglevel to Normal you'll get one line for each processed photo/video including a 'done' or 'failed' result indication.
+
+Anyway, **Export** is good for **small one-time jobs**. If you want to upload **large amounts of photos** it's recommended to use the **Publish** mechanism (see Readme, how to set up). When publishing large collections, Lr helps you keep track on the Upload status: all photos successfully uploaded change to state "Published", all photos not uploaded stay as "To publish", photos changed after Publish change to "Modified to re-publish". You can easily stop a running Publish job by clicking the x at the right of the progess bar and resume it the next day. When you click "Publish" for the collection again, only the unpublished photos will be uploaded.
