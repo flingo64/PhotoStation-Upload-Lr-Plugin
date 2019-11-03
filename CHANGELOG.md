@@ -1,6 +1,11 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.8.7
+-------------
+- Bugfix: Fixed broken video hard-rotation also for videos with embedded rotation tag for ffmpeg >= 3.3.x (see issue #43)
+- No more support for ffmpeg < 4.x - older versions may or may not work, depending or used codec and rotation features
+
 Version 6.8.6
 -------------
 - Bugfix: Fixed broken Video hard-rotation (see issue #42) 
