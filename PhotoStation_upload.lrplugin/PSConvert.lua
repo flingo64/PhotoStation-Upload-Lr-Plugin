@@ -219,104 +219,181 @@ function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, 
 	return true
 end
 
--- ffmpegGetAdditionalInfo(h, srcVideoFilename) ---------------------------------------------------------
--- get the capture date, duration, video format, resolution and aspect ratio of a video via ffmpeg. Lr won't give you this information
+-- ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, exportParams) ---------------------------------------------------------
+-- get video info both from the video via ffmpeg and from Lr. 
+-- Metadata is taken from the original video, technical data is taken from rendered video (if given)
 --	returns: 
 --	  nil of vinfo:
 --		dateTimeOrig 	as unix timestamp
 --		duration 		in seconds
 --		vformat			as string: 'h264', 'mjpeg', ...
+--		width			as string
+--		height			as string
+--		realHeight		as string
 --		dimension		as pixel dimension 'NxM'
+--		realDimension	as pixel dimension 'NxM' calculated from dimension and dar
 --		sar				as aspect ratio 'N:M' 
 --		dar				as aspect ratio 'N:M'
 --		rotation		as string '0', '90', '180', '270'
---	  ffinfo:
---	  	version			version of ffmpeg tool
-function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
-	-- returns DateTimeOriginal / creation_time retrieved via ffmpeg  as Cocoa timestamp
-	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoFilename))
-	local outfile =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
+--		mrotation		as string '0', '90', '180', '270' (meta-rotation from 'Rotate-nn' keyword)
+--		ffmpeg_version	version of ffmpeg tool used to extract data
+function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, exportParams)
+	local srcVideoName = srcPhoto:getRawMetadata('path')
+	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoName))
+	local outfile1 =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
+	local outfile2 =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg-2', 'txt'))
 	-- LrTask.execute() will call cmd.exe /c cmdline, so we need additional outer quotes
-	local cmdline = cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. srcVideoFilename .. '" 2> "' .. outfile .. '"' .. cmdlineQuote()
+	local cmdline1 = cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. srcVideoName .. '" 2> "' .. outfile1 .. '"' .. cmdlineQuote()
+	local cmdline2 = iif(renderedVideoFilename, cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. ifnil(renderedVideoFilename, 'nil') .. '" 2> "' .. outfile2 .. '"' .. cmdlineQuote(), nil)
 	local v,w,x,z -- iteration variables for string.gmatch()
 	local vinfo = {}
-	local ffinfo = {}
-	
-	writeLogfile(4, cmdline .. "\n")
-	LrTasks.execute(cmdline)
+
+	writeLogfile(4, string.format("ffmpegGetAdditionalInfo(%s, %s) starting ...\n", srcVideoName, ifnil(renderedVideoFilename, '<nil>')))
+	writeLogfile(3, cmdline1 .. "\n")
+	LrTasks.execute(cmdline1)
 	-- ignore errorlevel of ffmpeg here (is 1) , just check the outfile
 	
-	if not LrFileUtils.exists(outfile) then
-		writeLogfile(3, "  error on: " .. cmdline .. "\n")
+	if not LrFileUtils.exists(outfile1) then
+		writeLogfile(3, "  error on: " .. cmdline1 .. "\n")
 		return nil
 	end
 
-	local ffmpegReport = LrFileUtils.readFile(outfile)
-	writeLogfile(4, "ffmpeg report:\n" .. 
+	local ffmpegReport = LrFileUtils.readFile(outfile1)
+	writeLogfile(4, "ffmpeg report(original video):\n" .. 
 					"===========================================================================\n".. 
 					ffmpegReport ..
 					"===========================================================================\n")
 	
-	writeLogfile(3, string.format("ffmpegGetAdditionalInfo(%s):\n", srcVideoFilename))
 	
 	-------------- ffmpeg version search for avp:
 	-- ffmpeg version 1.2.1 Copyright (c) 2000-2013 the FFmpeg developers
 	-- ffmpeg version N-82794-g3ab1311 Copyright (c) 2000-2016 the FFmpeg developers
 	-- ffmpeg version 3.2.2 Copyright (c) 2000-2016 the FFmpeg developers
-	ffinfo.version = string.match(ffmpegReport, "ffmpeg version ([^%s]+)")
-	if not ffinfo.version then
-		writeLogfile(3, "  error: cannot find ffmpeg version\n")
+	vinfo.ffmpeg_version = string.match(ffmpegReport, "ffmpeg version ([^%s]+)")
+	if not vinfo.ffmpeg_version then
+		writeLogfile(2, "  error: cannot find ffmpeg version\n")
 	end
-	writeLogfile(3, "  ffmpeg version: " .. ffinfo.version .. "\n")
+	writeLogfile(4, "	ffmpeg version: " .. vinfo.ffmpeg_version .. "\n")
 	
-	-------------- DateTimeOriginal search for avp: 'date            : 2014-07-14T21:35:04-0700'
-	local dateCaptureString, dateCapture
+	-------------- CaptureDate search for avp: 'date            : 2014-07-14T21:35:04-0700'
+	local dateCaptureString
 	for v in string.gmatch(ffmpegReport, "date%s+:%s+([%d%-]+[%sT][%d%:]+)") do
 		dateCaptureString = v
 		writeLogfile(4, "dateCaptureString: " .. dateCaptureString .. "\n")
 		-- translate from  yyyy-mm-dd HH:MM:ss to timestamp
-		dateCapture = LrDate.timeFromComponents(string.sub(dateCaptureString,1,4),
+		vinfo.dateCapture = LrDate.timeFromComponents(string.sub(dateCaptureString,1,4),
 												string.sub(dateCaptureString,6,7),
 												string.sub(dateCaptureString,9,10),
 												string.sub(dateCaptureString,12,13),
 												string.sub(dateCaptureString,15,16),
 												string.sub(dateCaptureString,18,19),
 												'local') -- ignore timezone 
-		writeLogfile(3, "	ffmpeg-dateCapture: " .. LrDate.timeToUserFormat(dateCapture, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		dateCapture = LrDate.timeToPosixDate(dateCapture)
+		writeLogfile(4, "	ffmpeg-dateCapture: " .. LrDate.timeToUserFormat(vinfo.dateCapture, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		vinfo.dateCapture = LrDate.timeToPosixDate(vinfo.dateCapture)
 		break
      end
 	
 	-------------- DateTimeOriginal: search for avp:  -------------------------
 	--	'creation_time : 2014-09-10 16:09:51'
 	--	'creation_time : 2014-09-10T16:09:51.000000Z'
-	local creationTimeString, creationTime
+	local creationTimeString
 	for v in string.gmatch(ffmpegReport, "creation_time%s+:%s+([%d%-]+[%sT][%d%:]+)") do
 		creationTimeString = v
-		writeLogfile(4, "creationTimeString: " .. creationTimeString .. "\n")
+		writeLogfile(4, "	creationTimeString: " .. creationTimeString .. "\n")
 		-- translate from  yyyy-mm-dd HH:MM:ss to timestamp
-		creationTime = LrDate.timeFromComponents(string.sub(creationTimeString,1,4),
+		vinfo.dateCreation = LrDate.timeFromComponents(string.sub(creationTimeString,1,4),
 												string.sub(creationTimeString,6,7),
 												string.sub(creationTimeString,9,10),
 												string.sub(creationTimeString,12,13),
 												string.sub(creationTimeString,15,16),
 												string.sub(creationTimeString,18,19),
 												'local')
-		writeLogfile(3, "	ffmpeg-creationTime: " .. LrDate.timeToUserFormat(creationTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
-		creationTime = LrDate.timeToPosixDate(creationTime)
+		writeLogfile(4, "	ffmpeg-creationTime: " .. LrDate.timeToUserFormat(vinfo.dateCreation, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		vinfo.dateCreation = LrDate.timeToPosixDate(vinfo.dateCreation)
 		break
      end
+
+   	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
+   	-- overwrite the ffmpeg DateTimeOrig 
+   	local isOrigDateTime 
+   	vinfo.dateMetadata, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
+
+	if isOrigDateTime then
+		vinfo.srcDateTime = vinfo.dateMetadata
+	elseif vinfo.dateCapture and vinfo.dateCreation and vinfo.dateCapture < vinfo.dateCreation then
+		vinfo.srcDateTime = vinfo.dateCapture
+	else
+		vinfo.srcDateTime = vinfo.dateCreation
+	end
+
+	-------------- GPS info -------------------------------------------------
+	-- Add GPS data: export only, if not forbidden by export params
+	-- Lr GPS data has precedence over video embedded GPS data
+
+	-------------- search for avp like:  ------------------------------------
+	--     location        : +52.1234+013.1234/
+	--     location 	   : +33.9528-118.3960+026.000/
+	vinfo.latitudeVideo, vinfo.longitudeVideo, vinfo.gpsAltitudeVideo = string.match(ffmpegReport, "location%s+:%s+([%+%-]%d+%.%d+)([%+%-]%d+%.%d+)([%+%-%d%.]*)/")
+
+	local gpsData = srcPhoto:getRawMetadata("gps")
+	if gpsData and gpsData.latitude and gpsData.longitude then
+		vinfo.latitudeLr =  iif(tonumber(gpsData.latitude)   >= 0 , '+' .. gpsData.latitude, gpsData.latitude) 
+		vinfo.longitudeLr = iif(tonumber(gpsData.longitude)  >= 0 , '+' .. gpsData.longitude, gpsData.longitude)
+	end
+
+	local gpsAltData = srcPhoto:getRawMetadata("gpsAltitude")
+	if gpsAltData  then
+		vinfo.altitudeLr =  tostring(gpsAltData) 
+	end
+	
+	if not exportParams.LR_removeLocationMetadata then
+		if vinfo.latitudeLr then
+			vinfo.latitude =  vinfo.latitudeLr
+			vinfo.longitude = vinfo.longitudeLr
+			vinfo.altitude = vinfo.altitudeLr
+		else
+			vinfo.latitude =  vinfo.latitudeVideo
+			vinfo.longitude = vinfo.longitudeVideo
+			vinfo.altitude = vinfo.altitudeVideo
+		end
+		if vinfo.latitude and vinfo.longitude then
+			writeLogfile(4, string.format("\tgps: %s / %s (altitude:%s)\n", vinfo.latitude, vinfo.longitude, vinfo.altitude))
+		end
+	end		
+	LrFileUtils.delete(outfile1)
+	
+	------------------- all other info is taken from rendered video -------------------------------
+	if not cmdline2 then
+		writeTableLogfile(3, "vinfo(" .. srcVideoName .. ")", vinfo, false)
+		return vinfo
+	end
+	
+	------------------- rendered video is given --> continue with that ----------------------------
+	writeLogfile(3, cmdline2 .. "\n")
+	LrTasks.execute(cmdline2)
+	
+	if not LrFileUtils.exists(outfile2) then
+		writeLogfile(3, "  error on: " .. cmdline2 .. "\n")
+		return nil
+	end
+
+	local ffmpegReport = LrFileUtils.readFile(outfile2)
+	writeLogfile(4, "ffmpeg report(rendered video):\n" .. 
+					"===========================================================================\n".. 
+					ffmpegReport ..
+					"===========================================================================\n")
+	
 
 	-------------- duration: search for avp: 'Duration: <HH:MM:ss.msec>,' -------------------------
 	local durationString
 	for v in string.gmatch(ffmpegReport, "Duration:%s+([%d%p]+),") do
 		durationString = v
-		writeLogfile(4, "durationString: " .. durationString .. "\n")
+		writeLogfile(4, "	durationString: " .. durationString .. "\n")
 		-- translate from  HH:MM:ss.msec to seconds
 		vinfo.duration = 	tonumber(string.sub(durationString,1,2)) * 3600 +
 					tonumber(string.sub(durationString,4,5)) * 60 +
 					tonumber(string.sub(durationString,7,11))
-		writeLogfile(3, string.format("\tduration: %.2f\n", vinfo.duration))
+		writeLogfile(4, string.format("\tduration: %.2f\n", vinfo.duration))
      end
 	 
 	-------------- resolution: search for avp like:  -------------------------
@@ -330,7 +407,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 		vinfo.dimension = v
 		vinfo.sar = w
 		vinfo.dar = x
-		writeLogfile(3, string.format("\tdimension: %s vformat: %s [SAR: %s DAR: %s]\n", vinfo.dimension, vinfo.vformat, ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
+		writeLogfile(4, string.format("\tdimension: %s vformat: %s [SAR: %s DAR: %s]\n", vinfo.dimension, vinfo.vformat, ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
     end
 	 
 	-- Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080, 17474 kb/s, SAR 65536:65536 DAR 16:9, 28.66 fps, 29.67 tbr, 90k tbn, 180k tbc
@@ -339,96 +416,112 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcVideoFilename)
 		for w, x in string.gmatch(ffmpegReport, "Video:[%s%w%(%)/]+,[%s%w]+,[%s%w]+,[%s%w/]+,%s+SAR%s+([%d:]+)%s+DAR%s+([%d:]+)") do
 			vinfo.sar = w
 			vinfo.dar = x
-			writeLogfile(3, string.format("\tSAR: %s, DAR: %s\n", ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
+			writeLogfile(4, string.format("\tSAR: %s, DAR: %s\n", ifnil(vinfo.sar, '<Nil>'), ifnil(vinfo.dar, '<Nil>')))
 		end
 	end
 
+	-- get the real dimension: may be different from dimension if dar is set
+	-- dimension: NNNxMMM
+	vinfo.width, vinfo.height = string.match(vinfo.dimension, '(%d+)x(%d+)')
+	if (ifnil(vinfo.dar, '') == '') or (ifnil(vinfo.sar,'') == '1:1') then
+		vinfo.realDimension = vinfo.dimension 
+		-- aspectRatio: NNN:MMM
+		vinfo.dar = string.gsub(vinfo.dimension, 'x', ':')
+	else
+		local darWidth , darHeight = string.match(vinfo.dar, '(%d+):(%d+)')
+		vinfo.realWidth = math.floor(((tonumber(vinfo.height) * tonumber(darWidth) / tonumber(darHeight)) + 0.5) / 2) * 2 -- make sure width is an even integer
+		vinfo.realDimension = string.format("%dx%d", vinfo.realWidth, vinfo.height)
+	end
+	
 	-------------- rotation: search for avp like:  -------------------------
 	-- rotate          : 90
 	vinfo.rotation = '0'
 	for v in string.gmatch(ffmpegReport, "rotate%s+:%s+([%d]+)") do
 		vinfo.rotation = v
-		writeLogfile(3, string.format("\trotation: %s\n", vinfo.rotation))
+		writeLogfile(4, string.format("\trotation: %s\n", vinfo.rotation))
 	end
 	
-	-------------- GPS info: search for avp like:  -------------------------
-	--     location        : +52.1234+013.1234/
-	--     location 	   : +33.9528-118.3960+026.000/
-	vinfo.latitude, vinfo.longitude, vinfo.gpsHeight = string.match(ffmpegReport, "location%s+:%s+([%+%-]%d+%.%d+)([%+%-]%d+%.%d+)([%+%-%d%.]*)/")
+	-- Meta-Rotation: search for "Rotate-nn" in keywords
+	vinfo.mrotation = 0
+	local keywords = srcPhoto:getRawMetadata("keywords")
+	for i = 1, #keywords do
+		if string.find(keywords[i]:getName(), 'Rotate-', 1, true) then
+			vinfo.mrotation = string.sub (keywords[i]:getName(), 8)
+			writeLogfile(4, string.format("Keyword[%d]= %s, rotation= %s\n", i, keywords[i]:getName(), vinfo.mrotation))
+		end
+	end
+	
+	LrFileUtils.delete(outfile2)
 
-	if vinfo.latitude and vinfo.longitude then
-			writeLogfile(3, string.format("\tgps: %s / %s (height:%s)\n", vinfo.latitude, vinfo.longitude, vinfo.gpsHeight))
-	end
-	
-	LrFileUtils.delete(outfile)
-
-	if dateCapture and creationTime and dateCapture < creationTime then
-		vinfo.srcDateTime = dateCapture
-	else
-		vinfo.srcDateTime = creationTime
-	end
-	
-	return vinfo, ffinfo
+	writeTableLogfile(3, "vinfo(" .. srcVideoName .. ")", vinfo, false)
+	return vinfo
 end
 
--- ffmpegGetRotateParams(hardRotate, rotation, dimension, aspectRatio) ---------------------------------------------------------
--- returns resulting ffmpeg rotation options, dimension and aspectRatio
-function PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dimension, aspectRatio)
+-- ffmpegGetRotateParams(h, hardRotate, vrotation, mrotation, dimension, aspectRatio) ---------------------------------------------------------
+--		h			- converter handle
+--  	hardRotate	- should the video be hard-rotated
+-- 		vrotation	- rotation as set in video stream metadata
+--		mrotation	- meta-rotation as defined in Keyword 'Rotate-nn'
+--		dimension	- original dimension
+-- 		aspectRatio	- original aspect ratio 
+-- returns resulting ffmpeg options:
+--		autorotate flag
+--		rotation options, 
+--		dimension 
+--		aspectRatio
+function PSConvert.ffmpegGetRotateParams(h, hardRotate, vrotation, mrotation, dimension, aspectRatio)
+	local autorotateOpt 	= iif(hardRotate, '', '-noautorotate')
 	local rotateOpt 		= ''
 	local newDimension		= dimension
 	local newAspectRatio	= aspectRatio
+	local totalRotation		= tostring((tonumber(vrotation) + tonumber(mrotation)) % 360)
+	writeLogfile(4, string.format("ffmpegGetRotateParams: hardRotate: %s, v-rotation: %s, m-rotation: %s --> total rotation: %s\n", tostring(hardRotate), vrotation, mrotation, totalRotation))
 	
 	if hardRotate then
-		-- hard-rotation: rotate video stream, calculate rotated dimension, remove rotation flag from metadata
-		if rotation == "90" then
-			rotateOpt = ',transpose=1 -metadata:s:v:0 rotate=0'
-			newDimension = string.format("%sx%s", 
-										string.sub(dimension, string.find(dimension,'x') + 1, -1),
-										string.sub(dimension, 1, string.find(dimension,'x') - 1))
-			newAspectRatio = string.gsub(newDimension, 'x', ':')
+		-- newDimension and newAspectRatio depends on totalRotation
+		if (totalRotation == '90') or (totalRotation == '270') then 
+				newDimension = string.format("%sx%s", 
+											string.sub(dimension, string.find(dimension,'x') + 1, -1),
+											string.sub(dimension, 1, string.find(dimension,'x') - 1))
+				newAspectRatio = string.gsub(newDimension, 'x', ':')
+			writeLogfile(4, string.format("ffmpegGetRotateParams: total rotation: %s --> newDim: %s, newAspect: %s\n", totalRotation, newDimension, newAspectRatio))
+		end
+	
+		-- vrotation will be handled by ffmpgeg's autorotate feature
+		-- mrotation will be handled by us: rotate video stream, calculate rotated dimension
+		if mrotation == "90" then
+			rotateOpt = ',transpose=1'
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 90\n")
-		elseif rotation == "270" then
-			rotateOpt = ',transpose=2 -metadata:s:v:0 rotate=0'
-			newDimension = string.format("%sx%s", 
-										string.sub(dimension, string.find(dimension,'x') + 1, -1),
-										string.sub(dimension, 1, string.find(dimension,'x') - 1))
-			newAspectRatio = string.gsub(newDimension, 'x', ':')
+		elseif mrotation == "270" then
+			rotateOpt = ',transpose=2'
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 270\n")
-		elseif rotation == "180" then
-			rotateOpt = ',hflip,vflip -metadata:s:v:0 rotate=0'
+		elseif mrotation == "180" then
+			rotateOpt = ',hflip,vflip'
 			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 180\n")
 		end
 	else
-		-- soft-rotation: add rotation flag to metadata
-		if rotation == "90" then
-			rotateOpt = ' -metadata:s:v:0 rotate=90'
-			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 90\n")
-		elseif rotation == "180" then
-			rotateOpt = ' -metadata:s:v:0 rotate=180'
-			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 180\n")
-		elseif rotation == "270" then
-			rotateOpt = ' -metadata:s:v:0 rotate=270'
-			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by 270\n")
+		-- soft-rotation for meta-rotation: add /replace rotation flag to stream metadata: will not work for ffmpeg >= 3.3.x
+		if (tonumber(mrotation) > 0) then
+			rotateOpt = ' -metadata:s:v:0 rotate=' .. tostring(totalRotation)
+			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by " .. tostring(totalRotation) .. "\n")
 		end 
 	end
-	return rotateOpt, newDimension, newAspectRatio
+	return autorotateOpt, rotateOpt, newDimension, newAspectRatio
 end
 
--- ffmpegGetThumbFromVideo(h, srcVideoFilename, ffinfo, thumbFilename, dimension, rotation, duration) ---------------------------------------------------------
-function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, ffinfo, thumbFilename, dimension, rotation, duration)
+-- ffmpegGetThumbFromVideo(h, srcVideoFilename, vinfo, thumbFilename) ---------------------------------------------------------
+function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, vinfo, thumbFilename)
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
-	local rotateOpt, newDim, aspectRatio
-	local snapshotTime = iif(duration < 4, '00:00:00', '00:00:03') 
+	local autorotateOpt, rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(h, true, vinfo.rotation, vinfo.mrotation, vinfo.realDimension, string.gsub(vinfo.realDimension, 'x', ':'))
+	local snapshotTime = iif(vinfo.duration < 4, '00:00:00', '00:00:03') 
 	
-	rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(h, true, rotation, dimension, string.gsub(dimension, 'x', ':'))
-	
-	writeLogfile(3, string.format("ffmpegGetThumbFromVideo: %s dim %s rotation %s duration %d --> newDim: %s aspectR: %s snapshot at %s\n", 
-								srcVideoFilename, dimension, rotation, duration, newDim, aspectRatio, snapshotTime))
+	writeLogfile(3, string.format("ffmpegGetThumbFromVideo: %s dim %s v-rotation %s m-rotation %s duration %d --> newDim: %s aspectR: %s snapshot at %s\n", 
+								srcVideoFilename, vinfo.realDimension, vinfo.rotation, vinfo.mrotation, vinfo.duration, newDim, aspectRatio, snapshotTime))
 	
 	-- generate first thumb from video
 	local cmdline = cmdlineQuote() ..
 						'"' .. h.ffmpeg .. '" ' .. 
-						iif(ffinfo.version == '1.2.1', '', '-noautorotate ') ..  
+						autorotateOpt ..  
 						'-i "' .. srcVideoFilename .. '" ' ..
 						'-y -vframes 1 -ss ' .. snapshotTime .. ' -an -qscale 0 -f mjpeg -vf format=yuv420p'.. rotateOpt .. ' ' ..
 						'-s ' .. newDim .. ' -aspect ' .. aspectRatio .. ' ' ..
@@ -518,20 +611,18 @@ function PSConvert.videoIsNativePSFormat(videoExt)
 	return false
 end
 
--- convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, hardRotate, rotation, videoQuality, dstVideoFilename) --------------------------
+-- convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotate, videoQuality, dstVideoFilename) --------------------------
 --[[ 
 	converts a video to an mp4 with a given resolution using the ffmpeg and qt-faststart tool
 	h					conversionHandle
 	srcVideoFilename	the src video file
-	ffinfo				ffmpeg tool version info
 	vinfo				orig video metadata info
 	dstHeight			target height in pixel
 	hardrotate			do hard rotation
-	rotation			rotation angle
 	videoQuality	audio / video conversion options
 	dstVideoFilename	the target video file
 ]]
-function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, hardRotate, rotation, videoQuality, dstVideoFilename)
+function PSConvert.convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotate, videoQuality, dstVideoFilename)
 	local tmpVideoFilename = LrPathUtils.replaceExtension(LrPathUtils.removeExtension(dstVideoFilename) .. '_TMP', LrPathUtils.extension(dstVideoFilename))
 	local outfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'txt')
 	local passLogfile =  LrPathUtils.replaceExtension(tmpVideoFilename, 'passlog')
@@ -541,16 +632,20 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 	local dstDim = string.format("%dx%d", dstWidth, dstHeight)
 	local dstAspect = string.gsub(dstDim, 'x', ':')
 
-	writeLogfile(3, string.format("convertVideo: %s aspectR %s, dstHeight: %d hardRotate %s rotation %s\n", 
-								srcVideoFilename, vinfo.dar, dstHeight, tostring(hardRotate), rotation))
-	
-	-- disable autorotate option of newer ffmpeg versions
-	local noAutoRotateOpt = iif(ffinfo.version == '1.2.1', '', '-noautorotate ')
+	writeLogfile(3, string.format("convertVideo: %s aspectR %s, dstHeight: %d hardRotate %s v-rotation %s m-rotation %s\n", 
+								srcVideoFilename, vinfo.dar, dstHeight, tostring(hardRotate), vinfo.rotation, vinfo.mrotation))
 	
 	-- get rotation params based on rotate flag 
-	local rotateOpt
-	rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(h, hardRotate, rotation, dstDim, dstAspect)
+	local autorotateOpt, rotateOpt
+	autorotateOpt, rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(h, hardRotate, vinfo.rotation, vinfo.mrotation, dstDim, dstAspect)
 
+	-- ffmpeg major version 4 is supported, anything below may or may not work 
+	local ffmpeg_major_version = string.match(vinfo.ffmpeg_version, '^(%d+)')
+	if tonumber(ffmpeg_major_version) < 4 then
+		writeLogfile(2, string.format("!!! Warning: Unsupported ffmpeg version %s may not work as expected, please use ffmpeg V 4.x or higher!!!\n", vinfo.ffmpeg_version))
+		if tonumber(ffmpeg_major_version) == 1 then autorotateOpt = '' end
+	end	 
+	
 	-- add creation_time metadata to destination video
 	local createTimeOpt = '-metadata creation_time=' .. LrDate.timeToUserFormat(LrDate.timeFromPosixDate(vinfo.srcDateTime), '"%Y-%m-%d %H:%M:%S" ', false)
 		
@@ -566,7 +661,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 
 	local cmdline =  cmdlineQuote() ..
 				'"' .. h.ffmpeg .. '" ' .. 
-				noAutoRotateOpt ..
+				autorotateOpt ..
 				ifnil(convOptions.input_options, "") .. " " ..
 				'-i "' 	.. srcVideoFilename .. '" ' .. 
 				'-y ' 	..  -- override output file
@@ -606,7 +701,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, ffinfo, vinfo, dstHeight, h
 	if convOptions.video_options_pass_2 then
     	cmdline =   cmdlineQuote() ..
     				'"' .. h.ffmpeg .. '" ' .. 
-    				noAutoRotateOpt ..
+    				autorotateOpt ..
 					ifnil(convOptions.input_options, "") .. " " ..
     				'-i "' ..	srcVideoFilename .. '" ' .. 
 					'-y ' 	..  -- override output file
