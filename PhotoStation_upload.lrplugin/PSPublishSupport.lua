@@ -530,7 +530,7 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     
     	commentsDownload	= false,
     	pubCommentsDownload	= false,
-    	pubColorDownload	= true,
+    	pubColorDownload	= false,
     
     	publishMode 		= 'Publish',
     	downloadMode		= 'Yes',
@@ -1152,11 +1152,10 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
 		
 		writeTableLogfile(4, "commentListLr", commentListLr)
+
 		-- if we do not call commentCallback, the photo goes to 'To re-publish'
---		if publishSettings.commentsDownload or publishSettings.pubCommentsDownload then 
-			commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
-			nComments = nComments + #commentListLr
---		end
+		commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
+		nComments = nComments + #commentListLr
     	
    		nProcessed = nProcessed + 1
    		progressScope:setPortionComplete(nProcessed, nPhotos) 						    

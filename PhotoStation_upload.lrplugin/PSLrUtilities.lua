@@ -136,23 +136,23 @@ function PSLrUtilities.getDateTimeOriginal(srcPhoto)
  	if srcPhoto:getRawMetadata("dateTimeOriginal") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginal")
 		isOrigDateTime = true
-		writeLogfile(3, "  dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		writeLogfile(3, "	dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeOriginalISO8601") then
 		srcDateTimeISO8601 	= srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
 		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
 		isOrigDateTime = true
-		writeLogfile(3, string.format("  dateTimeOriginalISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
+		writeLogfile(3, string.format("	dateTimeOriginalISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	elseif srcPhoto:getRawMetadata("dateTimeDigitized") then
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitized")
-		writeLogfile(3, "  dateTimeDigitized: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+		writeLogfile(3, "	dateTimeDigitized: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
 		srcDateTimeISO8601 	= srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
 		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
-		writeLogfile(3, string.format("  dateTimeDigitizedISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
+		writeLogfile(3, string.format("	dateTimeDigitizedISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	elseif srcPhoto:getFormattedMetadata("dateCreated") and srcPhoto:getFormattedMetadata("dateCreated") ~= '' then
 		srcDateTimeISO8601 	= srcPhoto:getFormattedMetadata("dateCreated")
 		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
-		writeLogfile(3, string.format("  dateCreated: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
+		writeLogfile(3, string.format("	dateCreated: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	end
 	
 	-- if nothing found in metadata of srcPhoto: take the fileCreationDate
@@ -162,10 +162,10 @@ function PSLrUtilities.getDateTimeOriginal(srcPhoto)
 
 		if fileAttr["fileCreationDate"] then
 			srcDateTime = fileAttr["fileCreationDate"]
-			writeLogfile(3, "  fileCreationDate: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
+			writeLogfile(3, "	fileCreationDate: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 		else
 			srcDateTime = LrDate.currentTime()
-			writeLogfile(3, string.format("  no date found for %s, using current date: %s\n",
+			writeLogfile(3, string.format("	no date found for %s, using current date: %s\n",
 										 srcFilename, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 		end
 	end

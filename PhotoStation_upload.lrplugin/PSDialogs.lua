@@ -1875,6 +1875,13 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				fill_horizontal = 1,
 				value 			= bind 'pubCommentsDownload',
 			},
+
+			f:checkbox {
+				title 			= LOC "$$$/PSUpload/CollectionSettings/PublicColorDownload=Public Color",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicColorDownloadTT=Download photo color from Photo Station public shares to Lr Comments panel",
+				fill_horizontal = 1,
+				value 			= bind 'pubColorDownload',
+			},
 		},
 	}
 end

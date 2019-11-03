@@ -887,4 +887,3 @@ function PSSharedAlbumMgmt.downloadColorLabels(functionContext, downloadSharedAl
 		getColorLabelsFromPublishService(functionContext, downloadSharedPhotos[i].publishServiceName, downloadSharedPhotos[i].photoInfos)
 	end
 end
-

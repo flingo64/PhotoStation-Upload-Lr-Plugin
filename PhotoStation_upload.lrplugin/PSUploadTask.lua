@@ -230,14 +230,14 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 end
 
 -----------------
--- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, orgVideoInfo) 
+-- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, vinfo) 
 --[[
 	generate all required thumbnails, at least one video with alternative resolution (if we don't do, Photo Station will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
 ]]
-local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, orgVideoInfo) 
+local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, vinfo) 
 	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
 	local vidExtOrg = LrPathUtils.extension(renderedVideoPath)
 	local picDir = LrPathUtils.parent(renderedVideoPath)
@@ -275,101 +275,36 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		MOBILE = 	'None',
 	}
 	
-	local LrExportLocations	= not exportParams.LR_removeLocationMetadata
-	
-	local realDimension
 	local retcode
 	local convKeyOrig, convKeyAdd
 	local vid_Orig_Filename, vid_Replace_Filename, vid_Add_Filename
 	
 	writeLogfile(3, string.format("uploadVideo: %s\n", renderedVideoPath)) 
 
-	-- there is no way to identify whether the video is exported as original or rendered
-	-- --> get both video infos 
-	-- get rendered video infos: DateTimeOrig, duration, dimension, sample aspect ratio, display aspect ratio
-	local vinfo, ffinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, renderedVideoPath)
-	if not (vinfo and orgVideoInfo) then
-		return false
-	end
-	
 	-- upload file timestamp: PS uses the file timestamp as capture date for videos
 	local dstFileTimestamp
 	if string.find('capture,mixed', ifnil(exportParams.uploadTimestamp, 'capture'), 1, true) then
-		writeLogfile(3, string.format("uploadVideo: %s - using capture date as file timestamp\n", renderedVideoPath)) 
-    	-- restore the capture time for the rendered video
-    	vinfo.srcDateTime = orgVideoInfo.srcDateTime
-    	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
-    	-- overwrite the ffmpeg DateTimeOrig 
-    	local metaDateTime, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
-    	if isOrigDateTime or not vinfo.srcDateTime then
-    		vinfo.srcDateTime = metaDateTime
-    	end
+ 		writeLogfile(3, string.format("uploadVideo: %s - using capture date as file timestamp\n", renderedVideoPath)) 
     	dstFileTimestamp = vinfo.srcDateTime 
 	else
+ 		writeLogfile(3, string.format("uploadVideo: %s - using current timestamp as file timestamp\n", renderedVideoPath)) 
 		dstFileTimestamp = LrDate.timeToPosixDate(LrDate.currentTime())
 	end
 
-	-- get the real dimension: may be different from dimension if dar is set
-	-- dimension: NNNxMMM
-	local srcHeight = tonumber(string.sub(vinfo.dimension, string.find(vinfo.dimension,'x') + 1, -1))
-	if (ifnil(vinfo.dar, '') == '') or (ifnil(vinfo.sar,'') == '1:1') then
-		realDimension = vinfo.dimension
-		-- aspectRatio: NNN:MMM
-		vinfo.dar = string.gsub(vinfo.dimension, 'x', ':')
-	else
-		local darWidth = tonumber(string.sub(vinfo.dar, 1, string.find(vinfo.dar,':') - 1))
-		local darHeight = tonumber(string.sub(vinfo.dar, string.find(vinfo.dar,':') + 1, -1))
-		local realSrcWidth = math.floor(((srcHeight * darWidth / darHeight) + 0.5) / 2) * 2 -- make sure width is an even integer
-		realDimension = string.format("%dx%d", realSrcWidth, srcHeight)
-	end
-	
 	-- get the right conversion settings (depending on Height)
-	_, convKeyOrig = PSConvert.getConvertKey(exportParams.cHandle, srcHeight)
+	_, convKeyOrig = PSConvert.getConvertKey(exportParams.cHandle, tonumber(vinfo.height))
 	vid_Replace_Filename = convParams[convKeyOrig].filename
 	convKeyAdd = addVideoResolution[convKeyOrig]
 	if convKeyAdd ~= 'None' then
 		vid_Add_Filename = convParams[convKeyAdd].filename
 	end
 
-	-- Meta-Rotation: search for "Rotate-nn" in keywords, this will add/overwrite rotation infos from mpeg header
-	local addRotate = false
-	local keywords = srcPhoto:getRawMetadata("keywords")
-	for i = 1, #keywords do
-		if string.find(keywords[i]:getName(), 'Rotate-', 1, true) then
-			local metaRotation = string.sub (keywords[i]:getName(), 8)
-			if metaRotation ~= vinfo.rotation then
-				vinfo.rotation = metaRotation
-				addRotate = true
-				break
-			end
-			writeLogfile(3, string.format("Keyword[%d]= %s, rotation= %s\n", i, keywords[i]:getName(), vinfo.rotation))
-		end
-	end
-
-	-- video rotation only if requested by export param or by keyword (meta-rotation)
-	local videoRotation = '0'
-	if exportParams.hardRotate or addRotate then
-		videoRotation = vinfo.rotation
-	end
-	
-	-- GPS: export only, if not forbidden by export params
-	if LrExportLocations then
-		-- Lr GPS data has precedence over video embedded GPS data
-		local gpsData = srcPhoto:getRawMetadata("gps")
-		if gpsData and gpsData.latitude and gpsData.longitude then
-			vinfo.latitude =  iif(tonumber(gpsData.latitude)   >= 0 , '+' .. gpsData.latitude, gpsData.latitude) 
-			vinfo.longitude = iif(tonumber(gpsData.longitude)  >= 0 , '+' .. gpsData.longitude, gpsData.longitude)
-		end
-	else
-		vinfo.latitude = nil
-		vinfo.longitude = nil
-	end
-		
 	-- replace original video if:
 	--		- srcVideo is to be rotated (meta or hard)
 	-- 		- srcVideo is mp4, but not h264 (PS would try to open, but does only support h264
 	local replaceOrgVideo = false
-	if videoRotation ~= '0' 
+	if tonumber(vinfo.rotation) > 0 
+	or tonumber(vinfo.mrotation) > 0
 	or (PSConvert.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264') 
 	or exportParams.orgVideoForceConv then
 		replaceOrgVideo = true
@@ -387,7 +322,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	
 	if exportParams.thumbGenerate and ( 
 		-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
-		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, renderedVideoPath, ffinfo, thmb_ORG_Filename, realDimension, vinfo.rotation, vinfo.duration)
+		not PSConvert.ffmpegGetThumbFromVideo (exportParams.cHandle, renderedVideoPath, vinfo, thmb_ORG_Filename)
 
 		-- generate all other thumb from first thumb
 		or ( not exportParams.largeThumbs and not PSConvert.convertPicConcurrent(exportParams.cHandle, thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
@@ -410,10 +345,10 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	)
 
 	-- generate mp4 in original size if srcVideo is not already mp4/h264 or if video is rotated
-	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, srcHeight, exportParams.hardRotate, videoRotation, exportParams.orgVideoQuality, vid_Replace_Filename))
+	or ((replaceOrgVideo or addOrigAsMp4) and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo, vinfo.height, exportParams.hardRotate, exportParams.orgVideoQuality, vid_Replace_Filename))
 	
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, ffinfo, vinfo, convParams[convKeyAdd].height, exportParams.hardRotate, videoRotation, exportParams.addVideoQuality, vid_Add_Filename))
+	or ((convKeyAdd ~= 'None') and not PSConvert.convertVideo(exportParams.cHandle, renderedVideoPath, vinfo, convParams[convKeyAdd].height, exportParams.hardRotate, exportParams.addVideoQuality, vid_Add_Filename))
 
 	-- if photo has a title: generate a title file  	
 	or (title_Filename and not PSConvert.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
@@ -463,7 +398,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 end
 
 -----------------
--- uploadMetadata(srcPhoto, dstPath, exportParams) 
+-- uploadMetadata(srcPhoto, vinfo, dstPath, exportParams) 
 -- Upload metadata of a photo or video according to upload options:
 -- 	- title 			always
 -- 	- description		always
@@ -473,7 +408,7 @@ end
 -- 	- faces				if option is set
 -- 	- color label tags	if option is set
 -- 	- rating tags		if option is set
-local function uploadMetadata(srcPhoto, dstPath, exportParams)
+local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 	local isVideo 			= srcPhoto:getRawMetadata("isVideo")
 	local dstAlbum 			= ifnil(string.match(dstPath , '(.*)\/[^\/]+'), '/')
 	local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'album', dstAlbum, dstPath, isVideo, true)
@@ -519,21 +454,21 @@ local function uploadMetadata(srcPhoto, dstPath, exportParams)
 	end
 	
 	-- check GPS and location tags: only if allowed by Lr export/pubish settings ----- 
-	local gpsData, videoInfo
 	local latitude, longitude = '0', '0'
 	local locationTagNamesAdd, locationTagNamesRemove, locationTagIdsRemove
 	if LrExportLocations then
-		-- Lr GPS data has precedence over video embedded GPS data
-		gpsData = srcPhoto:getRawMetadata("gps")
-		if isVideo then videoInfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto:getRawMetadata('path')) end
-		
-    	if gpsData and gpsData.latitude and gpsData.longitude then
-    		latitude = gpsData.latitude
-    		longitude = gpsData.longitude
-    	elseif videoInfo and videoInfo.latitude and videoInfo.longitude then 
-    		latitude = videoInfo.latitude
-    		longitude = videoInfo.longitude
-    	end
+		if isVideo then
+			if vinfo and vinfo.latitude and vinfo.longitude then 
+    			latitude = vinfo.latitude
+    			longitude = vinfo.longitude
+    		end
+		else
+			local gpsData = srcPhoto:getRawMetadata("gps")
+    		if gpsData and gpsData.latitude and gpsData.longitude then
+    			latitude = gpsData.latitude
+    			longitude = gpsData.longitude
+			end
+		end	
     	
     	if (math.abs(tonumber(latitude) - tonumber(ifnil(psPhotoInfos.info.lat, 0))) > 0.00001) or (math.abs(tonumber(longitude) - tonumber(ifnil(psPhotoInfos.info.lng, 0))) > 0.00001) then
     		table.insert(photoParams, { attribute =  'gps_lat', value = latitude })
@@ -685,18 +620,18 @@ local function ackRendition(rendition, publishedPhotoId, publishedCollectionId)
 end
 
 -----------------
--- noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
-local function noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollectionId)
+-- noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, vinfo, publishedCollectionId)
+local function noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, vinfo, publishedCollectionId)
 	local photoInfo = {}
 	
 	writeLogfile(3, string.format("noteForDeferredMetadataUpload(%s)\n", publishedPhotoId))
 	photoInfo.rendition 			= rendition
 	photoInfo.publishedPhotoId 		= publishedPhotoId
 	photoInfo.publishedCollectionId = publishedCollectionId
-	if videoInfo then
+	photoInfo.vinfo 				= vinfo
+	if vinfo then
 		photoInfo.isVideo			= true
-		photoInfo.latitude 			= videoInfo.latitude
-		photoInfo.longitude 		= videoInfo.longitude
+		photoInfo.vinfo 			= vinfo
 	else
 		photoInfo.isVideo			= false
 	end
@@ -721,6 +656,8 @@ local function batchUploadMetadata(functionContext, deferredMetadataUploads, exp
 		local photoInfo 				= deferredMetadataUploads[1]
 		local rendition 				= photoInfo.rendition
 		local srcPhoto 					= rendition.photo
+		local isVideo					= photoInfo.isVideo
+		local vinfo						= photoInfo.vinfo
 		local dstFilename 				= photoInfo.publishedPhotoId
 		local publishedCollectionId 	= photoInfo.publishedCollectionId
 		local photoThere 
@@ -730,7 +667,7 @@ local function batchUploadMetadata(functionContext, deferredMetadataUploads, exp
 
 		while not photoThere and maxWait > 0 do
 			local dstAlbum 			= ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
-			local isVideo, dontUseCache = photoInfo.isVideo, false
+			local dontUseCache = false
 			if not PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'album', dstAlbum, dstFilename, isVideo, dontUseCache) then
 				LrTasks.sleep(1)
 				maxWait = maxWait - 1
@@ -739,7 +676,7 @@ local function batchUploadMetadata(functionContext, deferredMetadataUploads, exp
 			end
 		end
 		
-		if	(not photoThere or not uploadMetadata(srcPhoto, dstFilename, exportParams) or
+		if	(not photoThere or not uploadMetadata(srcPhoto, vinfo, dstFilename, exportParams) or
 			(publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
 		then
 			table.insert(failures, srcPhoto:getRawMetadata("path"))
@@ -1267,20 +1204,26 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
     				end
 				end
 
-				local videoInfo
-				if srcPhoto:getRawMetadata("isVideo") then videoInfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto:getRawMetadata('path')) end
+				local vinfo
+				if srcPhoto:getRawMetadata("isVideo") then 
+					-- if publishMode is 'Metadata' we just extract metadata 
+					-- else we extract metadata plus video infos from the rendered video 
+					vinfo = PSConvert.ffmpegGetAdditionalInfo(exportParams.cHandle, srcPhoto,  
+																iif(publishMode == 'Metadata', nil, pathOrMessage), 
+																exportParams)
+				end
 				  
 				if (publishMode == 'Metadata' 
-					and (	not	uploadMetadata(srcPhoto, publishedPhotoId, exportParams)
+					and (	not	uploadMetadata(srcPhoto, vinfo, publishedPhotoId, exportParams, vinfo)
 						 or not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
 					)
 				or (string.find('Export,Publish', publishMode, 1, true) and srcPhoto:getRawMetadata("isVideo") 	
-					and	(	not videoInfo or
-							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, videoInfo)
+					and	(	not vinfo or
+							not uploadVideo(pathOrMessage, srcPhoto, dstDir, dstFilename, exportParams, vinfo)
 						-- upload of metadata to recently uploaded videos must wait until PS has registered it 
 						-- this may take some seconds (approx. 15s), so note the video here and defer metadata upload to a second run
-						 or (not publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, nil)) 
-						 or (    publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, videoInfo, publishedCollection.localIdentifier)) 
+						 or (not publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, vinfo, nil)) 
+						 or (    publishedCollection and not noteForDeferredMetadataUpload(deferredMetadataUploads, rendition, publishedPhotoId, vinfo, publishedCollection.localIdentifier)) 
 						)	
 					)
 				or (string.find('Export,Publish', publishMode, 1, true) and not srcPhoto:getRawMetadata("isVideo") 
