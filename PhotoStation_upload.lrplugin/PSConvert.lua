@@ -333,8 +333,9 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 	-------------- search for avp like:  ------------------------------------
 	--     location        : +52.1234+013.1234/
 	--     location 	   : +33.9528-118.3960+026.000/
-	vinfo.latitudeVideo, vinfo.longitudeVideo, vinfo.gpsAltitudeVideo = string.match(ffmpegReport, "location%s+:%s+([%+%-]%d+%.%d+)([%+%-]%d+%.%d+)([%+%-%d%.]*)/")
-
+	--     location	 	   : +33.9528-118.3960		(DJI Mavic)
+	vinfo.latitudeVideo, vinfo.longitudeVideo, vinfo.gpsAltitudeVideo = string.match(ffmpegReport, "location%s+:%s+([%+%-]%d+%.%d+)([%+%-]%d+%.%d+)([%+%-%d%.]*)")
+	
 	local gpsData = srcPhoto:getRawMetadata("gps")
 	if gpsData and gpsData.latitude and gpsData.longitude then
 		vinfo.latitudeLr =  iif(tonumber(gpsData.latitude)   >= 0 , '+' .. gpsData.latitude, gpsData.latitude) 
@@ -451,6 +452,11 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 		end
 	end
 	
+	-------------- Audio: search for avp like:  -------------------------
+	-- Stream #0:1(eng): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, mono, fltp, 96 kb/s (default)
+	vinfo.aFormat = string.match(ffmpegReport, "Audio:%s+(%w+)")
+	writeLogfile(4, string.format("\taFormat: %s\n", vinfo.aFormat))
+
 	LrFileUtils.delete(outfile2)
 
 	writeTableLogfile(3, "vinfo(" .. srcVideoName .. ")", vinfo, false)
@@ -663,9 +669,11 @@ function PSConvert.convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotat
 				'"' .. h.ffmpeg .. '" ' .. 
 				autorotateOpt ..
 				ifnil(convOptions.input_options, "") .. " " ..
+				iif(vinfo.aFormat, '', '-f lavfi -i anullsrc ') ..
 				'-i "' 	.. srcVideoFilename .. '" ' .. 
 				'-y ' 	..  -- override output file
 				
+				iif(vinfo.aFormat,'', '-shortest ') ..
 				convOptions.audio_options .. ' ' ..
 				iif(convOptions.video_options_pass_2, '-pass 1 ', '') ..
 				convOptions.video_filters ..
@@ -703,9 +711,11 @@ function PSConvert.convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotat
     				'"' .. h.ffmpeg .. '" ' .. 
     				autorotateOpt ..
 					ifnil(convOptions.input_options, "") .. " " ..
+					iif(vinfo.aFormat, '', '-f lavfi -i anullsrc ') ..
     				'-i "' ..	srcVideoFilename .. '" ' .. 
 					'-y ' 	..  -- override output file
 					
+					iif(vinfo.aFormat,'', '-shortest ') ..
 					PSConvert.convOptions[videoQuality].audio_options .. ' ' ..
 					'-pass 2 ' ..
 					convOptions.video_filters ..
