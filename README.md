@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.8.7<br>
+Version 6.9.0<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -328,7 +328,7 @@ Face regions can't be downloaded for cropped photos, since Lr won't accept the f
 
 Copyright
 ==========
-Copyright(c) 2015 - 2019, Martin Messmer
+Copyright(c) 2015 - 2020, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

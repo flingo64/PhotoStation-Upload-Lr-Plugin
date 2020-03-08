@@ -1,4 +1,4 @@
-﻿"$$$/PSUpload/CollectionSettings/CaptionDownload=Beschreibung"
+"$$$/PSUpload/CollectionSettings/CaptionDownload=Beschreibung"
 "$$$/PSUpload/CollectionSettings/CaptionDownloadTT=Download der Beschreibung (Caption) von der Photo Station"
 "$$$/PSUpload/CollectionSettings/CommentsDownload=Private Kommentare"
 "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download von Foto-Kommentaren von der Photo Station (privat) zur Anzeige im Lr 'Kommentare'-Panel"

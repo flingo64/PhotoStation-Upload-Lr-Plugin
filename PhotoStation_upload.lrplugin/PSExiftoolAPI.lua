@@ -336,7 +336,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
     				personTag.width 	= width / (photoDimension.cropRight - photoDimension.cropLeft) 
     				personTag.height 	= height / (photoDimension.cropBottom - photoDimension.cropTop)
     				personTag.rotation 	= photoRotation
-    				personTag.trotation = region.Rotation
+    				personTag.trotation = ifnil(region.Rotation, 0.0)
     				personTag.name 		= region.Name
     				
     				personTags[j] = personTag 
