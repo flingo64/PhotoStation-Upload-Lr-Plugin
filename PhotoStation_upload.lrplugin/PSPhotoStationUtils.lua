@@ -822,7 +822,6 @@ function PSPhotoStationUtils.removePhotosFromSharedAlbum(h, sharedAlbumName, pho
 	
 	if not success then return false end 
 	
-	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true	
 end
 
