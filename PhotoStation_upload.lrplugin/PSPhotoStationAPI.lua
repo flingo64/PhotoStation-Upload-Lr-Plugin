@@ -619,7 +619,7 @@ function PSPhotoStationAPI.removePhotosFromSharedAlbum(h, sharedAlbumName, photo
 	
 	if not respArray then return false, errorCode end 
 
-	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s,%d photos) returns OK.\n', sharedAlbumName, #photos))
+	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true
 end
 
