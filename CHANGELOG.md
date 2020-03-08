@@ -1,6 +1,13 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.9.0
+-------------
+- DJI Mavic video support:
+  - support for DJI Mavic's GPS metadata notation (missing '/' after gps values)
+  - support for videos w/o audio streams (e.g. the DJI Mavic 'raw' videos): since PS would ignore those videos, the plugin now checks for the existence of the audio stream and will add a silent audio stream if missing  
+- Bugfix for exception '(string "PSExiftoolApi.lua"):344: bad argument #8 to 'format' (number expected , got nil)' 
+
 Version 6.8.7
 -------------
 - Bugfix: Fixed broken video hard-rotation also for videos with embedded rotation tag for ffmpeg >= 3.3.x (see issue #43)
