@@ -55,7 +55,7 @@
 "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Chemin d'exiftool erroné."
 "$$$/PSUpload/Dialogs/Messages/FileFormatNoSupp=Format de fichier non pris en charge! Sélectionner: [JPEG],[TIFF],[DNG/Aperçu JPEG:taille réelle] ou [Original]."
 "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Le chemin de l'Album de destination n'est pas valide"
-"$$$/PSUpload/Dialogs/Messages/LocationTagSeperator/PleaseTranslate=Tag seperator must be empty or a single character"
+"$$$/PSUpload/Dialogs/Messages/LocationTagSeperator/PleaseTranslate=Tag separator must be empty or a single character"
 "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Chemin de Synology Photo Station Uploader manquant ou incorrect. Réparez-le dans la section Paramètres generaux du Gestionnaire de modules externes."
 "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=Vous pouvez télécharger la note native ou le marqueur général de notation traduite de Photo Station."
 "$$$/PSUpload/Dialogs/Messages/RenameNoSupp=Option de dénomination de fichier Lr non pris en charge en mode Publier!"
