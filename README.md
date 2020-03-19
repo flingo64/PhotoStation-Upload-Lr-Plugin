@@ -14,7 +14,7 @@ Forum threads:
 
 [Support Page](https://messmer-online.de/index.php/software/11-photo-statlr)<br>
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
-[Get involved: Let Photo StatLr speak your language](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Contributions:-How-to-contribute-a-translation-for-Photo-StatLr.)<br>
+[Get involved: Let Photo StatLr speak your language](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/30-Contributions-How%20to%20contribute%20a%20translation%20for%20Photo%20StatLr.md)<br>
  
 Copyright(c) 2015-2019, Martin Messmer<br>
 
