@@ -156,7 +156,7 @@ function PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	end
 	
 	-- if nothing found in metadata of srcPhoto: take the fileCreationDate
-	if not srcDateTime then
+	if not srcDateTime or srcDateTime < 0 then
 		local srcFilename = ifnil(srcPhoto:getRawMetadata("path"), "")
 		local fileAttr = LrFileUtils.fileAttributes(srcFilename)
 
