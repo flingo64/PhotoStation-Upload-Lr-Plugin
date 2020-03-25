@@ -1,6 +1,6 @@
 Photo StatLr (Lightroom plugin)
 ======================================
-Version 6.9.0<br>
+Version 6.9.1<br>
 __[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
 
@@ -16,7 +16,7 @@ Forum threads:
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
 [Get involved: Let Photo StatLr speak your language](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/30-Contributions-How%20to%20contribute%20a%20translation%20for%20Photo%20StatLr.md)<br>
  
-Copyright(c) 2015-2019, Martin Messmer<br>
+Copyright(c) 2015-2020, Martin Messmer<br>
 
 Overview
 =========

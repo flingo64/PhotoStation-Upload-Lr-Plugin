@@ -1,6 +1,10 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.9.1
+-------------
+- Bugfix for an exception during video upload caused by missing date info in video header (e.g. videos produced with Shotcut)
+
 Version 6.9.0
 -------------
 - DJI Mavic video support:
