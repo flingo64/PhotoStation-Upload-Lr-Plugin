@@ -313,17 +313,30 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 		break
      end
 
-   	-- look also for DateTimeOriginal in Metadata: if metadata include DateTimeOrig, then this will 
-   	-- overwrite the ffmpeg DateTimeOrig 
-   	local isOrigDateTime 
-   	vinfo.dateMetadata, isOrigDateTime = PSLrUtilities.getDateTimeOriginal(srcPhoto)
-
-	if isOrigDateTime then
-		vinfo.srcDateTime = vinfo.dateMetadata
-	elseif vinfo.dateCapture and vinfo.dateCreation and vinfo.dateCapture < vinfo.dateCreation then
-		vinfo.srcDateTime = vinfo.dateCapture
+   	-- look also for DateTimeOriginal in Metadata
+   	local dateTime, isMetadataDate = PSLrUtilities.getDateTimeOriginal(srcPhoto) 
+	if isMetadataDate then
+		vinfo.dateMetadata = dateTime
 	else
+		vinfo.dateFileCreation = dateTime
+	end
+	
+	-- take the best available dateTime as srcDateTime
+	--  - dateTimeOrginal from Lr metadata (best)
+	--  - date from video header 'date:'
+	--  - date from video header 'creation date:'
+	--  - dateTimeDigitized from Lr metadata
+	--  - dateTimeCreated from Lr metadata
+	--  - cration date from file
+	--  - current date (worst)
+	if vinfo.dateMetadata then
+		vinfo.srcDateTime = vinfo.dateMetadata
+	elseif vinfo.dateCapture and (not vinfo.dateCreation or vinfo.dateCapture < vinfo.dateCreation) then
+		vinfo.srcDateTime = vinfo.dateCapture
+	elseif vinfo.dateCreation then
 		vinfo.srcDateTime = vinfo.dateCreation
+	else 
+		vinfo.srcDateTime = vinfo.dateFileCreation
 	end
 
 	-------------- GPS info -------------------------------------------------
