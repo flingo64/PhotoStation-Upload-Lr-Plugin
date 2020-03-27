@@ -1531,17 +1531,17 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 				},
 			},
 
-			f:row {
+			conditionalItem(propertyTable.isCollection, f:row {
 				f:checkbox {
 					title 			= LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos",
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in Photo Station according to sort order of Published Collection.\nNote: Sorting is only possible for collections with 'Sort: Custom Order' when uploading to a flat album.",
 					alignment 		= 'left',
 					fill_horizontal = 1,
 					value 			= bind 'sortPhotos',
+					visible 		= bind 'isCollection',
 					enabled 		= negativeOfKey 'copyTree',
 				},	
-			},
-
+			}),
 		},
 		
 	} 
