@@ -437,7 +437,7 @@ function PSPhotoStationAPI.sortAlbumPhotos (h, albumPath, sortedPhotos)
 					 'version=1&' .. 
 					 'offset=0&' .. 
 					 'limit='.. #sortedPhotos .. '&' .. 
-					 'id=' .. PSPhotoStationUtils.getAlbumId(albumPath) .. '&'
+					 'id=' .. PSPhotoStationUtils.getAlbumId(albumPath)
 	local i, photoPath, item_ids = {}
 	
 	for i, photoPath in ipairs(sortedPhotos) do
@@ -448,7 +448,7 @@ function PSPhotoStationAPI.sortAlbumPhotos (h, albumPath, sortedPhotos)
 		end
 	end	
 	
-	formData = formData .. 'item_id=' .. item_ids
+	formData = formData .. '&item_id=' .. item_ids
 	
 	local respArray, errorCode = callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
 	
