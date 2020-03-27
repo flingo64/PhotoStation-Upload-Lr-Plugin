@@ -1538,7 +1538,6 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 					alignment 		= 'left',
 					fill_horizontal = 1,
 					value 			= bind 'sortPhotos',
-					visible 		= bind 'isCollection',
 					enabled 		= negativeOfKey 'copyTree',
 				},	
 			}),
