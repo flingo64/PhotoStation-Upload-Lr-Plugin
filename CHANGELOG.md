@@ -1,6 +1,10 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.9.2
+-------------
+- Bugfix for broken Sort Album function (broken since v6.5.0).
+
 Version 6.9.1
 -------------
 - Bugfix for an exception during video upload caused by missing date info in video header (e.g. videos produced with Shotcut)
