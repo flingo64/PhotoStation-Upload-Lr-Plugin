@@ -153,6 +153,11 @@ function PSUploadAPI.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstF
 	-- calculate max. upload time for LrHttp.post()
 	-- we expect a minimum of 10 MBit/s upload speed --> 1.25 MByte/s
 	local fileSize = LrFileUtils.fileAttributes(srcFilename).fileSize
+	if not fileSize then
+		local errorMsg = "uploadPictureFile: cannot get fileSize of '" .. srcFilename .."'!"
+		writeLogfile(3, errorMsg .. "\n")
+		return false, errorMsg
+	end
 	local timeout = math.floor(fileSize / 1250000)
 	if timeout < 30 then timeout = 30 end
 	
