@@ -392,11 +392,12 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
     	LrFileUtils.delete(thmb_S_Filename)
     	if not exportParams.isPS6 then LrFileUtils.delete(thmb_L_Filename) end
     	LrFileUtils.delete(thmb_XL_Filename)
-    	LrFileUtils.delete(vid_Orig_Filename)
-    	if vid_Add_Filename then LrFileUtils.delete(vid_Add_Filename) end
-		if title_Filename then LrFileUtils.delete(title_Filename) end
-	end
-	
+    end
+	if (replaceOrgVideo or addOrigAsMp4) then LrFileUtils.delete(vid_Replace_Filename) end
+	if vid_Add_Filename then LrFileUtils.delete(vid_Add_Filename) end
+	if title_Filename then LrFileUtils.delete(title_Filename) end
+	-- orig video will be deleted in main loop
+		
 	return retcode
 end
 
