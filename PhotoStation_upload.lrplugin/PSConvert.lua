@@ -254,7 +254,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 	-- ignore errorlevel of ffmpeg here (is 1) , just check the outfile
 	
 	if not LrFileUtils.exists(outfile1) then
-		writeLogfile(3, "  error on: " .. cmdline1 .. "\n")
+		writeLogfile(1, "  error on: " .. cmdline1 .. "\n")
 		return nil
 	end
 
@@ -271,7 +271,7 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 	-- ffmpeg version 3.2.2 Copyright (c) 2000-2016 the FFmpeg developers
 	vinfo.ffmpeg_version = string.match(ffmpegReport, "ffmpeg version ([^%s]+)")
 	if not vinfo.ffmpeg_version then
-		writeLogfile(2, "  error: cannot find ffmpeg version\n")
+		writeLogfile(3, "  error: cannot find ffmpeg version\n")
 	end
 	writeLogfile(4, "	ffmpeg version: " .. vinfo.ffmpeg_version .. "\n")
 	
@@ -410,6 +410,14 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 		writeLogfile(4, string.format("\tduration: %.2f\n", vinfo.duration))
      end
 	 
+	-- check if duration is available (min. requirement), 
+	-- stop scanning metadata if not: might be due to a missing input file / out of disk space issue
+	if not vinfo.duration then
+		writeLogfile(1, "  error on scanning meatadata of rendered video '" .. renderedVideoFilename .. "'\n")
+		LrFileUtils.delete(outfile2)
+		return nil
+	end
+
 	-------------- resolution: search for avp like:  -------------------------
 	-- Video: mjpeg (MJPG / 0x47504A4D), yuvj422p, 640x480, 30 tbr, 30 tbn, 30 tbc
 	-- Video: h264 (Main) (avc1 / 0x31637661), yuv420p, 1440x1080 [SAR 4:3 DAR 16:9], 12091 kb/s, 29.97 fps, 29.97 tbr, 30k tbn, 59.94 tbc
