@@ -1,6 +1,15 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.9.3
+-------------
+- Bugfix for video upload of Non-MP4s (Thanks to Daniel Hoover for reporting and chasing this bug)
+	- Fixed an issue where a temporary video file wasn't deleted immediately after upload but only after the whole Publish process was done. 
+	This could lead to a 'no space left on device' issue when publishing a lot of Non-MP4 videos in one go.
+- Fixed the following two exceptions, when a 'no space left on device' situation occurs (Thanks to Daniel, again):
+	- "An internal error has occurred: [string "PSConvert.lua"]:439: bad argument #1 to 'match' (string expected, got nil)"
+	- "Internal error: '[string "PSUploadAPI.lua"]:156: attempt to perform arithmetic on local 'fileSize' (a nil value)'"
+
 Version 6.9.2
 -------------
 - Bugfix for broken Sort Album function (broken since v6.5.0).
