@@ -1,6 +1,10 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.9.4
+-------------
+- Use rendition:uploadFailed() to generate a Lr-compliant message box for the list of failed uploads 
+
 Version 6.9.3
 -------------
 - Bugfix for video upload of Non-MP4s (Thanks to Daniel Hoover for reporting and chasing this bug)
