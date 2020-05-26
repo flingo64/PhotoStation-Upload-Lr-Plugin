@@ -684,6 +684,7 @@ local function batchUploadMetadata(functionContext, deferredMetadataUploads, exp
 			(publishedCollectionId and not ackRendition(rendition, dstFilename, publishedCollectionId))) 
 		then
 			table.insert(failures, srcPhoto:getRawMetadata("path"))
+			photoInfo.rendition:uploadFailed("Metadata Upload failed")
 			writeLogfile(1, string.format("batchUploadMetadata('%s') failed!!!\n", dstFilename))
 		else
 			writeLogfile(3, string.format("batchUploadMetadata('%s') done.\n", dstFilename))
@@ -1128,6 +1129,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 										publishMode, srcPhoto:getFormattedMetadata("fileName"), dstRoot, dstFilename))
 				
 				table.insert( failures, srcPath )
+				rendition:uploadFailed("Invalid target album")
 			else
 				-- generate a unique remote id for later modifications or deletions and for reference for metadata upload for videos
 				-- use the relative destination pathname, so we are able to identify moved pictures
@@ -1141,10 +1143,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					if publishMode == 'Publish' and not PSPhotoStationAPI.deletePhoto(exportParams.uHandle, publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
 						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
     					table.insert( failures, srcPath )
+						rendition:uploadFailed("Removal of photo at old taget failed")
 						skipPhoto = true 					
 					elseif publishMode == 'Metadata' then
 						writeLogfile(1, "Metadata Upload for '" .. publishedPhotoId .. "' - failed, photo must be uploaded to '" .. newPublishedPhotoId .."' at first!\n")
     					table.insert( failures, srcPath )
+						rendition:uploadFailed("Metadata Upload failed, photo not yet uploaded")
 						skipPhoto = true 					
 					else
 						writeLogfile(2, iif(publishMode == 'Publish', 'Deleting', 'CheckExisting: Would delete') .. ' remote photo at old path: ' .. publishedPhotoId .. '\n')							
@@ -1174,6 +1178,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					writeLogfile(2, 'CheckExisting: Upload required for "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. newPublishedPhotoId .. '\n')
 				else -- error
 					table.insert( failures, srcPath )
+					rendition:uploadFailed("Check existing photo failed")
 					break 
 				end	
 			elseif string.find('Export,Publish,Metadata', publishMode, 1, true) then
@@ -1186,6 +1191,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
     				if exportParams.createDstRoot and dstRoot ~= '' and 
     					not createTree(exportParams.uHandle, './' .. dstRoot,  ".", "", dirsCreated) then
     					table.insert( failures, srcPath )
+						rendition:uploadFailed("Target album creation failed")
     					break 
     				end
     			
@@ -1204,6 +1210,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
     				
     				if not dstDir then 	
     					table.insert( failures, srcPath )
+						rendition:uploadFailed("Target album missing")
     					break 
     				end
 				end
@@ -1240,8 +1247,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						)
 					)
 				then
-					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' failed!!!\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then	writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' failed!!!\n") end
 					table.insert( failures, srcPath )
+					rendition:uploadFailed("Upload failed")
 				else
 					if publishedCollection then
 						PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
@@ -1274,7 +1282,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	if #failures > 0 then
 		message = LOC ("$$$/PSUpload/FinalMsg/Upload/Error=Processed ^1 of ^2 pics in ^3 seconds (^4 secs/pic). ^5 failed to upload.", 
 						nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", timePerPic), #failures)
-		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Go to Logfile", "Never mind")
+--		local action = LrDialogs.confirm(message, table.concat( failures, "\n" ), "Go to Logfile", "Never mind")
+		local action = LrDialogs.confirm(message, "List of failed uploads follows ...\n\nAdditional info can be found in logfile.", "Go to Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(getLogFilename())
 		end
