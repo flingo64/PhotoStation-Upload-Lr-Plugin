@@ -162,19 +162,16 @@ end
 function PSDialogs.validatePSUploadProgPath(view, path)
 	local convertprog = 'convert'
 	local ffmpegprog = 'ffmpeg'
-	local qtfstartprog = 'qt-faststart'
 
 	local progExt = getProgExt()
 	if progExt then
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
-		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
 	end
-	
+
 	if LrFileUtils.exists(path) ~= 'directory' 
 	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ImageMagick'), convertprog))
-	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), ffmpegprog)) 
-	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), qtfstartprog)) then
+	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), ffmpegprog)) then
 		return false, path
 	end
 

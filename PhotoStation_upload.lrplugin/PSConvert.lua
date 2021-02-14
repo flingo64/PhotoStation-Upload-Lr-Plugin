@@ -77,21 +77,18 @@ function PSConvert.initialize()
 
 	local convertprog	= 'convert'
 	local dcrawprog		= 'dcraw'
-	local qtfstartprog	= 'qt-faststart'
 
 	local progExt = getProgExt()
 	if progExt then
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		dcrawprog = LrPathUtils.addExtension(dcrawprog, progExt)
-		qtfstartprog = LrPathUtils.addExtension(qtfstartprog, progExt)
 	end
-	
+
 	h.conv =		LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
 --	h.conv =		"C:/Program Files/ImageMagick-7.0.8-Q16/convert.exe"
 	h.dcraw = 		iif(WIN_ENV, 
 						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
 						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
-	h.qtfstart = 	LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ffmpeg'), qtfstartprog)
 	h.ffmpeg = 		ffmpegprog
 
 	PSConvert.convOptions = PSConvert.getVideoConvPresets()
@@ -108,7 +105,7 @@ function PSConvert.initialize()
 	writeTableLogfile(4, "VideoConvPresets", PSConvert.convOptions)
 
 	writeLogfile(3, "PSConvert.initialize:\n\t\tconv:         '" .. h.conv ..   "'\n\t\tdcraw:        '" .. h.dcraw .. "'" .. 
-										 "\n\t\tffmpeg:       '" .. h.ffmpeg .. "'\n\t\tqt-faststart: '" .. h.qtfstart .. "'\n")
+										 "\n\t\tffmpeg:       '" .. h.ffmpeg .. "'\n")
 	return h
 end
 
@@ -763,27 +760,11 @@ function PSConvert.convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotat
     		return false
     	end
 	end
-	
-	cmdline = 	cmdlineQuote() ..
-					'"' .. h.qtfstart .. '" "' ..  tmpVideoFilename .. '" "' .. dstVideoFilename .. '" 2> "' .. outfile ..'"' ..
-				cmdlineQuote()
 
-	writeLogfile(4, cmdline .. "\n")
-	if LrTasks.execute(cmdline) > 0 then
-		writeLogfile(3, "  error on: " .. cmdline .. "\n")
-    	writeLogfile(3, "qtfstart report:\n" .. 
-    					"===========================================================================\n".. 
-    					LrFileUtils.readFile(outfile) ..
-    					"===========================================================================\n")
-		LrFileUtils.delete(passLogfile)
-		LrFileUtils.delete(outfile)
-		LrFileUtils.delete(tmpVideoFilename)
-		return false
-	end
+	LrFileUtils.move( tmpVideoFilename, dstVideoFilename)
 
 	LrFileUtils.delete(passLogfile)
 	LrFileUtils.delete(outfile)
-	LrFileUtils.delete(tmpVideoFilename)
 	return true
 end
 
