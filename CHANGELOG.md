@@ -1,6 +1,13 @@
 Photo StatLr Changelog
 ======================
 
+Version 6.9.5
+-------------
+- Video conversion: dropped support for qt-faststart (no longer available on MacOS)
+- Bugfix for Metadata Download (issue #51):
+	Fixed incorrect pattern matching for label tags and rating tags: added or removed tags conaining '+' or'*' would be handled incorrectly (ignored) during Metadata Download even if downloading of label tags and rating tags was disabled
+- Avoid compiler warnings: do not escape '/' in patterns
+
 Version 6.9.4
 -------------
 - Use rendition:uploadFailed() to generate a Lr-compliant message box for the list of failed uploads 
