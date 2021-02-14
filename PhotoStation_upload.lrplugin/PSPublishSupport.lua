@@ -1374,15 +1374,15 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     						table.insert(facesPS, photoTag)
         				
         				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
-    					elseif collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '%+(%a+)') then
-    						labelPS = string.match(string.lower(photoTag.name), '%+(%a+)')
+    					elseif collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '^%+(%a+)$') then
+    						labelPS = string.match(string.lower(photoTag.name), '^%+(%a+)$')
     
        					-- ratings look like general tag '*', '**', ... '*****'
-        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, '([%*]+)') then
+        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, '^([%*]+)'$) then
     						ratingTagPS = math.min(string.len(photoTag.name), 5)
     					
     					-- any other general tag is taken as-is
-    					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, '%+(%a+)') and not string.match(photoTag.name, '([%*]+)') then
+    					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' then
     						table.insert(tagsPS, photoTag.name)
     					
     					-- gps coords belonging to a location tag 
