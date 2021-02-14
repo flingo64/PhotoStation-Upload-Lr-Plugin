@@ -1378,7 +1378,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     						labelPS = string.match(string.lower(photoTag.name), '^%+(%a+)$')
     
        					-- ratings look like general tag '*', '**', ... '*****'
-        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, '^([%*]+)'$) then
+        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, '^([%*]+)$') then
     						ratingTagPS = math.min(string.len(photoTag.name), 5)
     					
     					-- any other general tag is taken as-is
