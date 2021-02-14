@@ -1364,7 +1364,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		if not photoTags then
         			writeLogfile(1, string.format("Get ratings/metadata: %s failed!\n", photoInfo.remoteId))
         		elseif photoTags and #photoTags > 0 then
-    				for i = 1, #photoTags do
+    				local colorLabelTagPattern	= '^%+(%a+)$'
+					local ratingTagPattern		= '^([%*]+)$'
+
+					for i = 1, #photoTags do
     					local photoTag = photoTags[i]
     					writeLogfile(4, string.format("Get ratings/metadata: found tag type %s name %s\n", photoTag.type, photoTag.name))
     					
@@ -1374,16 +1377,16 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     						table.insert(facesPS, photoTag)
         				
         				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
-    					elseif collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, '^%+(%a+)$') then
-    						labelPS = string.match(string.lower(photoTag.name), '^%+(%a+)$')
+    					elseif collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, colorLabelTagPattern) then
+    						labelPS = string.match(string.lower(photoTag.name), colorLabelTagPattern)
     
        					-- ratings look like general tag '*', '**', ... '*****'
-        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, '^([%*]+)$') then
+        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, ratingTagPattern) then
     						ratingTagPS = math.min(string.len(photoTag.name), 5)
     					
     					-- any other general tag is taken as-is
-    					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' then
-    						table.insert(tagsPS, photoTag.name)
+    					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, colorLabelTagPattern) and not string.match(photoTag.name, ratingTagPattern) then
+							table.insert(tagsPS, photoTag.name)
     					
     					-- gps coords belonging to a location tag 
     					elseif collectionSettings.locationTagDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
