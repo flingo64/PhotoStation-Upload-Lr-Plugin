@@ -2,7 +2,7 @@
 
 PSPublishSupport.lua
 Publish support for Lightroom Photo StatLr
-Copyright(c) 2019, Martin Messmer
+Copyright(c) 2021, Martin Messmer
 
 This file is part of Photo StatLr - Lightroom plugin.
 
@@ -1313,7 +1313,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.locationDownload
     		then
     			local useCache = true
-    			local albumName 		= ifnil(string.match(photoInfo.remoteId , '(.*)\/[^\/]+'), '/')
+    			local albumName 		= ifnil(string.match(photoInfo.remoteId , '(.*)/[^/]+'), '/')
     			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfoFromList(publishSettings.uHandle, 'album', albumName, photoInfo.remoteId, isVideo, useCache)
     			local psPhotoInfo, psPhotoAdditional
 

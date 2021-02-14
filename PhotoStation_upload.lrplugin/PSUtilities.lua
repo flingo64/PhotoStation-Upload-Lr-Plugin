@@ -2,7 +2,7 @@
 
 PSUtilities.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2019, Martin Messmer
+Copyright(c) 2021, Martin Messmer
 
 Utilities for Lightroom Photo StatLr
 
@@ -626,7 +626,7 @@ function mkLegalFilename(str)
 	if (str) then
 		local newStr
 		-- illegal filename characters: '\', '/', ':', '?', '*',  '"', '<', '>', '|'  
-		newStr = string.gsub (str, '([\\\/:%?%*"<>|])', function (c)
+		newStr = string.gsub (str, '([\\/:%?%*"<>|])', function (c)
 								return string.format ("%%%02X", string.byte(c))
          end) 
 		if newStr ~= str then
@@ -657,7 +657,7 @@ end
 function normalizeDirname(str)
 	if (str) then
 		-- substitute '\' by '/' , remove leading and trailing '/'
-		str = string.gsub(string.gsub(string.gsub (str, "\\", "/"), "^/", ""), "\/$", "")
+		str = string.gsub(string.gsub(string.gsub (str, "\\", "/"), "^/", ""), "/$", "")
 	end
 	return str
 end 

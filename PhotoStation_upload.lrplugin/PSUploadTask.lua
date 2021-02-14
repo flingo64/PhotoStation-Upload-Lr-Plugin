@@ -2,7 +2,7 @@
 
 PSUploadTask.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2019, Martin Messmer
+Copyright(c) 2021, Martin Messmer
 
 Upload photos to Synology Photo Station via HTTP(S) WebService
 
@@ -414,7 +414,7 @@ end
 -- 	- rating tags		if option is set
 local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 	local isVideo 			= srcPhoto:getRawMetadata("isVideo")
-	local dstAlbum 			= ifnil(string.match(dstPath , '(.*)\/[^\/]+'), '/')
+	local dstAlbum 			= ifnil(string.match(dstPath , '(.*)/[^/]+'), '/')
 	local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'album', dstAlbum, dstPath, isVideo, true)
 	local psPhotoTags 		= PSPhotoStationAPI.getPhotoTags(exportParams.uHandle, dstPath, isVideo)
 	local keywordsPS 		= getTableExtract(psPhotoTags, nil, 'type', 'desc')
@@ -670,7 +670,7 @@ local function batchUploadMetadata(functionContext, deferredMetadataUploads, exp
 		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
 		while not photoThere and maxWait > 0 do
-			local dstAlbum 			= ifnil(string.match(dstFilename , '(.*)\/[^\/]+'), '/')
+			local dstAlbum 			= ifnil(string.match(dstFilename , '(.*)/[^/]+'), '/')
 			local dontUseCache = false
 			if not PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'album', dstAlbum, dstFilename, isVideo, dontUseCache) then
 				LrTasks.sleep(1)
@@ -1163,7 +1163,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in Photo Station
-				local dstAlbum = ifnil(string.match(publishedPhotoId , '(.*)\/[^\/]+'), '/')
+				local dstAlbum = ifnil(string.match(publishedPhotoId , '(.*)/[^/]+'), '/')
 				local useCache = true
 				local photoInfos, errorCode = PSPhotoStationUtils.getPhotoInfoFromList(exportParams.uHandle, 'album', dstAlbum, publishedPhotoId, 
 																						srcPhoto:getRawMetadata('isVideo'), useCache)
@@ -1184,7 +1184,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			elseif string.find('Export,Publish,Metadata', publishMode, 1, true) then
 				
 				if publishMode == 'Metadata' then
-					dstDir = string.match(publishedPhotoId , '(.*)\/[^\/]+')
+					dstDir = string.match(publishedPhotoId , '(.*)/[^/]+')
 				else
     				-- normal publish or export process 
     				-- check if target Album (dstRoot) should be created 

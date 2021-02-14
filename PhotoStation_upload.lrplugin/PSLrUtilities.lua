@@ -2,7 +2,7 @@
 
 PSLrUtilities.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2019, Martin Messmer
+Copyright(c) 2021, Martin Messmer
 
 Lightroom utilities:
 	- printError
@@ -459,7 +459,7 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
 				local dataString
 				
 				if dataType == 'name' then
-					local parents, leaf = string.match(collectionPath[i], "(.*)/([^\/]+)")
+					local parents, leaf = string.match(collectionPath[i], "(.*)/([^/]+)")
 					if not parents then leaf = collectionPath[i] end
 					dataString = leaf
 				else
@@ -909,7 +909,7 @@ end
 -- Note the album of a photo in the albumCheckList
 -- make sure, each album exists only once and the albumCheckList is sorted by pathname length desc (longest pathnames first)
 function PSLrUtilities.noteAlbumForCheckEmpty(albumCheckList, photoPath)
-	local albumPath, _ = string.match(photoPath , '(.+)\/([^\/]+)')
+	local albumPath, _ = string.match(photoPath , '(.+)/([^/]+)')
 	if not albumPath then 
 		-- photo in root
 		writeLogfile(4, string.format("noteAlbumForCheckEmpty(%s): root will not be noted.\n", photoPath))

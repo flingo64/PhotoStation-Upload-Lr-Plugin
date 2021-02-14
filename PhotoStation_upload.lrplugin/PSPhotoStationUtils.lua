@@ -2,7 +2,7 @@
 
 PSPhotoStationUtils.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2019, Martin Messmer
+Copyright(c) 2021, Martin Messmer
 
 Photo Station utilities:
 	- getErrorMsg
@@ -443,7 +443,7 @@ end
 --  	photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
 function PSPhotoStationUtils.getPhotoId(photoPath, isVideo)
 	local i
-	local photoDir, photoFilename = string.match(photoPath , '(.*)\/([^\/]+)')
+	local photoDir, photoFilename = string.match(photoPath , '(.*)/([^/]+)')
 	if not photoDir then
 		photoDir = '/'
 		photoFilename = photoPath
@@ -503,7 +503,7 @@ function PSPhotoStationUtils.getPhotoUrl(h, photoPath, isVideo)
 	local subDirUrl  = ''
 	local photoUrl
 	
-	local albumDir, _ = string.match(photoPath, '(.+)\/([^\/]+)')
+	local albumDir, _ = string.match(photoPath, '(.+)/([^/]+)')
 	
 	local albumDirname = split(albumDir, '/')
 	if not albumDirname then albumDirname = {} end
@@ -848,7 +848,7 @@ function PSPhotoStationUtils.deleteEmptyAlbumAndParents(h, albumPath)
 	
    		writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) was empty: deleted.\n', currentAlbumPath))
 		nDeletedAlbums = nDeletedAlbums + 1
-		currentAlbumPath = string.match(currentAlbumPath , '(.+)\/[^\/]+')
+		currentAlbumPath = string.match(currentAlbumPath , '(.+)/[^/]+')
 	end
 	
 	return nDeletedAlbums 
