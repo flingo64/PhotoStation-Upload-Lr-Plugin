@@ -5,4 +5,4 @@
 There are different ways to circumvent this issue:
 - rename the photos locally, so they do not include square brackets in their filename or
 - use the renaming feature of Photo StatLr to rename the photos during upload so the target filenames look proper or
-- patch the Photo Station Upload API code as described by HendriXML in issue #52
+- patch the Photo Station Upload API code as described by HendriXML in issue [#52](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/issues/52)
