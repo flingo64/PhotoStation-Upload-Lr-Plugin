@@ -257,10 +257,6 @@ function PSExiftoolAPI.doExifTranslations(h, photoFilename, additionalCmd)
 	return true
 end
 
-local function isempty(s)
-  return s == nil or s == ''
-end
-
 ----------------------------------------------------------------------------------
 -- function queryLrFaceRegionList(h, photoFilename)
 -- query <mwg-rs:RegionList> elements: Picasa and Lr store detected face regions here
@@ -297,7 +293,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 	
 	photoDimension.width 		= results[1].ImageWidth
 	photoDimension.height 		= results[1].ImageHeight
-	photoDimension.orient 		= results[1].Orientation
+	photoDimension.orient 		= ifnil(results[1].Orientation, 'Horizontal')
 	photoDimension.hasCrop 		= results[1].HasCrop
 	photoDimension.cropTop 		= tonumber(ifnil(results[1].CropTop, 0))
 	photoDimension.cropLeft		= tonumber(ifnil(results[1].CropLeft, 0))
@@ -309,7 +305,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 		local regionList 			= results[1].RegionInfo.RegionList 
     
     	local photoRotation = string.format("%1.5f", 0)
-    	if isempty(photoDimension.orient) or string.find(photoDimension.orient, 'Horizontal') then
+    	if string.find(photoDimension.orient, 'Horizontal') then
     		photoRotation	= string.format("%1.5f", 0)
     	elseif string.find(photoDimension.orient, '90') then
     		photoRotation = string.format("%1.5f", math.rad(-90))
