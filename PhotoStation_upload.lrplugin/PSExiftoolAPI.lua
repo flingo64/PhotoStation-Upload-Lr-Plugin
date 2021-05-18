@@ -293,7 +293,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 	
 	photoDimension.width 		= results[1].ImageWidth
 	photoDimension.height 		= results[1].ImageHeight
-	photoDimension.orient 		= results[1].Orientation
+	photoDimension.orient 		= ifnil(results[1].Orientation, 'Horizontal')
 	photoDimension.hasCrop 		= results[1].HasCrop
 	photoDimension.cropTop 		= tonumber(ifnil(results[1].CropTop, 0))
 	photoDimension.cropLeft		= tonumber(ifnil(results[1].CropLeft, 0))
