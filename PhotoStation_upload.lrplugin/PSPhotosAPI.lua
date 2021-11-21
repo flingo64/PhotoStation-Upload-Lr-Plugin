@@ -260,6 +260,117 @@ function Photos.getErrorMsg(errorCode)
 	return PSAPIerrorMsgs[errorCode]
 end
 
+-- #####################################################################################################
+-- ########################## folder management #########################################################
+-- #####################################################################################################
+
+---------------------------------------------------------------------------------------------------------
+-- listAlbumSubfolders: returns all subfolders in a given folder
+-- returns
+--		subfolderList:	table of subfolder infos, if success, otherwise nil
+--		errorcode:		errorcode, if not success
+function Photos.listAlbumSubfolders(h, folderPath, folderId)
+	local apiParams = {
+			id				= folderId or Photos.getFolderId(h, folderPath),
+			additional		= "[]",
+			sort_direction	= "asc",
+			offset			= 0,
+			limit			= 2000,
+			api				= "SYNO.FotoTeam.Browse.Folder",
+			method			= "list",
+			version			= 1
+	}
+	local respArray, errorCode = Photos.callSynoWebapi(h, apiParams)
+
+	if not respArray then return nil, errorCode end
+
+	writeTableLogfile(5, string.format("listAlbumSubfolders('%s') returns %d items\n", folderPath, #respArray.data.list))
+	return respArray.data.list
+end
+
+---------------------------------------------------------------------------------------------------------
+-- listAlbumItems: returns all items (photos/videos) in a given folder
+-- returns
+--		itemList:		table of item infos, if success, otherwise nil
+--		errorcode:		errorcode, if not success
+function Photos.listAlbumItems(h, folderPath, folderId)
+	local apiParams = {
+			folder_id		= folderId or Photos.getFolderId(h, folderPath),
+			additional		= '["description","tag","exif","gps","video_meta","address","person"]',
+			sort_by			= "takentime",
+			sort_direction	= "asc",
+			offset			= 0,
+			limit			= 5000,
+			api				= "SYNO.FotoTeam.Browse.Item",
+			method			= "list",
+			version			= 1
+	}
+			
+	local respArray, errorCode = Photos.callSynoWebapi(h, apiParams)
+
+	if not respArray then return nil, errorCode end
+
+	writeTableLogfile(5, string.format("listAlbumItems('%s') returns %d items\n", folderPath, #respArray.data.list))
+	return respArray.data.list
+end
+
+--====== Photos Utilities ==============================================================================--
+-- ========================================== path Id Cache ==========================================
+-- The path id cache holds ids of folders and items (photo/video) as used by the PhotosAPI
+-- layout:
+--		pathIdCache
+--			[userid] (0 for Team Folders)
+--				[path] = { id, type, addinfo (only for items), validUntil }
+local pathIdCache = {
+	cache = {
+		-- Team folders belong to userid 0
+		[0] = {	}
+	},
+	timeout			= 300,
+	listFunction	= {
+		["folder"]	= Photos.listAlbumSubfolders,
+		["item"]	= Photos.listAlbumItems
+	},
+ 	Photos.listAlbumSubfolders,
+}
+
+---------------------------------------------------------------------------------------------------------
+-- pathIdCacheCleanup: remove old entries from id cache
+--   if path is given, remove this cache regardless of its age
+local function pathIdCacheCleanup(userid, path)
+	local user_pathIdCache = pathIdCache.cache[userid]
+	
+	if path and string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
+
+	if not user_pathIdCache then return true end
+
+	for key, entry in pairs(user_pathIdCache) do
+		if (entry.validUntil < LrDate.currentTime())
+		or (key == path) then
+			writeLogfile(3, string.format("pathIdCacheCleanup(user:%s); removing path '%s'\n", userid, key))
+			user_pathIdCache[key] = nil
+		end
+	end
+	return true
+end
+
+-- ======================================= tagMapping ==============================================
+-- the tagMapping holds the list of tag name / tag id mappings
+
+local tagMapping = {
+	['desc']	= {},
+	['people']	= {},
+	['geo']		= {},
+}
+
+---------------------------------------------------------------------------------------------------------
+-- tagMappingUpdate(h, type) 
+local function tagMappingUpdate(h, type)
+	writeLogfile(3, string.format('tagMappingUpdate(%s).\n', type))
+	tagMapping[type] = h:getTags(type)
+	return tagMapping[type]
+end
+
 --[[
 Photos.callSynoWebapi (h, apiParams)
 	calls the named synoAPI with the respective parameters in formData
@@ -690,66 +801,14 @@ function Photos.deletePhoto (h, path, isVideo)
 		version	= 1
 	}
 
+	pathIdCacheCleanup(h.userid, path)
+	
 	local respArray, errorCode = h:callSynoWebapi(apiParams)
 
 	if not respArray then return nil, errorCode end
 
 	writeLogfile(3, string.format('deletePhoto(%s) returns OK (errorCode was %d)\n', path, ifnil(errorCode, 0)))
 	return respArray.success, errorCode
-end
-
--- #####################################################################################################
--- ########################## folder management #########################################################
--- #####################################################################################################
-
----------------------------------------------------------------------------------------------------------
--- listAlbumSubfolders: returns all subfolders in a given folder
--- returns
---		subfolderList:	table of subfolder infos, if success, otherwise nil
---		errorcode:		errorcode, if not success
-function Photos.listAlbumSubfolders(h, folderPath, folderId)
-	local apiParams = {
-			id				= folderId or Photos.getFolderId(h, folderPath),
-			additional		= "[]",
-			sort_direction	= "asc",
-			offset			= 0,
-			limit			= 2000,
-			api				= "SYNO.FotoTeam.Browse.Folder",
-			method			= "list",
-			version			= 1
-	}
-	local respArray, errorCode = Photos.callSynoWebapi(h, apiParams)
-
-	if not respArray then return nil, errorCode end
-
-	writeTableLogfile(5, string.format("listAlbumSubfolders('%s') returns %d items\n", folderPath, #respArray.data.list))
-	return respArray.data.list
-end
-
----------------------------------------------------------------------------------------------------------
--- listAlbumItems: returns all items (photos/videos) in a given folder
--- returns
---		itemList:		table of item infos, if success, otherwise nil
---		errorcode:		errorcode, if not success
-function Photos.listAlbumItems(h, folderPath, folderId)
-	local apiParams = {
-			folder_id		= folderId or Photos.getFolderId(h, folderPath),
-			additional		= '["description","tag","exif","gps","video_meta","address","person"]',
-			sort_by			= "takentime",
-			sort_direction	= "asc",
-			offset			= 0,
-			limit			= 5000,
-			api				= "SYNO.FotoTeam.Browse.Item",
-			method			= "list",
-			version			= 1
-	}
-			
-	local respArray, errorCode = Photos.callSynoWebapi(h, apiParams)
-
-	if not respArray then return nil, errorCode end
-
-	writeTableLogfile(5, string.format("listAlbumItems('%s') returns %d items\n", folderPath, #respArray.data.list))
-	return respArray.data.list
 end
 
 --[[
@@ -798,6 +857,8 @@ function Photos.deleteAlbum (h, folderPath)
 		version=1
 	}
 
+	pathIdCacheCleanup(h.userid, folderPath)
+
 	local respArray, errorCode = h:callSynoWebapi(apiParams)
 
 	if not respArray then return false, errorCode end
@@ -817,18 +878,21 @@ function Photos.deleteEmptyAlbumAndParents(h, folderPath)
 	currentFolderPath = folderPath
 	while currentFolderPath do
 		local photoInfos =  h:listAlbumItems(currentFolderPath)
+		local subfolders =  h:listAlbumSubfolders(currentFolderPath)
 
-    	-- if not existing or not empty or delete fails, we are ready
-    	if 		not photoInfos
-    		or 	#photoInfos > 0
-    		or not h:deleteAlbum (currentFolderPath) 
-    	then 
-    		writeLogfile(3, string.format('deleteEmptyAlbumAndParents(%s) not deleted.\n', currentFolderPath))
+    	-- if not empty, we are ready
+    	if 		(photoInfos and #photoInfos > 0)
+    		or 	(subfolders	and	#subfolders > 0)
+    	then
+   			writeLogfile(3, string.format('deleteEmptyAlbumAndParents(%s) - was not empty: not deleted.\n', currentFolderPath))
     		return nDeletedFolders
-    	end
+		elseif not h:deleteAlbum (currentFolderPath) then
+			writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) - was empty: delete failed!\n', currentFolderPath))
+		else
+			writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) - was empty: deleted.\n', currentFolderPath))
+			nDeletedFolders = nDeletedFolders + 1
+		end
 
-   		writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) was empty: deleted.\n', currentFolderPath))
-		nDeletedFolders = nDeletedFolders + 1
 		currentFolderPath = string.match(currentFolderPath , '(.+)/[^/]+')
 	end
 
@@ -1298,188 +1362,6 @@ function Photos.uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mimeType
 	return checkPSUploadAPIAnswer(string.format("Photos.uploadPictureFiles('%s', '%s', '%s')", srcFilename, dstDir, dstFilename),
 									respHeaders, respBody)
 end
-
---====== Photos Utilities ==============================================================================--
--- ========================================== path Id Cache ==========================================
--- The path id cache holds ids of folders and items (photo/video) as used by the PhotosAPI
--- layout:
---		pathIdCache
---			[userid] (0 for Team Folders)
---				[path] = { id, type, addinfo (only for items), validUntil }
-local pathIdCache = {
-	cache = {
-		-- Team folders belong to userid 0
-		[0] = {	}
-	},
-	timeout			= 300,
-	listFunction	= {
-		["folder"]	= Photos.listAlbumSubfolders,
-		["item"]	= Photos.listAlbumItems
-	},
-	Photos.listAlbumSubfolders,
-}
-
----------------------------------------------------------------------------------------------------------
--- pathIdCacheCleanup: remove old entries from id cache
---   if path is given, remove this cache regardless of its age
-local function pathIdCacheCleanup(userid, path)
-	local user_pathIdCache = pathIdCache.cache[userid]
-	
-	if path and string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
-
-	if not user_pathIdCache then return true end
-
-	for key, entry in pairs(user_pathIdCache) do
-		if (entry.validUntil < LrDate.currentTime())
-		or (key == path) then
-			writeLogfile(3, string.format("pathIdCacheCleanup(user:%s); removing path '%s'\n", userid, key))
-			user_pathIdCache[key] = nil
-		end
-	end
-	return true
-end
-
---[[
--- ========================================== Generic Content cache ==============================================
--- Used for Folders, Shared Albums (private) and Public Shared Albums.
--- The Folder Content cache holds Folder contents for the least recently read folders
-local contentCache = {
-	["folder"] = {
-		cache 			= {},
-		timeout			= 60,
-		listFunction	= Photos.listAlbumItems,
-	},
-	
-	["sharedAlbum"] = {
-		cache 			= {},
-		timeout			= 60,
-		listFunction	= Photos.listSharedAlbum,
-	},
-
-	["publicSharedAlbum"] = {
-		cache 			= {},
-		timeout			= 60,
-		listFunction	= Photos.listPublicSharedAlbum,
-	},
-}
-
----------------------------------------------------------------------------------------------------------
--- contentCacheCleanup: remove old entries from cache
---   if folderPath is given, remove this cache regardless of its age
-local function contentCacheCleanup(cacheName, folderPath)
-	local folderContentCache = contentCache[cacheName].cache
-	
-	for i = #folderContentCache, 1, -1 do
-		local cachedFolder = folderContentCache[i]
-		if (cachedFolder.validUntil < LrDate.currentTime()) 
-		or (folderPath and cachedFolder.folderPath == folderPath) then 
-			writeLogfile(3, string.format("contentCacheCleanup(%s); removing %s\n", cacheName, cachedFolder.folderPath))
-			table.remove(folderContentCache, i)
-		end
-	end
-end
-
----------------------------------------------------------------------------------------------------------
--- contentCacheList: returns all photos/videos and optionally folders in a given folder via folder cache
--- returns
---		folderItems:		table of photo infos, if success, otherwise nil
---		errorcode:		errorcode, if not success
-local function contentCacheList(cacheName, h, folderName, listItems, updateCache)
-	contentCacheCleanup(cacheName, iif(updateCache, folderName, nil))
-	local folderContentCache = contentCache[cacheName].cache
-	
-	for i = 1, #folderContentCache do
-		local cachedFolder = folderContentCache[i]
-		if cachedFolder.folderPath == folderName then 
-			return cachedFolder.folderItems
-		end
-	end
-	
-	-- not found in cache: get it from Photos
-	local folderItems, errorCode = contentCache[cacheName].listFunction(h, folderName, listItems)
-	if not folderItems then
-		if 	errorCode ~= 408  	-- no such file or dir
-		and errorCode ~= 417	-- no such dir for non-administrative users , see GitHub issue 17
-		and errorCode ~= 101	-- no such dir in PS 6.6
-		then
-			writeLogfile(2, string.format('contentCacheList(%s): Error on listAlbumItems: %d\n', cacheName, errorCode))
-		   	return nil, errorCode
-		end
-		folderItems = {} -- avoid re-requesting non-existing folder 
-	end
-	
-	local cacheEntry = {}
-	cacheEntry.folderPath = folderName
-	cacheEntry.folderItems = folderItems
-	cacheEntry.validUntil = LrDate.currentTime() + contentCache[cacheName].timeout
-	table.insert(folderContentCache, 1, cacheEntry)
-	
-	writeLogfile(3, string.format("contentCacheList(%s): added to cache with %d items\n", folderName, #folderItems))
-	
-	return folderItems
-end
-]]
-
--- ===================================== Shared Albums cache ==============================================
--- the Shared Album List cache holds the list of shared Albums per session
-
-local sharedAlbumsCacheTimeout 		= 60	-- 60 seconds cache time
-
----------------------------------------------------------------------------------------------------------
--- sharedAlbumsCacheCleanup: cleanup cache if cache is too old
-local function sharedAlbumsCacheCleanup(h)
-	if ifnil(h.sharedAlbumsCacheValidUntil, LrDate.currentTime()) <= LrDate.currentTime() then
-		h.sharedAlbumsCache = {}
-	end
-	return true
-end
-
----------------------------------------------------------------------------------------------------------
--- sharedAlbumsCacheUpdate(h) 
-local function sharedAlbumsCacheUpdate(h)
-	writeLogfile(3, string.format('sharedAlbumsCacheUpdate().\n'))
-	h.sharedAlbumsCache = Photos.getSharedAlbums(h)
-	h.sharedAlbumsCacheValidUntil = LrDate.currentTime() + sharedAlbumsCacheTimeout
-	return h.sharedAlbumsCache
-end
-
----------------------------------------------------------------------------------------------------------
--- sharedAlbumsCacheFind(h, name) 
-local function sharedAlbumsCacheFind(h, name)
-	sharedAlbumsCacheCleanup(h)
-	if (not h.sharedAlbumsCache or #h.sharedAlbumsCache == 0) and not sharedAlbumsCacheUpdate(h) then
-		return nil 
-	end
-	
-	for i = 1, #h.sharedAlbumsCache do
-		if h.sharedAlbumsCache[i].name == name then 
-			writeLogfile(4, string.format('sharedAlbumsCacheFind(%s) found  %s.\n', name, h.sharedAlbumsCache[i].id))
-			return h.sharedAlbumsCache[i] 
-		end
-	end
-
-	writeLogfile(4, string.format('sharedAlbumsCacheFind(%s) not found.\n', name))
-	return nil
-end
-
--- ======================================= tagMapping ==============================================
--- the tagMapping holds the list of tag name / tag id mappings
-
-local tagMapping = {
-	['desc']	= {},
-	['people']	= {},
-	['geo']		= {},
-}
-
----------------------------------------------------------------------------------------------------------
--- tagMappingUpdate(h, type) 
-local function tagMappingUpdate(h, type)
-	writeLogfile(3, string.format('tagMappingUpdate(%s).\n', type))
-	tagMapping[type] = h:getTags(type)
-	return tagMapping[type]
-end
-
---================================= global functions ====================================================--
 
 ---------------------------------------------------------------------------------------------------------
 -- Photos.addPathToCache(h, path, id, type, addinfo)
