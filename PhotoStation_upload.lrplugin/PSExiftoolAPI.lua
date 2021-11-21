@@ -49,6 +49,7 @@ require "PSUtilities"
 --============================================================================--
 
 PSExiftoolAPI = {}
+PSExiftoolAPI_mt = { __index = PSExiftoolAPI }
 
 
 PSExiftoolAPI.downloadUrl = 'http://www.sno.phy.queensu.ca/~phil/exiftool/' 
@@ -120,45 +121,17 @@ local function executeCmds(h)
 	return cmdResult 
 end
 
----------------------- parseResponse ----------------------------------------------------------------
+---------------------- new -------------------------------------------------------------------------
 
--- function parseResponse(photoFilename, tag, sep)
--- parse an exiftool response for a given tag
--- 		response	- the query response
--- syntax of response is:
---		<tag>		: <value>{;<value>}
-local function parseResponse(response, tag, sep)
-	if (not response) then return nil end
-	
-	local value = string.match(response, tag .. "%s+:%s+([^\r\n]+)")
-		
-	if sep then
-		-- if separator given: return a table of trimmed values
-		local valueList = split(value, sep)
-		if valueList then
-			for i = 1, #valueList do
-				valueList[i] = trim(valueList[i])
-			end
-		end
-		writeTableLogfile(4, tag, valueList)
-		return valueList
-	end	
-
-	writeLogfile(4, string.format("tag: %s --> value: %s\n", tag, value))
-	return value
-end 
-
----------------------- open -------------------------------------------------------------------------
-
--- function PSExiftoolAPI.open(exportParams)
+-- function PSExiftoolAPI.new(exportParams)
 -- Start exiftool listener in background: one for each export/publish thread
-function PSExiftoolAPI.open(exportParams)
+function PSExiftoolAPI.new(exportParams)
 	local prefs = LrPrefs.prefsForPlugin()
 	local h = {} -- the handle
 	
 	h.exiftool = prefs.exiftoolprog
 	if not LrFileUtils.exists(h.exiftool) then 
-		writeLogfile(1, "PSExiftoolAPI.open: Cannot start exifTool Listener: " .. h.exiftool .. " not found!\n")
+		writeLogfile(1, "PSExiftoolAPI.new: Cannot start exifTool Listener: " .. h.exiftool .. " not found!\n")
 		return false 
 	end
 	
@@ -217,9 +190,9 @@ function PSExiftoolAPI.open(exportParams)
         	
         	return retcode
         end 
-	)	
-	
-	return h
+	)
+
+	return setmetatable(h, PSExiftoolAPI_mt)
 end
 
 ---------------------- close -------------------------------------------------------------------------
@@ -293,7 +266,7 @@ function PSExiftoolAPI.queryLrFaceRegionList(h, photoFilename)
 	
 	photoDimension.width 		= results[1].ImageWidth
 	photoDimension.height 		= results[1].ImageHeight
-	photoDimension.orient 		= ifnil(results[1].Orientation, 'Horizontal')
+	photoDimension.orient 		= results[1].Orientation
 	photoDimension.hasCrop 		= results[1].HasCrop
 	photoDimension.cropTop 		= tonumber(ifnil(results[1].CropTop, 0))
 	photoDimension.cropLeft		= tonumber(ifnil(results[1].CropLeft, 0))

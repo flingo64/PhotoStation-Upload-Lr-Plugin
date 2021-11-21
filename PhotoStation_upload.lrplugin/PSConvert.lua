@@ -17,7 +17,7 @@ conversion primitives:
 	- convertVideo
 
 	- writeTitleFile
-	
+
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -50,75 +50,38 @@ local LrTasks 		= import 'LrTasks'
 
 require "PSUtilities"
 
---============================================================================--
+--================== locals =========================================================--
 
-PSConvert = {}
+-- videoConversion defines the conversion parameters based on the requested target dimension
+-- must be sorted from lowest to highest resolution
+local videoConversion = {
+	{	
+		id = 'MOBILE',
+		upToHeight 	= 240,	
+	},
 
-PSConvert.downloadUrl 			= 'https://www.synology.com/support/download' 
-PSConvert.defaultInstallPath 	= iif(WIN_ENV, 
-    								'C:/Program Files (x86)/Synology/Photo Station Uploader',
-    								'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
-PSConvert.defaultVideoPresetsFn = "PSVideoConversions.json"
-PSConvert.convOptions			= nil
+	{	
+		id = 'LOW',
+		upToHeight 	= 360,
+	},
 
------------------------- initialize ---------------------------------------------------------------------------------
--- initialize: initialize convert program paths
-function PSConvert.initialize()
-	local prefs 			= LrPrefs.prefsForPlugin()
-	local PSUploaderPath 	= prefs.PSUploaderPath
-	local ffmpegprog 		= prefs.ffmpegprog
-	local h 				= {} -- the handle
+	{	
+		id = 'MEDIUM',
+		upToHeight 	= 720,
+	},
 
-	writeLogfile(4, "PSConvert.initialize: PSUploaderPath= " .. PSUploaderPath .. "\n")
-	if not PSDialogs.validatePSUploadProgPath(nil, PSUploaderPath) then
-		writeLogfile(1, "PSConvert.initialize: Bad PSUploaderPath= " .. PSUploaderPath .. "!\n")
-		return nil
-	end
+	{	
+		id = 'HIGH',
+		upToHeight	= 1080,
+	},	
 
-	local convertprog	= 'convert'
-	local dcrawprog		= 'dcraw'
+	{	
+		id = 'ULTRA',
+		upToHeight	= 2160,
+	},
+}
 
-	local progExt = getProgExt()
-	if progExt then
-		convertprog = LrPathUtils.addExtension(convertprog, progExt)
-		dcrawprog = LrPathUtils.addExtension(dcrawprog, progExt)
-	end
-
-	h.conv =		LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
---	h.conv =		"C:/Program Files/ImageMagick-7.0.8-Q16/convert.exe"
-	h.dcraw = 		iif(WIN_ENV, 
-						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
-						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
-	h.ffmpeg = 		ffmpegprog
-
-	PSConvert.convOptions = PSConvert.getVideoConvPresets()
-	
-	if not PSConvert.convOptions then
-		writeLogfile(1, string.format("PSConvert.initialize: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
-		local action = LrDialogs.confirm("Video Conversion", 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
-		if action == "ok" then
-			LrShell.revealInShell(getLogFilename())
-		end	
-		return nil
-	end
-	
-	writeTableLogfile(4, "VideoConvPresets", PSConvert.convOptions)
-
-	writeLogfile(3, "PSConvert.initialize:\n\t\tconv:         '" .. h.conv ..   "'\n\t\tdcraw:        '" .. h.dcraw .. "'" .. 
-										 "\n\t\tffmpeg:       '" .. h.ffmpeg .. "'\n")
-	return h
-end
-
------------------------- initialize ---------------------------------------------------------------------------------
--- initialize: initialize convert program paths
-function PSConvert.getVideoConvPresets()
-	local prefs = LrPrefs.prefsForPlugin()
-	local videoConvPath = LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn)
-
-	return JSON:decode(LrFileUtils.readFile(videoConvPath), prefs.videoConversionsFn)
-end
----------------------- picture conversion functions ----------------------------------------------------------
--- getRawParams(picExt, srcPhoto, exportFormat)
+-- getRawParams(picExt, srcPhoto, exportFormat) ---------------------
 -- 	picExt			- filename extension of the photo
 --	srcPhoto		- Lr data structure including Metadate such as camera make and model
 --  exportFormat	- Lr export file format setting: JPEG, PSD, TIFF, DNG, PSD or ORIGINAL	
@@ -128,7 +91,7 @@ local function getRawConvParams(picExt, srcPhoto, exportFormat)
 	if 	   picExt == 'jpg' then
 		return nil
 	end
-	
+
 	-- get camera vendor
 	local cMake = string.upper(ifnil(srcPhoto:getFormattedMetadata('cameraMake'), ''))
 	
@@ -165,6 +128,128 @@ local function getRawConvParams(picExt, srcPhoto, exportFormat)
 	end
 end
 
+-- ffmpegGetRotateParams(hardRotate, vrotation, mrotation, dimension, aspectRatio) --------------------------------------
+--		h			- converter handle
+--  	hardRotate	- should the video be hard-rotated
+-- 		vrotation	- rotation as set in video stream metadata
+--		mrotation	- meta-rotation as defined in Keyword 'Rotate-nn'
+--		dimension	- original dimension
+-- 		aspectRatio	- original aspect ratio 
+-- returns resulting ffmpeg options:
+--		autorotate flag
+--		rotation options, 
+--		dimension 
+--		aspectRatio
+local function ffmpegGetRotateParams(hardRotate, vrotation, mrotation, dimension, aspectRatio)
+	local autorotateOpt 	= iif(hardRotate, '', '-noautorotate')
+	local rotateOpt 		= ''
+	local newDimension		= dimension
+	local newAspectRatio	= aspectRatio
+	local totalRotation		= tostring((tonumber(vrotation) + tonumber(mrotation)) % 360)
+	writeLogfile(4, string.format("ffmpegGetRotateParams: hardRotate: %s, v-rotation: %s, m-rotation: %s --> total rotation: %s\n", tostring(hardRotate), vrotation, mrotation, totalRotation))
+
+	if hardRotate then
+		-- newDimension and newAspectRatio depends on totalRotation
+		if (totalRotation == '90') or (totalRotation == '270') then 
+				newDimension = string.format("%sx%s", 
+											string.sub(dimension, string.find(dimension,'x') + 1, -1),
+											string.sub(dimension, 1, string.find(dimension,'x') - 1))
+				newAspectRatio = string.gsub(newDimension, 'x', ':')
+			writeLogfile(4, string.format("ffmpegGetRotateParams: total rotation: %s --> newDim: %s, newAspect: %s\n", totalRotation, newDimension, newAspectRatio))
+		end
+
+		-- vrotation will be handled by ffmpgeg's autorotate feature
+		-- mrotation will be handled by us: rotate video stream, calculate rotated dimension
+		if mrotation == "90" then
+			rotateOpt = ',transpose=1'
+			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 90\n")
+		elseif mrotation == "270" then
+			rotateOpt = ',transpose=2'
+			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 270\n")
+		elseif mrotation == "180" then
+			rotateOpt = ',hflip,vflip'
+			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 180\n")
+		end
+	else
+		-- soft-rotation for meta-rotation: add /replace rotation flag to stream metadata: will not work for ffmpeg >= 3.3.x
+		if (tonumber(mrotation) > 0) then
+			rotateOpt = ' -metadata:s:v:0 rotate=' .. tostring(totalRotation)
+			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by " .. tostring(totalRotation) .. "\n")
+		end 
+	end
+	return autorotateOpt, rotateOpt, newDimension, newAspectRatio
+end
+
+--===================public =================================================================--
+
+PSConvert = {}
+PSConvert_mt = { __index = PSConvert }
+
+PSConvert.downloadUrl 			= 'https://www.synology.com/support/download' 
+PSConvert.defaultInstallPath 	= iif(WIN_ENV, 
+    								'C:/Program Files (x86)/Synology/Photo Station Uploader',
+    								'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
+PSConvert.defaultVideoPresetsFn = "PSVideoConversions.json"
+PSConvert.convOptions			= nil
+
+------------------------ new ---------------------------------------------------------------------------------
+-- new: initialize convert program paths
+function PSConvert.new()
+	local prefs 			= LrPrefs.prefsForPlugin()
+	local PSUploaderPath 	= prefs.PSUploaderPath
+	local ffmpegprog 		= prefs.ffmpegprog
+	local videoConvPath 	= LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn)
+	local h 				= {} -- the handle
+
+	writeLogfile(4, "PSConvert.new: PSUploaderPath= " .. PSUploaderPath .. "\n")
+	if not PSDialogs.validatePSUploadProgPath(nil, PSUploaderPath) then
+		writeLogfile(1, "PSConvert.new: Bad PSUploaderPath= " .. PSUploaderPath .. "!\n")
+		return nil
+	end
+
+	local convertprog	= 'convert'
+	local dcrawprog		= 'dcraw'
+
+	local progExt = getProgExt()
+	if progExt then
+		convertprog = LrPathUtils.addExtension(convertprog, progExt)
+		dcrawprog = LrPathUtils.addExtension(dcrawprog, progExt)
+	end
+	
+	h.conv =		LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
+--	h.conv =		"C:/Program Files/ImageMagick-7.0.8-Q16/convert.exe"
+	h.dcraw = 		iif(WIN_ENV, 
+						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
+						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
+	h.ffmpeg = 		ffmpegprog
+
+	PSConvert.convOptions = PSConvert.getVideoConvPresets()
+	
+	if not PSConvert.convOptions then
+		writeLogfile(1, string.format("PSConvert.new: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
+		local action = LrDialogs.confirm("Video Conversion", 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
+		if action == "ok" then
+			LrShell.revealInShell(getLogFilename())
+		end	
+		return nil
+	end
+	
+	writeTableLogfile(4, "VideoConvPresets", PSConvert.convOptions)
+
+	writeLogfile(3, "PSConvert.new:\n\t\tconv:         '" .. h.conv ..   "'\n\t\tdcraw:        '" .. h.dcraw .. "'" .. 
+										 "\n\t\tffmpeg:       '" .. h.ffmpeg .. "'\n")
+	return setmetatable(h, PSConvert_mt)
+end
+
+------------------------ getVideoConvPresets ---------------------------------------------------------------------------------
+-- getVideoConvPresets: get video concversion presets
+function PSConvert.getVideoConvPresets()
+	local prefs = LrPrefs.prefsForPlugin()
+	local videoConvPath = LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn)
+
+	return JSON:decode(LrFileUtils.readFile(videoConvPath), prefs.videoConversionsFn)
+end
+---------------------- picture conversion functions ----------------------------------------------------------
 -- convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
 -- converts a picture file using the ImageMagick convert tool into 5 thumbs in one run
 function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, convParams, xlSize, xlFile, lSize, lFile, bSize, bFile, mSize, mFile, sSize, sFile)
@@ -177,9 +262,9 @@ function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, 
 	if rawConvParams then
 		srcJpgFilename = (LrPathUtils.replaceExtension(srcFilename, 'jpg'))
 
-		local cmdline = cmdlineQuote() .. '"' .. 
-							h.dcraw .. '" ' .. rawConvParams .. '-c "' .. srcFilename .. '" > "' .. srcJpgFilename .. '"' ..
-							' 2>> "' .. iif(getLogLevel() >= 4, getLogFilename(), getNullFilename()) .. '"' 	 
+		local cmdline = cmdlineQuote() .. '"' ..
+							h.dcraw .. '" ' .. rawConvParams .. '-O "'  .. srcJpgFilename .. '" "'.. srcFilename ..
+							'" 2>> "' .. iif(getLogLevel() >= 4, getLogFilename(), getNullFilename()) .. '"'
 						cmdlineQuote()
 		writeLogfile(3, cmdline .. "\n")
 		
@@ -199,7 +284,7 @@ function PSConvert.convertPicConcurrent(h, srcFilename, srcPhoto, exportFormat, 
 			shellEscape(
 						 '( -clone 0 -define jpeg:size=' .. xlSize .. ' -thumbnail '  .. xlSize .. ' ' .. convParams .. ' -write "' .. xlFile .. '" ) -delete 0 ' ..
 		iif(lFile ~= '', '( +clone   -define jpeg:size=' ..  lSize .. ' -thumbnail '  ..  lSize .. ' ' .. convParams .. ' -write "' ..  lFile .. '" +delete ) ', '') ..
-						 '( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write "' ..  bFile .. '" +delete ) ' ..
+		iif(bFile ~= '', '( +clone   -define jpeg:size=' ..  bSize .. ' -thumbnail '  ..  bSize .. ' ' .. convParams .. ' -write "' ..  bFile .. '" +delete ) ', '') ..
 						 '( +clone   -define jpeg:size=' ..  mSize .. ' -thumbnail '  ..  mSize .. ' ' .. convParams .. ' -write "' ..  mFile .. '" +delete ) ' ..
 								    '-define jpeg:size=' ..  sSize .. ' -thumbnail '  ..  sSize .. ' ' .. convParams .. ' "' 	   ..  sFile .. '"'
 			) ..
@@ -481,62 +566,10 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 	return vinfo
 end
 
--- ffmpegGetRotateParams(h, hardRotate, vrotation, mrotation, dimension, aspectRatio) ---------------------------------------------------------
---		h			- converter handle
---  	hardRotate	- should the video be hard-rotated
--- 		vrotation	- rotation as set in video stream metadata
---		mrotation	- meta-rotation as defined in Keyword 'Rotate-nn'
---		dimension	- original dimension
--- 		aspectRatio	- original aspect ratio 
--- returns resulting ffmpeg options:
---		autorotate flag
---		rotation options, 
---		dimension 
---		aspectRatio
-function PSConvert.ffmpegGetRotateParams(h, hardRotate, vrotation, mrotation, dimension, aspectRatio)
-	local autorotateOpt 	= iif(hardRotate, '', '-noautorotate')
-	local rotateOpt 		= ''
-	local newDimension		= dimension
-	local newAspectRatio	= aspectRatio
-	local totalRotation		= tostring((tonumber(vrotation) + tonumber(mrotation)) % 360)
-	writeLogfile(4, string.format("ffmpegGetRotateParams: hardRotate: %s, v-rotation: %s, m-rotation: %s --> total rotation: %s\n", tostring(hardRotate), vrotation, mrotation, totalRotation))
-	
-	if hardRotate then
-		-- newDimension and newAspectRatio depends on totalRotation
-		if (totalRotation == '90') or (totalRotation == '270') then 
-				newDimension = string.format("%sx%s", 
-											string.sub(dimension, string.find(dimension,'x') + 1, -1),
-											string.sub(dimension, 1, string.find(dimension,'x') - 1))
-				newAspectRatio = string.gsub(newDimension, 'x', ':')
-			writeLogfile(4, string.format("ffmpegGetRotateParams: total rotation: %s --> newDim: %s, newAspect: %s\n", totalRotation, newDimension, newAspectRatio))
-		end
-	
-		-- vrotation will be handled by ffmpgeg's autorotate feature
-		-- mrotation will be handled by us: rotate video stream, calculate rotated dimension
-		if mrotation == "90" then
-			rotateOpt = ',transpose=1'
-			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 90\n")
-		elseif mrotation == "270" then
-			rotateOpt = ',transpose=2'
-			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 270\n")
-		elseif mrotation == "180" then
-			rotateOpt = ',hflip,vflip'
-			writeLogfile(4, "ffmpegGetRotateParams: hard rotate video by 180\n")
-		end
-	else
-		-- soft-rotation for meta-rotation: add /replace rotation flag to stream metadata: will not work for ffmpeg >= 3.3.x
-		if (tonumber(mrotation) > 0) then
-			rotateOpt = ' -metadata:s:v:0 rotate=' .. tostring(totalRotation)
-			writeLogfile(4, "ffmpegGetRotateParams: soft rotate video by " .. tostring(totalRotation) .. "\n")
-		end 
-	end
-	return autorotateOpt, rotateOpt, newDimension, newAspectRatio
-end
-
 -- ffmpegGetThumbFromVideo(h, srcVideoFilename, vinfo, thumbFilename) ---------------------------------------------------------
 function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, vinfo, thumbFilename)
 	local outfile =  LrPathUtils.replaceExtension(srcVideoFilename, 'txt')
-	local autorotateOpt, rotateOpt, newDim, aspectRatio = PSConvert.ffmpegGetRotateParams(h, true, vinfo.rotation, vinfo.mrotation, vinfo.realDimension, string.gsub(vinfo.realDimension, 'x', ':'))
+	local autorotateOpt, rotateOpt, newDim, aspectRatio = ffmpegGetRotateParams(true, vinfo.rotation, vinfo.mrotation, vinfo.realDimension, string.gsub(vinfo.realDimension, 'x', ':'))
 	local snapshotTime = iif(vinfo.duration < 4, '00:00:00', '00:00:03') 
 	
 	writeLogfile(3, string.format("ffmpegGetThumbFromVideo: %s dim %s v-rotation %s m-rotation %s duration %d --> newDim: %s aspectR: %s snapshot at %s\n", 
@@ -568,47 +601,6 @@ function PSConvert.ffmpegGetThumbFromVideo (h, srcVideoFilename, vinfo, thumbFil
 	return true
 end
 
-
--- videoConversion defines the conversion parameters based on the requested target dimension
--- must be sorted from lowest to highest resolution
-local videoConversion = {
-	{	
-		id = 'MOBILE',
-		upToHeight 	= 240,	
---		pass1Params =	"-ar 44100 -b:a 64k -ac 2 -pass 1 -vcodec libx264 -b:v 1024k -bt 1024k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",		
---		pass2Params =	"-ar 44100 -b:a 64k -ac 2 -pass 2 -vcodec libx264 -b:v 1024k -bt 1024k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
-	},
-
-	{	
-		id = 'LOW',
-		upToHeight 	= 360,
---		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
---		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 256k -bt 256k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vprofile baseline -vsync 2 -level 13 -coder 0 -refs 1 -bf 0 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
-	},
-
-	{	
-		id = 'MEDIUM',
-		upToHeight 	= 720,
---		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 1000k -bt 1000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vsync 2 -level 31 -coder 0 -refs 4 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
---		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 1000k -bt 1000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 0 -vsync 2 -level 31 -coder 0 -refs 4 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 0 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
-	},
-
-	{	
-		id = 'HIGH',
-		upToHeight	= 1080,
---		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 1 -trellis 0 -me_method epzs -partitions 0 -f mp4",
---		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
-	},	
-
-	{	
-		id = 'ULTRA',
-		upToHeight	= 2160,
---		pass1Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 1 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
---		pass2Params = 	"-ar 44100 -b:a 96k -ac 2 -pass 2 -vcodec libx264 -b:v 2000k -bt 2000k -flags +loop -mixed-refs 1 -me_range 16 -cmp chroma -chromaoffset 0 -g 60 -keyint_min 25 -sc_threshold 40 -rc_eq 'blurCplx^(1-qComp)' -qcomp 0.60 -qmin 10 -qmax 51 -qdiff 4 -cplxblur 20.0 -qblur 0.5 -i_qfactor 0.71 -8x8dct 1 -vsync 2 -level 41 -coder 1 -refs 3 -bf 2 -b_qfactor 1.30 -b-pyramid none -b_strategy 1 -b-bias 0 -direct-pred 1 -weightb 1 -subq 5 -trellis 1 -me_method hex -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -f mp4",
-	},
-}
-
-
 ---------------- getConvertKey --------------------------------------------------------------------
 function PSConvert.getConvertKey(h, height)
 	
@@ -625,7 +617,7 @@ end
 ---------------- videoIsNativePSFormat --------------------------------------------------------------------
 -- return true if video format is natively supported by PS, i.e. it needs no conversion
 function PSConvert.videoIsNativePSFormat(videoExt)
-	
+
 	if 	   string.lower(videoExt) == 'mp4'
 		or string.lower(videoExt) == 'm4v'
 	then
@@ -661,7 +653,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotat
 	
 	-- get rotation params based on rotate flag 
 	local autorotateOpt, rotateOpt
-	autorotateOpt, rotateOpt, dstDim, dstAspect = PSConvert.ffmpegGetRotateParams(h, hardRotate, vinfo.rotation, vinfo.mrotation, dstDim, dstAspect)
+	autorotateOpt, rotateOpt, dstDim, dstAspect = ffmpegGetRotateParams(hardRotate, vinfo.rotation, vinfo.mrotation, dstDim, dstAspect)
 
 	-- ffmpeg major version 4 is supported, anything below may or may not work 
 	local ffmpeg_major_version = string.match(vinfo.ffmpeg_version, '^(%d+)')
@@ -765,6 +757,7 @@ function PSConvert.convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotat
 
 	LrFileUtils.delete(passLogfile)
 	LrFileUtils.delete(outfile)
+
 	return true
 end
 
