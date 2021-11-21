@@ -809,7 +809,6 @@ publishServiceProvider.disableRenamePublishedCollectionSet = false
  -- your plug-in's opportunity to make the corresponding change on the service.
 
  function publishServiceProvider.renamePublishedCollection( publishSettings, info )
-	return
 end
 
 -------------------------------------------------------------------------------
