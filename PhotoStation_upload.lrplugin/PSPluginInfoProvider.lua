@@ -192,7 +192,6 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 		
 		f:row {
 			f:static_text {
-		fill_horizontal = 1,
 				title = synops,
 				alignment = 'left',
 				fill_horizontal = 0.6,

@@ -57,7 +57,7 @@ PSUploadExportDialogSections = {}
 -------------------------------------------------------------------------------
 -- startDialog 
 function PSUploadExportDialogSections.startDialog( propertyTable )
-	PSDialogs.addObservers( propertyTable )	
+	PSDialogs.addObservers( propertyTable )
 end
 
 -------------------------------------------------------------------------------

@@ -134,22 +134,27 @@ function PSLrUtilities.getDateTimeOriginal(srcPhoto)
 	local isOrigDateTime = false
 
  	if srcPhoto:getRawMetadata("dateTimeOriginal") then
+		writeLogfile(3, "getDateTimeOriginal():	dateTimeOriginal found \n")
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeOriginal")
 		isOrigDateTime = true
 		writeLogfile(3, "	dateTimeOriginal: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeOriginalISO8601") then
+		writeLogfile(3, "getDateTimeOriginal():	dateTimeOriginalISO8601 found \n")
 		srcDateTimeISO8601 	= srcPhoto:getRawMetadata("dateTimeOriginalISO8601")
 		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
 		isOrigDateTime = true
 		writeLogfile(3, string.format("	dateTimeOriginalISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	elseif srcPhoto:getRawMetadata("dateTimeDigitized") then
+		writeLogfile(3, "getDateTimeOriginal():	dateTimeDigitized found \n")
 		srcDateTime = srcPhoto:getRawMetadata("dateTimeDigitized")
 		writeLogfile(3, "	dateTimeDigitized: " .. LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false ) .. "\n")
 	elseif srcPhoto:getRawMetadata("dateTimeDigitizedISO8601") then
+		writeLogfile(3, "getDateTimeOriginal():	dateTimeDigitizedISO8601 found \n")
 		srcDateTimeISO8601 	= srcPhoto:getRawMetadata("dateTimeDigitizedISO8601")
 		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
 		writeLogfile(3, string.format("	dateTimeDigitizedISO8601: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
 	elseif srcPhoto:getFormattedMetadata("dateCreated") and srcPhoto:getFormattedMetadata("dateCreated") ~= '' then
+		writeLogfile(3, "getDateTimeOriginal():	dateCreated found \n")
 		srcDateTimeISO8601 	= srcPhoto:getFormattedMetadata("dateCreated")
 		srcDateTime 		= PSLrUtilities.iso8601ToTime(srcDateTimeISO8601)
 		writeLogfile(3, string.format("	dateCreated: %s (%s)\n", srcDateTimeISO8601, LrDate.timeToUserFormat(srcDateTime, "%Y-%m-%d %H:%M:%S", false)))
@@ -182,10 +187,10 @@ function PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRo
 	local srcPhotoPath 			= srcPhoto:getRawMetadata('path')
 	local srcPhotoDir 			= LrPathUtils.parent(srcPhotoPath)
 	local srcPhotoExtension 	= LrPathUtils.extension(srcPhotoPath)
-	
+
 	local localRenderedPath 	= LrPathUtils.child(srcPhotoDir, dstFilename)
 	local renderedExtension 	= LrPathUtils.extension(dstFilename)
-	
+
 	local localRelativePath
 	local remoteAbsPath
 
@@ -194,7 +199,7 @@ function PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRo
 	if srcPhoto:getRawMetadata('isVirtualCopy') then
 		local vcSuffix =  srcPhoto:getFormattedMetadata('copyName')
 		if not vcSuffix or vcSuffix == '' then vcSuffix = string.sub(srcPhoto:getRawMetadata('uuid'), -3) end
-		
+
 		localRenderedPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(localRenderedPath) .. '-' .. vcSuffix,	renderedExtension)
 		writeLogfile(3, 'isVirtualCopy: new localRenderedPath is: ' .. localRenderedPath .. '"\n')				
 	end
@@ -321,12 +326,12 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
 					dateFormat = string.match(dateParams, "{Date%s(.*)}")
 				end
 				local dateString = LrDate.timeToUserFormat(ifnil(srcPhotoDate, 0), dateFormat, false)
-				
+
 				writeLogfile(3, string.format("evaluatePlaceholderString: date format '%s' --> '%s'\n", ifnil(dateFormat, '<Nil>'), ifnil(dateString, '<Nil>'))) 
 				return iif(ifnil(dateString, '') ~= '',  dateString, ifnil(dataDefault, '')) 
 			end);
 	end
-	
+
 	-- get formatted metadata, if required
 	if string.find(path, "{LrFM:", 1, true) then
 		local srcPhotoFMetadata = srcPhoto:getFormattedMetadata()
@@ -341,7 +346,7 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
     			if not metadataName then
     				metadataName = metadataNameAndPattern
     			end
-    			
+
     			local metadataString = ifnil(srcPhotoFMetadata[metadataName], '')
     			local metadataStringExtracted = metadataString
     			if metadataString == '' then
@@ -360,7 +365,7 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
     			return metadataStringExtracted
     		end);
 	end
-	
+
 	-- get raw metadata, if required
 	if string.find(path, "{LrRM:", 1, true) then
 		local srcPhotoRMetadata = srcPhoto:getRawMetadata()
@@ -375,7 +380,7 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
     			if not metadataName then
     				metadataName = metadataNameAndPattern
     			end
-    			
+
     			local metadataString = ifnil(srcPhotoRMetadata[metadataName], '')
     			local metadataStringExtracted = metadataString
     			if metadataString == '' then
@@ -444,17 +449,17 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
 
 			writeLogfile(4, string.format("substituteCollectionNameOrPath: '%s'--> type='%s', pattern='%s', default='%s'\n", 
 											ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), ifnil(dataPattern, '<Nil>'), ifnil(dataDefault, '<Nil>'))) 
-			
+
 			if not dataType or not string.find('name,path', dataType, 1, true) then 
 				writeLogfile(3, string.format("substituteCollectionNameOrPath:  '%s': type='%s' not valid  --> '%s' \n", ifnil(contCollParam, '<Nil>'), ifnil(dataType, '<Nil>'), contCollParam)) 
 				return contCollParam 
 			end
-			
+
 			if not collectionPath or not collectionPath[1] then
 				writeLogfile(4, string.format("evaluatePlaceholderString:  '%s': no collections  --> '' \n", ifnil(contCollParam, '<Nil>'))) 
 				return ifnil(dataDefault,'')  
 			end
-			
+
 			for i = 1, #collectionPath do
 				local dataString
 				

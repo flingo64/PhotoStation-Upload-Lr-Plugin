@@ -200,7 +200,7 @@
 "$$$/PSUpload/PluginDialog/ProgSearchTT=Suche Programm im Explorer/Finder."
 "$$$/PSUpload/PluginDialog/PsSettings=Allgemeine Einstellungen"
 "$$$/PSUpload/PluginDialog/PsSettingsSynopsis=Programmpfade einstellen"
-"$$$/PSUpload/PluginDialog/PSUploaderDescription=Gib den Installationspfad des 'Synology Photo Station Uploader' an.^nErforderlich, wenn Vorschaubilder lokal generiert oder Vidoes hochgeladen werden sollen.^n"
+"$$$/PSUpload/PluginDialog/PSUploaderDescription=Gib den Installationspfad des 'Synology Photo Station Uploader' an.^nErforderlich, wenn Vorschaubilder lokal generiert oder Videos hochgeladen werden sollen.^n"
 "$$$/PSUpload/PluginDialog/VideoConvSettingsDescription=Gib den Installationspfad vom 'ffmpeg' Programm an.^nGib den Name der Datei mit den Voreinstellungen für Vidoekonvertierungen an (eine JSON-Datei im Plugin-Verzeichnis).^n"
 "$$$/PSUpload/Progress/CheckMoved/One=Überprüfe ein Foto"
 "$$$/PSUpload/Progress/CheckMoved=Überprüfe ^1 Fotos"

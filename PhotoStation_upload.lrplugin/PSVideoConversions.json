@@ -54,17 +54,17 @@
   {
   	"title": "Medium-CUDA",
   	"comment": "Medium quality, fast conversion via NVIDIA CUDA",
-	"input_options": null,
+		"input_options": null,
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
     "video_filters": "-vf format=yuv420p", 
     "video_options": "-c:v h264_nvenc -preset medium -qp 26",
     "video_options_pass_2": null,
-	"output_options": null
+	  "output_options": null
   },
   {
   	"title": "High-CUDA",
   	"comment": "High quality, fast conversion via NVIDIA CUDA",
-	"input_options": null,
+		"input_options": null,
     "audio_options": "-strict experimental -acodec aac -ar 44100 -b:a 64k -ac 2",
     "video_filters": "-vf format=yuv420p", 
     "video_options": "-c:v h264_nvenc -preset medium -qp 24",

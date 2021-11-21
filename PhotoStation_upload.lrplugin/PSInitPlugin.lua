@@ -73,7 +73,7 @@ if myVideoExportPresets and #myVideoExportPresets > 0 then
 	LrExportSettings.removeVideoExportPreset('ALL', _PLUGIN)
 --		writeLogfile(2, 'PSInitPlugin: found my custom video export presets.\n')
   	end
- 
+
 -- (re-)install my video export presets 	
 local pluginDir = _PLUGIN.path
 local presetFile = 'OrigSizeHiBit.epr'

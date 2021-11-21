@@ -965,7 +965,6 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 				fill_vertical 	= 1,
 				f:group_box {
 					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyActions=Apply Changes",
-					alignment 		= right,
 					place_horizontal	= 1,
 --					fill_horizontal	= 1,
 					fill_vertical	= 1,
