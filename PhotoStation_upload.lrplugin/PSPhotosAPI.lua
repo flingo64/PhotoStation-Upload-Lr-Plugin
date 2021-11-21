@@ -660,7 +660,7 @@ function Photos.movePhoto(h, srcPhotoPath, dstFolder, isVideo)
 		item_id		= "[" .. photoId  .. "]",
 		folder_id	= "[]",
 		action 		= '"skip"',
-		extra_info	= '"{\"version\":1,\"source_folder_ids\":[', srcFolderId, ']}',
+		extra_info	= '"{\"version\":1,\"source_folder_ids\":[' .. srcFolderId .. ']}',
 		api			= "SYNO.FotoTeam.BackgroundTask.File",
 		method		= "move",
 		version		= 1
