@@ -14,18 +14,18 @@ exported functions:
 	- iif
 	- split
 	- trim
-	
+
 	- cmdlineQuote()
 	- shellEscape
-	
+
 	- findInAttrValueTable
 	- findInStringTable
 	- getTableExtract
 	- getTableDiff
-		
+
 	- getNullFilename
 	- getProgExt
-	
+
 	- openLogfile
 	- writeLogfile
 	- writeTableLogfile
@@ -33,27 +33,29 @@ exported functions:
 	- getLogFilename
 	- getLogLevel
 	- changeLogLevel
-		
+
 	- waitSemaphore
 	- signalSemaphore
-	
+
 	- mkLegalFilename
 	- mkSafeFilename
 	- normalizeDirname
-	
+
 	- urlencode
-	
+
 	- openSession
 	- closeSession
-	
+
 	- promptForMissingSettings
 	- showFinalMessage	
-	
+
 	- PSUtilities.areaCompare
 	- PSUtilities.denormalizeArea
 	- PSUtilities.normalizeArea
 	- PSUtilities.rating2Stars
-	
+	- PSUtilities.noteFolder
+	- PSUtilities.deleteAllEmptyFolders
+
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -1158,3 +1160,66 @@ function PSUtilities.rating2Stars(rating)
 	return string.rep ('*', rating)
 end
 
+--------------------------------------------------------------------------------------------
+-- noteFolder(albumCheckList, photoPath)
+-- Note the folder of a photo in the albumCheckList
+-- make sure, each album exists only once and the albumCheckList is sorted by pathname length desc (longest pathnames first)
+function PSUtilities.noteFolder(albumCheckList, photoPath)
+	local albumPath, _ = string.match(photoPath , '(.+)/([^/]+)')
+	if not albumPath then
+		-- photo in root
+		writeLogfile(4, string.format("PSUtilities.noteFolder(%s): root will not be noted.\n", photoPath))
+		return albumCheckList
+	end
+
+	local newAlbum = {}
+	newAlbum.albumPath	= albumPath
+
+	local previousAlbum, currentAlbum = nil, albumCheckList
+
+	while currentAlbum do
+		if string.find(currentAlbum.albumPath, albumPath, 1, true) == 1 then 
+			writeLogfile(4, string.format("PSUtilities.noteFolder(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
+			return albumCheckList
+		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
+			newAlbum.next = currentAlbum
+			if previousAlbum then
+				previousAlbum.next = newAlbum
+			else		 
+				albumCheckList = newAlbum 
+			end
+			writeLogfile(3, string.format("PSUtilities.noteFolder(%s): insert before %s\n", albumPath, currentAlbum.albumPath))
+			return albumCheckList
+		else
+			previousAlbum = currentAlbum
+			currentAlbum = currentAlbum.next			
+		end
+	end
+
+	newAlbum.next		= nil
+	if not previousAlbum then 
+		writeLogfile(3, string.format("PSUtilities.noteFolder(%s): insert as first in list\n", albumPath))
+		albumCheckList 		= newAlbum
+	else
+		previousAlbum.next	= newAlbum
+		writeLogfile(3, string.format("PSUtilities.noteFolder(%s): insert as last in list\n", albumPath))
+	end
+
+	return albumCheckList
+end
+
+--------------------------------------------------------------------------------------------
+-- deleteAllEmptyFolders(albumCheckList)
+-- Delete all empty folders and their empty parents found in the given list of folders
+function PSUtilities.deleteAllEmptyFolders(exportParams, albumCheckList)
+	local nDeletedAlbums = 0
+	local currentAlbum = albumCheckList
+
+	while currentAlbum do
+		nDeletedAlbums = nDeletedAlbums + exportParams.photoServer:deleteEmptyAlbumAndParents(currentAlbum.albumPath)
+		currentAlbum = currentAlbum.next
+	end
+
+	writeLogfile(2, string.format("PSUtilities.deleteAllEmptyFolders: Deleted %d empty albums.\n", nDeletedAlbums))
+	return nDeletedAlbums
+end

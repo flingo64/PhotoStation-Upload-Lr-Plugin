@@ -787,7 +787,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 						skipPhoto = true 					
 					else
 						writeLogfile(2, 'MovePhotos: Moved photo from ' .. publishedPhotoId .. ' to ' .. newPublishedPhotoId .. '.\n')
-						albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPhotoId)
+						albumsForCheckEmpty = PSUtilities.noteFolder(albumsForCheckEmpty, publishedPhotoId)
 					end
 				else 
 						writeLogfile(2, 'MovePhotos: No need to move photo "'  .. newPublishedPhotoId .. '".\n')
@@ -800,23 +800,14 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 			LrFileUtils.delete( pathOrMessage )
 	-- 		progressScope:setPortionComplete(nProcessed, nPhotos)
 		end
-	end	
-
-	local nDeletedAlbums = 0 
-	local currentAlbum = albumsForCheckEmpty
-	
-	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + exportParams.photoServer:deleteEmptyAlbumAndParents(currentAlbum.albumPath)
-		currentAlbum = currentAlbum.next
 	end
-	
-	writeLogfile(2, string.format("MovePhotos: Deleted %d empty albums.\n", nDeletedAlbums))
-	
+
+	local nDeletedAlbums = PSUtilities.deleteAllEmptyFolders(exportParams, albumsForCheckEmpty)
 
 -- 	progressScope:done()
-	
+
 	return nPhotos, nProcessed, nMoved
-end			
+end
 
 --------------------------------------------------------------------------------
 -- PSUploadTask.updateExportSettings(exportParams)
@@ -955,6 +946,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	local deferredMetadataUploads	= {}	-- videos and photos w/ location tags need a second run for metadata upload
 	local sharedAlbumUpdates 		= {}	-- Shared Photo/Album handling is done after all uploads
 	local sharedPhotoUpdates		= {}	-- Shared Photo/Album handling is done after all uploads
+	local albumsForCheckEmpty				-- Album that might be empty after photos being moved to another target album
 	local skipPhoto = false 		-- continue flag
 	
 	for _, rendition in exportContext:renditions{ stopIfCanceled = true } do
@@ -1028,18 +1020,23 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- if photo was moved ... 
 				if ifnil(publishedPhotoId, newPublishedPhotoId) ~= newPublishedPhotoId then
 					-- remove photo at old location
-					if publishMode == 'Publish' and not exportParams.photoServer:deletePhoto(publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
-						writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
-    					table.insert( failures, srcPath )
-						rendition:uploadFailed("Removal of photo at old taget failed")
-						skipPhoto = true 					
+					if publishMode == 'Publish' then
+						if not exportParams.photoServer:deletePhoto(publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
+							writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
+							table.insert( failures, srcPath )
+							rendition:uploadFailed("Removal of photo at old taget failed")
+							skipPhoto = true
+						else
+							-- note old remote album as possibly empty
+							albumsForCheckEmpty = PSUtilities.noteFolder(albumsForCheckEmpty, publishedPhotoId)
+						end
 					elseif publishMode == 'Metadata' then
 						writeLogfile(1, "Metadata Upload for '" .. publishedPhotoId .. "' - failed, photo must be uploaded to '" .. newPublishedPhotoId .."' at first!\n")
     					table.insert( failures, srcPath )
 						rendition:uploadFailed("Metadata Upload failed, photo not yet uploaded")
-						skipPhoto = true 					
-					else
-						writeLogfile(2, iif(publishMode == 'Publish', 'Deleting', 'CheckExisting: Would delete') .. ' remote photo at old path: ' .. publishedPhotoId .. '\n')							
+						skipPhoto = true
+					elseif publishMode == 'CheckExisting' then
+						writeLogfile(2, 'CheckExisting: Would delete remote photo at old path: ' .. publishedPhotoId .. '\n')
 					end
 				end
 				publishedPhotoId = newPublishedPhotoId
@@ -1158,7 +1155,10 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 	-- deferred metadata upload
 	if #deferredMetadataUploads > 0 then batchUploadMetadata(functionContext, deferredMetadataUploads, exportParams, failures) end
 	if #sharedAlbumUpdates > 0 then PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) end
-	
+
+	-- delete all empty album: albums may be emptied through photos being moved to another target album
+	PSUtilities.deleteAllEmptyFolders(exportParams, albumsForCheckEmpty)
+
 	writeLogfile(2,"--------------------------------------------------------------------\n")
 	closeSession(exportParams)
 	

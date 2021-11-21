@@ -355,7 +355,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 		
 		if publishSettings.photoServer:deletePhoto (photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, "deletePhotosFromPublishedCollection: '" .. photoId .. "': successfully deleted.\n")
-			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, photoId)
+			albumsForCheckEmpty = PSUtilities.noteFolder(albumsForCheckEmpty, photoId)
 			
 			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
@@ -364,13 +364,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 		end
 	end
 
-	local nDeletedAlbums = 0 
-	local currentAlbum = albumsForCheckEmpty
-	
-	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + publishSettings.photoServer:deleteEmptyAlbumAndParents(currentAlbum.albumPath)
-		currentAlbum = currentAlbum.next
-	end
+	local nDeletedAlbums = PSUtilities.deleteAllEmptyFolders(publishSettings, albumsForCheckEmpty)
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
@@ -879,23 +873,17 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		if publishSettings.photoServer:deletePhoto(publishedPath, PSLrUtilities.isVideo(publishedPath)) then
 			writeLogfile(2, publishedPath .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
-			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPath)
+			albumsForCheckEmpty = PSUtilities.noteFolder(albumsForCheckEmpty, publishedPath)
 		else
 			writeLogfile(1, publishedPath .. ': deletion failed!\n')
 		end
 		progressScope:setPortionComplete(nProcessed, nPhotos)
-	end 
-		
-	local nDeletedAlbums = 0 
-	local currentAlbum = albumsForCheckEmpty
-	
-	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + publishSettings.photoServer:deleteEmptyAlbumAndParents(currentAlbum.albumPath)
-		currentAlbum = currentAlbum.next
 	end
-	
+
+	local nDeletedAlbums = PSUtilities.deleteAllEmptyFolders(publishSettings, albumsForCheckEmpty)
+
 	progressScope:done()
-	
+
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
 	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePublishedColletion=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
