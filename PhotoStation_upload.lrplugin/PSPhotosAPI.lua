@@ -1401,30 +1401,30 @@ end
 --	else recurse one level
 
 function Photos.getFolderId(h, path, doCreate)
-	writeLogfile(4, string.format("getFolderId(userid:%s, path:'%s') ...\n", h.userid, path))
+	writeLogfile(5, string.format("getFolderId(userid:%s, path:'%s') ...\n", h.userid, path))
 	pathIdCacheCleanup(h.userid)
 
 	if string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
 
 	local cachedPathInfo  = pathIdCache.cache[h.userid] and pathIdCache.cache[h.userid][path]
 	if cachedPathInfo then
-		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') returns %d\n", h.userid, path, cachedPathInfo.id))
+		writeLogfile(4, string.format("getFolderId(userid:%s, path:'%s') returns %d\n", h.userid, path, cachedPathInfo.id))
 		return cachedPathInfo.id
 	elseif path == '/' then
 		-- pathIdCache for this user not yet initialized
-		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') returns <nil>\n", h.userid, path))
+		writeLogfile(4, string.format("getFolderId(userid:%s, path:'%s') returns <nil>\n", h.userid, path))
 		return nil
 	else
 		local folderParent = LrPathUtils.parent(path)
 		local id
 
-		writeLogfile(4, string.format("getFolderId(userid:%s, path:'%s') descending to '%s'\n", h.userid, path, folderParent))
+		writeLogfile(5, string.format("getFolderId(userid:%s, path:'%s') descending to '%s'\n", h.userid, path, folderParent))
 		local folderParentId =  Photos.getFolderId(h, folderParent, doCreate)
 		if not folderParentId then return nil end
 	
 		local subfolderList = pathIdCache.listFunction["folder"](h, folderParent, folderParentId)
 		if not subfolderList then return nil end
-		writeLogfile(4, string.format("getFolderId(userid:%s, path:'%s') found %d subfolders in '%s'\n", h.userid, path, #subfolderList, folderParent))
+		writeLogfile(5, string.format("getFolderId(userid:%s, path:'%s') found %d subfolders in '%s'\n", h.userid, path, #subfolderList, folderParent))
 		for i = 1, #subfolderList do
 			Photos.addPathToCache(h, subfolderList[i].name, subfolderList[i].id, "folder")
 			if subfolderList[i].name == path then id = subfolderList[i].id end
@@ -1439,7 +1439,7 @@ function Photos.getFolderId(h, path, doCreate)
 			end
 		end
 
-		writeLogfile(3, string.format("getFolderId(userid:%s, path '%s') returns %s\n", h.userid, path, ifnil(id, '<nil>')))
+		writeLogfile(4, string.format("getFolderId(userid:%s, path '%s') returns %s\n", h.userid, path, ifnil(id, '<nil>')))
 		return id, errorCode
 	end
 end
@@ -1448,14 +1448,14 @@ end
 -- getPhotoId(h, path)
 -- 	returns the id and additional info of a given item (photo/video) path (w/o leading/trailing '/') in Photos
 function Photos.getPhotoId(h, path)
-	writeLogfile(4, string.format("getPhotoId(userid:%s, path:'%s') ...\n", h.userid, path))
+	writeLogfile(5, string.format("getPhotoId(userid:%s, path:'%s') ...\n", h.userid, path))
 	pathIdCacheCleanup(h.userid)
 
 	if string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
 
 	local cachedPathInfo  = pathIdCache.cache[h.userid] and pathIdCache.cache[h.userid][path]
 	if cachedPathInfo then
-		writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') returns %d\n", h.userid, path, cachedPathInfo.id))
+		writeLogfile(4, string.format("getPhotoId(userid:%s, path:'%s') returns %d\n", h.userid, path, cachedPathInfo.id))
 		return cachedPathInfo.id, cachedPathInfo.addinfo
 	end
 
@@ -1469,7 +1469,7 @@ function Photos.getPhotoId(h, path)
 	local itemList, errorCode = pathIdCache.listFunction["item"](h, photoFolder, folderId)
 	if not itemList then return nil, errorCode end
 
-	writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') listFunction found %d items in '%s'\n", h.userid, path, #itemList, photoFolder))
+	writeLogfile(4, string.format("getPhotoId(userid:%s, path:'%s') listFunction found %d items in '%s'\n", h.userid, path, #itemList, photoFolder))
 	for i = 1, #itemList do
 		Photos.addPathToCache(h, LrPathUtils.child(photoFolder, itemList[i].filename), itemList[i].id, itemList[i].type, itemList[i])
 		if itemList[i].filename == photoFilename then
@@ -1478,7 +1478,7 @@ function Photos.getPhotoId(h, path)
 		end
 	end
 
-	writeLogfile(3, string.format("getPhotoId(%s) returns %s\n", path, id))
+	writeLogfile(4, string.format("getPhotoId(%s) returns %s\n", path, id))
 
 	return id, photoInfo
 end
