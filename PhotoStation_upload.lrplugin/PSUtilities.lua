@@ -6,11 +6,10 @@ Copyright(c) 2021, Martin Messmer
 
 Utilities for Lightroom Photo StatLr
 
+exported globals:
+	- JSON
+
 exported functions:
-	- JSON.onDecodeError
-	- JSON.onDecodeNilError
-	- JSON.onDecodeHtmlError
-	
 	- ifnil
 	- iif
 	- split
@@ -50,6 +49,11 @@ exported functions:
 	- promptForMissingSettings
 	- showFinalMessage	
 	
+	- PSUtilities.areaCompare
+	- PSUtilities.denormalizeArea
+	- PSUtilities.normalizeArea
+	- PSUtilities.rating2Stars
+	
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -85,10 +89,10 @@ local LrTasks 			= import 'LrTasks'
 local LrView 			= import 'LrView'
 
 require "PSLrUtilities"
-
-JSON = assert(loadfile (LrPathUtils.child(_PLUGIN.path, 'JSON.lua')))()
+require "PSPhotoServer"
 
 --============================================================================--
+JSON = assert(loadfile (LrPathUtils.child(_PLUGIN.path, 'JSON.lua')))()
 
 tmpdir = LrPathUtils.getStandardFilePath("temp")
 
@@ -209,7 +213,6 @@ function tableShallowCopy(orig)
     return copy
 end
 
---[[
 -- tableDeepCopy (origTable)
 -- make a deep copy of a table
 function tableDeepCopy(orig)
@@ -226,7 +229,6 @@ function tableDeepCopy(orig)
     end
     return copy
 end
-]]
 
 --------------------------------------------------------------------------------------------
 -- trimTable(inputTable)
@@ -298,7 +300,6 @@ end
 --  if isSameCheck function is given, use it as compar operator  
 function getTableDiff(table1, table2, keyName, isSameCheck)
 	local tableDiff
-
 	if not table1 or #table1 == 0 or not table2 or #table2 == 0 then
 		table1 = ifnil(table1, {})
 		table2 = ifnil(table2, {})
@@ -430,6 +431,7 @@ end
 
 -- writeTableLogfile (level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern, isObservableTable)
 -- output a table to logfile, max one level of nested tables
+-- Use this instead of JSON:encode()/JSON:encode_pretty() if table is an observable table
 --   do not output keys matching hideKeyPattern
 --   obfuscate value for keys matching pwKeyPattern
 function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern, isObservableTable)
@@ -458,8 +460,9 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 			if not compact then
 				writeLogfile(level, '\t<table>' .. ':{' ..  iif(compact, ' ', '\n'))
 			end
+			local attrValueString
 			for key2, value2 in pairs( key ) do
-				local attrValueString = getAttrValueOutputString(key2, value2, pwKeyPattern, hideKeyPattern)
+				attrValueString = getAttrValueOutputString(key2, value2, pwKeyPattern, hideKeyPattern)
 				
 				if compact then
 					table.insert(outputLine, attrValueString)
@@ -717,7 +720,7 @@ function openSession(exportParams, publishedCollection, operation)
 	-- if is Publish process, temporarily overwrite exportParams w/ collectionSettings
 	if publishedCollection and publishedCollection:type() == 'LrPublishedCollection' then
     	collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-		writeLogfile(4, "openSession: copy collection settings\n")
+		writeLogfile(4, "openSession: copy collection upload settings\n")
     	
     	exportParams.storeDstRoot 	= true			-- dstRoot must be set in a Published Collection
     	exportParams.dstRoot 		= PSLrUtilities.getCollectionUploadPath(publishedCollection)
@@ -738,7 +741,7 @@ function openSession(exportParams, publishedCollection, operation)
 
 		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
     	if operation == 'GetCommentsFromPublishedCollection' then
-			writeLogfile(4, "openSession: copy download settings\n")
+			writeLogfile(4, "openSession: copy collection download settings\n")
         	exportParams.downloadMode	 		= collectionSettings.downloadMode
         	exportParams.commentsDownload 		= collectionSettings.commentsDownload
         	exportParams.pubCommentsDownload	= collectionSettings.pubCommentsDownload
@@ -773,40 +776,37 @@ function openSession(exportParams, publishedCollection, operation)
 		return false, 'cancel'
 	end
 
-	-- dump current session parameters to logfile
-	writeTableLogfile(2, 'exportParams', exportParams, 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, NULL, "^LR_"), true)
-
 	-- ConvertAPI: required if Export/Publish/Metadata 
-	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.cHandle then
-			exportParams.cHandle = PSConvert.initialize()
-			if not exportParams.cHandle then return false, 'Cannot initialize converters, check logfile for detailed information' end
+	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.converter then
+			exportParams.converter = PSConvert.new()
+			if not exportParams.converter then return false, 'Cannot initialize converters, check logfile for detailed information' end
 	end
 
 	-- Login to Photo Station: not required for CheckMoved, not required on Download if Download was disabled
-	if not 	exportParams.uHandle 
+	if not 	exportParams.photoServer
 	and 	exportParams.publishMode ~= 'CheckMoved' 
 	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
-		local result, errorCode
-		exportParams.uHandle, errorCode = PSPhotoStationAPI.initialize(exportParams.serverUrl,
-														iif(exportParams.usePersonalPS, "/~" .. ifnil(exportParams.personalPSOwner, "unknown") .. "/photo/", "/photo/"),
-														exportParams.serverTimeout)
-		if not exportParams.uHandle then
-			local errorMsg = string.format("Initialization of %s %s at\n%s\nfailed!\nReason: %s\n",
-									iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
-									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
-									exportParams.serverUrl,
-									PSPhotoStationUtils.getErrorMsg(errorCode))
+		local errorCode
+		exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner, 
+																exportParams.serverTimeout, exportParams.psVersion)
+		if not exportParams.photoServer then
+			local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
+			iif(exportParams.usePersonalPS, "Personal ", "Global "),
+			PHOTOSERVER_API[exportParams.psVersion].name,
+			iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
+			exportParams.serverUrl,
+			PHOTOSERVER_API[exportParams.psVersion].API.getErrorMsg(errorCode))
 			writeLogfile(1, errorMsg)
 			return 	false, errorMsg
 		end
 
-		result, errorCode = PSPhotoStationAPI.login(exportParams.uHandle, exportParams.username, exportParams.password)
+		result, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
 		if not result then
 			local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
 									iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
 									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
 									exportParams.serverUrl,
-									PSPhotoStationUtils.getErrorMsg(errorCode))
+									exportParams.photoServer.getErrorMsg(errorCode))
 			writeLogfile(1, errorMsg)
 			 exportParams.uHandle = nil
 			return 	false, errorMsg
@@ -818,14 +818,19 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- exiftool: required if Export/Publish and exif translation was selected, or if downloading faces
+	local retcode, reason
 	if 	(	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
-		 or	(operation == 'GetRatingsFromPublishedCollection' and exportParams.PS2LrFaces)
+		 or	(string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.PS2LrFaces)
 		)
-	and not exportParams.eHandle then 
-		exportParams.eHandle= PSExiftoolAPI.open(exportParams) 
-		return iif(exportParams.eHandle, true, false), "Cannot start exiftool!" 
+	and not exportParams.exifTool
+	then
+		exportParams.exifTool 	= PSExiftoolAPI.new(exportParams)
+		if not exportParams.exifTool then return false, "Cannot start exiftool!" end
 	end
-	
+
+	-- dump current session parameters to logfile
+	writeTableLogfile(3, string.format("openSession(%s): exportParams after all", operation), exportParams, 	iif(getLogLevel() > 2, false, true), 'password', iif(getLogLevel() > 3, nil, "^LR_"), true)
+
 	return true
 end
 
@@ -834,9 +839,9 @@ end
 function closeSession(exportParams)
 	writeLogfile(3,"closeSession() starting\n")
 
-	if exportParams.eHandle then 
-		PSExiftoolAPI.close(exportParams.eHandle)
-		exportParams.eHandle = nil 
+	if exportParams.exifTool then 
+		exportParams.exifTool:close()
+		exportParams.exifTool = nil
 	end
 		
 	writeLogfile(3,"closeSession() done.\n")
@@ -1146,3 +1151,10 @@ function PSUtilities.areaCompare(area1, area2)
 		return false
 	end 
 end
+
+---------------------------------------------------------------------------------------------------------
+-- rating2Stars (rating) 
+function PSUtilities.rating2Stars(rating)
+	return string.rep ('*', rating)
+end
+

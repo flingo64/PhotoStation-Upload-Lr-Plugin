@@ -80,6 +80,101 @@ local andAllKeys		= LrBinding.andAllKeys
 
 PSDialogs = {}
 
+
+--============================ complex key binding checks ===================================================
+local checkAddVideoSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_UPLOAD_VIDEO_ADD)
+	end,
+}
+
+local checkAddVideoSelected = {
+	keys 		= { 'psVersion',  'addVideoQuality' },
+	operation 	= function( binder, values, fromTable )
+		return 	PHOTOSERVER_API.supports(values.psVersion, PHOTOSERVER_UPLOAD_VIDEO_ADD)
+				and values.addVideoQuality ~= -1
+	end,
+}
+
+local checkTitleSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_TITLE)
+	end,
+}
+
+local checkDescriptionSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_DESCRIPTION)
+	end,
+}
+
+local checkPubLabelSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		writeLogfile(2, string.format("checkLabelSupport(%s) returns %s\n", value, PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_LABEL_PUB)))
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_LABEL_PUB)
+	end,
+}
+
+local checkRatingSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_RATING)
+	end,
+}
+
+local checkGPSSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_GPS)
+	end,
+}
+
+local checkLocationSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_LOCATION)
+	end,
+}
+
+local checkLocationSelected = {
+	keys 		= { 'psVersion',  'xlatLocationTags' },
+	operation 	= function( binder, values, fromTable )
+		return 	PHOTOSERVER_API.supports(values.psVersion, PHOTOSERVER_METADATA_LOCATION)
+				and values.xlatLocationTags
+	end,
+}
+
+local checkPersonSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_PERSON)
+	end,
+}
+
+local checkTagSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_TAG)
+	end,
+}
+
+local checkPrivCommentSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_COMMENT_PRIV)
+	end,
+}
+
+local checkPubCommentSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_COMMENT_PUB)
+	end,
+}
 --============================ validate functions ===========================================================
 
 -------------------------------------------------------------------------------
@@ -168,7 +263,7 @@ function PSDialogs.validatePSUploadProgPath(view, path)
 		convertprog = LrPathUtils.addExtension(convertprog, progExt)
 		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
 	end
-
+	
 	if LrFileUtils.exists(path) ~= 'directory' 
 	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ImageMagick'), convertprog))
 	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), ffmpegprog)) then
@@ -256,7 +351,6 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			propertyTable.serverUrl = 	propertyTable.proto .. "://" .. propertyTable.servername
 			propertyTable.psPath = 		iif(propertyTable.usePersonalPS, "/~" .. ifnil(propertyTable.personalPSOwner, "unknown") .. "/photo/", "/photo/")
 			propertyTable.psUrl = 		propertyTable.serverUrl .. propertyTable.psPath
-			propertyTable.isPS6 = 		iif(propertyTable.psVersion >= 60, true, false)
 		end
 
 		-- ###############  Export or Collection Settings ##########################
@@ -891,6 +985,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         { title	= 'Photo Station 6.6', value 	= 66 },
         { title	= 'Photo Station 6.7', value 	= 67 },
         { title	= 'Photo Station 6.8', value 	= 68 },
+        { title	= 'Synology Photos',   value 	= 70 },
 	}
 	
 	local fileTimestampItems = {
@@ -1231,7 +1326,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 		{ title	= 'High/1080',		value 	= 'HIGH' })
 
 	local videoConvQualityItems = {}
-	local convOptions = PSConvert.getVideoConvPresets()	
+	local convOptions = PSConvert.getVideoConvPresets()
 
 	if not convOptions then
 		writeLogfile(1, "PSDialogs.videoOptionsView: video preset file is not a valid JSON file!\n")
@@ -1298,7 +1393,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					value 			= bind 'hardRotate',
 				},
 
-				f:separator { fill_vertical = 1 },
+				f:separator { fill_vertical = 1, visible = bind(checkAddVideoSupport) },
 				
 				f:row {
 					fill_horizontal = 1,
@@ -1306,6 +1401,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoAddQuality=Add. video:",
 						alignment 		= 'right',
+						visible			= bind(checkAddVideoSupport)
 					},
 						
 					f:popup_menu {
@@ -1314,11 +1410,12 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						alignment 		= 'left',
 						value 			= bind 'addVideoQuality',
 						fill_horizontal = 1,
+						visible			= bind(checkAddVideoSupport)
 					},
 				},
 			},
 				
-			f:separator { fill_horizontal = 0.75 },
+			f:separator { fill_horizontal = 0.75, visible = bind(checkAddVideoSelected) },
 			
 			f:row {
 				fill_horizontal = 1,
@@ -1329,15 +1426,14 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:",
-						visible			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoUltraTT=Generate additional video for Ultra-Hi-Res (2160p) videos",
 						items 			= ultraResAddVideoItems,
-						visible			= keyIsNot('addVideoQuality', -1),
-						enabled			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoUltra',
@@ -1350,15 +1446,14 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoHigh=High:",
-						visible			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
 						items 			= highResAddVideoItems,
-						visible			= keyIsNot('addVideoQuality', -1),
-						enabled			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoHigh',
@@ -1371,15 +1466,14 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 	
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium:",
-						visible			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
 						items 			= medResAddVideoItems,
-						visible			= keyIsNot('addVideoQuality', -1),
-						enabled			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoMed',
@@ -1392,15 +1486,14 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoLow=Low:",
-						visible			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
 						
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
 						items 			= lowResAddVideoItems,
-						visible			= keyIsNot('addVideoQuality', -1),
-						enabled			= keyIsNot('addVideoQuality', -1),
+						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'left',
 						fill_horizontal = 1,
 						value 			= bind 'addVideoLow',
@@ -1585,6 +1678,7 @@ function PSDialogs.photoNamingView(f, propertyTable)
 	}
 end
 
+
 -------------------------------------------------------------------------------
 -- uploadOptionsView(f, propertyTable)
 function PSDialogs.uploadOptionsView(f, propertyTable)
@@ -1608,6 +1702,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				fill_horizontal = 1,
 				value 			= true,
 				enabled 		= false,
+				visible			= bind(checkTitleSupport),
 			},
 
 			f:checkbox {
@@ -1615,6 +1710,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				fill_horizontal = 1,
 				value 			= true,
 				enabled 		= false,
+				visible			= bind(checkDescriptionSupport),
 			},
 
 			f:checkbox {
@@ -1622,6 +1718,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				fill_horizontal = 1,
 				value 			= true,
 				enabled 		= false,
+				visible			= bind(checkGPSSupport),
 			},
 
 			f:checkbox {
@@ -1629,6 +1726,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				fill_horizontal = 1,
 				value 			= true,
 				enabled 		= false,
+				visible			= bind(checkRatingSupport),
 			},
 
 		},
@@ -1639,6 +1737,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			fill_horizontal = 1,
     			value 			= true,
     			enabled 		= false,
+				visible			= bind(checkTagSupport),
     		},
     
     		f:checkbox {
@@ -1646,6 +1745,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Station person tags\n(Useful for Photo Station version < 6.5)",
     			fill_horizontal = 1,
     			value 			= bind 'exifXlatFaceRegions',
+				visible			= bind(checkPersonSupport),
     		},
     	
     		f:checkbox {
@@ -1653,6 +1753,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
     			fill_horizontal = 1,
     			value 			= bind 'exifXlatLabel',
+				visible			= bind(checkTagSupport),
     		},
     
     		f:checkbox {
@@ -1660,6 +1761,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag\n(Useful for Photo Station version < 6.5)",
     			fill_horizontal = 1,
     			value 			= bind 'exifXlatRating',
+				visible			= bind(checkTagSupport),
     		},
     	},
     	
@@ -1673,11 +1775,13 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLocationTT=Translate Lr location tags to Photo Station location tag",
     			value 			= bind 'xlatLocationTags',
    				fill_horizontal = 1,
-    		},
+				visible			= bind(checkLocationSupport),
+			},
 
 			f:popup_menu {
 				value 			= bind 'locationTagField1',
-				visible 		= bind 'xlatLocationTags',
+--				visible 		= bind 'xlatLocationTags',
+				visible 		= bind(checkLocationSelected),
 				enabled 		= keyIsNotNil 'xlatLocationTags',
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
@@ -1776,6 +1880,7 @@ end
 -------------------------------------------------------------------------------
 -- downloadOptionsView(f, propertyTable)
 function PSDialogs.downloadOptionsView(f, propertyTable)
+	writeLogfile(2, string.format("psVersion= %s\n", propertyTable.psVersion))
 	return	f:group_box {
 		bind_to_object = propertyTable,
 
@@ -1788,6 +1893,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TitleDownloadTT=Download photo title tag from Photo Station",
 				fill_horizontal = 1,
 				value 			= bind 'titleDownload',
+				visible			= bind(checkTitleSupport),
 			},
 
 			f:checkbox {
@@ -1795,6 +1901,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CaptionDownloadTT=Download photo description (caption) from Photo Station",
 				fill_horizontal = 1,
 				value 			= bind 'captionDownload',
+				visible			= bind (checkDescriptionSupport),
 			},
 
 			f:row {
@@ -1803,12 +1910,14 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
     				title 			= LOC "$$$/PSUpload/CollectionSettings/LocationDownload=GPS (red)",
     				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationDownloadTT=Download GPS info of the photo (red pin) from Photo Station",
     				value 			= bind 'locationDownload',
+					visible			= bind (checkGPSSupport),
     			},
     			f:checkbox {
     				title 			= LOC "$$$/PSUpload/CollectionSettings/LocationTagDownload=GPS (blue)",
     				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationTagDownloadTT=Download GPS info of the photo's location tag (blue pin) from Photo Station.\nRed pin has preference over blue pin. Download of blue pin GPS takes significantly more time!",
     				value 			= bind 'locationTagDownload',
     				enabled			= bind 'locationDownload',
+					visible			= bind (checkGPSSupport),
     			},
     		},
 
@@ -1817,7 +1926,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/RatingDownloadTT=Download rating from Photo Station\n(Requires Photo Station 6.5 or later)",
 				fill_horizontal = 1,
 				value 			= bind 'ratingDownload',
-				enabled			= iif(ifnil(propertyTable.psVersion, 65) >= 65, true, false),
+				visible			= bind(checkRatingSupport),
 			},
 
 		},
@@ -1828,14 +1937,16 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TagsDownloadTT=Download tags from Photo Station to Lr keywords",
 				fill_horizontal = 1,
 				value 			= bind 'tagsDownload',
+				visible			= bind (checkTagSupport),
 			},
 
 			f:checkbox {
 				fill_horizontal = 1,
-				title = LOC "$$$/PSUpload/CollectionSettings/PSTranslateFaces=Faces",
-				tooltip = LOC "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
-				value = bind 'PS2LrFaces',
-				enabled = bind 'exifXlatFaceRegions',
+				title 			= LOC "$$$/PSUpload/CollectionSettings/PSTranslateFaces=Faces",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
+				value 			= bind 'PS2LrFaces',
+				enabled 		= bind 'exifXlatFaceRegions',
+				visible			= bind (checkPersonSupport),
 			},
 
 			f:checkbox {
@@ -1844,6 +1955,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrLabel',
 				enabled 		= bind 'exifXlatLabel',
+				visible			= bind (checkTagSupport),
 			},
 
 			f:checkbox {
@@ -1852,6 +1964,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrRating',
 				enabled 		= bind 'exifXlatRating',
+				visible			= bind (checkTagSupport),
 			},
 		},
 		
@@ -1863,6 +1976,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download photo comments from Photo Station (internal) to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'commentsDownload',
+				visible			= bind (checkPrivCommentSupport),
 			},
 
 			f:checkbox {
@@ -1870,6 +1984,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicCommentsDownloadTT=Download photo comments from Photo Station public shares to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'pubCommentsDownload',
+				visible			= bind (checkPubCommentSupport),
 			},
 
 			f:checkbox {
@@ -1877,6 +1992,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicColorDownloadTT=Download photo color from Photo Station public shares to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'pubColorDownload',
+				visible			= bind (checkPubLabelSupport),
 			},
 		},
 	}

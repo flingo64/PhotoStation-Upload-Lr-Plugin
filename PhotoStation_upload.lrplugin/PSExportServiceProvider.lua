@@ -83,7 +83,6 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'username', 		default = '' },		-- account for Photo Station upload
 		{ key = 'password', 		default = '' },		-- guess what...
 		{ key = 'psVersion', 		default = 68 },		-- Photo Station version: default PS 6.8
-		{ key = 'isPS6', 			default = true },	-- derived from psVersion: use upload optimization for Photo Station 6 (not THUMB_L required)
 		{ key = 'uploadTimestamp',	default = 'capture' },-- file timestamp for uploaded photos: 'capture', 'upload' or 'mixed' (photos=upload, videos=capture)
 
 		-- target album parameters

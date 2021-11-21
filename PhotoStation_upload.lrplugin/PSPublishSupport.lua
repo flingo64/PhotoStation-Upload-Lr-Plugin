@@ -203,7 +203,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 		return
 	end
 	
-	albumUrl = PSPhotoStationUtils.getAlbumUrl(publishSettings.uHandle, albumPath)
+	albumUrl = publishSettings.photoServer:getAlbumUrl(albumPath)
 
 	LrHttp.openUrlInBrowser(albumUrl)
 end
@@ -220,7 +220,7 @@ publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSUpload/TitleForGo
  -- "Go to Published Photo" context-menu item.
 function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 	local photoUrl
-	
+
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
@@ -234,8 +234,8 @@ function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 		closeLogfile()
 		return
 	end
-	
-	photoUrl = PSPhotoStationUtils.getPhotoUrl(publishSettings.uHandle, info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
+
+	photoUrl = publishSettings.photoServer:getPhotoUrl(info.publishedPhoto:getRemoteId(), info.photo:getRawMetadata('isVideo'))
 	LrHttp.openUrlInBrowser(photoUrl)
 end
 
@@ -272,7 +272,7 @@ end
 --- (optional) This plug-in defined callback function is called when the user
  -- has attempted to delete the publish service from Lightroom.
  -- It provides an opportunity for you to customize the confirmation dialog.
- -- @return (string) 'cancel', 'delete', or nil (to allow Lightroom's default
+ -- return (string) 'cancel', 'delete', or nil (to allow Lightroom's default
  -- dialog to be shown instead)
 --
 --[[ Not used for Photo StatLr plug-in.
@@ -302,7 +302,7 @@ end
  -- has attempted to delete one or more published collections defined by your
  -- plug-in from Lightroom. It provides an opportunity for you to customize the
  -- confirmation dialog.
- -- @return (string) "ignore", "cancel", "delete", or nil
+ -- return (string) "ignore", "cancel", "delete", or nil
  -- (If you return nil, Lightroom's default dialog will be displayed.)
 --[[ Not used for Photo StatLr plug-in.
 
@@ -353,7 +353,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
 		
 		
-		if PSPhotoStationAPI.deletePhoto (publishSettings.uHandle, photoId, PSLrUtilities.isVideo(photoId)) then
+		if publishSettings.photoServer:deletePhoto (photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, "deletePhotosFromPublishedCollection: '" .. photoId .. "': successfully deleted.\n")
 			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, photoId)
 			
@@ -368,7 +368,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 	local currentAlbum = albumsForCheckEmpty
 	
 	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + PSPhotoStationUtils.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
+		nDeletedAlbums = nDeletedAlbums + publishSettings.photoServer:deleteEmptyAlbumAndParents(currentAlbum.albumPath)
 		currentAlbum = currentAlbum.next
 	end
 
@@ -554,7 +554,10 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		writeLogfile(3,string.format("Found no Default Collection for service: Applying plugin defaults to unitialized values of current collection\n"))
 		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, collectionSettings)
 	end
-		
+
+	-- copy psVersion from Publish Service, it might have changed
+	collectionSettings.psVersion = publishSettings.psVersion
+
 	--============= observe changes in collection setiings dialog ==============
 	PSDialogs.addObservers( collectionSettings )
 
@@ -767,7 +770,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 		return false
 	end
 	
-	PSPhotoStationAPI.sortAlbumPhotos(publishSettings.uHandle, albumPath, remoteIdSequence)
+	publishSettings.photoServer:sortAlbumPhotos(albumPath, remoteIdSequence)
 
 	showFinalMessage("Photo StatLr: Sort Photos in Album done", "Sort Photos in Album done.", "info")
 
@@ -874,7 +877,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 
 		writeLogfile(3, string.format("deletePublishedCollection: deleting %s from  %s\n", publishedPath, info.name ))
 
-		if PSPhotoStationAPI.deletePhoto(publishSettings.uHandle, publishedPath, PSLrUtilities.isVideo(publishedPath)) then
+		if publishSettings.photoServer:deletePhoto(publishedPath, PSLrUtilities.isVideo(publishedPath)) then
 			writeLogfile(2, publishedPath .. ': successfully deleted.\n')
 			nProcessed = nProcessed + 1
 			albumsForCheckEmpty = PSLrUtilities.noteAlbumForCheckEmpty(albumsForCheckEmpty, publishedPath)
@@ -888,7 +891,7 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 	local currentAlbum = albumsForCheckEmpty
 	
 	while currentAlbum do
-		nDeletedAlbums = nDeletedAlbums + PSPhotoStationUtils.deleteEmptyAlbumAndParents(publishSettings.uHandle, currentAlbum.albumPath)
+		nDeletedAlbums = nDeletedAlbums + publishSettings.photoServer:deleteEmptyAlbumAndParents(currentAlbum.albumPath)
 		currentAlbum = currentAlbum.next
 	end
 	
@@ -934,6 +937,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
+	writeLogfile(3, string.format("Get comments: starting...\n"))
 
 	if publishSettings.operationCanceled then
 		writeLogfile(2, string.format("Get comments: canceled by user\n"))
@@ -971,8 +975,13 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		return
 	end
 
-	if publishSettings.downloadMode == 'No' or not (publishSettings.commentsDownload or publishSettings.pubCommentsDownload or publishSettings.pubColorDownload) then
-		writeLogfile(2, string.format("Get comments: comments not enabled for this collection.\n"))
+	local doCommentDownload		= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_COMMENT_PRIV) and publishSettings.commentsDownload
+	local doPubCommentDownload	= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_COMMENT_PUB)  and publishSettings.pubCommentsDownload
+	local doPubColorDownload	= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_LABEL_PUB)	  and publishSettings.pubColorDownload
+
+	if 			publishSettings.downloadMode == 'No'
+	or not (	doCommentDownload or doPubCommentDownload or doPubColorDownload) then
+		writeLogfile(2, string.format("Get comments: comments not supported/enabled for this collection.\n"))
 		closeLogfile()
 		return
 	end
@@ -992,13 +1001,13 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 	local serviceSharedAlbumComments = {}
 
 	-- get all Shared Albums belonging to this service
-	if publishSettings.pubColorDownload or publishSettings.pubCommentsDownload then
+	if doPubColorDownload or doPubCommentDownload then
 		local pubServiceSharedAlbums = PSSharedAlbumMgmt.getPublishServiceSharedAlbums(publishServiceName)
 
 		-- download colors and/or comment list for all shared albums of this publish service
 		for _, sharedAlbum in ipairs(pubServiceSharedAlbums) do
 			if sharedAlbum.isPublic then
-				serviceSharedAlbumComments[sharedAlbum.sharedAlbumName] = PSPhotoStationAPI.getPublicSharedAlbumLogList(publishSettings.uHandle, sharedAlbum.sharedAlbumName)
+				serviceSharedAlbumComments[sharedAlbum.sharedAlbumName] = publishSettings.photoServer:getPublicSharedAlbumLogList(sharedAlbum.sharedAlbumName)
 			end
 		end
 	end
@@ -1014,8 +1023,8 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
    		local commentListLr = {} 
 
 		-- get photo comments from PS albums
-		if publishSettings.commentsDownload then 
-    		local commentsPS = PSPhotoStationAPI.getPhotoComments(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+		if doCommentDownload then 
+    		local commentsPS = publishSettings.photoServer:getPhotoComments(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
     		
     		if not commentsPS then
     			writeLogfile(1, string.format("Get comments: %s failed!\n", photoInfo.remoteId))
@@ -1040,7 +1049,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
        					
        					commentInfo.lastCommentType 	= 'private'
        					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
-       					commentInfo.lastCommentUrl		= PSPhotoStationUtils.getPhotoUrl(publishSettings.uHandle, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+       					commentInfo.lastCommentUrl		= publishSettings.photoServer:getPhotoUrl(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
        					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
        					commentInfo.lastCommentText		= commentLr.commentText
        					
@@ -1050,7 +1059,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     		end	
 		end
 
-		if publishSettings.pubColorDownload or publishSettings.pubCommentsDownload then
+		if doPubColorDownload or doPubCommentDownload then
     		-- get photo comments from PS public shared albums, if photo is member of any shared album
     		local photoSharedAlbums = PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
     		if photoSharedAlbums then
@@ -1062,16 +1071,16 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
   					-- 	- the shared album is public
   					-- 	- photo is in sharedAlbumCommentList
     				local collectionId, sharedAlbumName = string.match(photoSharedAlbums[i], '(%d+):(.+)')
-    				local psSharedPhotoId 		= PSPhotoStationUtils.getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+    				local psSharedPhotoId 		= publishSettings.photoServer:getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
 	    			local psSharedPhotoLogFound	= findInAttrValueTable(serviceSharedAlbumComments[sharedAlbumName], 'item_id', psSharedPhotoId, 'name')
 	    			 
     				if 		tonumber(collectionId) == publishedCollection.localIdentifier 
-    					and	PSPhotoStationUtils.isSharedAlbumPublic(publishSettings.uHandle, sharedAlbumName)
+    					and	publishSettings.photoServer:isSharedAlbumPublic(sharedAlbumName)
 	    				and psSharedPhotoLogFound
 					then
 						
-						if publishSettings.pubColorDownload then
-							local psPubColorLabel = PSPhotoStationUtils.getPublicSharedPhotoColorLabel(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+						if doPubColorDownload then
+							local psPubColorLabel = publishSettings.photoServer:getPublicSharedPhotoColorLabel(sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
         		   			writeLogfile(3, string.format("Get comments: %s - found color label '%s' in Shared Album '%s'\n", 
     		   							photoInfo.remoteId, ifnil(psPubColorLabel, '<nil>'), sharedAlbumName))
     		   				nColorLabel = nColorLabel + 1
@@ -1104,8 +1113,8 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 ]]
 						end
 							
-						if publishSettings.pubCommentsDownload then
-            				local sharedCommentsPS 	= PSPhotoStationAPI.getPublicSharedPhotoComments(publishSettings.uHandle, sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
+						if doPubCommentDownload then
+            				local sharedCommentsPS 	= publishSettings.photoServer:getPublicSharedPhotoComments(sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
             
                     		if sharedCommentsPS and #sharedCommentsPS > 0 then
             		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album '%s'\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
@@ -1129,7 +1138,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     
                        					commentInfo.lastCommentType 	= 'public'
                        					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
-                       					commentInfo.lastCommentUrl		= PSPhotoStationUtils.getSharedPhotoPublicUrl(publishSettings.uHandle, sharedAlbumName, 
+                       					commentInfo.lastCommentUrl		= publishSettings.photoServer:getSharedPhotoPublicUrl(sharedAlbumName, 
                        																							 photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
                        					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
                        					commentInfo.lastCommentText		= commentLr.commentText
@@ -1199,6 +1208,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
+	writeLogfile(3, string.format("Get ratings/metadata: starting...\n"))
 
 	if publishSettings.operationCanceled then
 		writeLogfile(2, string.format("Get ratings/metadata: canceled by user\n"))
@@ -1297,59 +1307,32 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
 		
+		-- get tags and translated tags (rating, label) from Photo Station if configured (via photo_tag API)
+		local doGetTags = 		collectionSettings.tagsDownload
+							or  collectionSettings.locationTagDownload
+							or  collectionSettings.PS2LrFaces 
+							or  collectionSettings.PS2LrLabel 
+							or  collectionSettings.PS2LrRating 
+
+		local psPhoto, errorCode = 
+		publishSettings.photoServer.Photo.new(publishSettings.photoServer, photoInfo.remoteId, isVideo, 
+													'photo' .. iif(doGetTags, ',tag', ''), PHOTOSERVER_USE_CACHE)
 		if photoInfo.publishedPhoto:getEditedFlag() then
 			-- do not download infos to original photo for unpublished photos
 			writeLogfile(2, string.format("Get ratings/metadata: %s - latest version not published, skip download.\n", photoInfo.remoteId))
 		elseif tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
 			writeLogfile(2, string.format("Get ratings/metadata: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
-		else		 
-    		
-    		------------------------------------------------------------------------------------------------------
-    		-- get title, caption, rating, location from Photo Station (via album list API)
+		elseif not psPhoto then
+			writeLogfile(2, string.format("Get ratings/metadata: %s - not metadata avaiable.\n", photoInfo.remoteId))
+		else
 
-    		if 		collectionSettings.titleDownload 
-    			or  collectionSettings.captionDownload 
-    			or  collectionSettings.ratingDownload
-    			or  collectionSettings.locationDownload
-    		then
-    			local useCache = true
-    			local albumName 		= ifnil(string.match(photoInfo.remoteId , '(.*)/[^/]+'), '/')
-    			local psPhotoInfos 		= PSPhotoStationUtils.getPhotoInfoFromList(publishSettings.uHandle, 'album', albumName, photoInfo.remoteId, isVideo, useCache)
-    			local psPhotoInfo, psPhotoAdditional
+			------------------------------------------------------------------------------------------------------
+    		-- get title, caption, rating, location from Photo Station
+			if collectionSettings.titleDownload 	then titlePS = psPhoto:getTitle() end 
+			if collectionSettings.captionDownload	then captionPS = psPhoto:getDescription() end 
+			if collectionSettings.ratingDownload	then ratingPS = tonumber(psPhoto:getRating()) end 
+			if collectionSettings.locationDownload	then gpsPS = psPhoto:getGPS() end
 
-				if psPhotoInfos then
-					psPhotoInfo 		= psPhotoInfos.info 
-					psPhotoAdditional 	= psPhotoInfos.additional
-				end
-
-        		if psPhotoInfo then
-        			if collectionSettings.titleDownload 	then titlePS = psPhotoInfo.title end 
-        			if collectionSettings.captionDownload	then captionPS = psPhotoInfo.description end 
-        			if collectionSettings.ratingDownload	then ratingPS = tonumber(psPhotoInfo.rating) end 
-        			if collectionSettings.locationDownload	then 
-        				-- gps coords from photo/video: best choice for GPS
-        				if psPhotoInfo.lat and psPhotoInfo.lng then
-            				gpsPS.latitude	= tonumber(psPhotoInfo.lat)
-            				gpsPS.longitude	= tonumber(psPhotoInfo.lng)
-            				gpsPS.type		= 'red'
-
-            			-- psPhotoInfo.gps: GPS info of videos is stored here
-            			elseif psPhotoInfo.gps and psPhotoInfo.gps.lat and psPhotoInfo.gps.lng then
-            				gpsPS.latitude	= tonumber(psPhotoInfo.gps.lat)
-            				gpsPS.longitude	= tonumber(psPhotoInfo.gps.lng)
-            				gpsPS.type		= 'red'
-            			
-            			-- psPhotoAdditional.photo_exif.gps: should be identical to psPhotoInfo
-            			elseif 	psPhotoAdditional and psPhotoAdditional.photo_exif and psPhotoAdditional.photo_exif.gps 
-            				and psPhotoAdditional.photo_exif.gps.lat and psPhotoAdditional.photo_exif.gps.lng then
-            				gpsPS.latitude	= tonumber(psPhotoAdditional.photo_exif.gps.lat)
-            				gpsPS.longitude	= tonumber(psPhotoAdditional.photo_exif.gps.lng)
-            				gpsPS.type		= 'red'
-            			end 
-        			end
-        		end
-    		end
-    		
     		------------------------------------------------------------------------------------------------------
     		-- get tags and translated tags (rating, label) from Photo Station if configured (via photo_tag API)
     		if 		collectionSettings.tagsDownload
@@ -1359,16 +1342,15 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  collectionSettings.PS2LrLabel 
     			or  collectionSettings.PS2LrRating 
     		then
-    			local photoTags = PSPhotoStationAPI.getPhotoTags(publishSettings.uHandle, photoInfo.remoteId, isVideo)
+				local photoTags = psPhoto:getTags()
     		
         		if not photoTags then
         			writeLogfile(1, string.format("Get ratings/metadata: %s failed!\n", photoInfo.remoteId))
-        		elseif photoTags and #photoTags > 0 then
-    				local colorLabelTagPattern	= '^%+(%a+)$'
-					local ratingTagPattern		= '^([%*]+)$'
-
-					for i = 1, #photoTags do
-    					local photoTag = photoTags[i]
+        		elseif #photoTags > 0 then
+    				for i = 1, #photoTags do
+						local colorLabelTagPattern	= '^%+(%a+)$'
+						local ratingTagPattern		= '^([%*]+)$'
+						local photoTag = photoTags[i]
     					writeLogfile(4, string.format("Get ratings/metadata: found tag type %s name %s\n", photoTag.type, photoTag.name))
     					
         				-- a people tag has a face region in additional.info structure
@@ -1386,7 +1368,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     					
     					-- any other general tag is taken as-is
     					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, colorLabelTagPattern) and not string.match(photoTag.name, ratingTagPattern) then
-							table.insert(tagsPS, photoTag.name)
+    						table.insert(tagsPS, photoTag.name)
     					
     					-- gps coords belonging to a location tag 
     					elseif collectionSettings.locationTagDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
@@ -1409,24 +1391,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
     		------------------------------------------------------------------------------------------------------
 			if collectionSettings.titleDownload then
-        		local defaultTitlePS = LrPathUtils.removeExtension(LrPathUtils.leafName(photoInfo.remoteId))
---[[
-	    		-- title can be stored in two places in PS: in title tag (when entered by PS user) and in exif 'Object Name' (when set by Lr)
-   				-- title tag overwrites exif tag, get Object Name only, if no title was found
-        		if (not titlePS or titlePS == '' or titlePS == defaultTitlePS) then
-    				local exifsPS = PSPhotoStationAPI.getPhotoExifs(publishSettings.uHandle, photoInfo.remoteId, isVideo)
-    				if exifsPS then 
-    					local namePS = findInAttrValueTable(exifsPS, 'label', 'Object Name', 'value')
-    					if namePS then 
-    						writeLogfile(3, string.format("Get ratings/metadata: %s - found title %s in exifs\n", photoInfo.remoteId, namePS))
-    						titlePS = namePS 
-    					end
-    				end
-    			end
-]]
-    			
         		-- check if PS title is not empty, is not the Default PS title (filename) and is different to Lr
-        		if titlePS and titlePS ~= '' and titlePS ~= defaultTitlePS and titlePS ~= ifnil(srcPhoto:getFormattedMetadata('title'), '') then
+        		if titlePS ~= '' and titlePS ~= ifnil(srcPhoto:getFormattedMetadata('title'), '') then
         			titleChanged = true
         			nChanges = nChanges + 1
         			resultText = resultText ..  string.format(" title changed from '%s' to '%s',", 
@@ -1434,7 +1400,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get ratings/metadata: %s - title changed from '%s' to '%s'\n", 
         											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('title'), ''), titlePS))
         											
-        		elseif (not titlePS or titlePS == '' or titlePS == defaultTitlePS) and ifnil(srcPhoto:getFormattedMetadata('title'), '') ~= '' then
+        		elseif titlePS == '' and ifnil(srcPhoto:getFormattedMetadata('title'), '') ~= '' then
         			resultText = resultText ..  string.format(" title %s removal ignored,", srcPhoto:getFormattedMetadata('title'))
         			writeLogfile(3, string.format("Get ratings/metadata: %s - title %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('title')))
@@ -1595,7 +1561,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		if collectionSettings.PS2LrFaces and not isVideo then
 				-- get face regions in local photo
 				local facesLr 
-				facesLr, origPhotoDimension = PSExiftoolAPI.queryLrFaceRegionList(publishSettings.eHandle, srcPhoto:getRawMetadata('path'))
+				facesLr, origPhotoDimension = publishSettings.exifTool:queryLrFaceRegionList(srcPhoto:getRawMetadata('path'))
 				
         		if facesLr and #facesLr > 0 then
         			local j, faceLrNorm = 0, {}
@@ -1712,7 +1678,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			for i = 1, #facesPS do
         				facesLrAdd[i] = PSUtilities.denormalizeArea(facesPS[i].additional.info, origPhotoDimension)
         			end
-        			if not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesLrAdd, origPhotoDimension) then
+ --       			if not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesLrAdd, origPhotoDimension) then
+        			if not publishSettings.exifTool:setLrFaceRegionList(srcPhoto, facesLrAdd, origPhotoDimension) then
     	   				nChanges = nChanges - (#facesAdd + #facesRemove)
        					changesFailed = changesFailed +1
        					nFailed = nFailed + 1
@@ -1785,6 +1752,13 @@ end
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
+	-- check if PhotoServer supports upload of comments
+	if not PHOTOSERVER_API.supports(publishSettings.psVersion, PHOTOSERVER_METADATA_COMMENT_PRIV) then
+		showFinalMessage("Photo StatLr: AddCommentToPublishedPhoto - nothing to do!", "Not supported by PhotoServer", "warning")
+		closeLogfile()
+		return false
+	end
+
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, nil, 'AddCommentToPublishedPhoto')
 	if not sessionSuccess then
@@ -1796,7 +1770,7 @@ end
 	end
 
 	-- add comment to photo in Photo Station album, comments to public share is not possible 
-	return PSPhotoStationAPI.addPhotoComment(publishSettings.uHandle, remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentText, publishSettings.username .. '@Lr')
+	return publishSettings.photoServer:addPhotoComment(remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentText, publishSettings.username .. '@Lr')
 end
 --------------------------------------------------------------------------------
 
