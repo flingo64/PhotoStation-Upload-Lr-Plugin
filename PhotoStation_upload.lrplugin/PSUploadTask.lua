@@ -1053,7 +1053,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- check if photo already in Photo Station
 				local dstAlbum = ifnil(string.match(publishedPhotoId , '(.*)/[^/]+'), '/')
 				local psPhoto, errorCode = exportParams.photoServer.Photo.new(exportParams.photoServer, publishedPhotoId, 
-																		srcPhoto:getRawMetadata('isVideo'), 'photo', PHOTOSERVER_USE_CACHE)
+																		srcPhoto:getRawMetadata('isVideo'), 'photo', not PHOTOSERVER_USE_CACHE)
 				if psPhoto then
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
