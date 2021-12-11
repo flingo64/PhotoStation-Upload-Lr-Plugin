@@ -703,7 +703,7 @@ end
 -- openSession(exportParams, publishedCollection, operation)
 -- 	- copy all relevant settings into exportParams 
 -- 	- initialize all required APIs: Convert, Upload, Exiftool
--- 	- login to Photo Station, if required
+-- 	- login to Photo Server, if required
 --	- start exiftool listener, if required
 function openSession(exportParams, publishedCollection, operation)
 	writeLogfile(4, string.format("openSession: operation = %s, publishMode = %s\n", operation, exportParams.publishMode))
@@ -784,24 +784,24 @@ function openSession(exportParams, publishedCollection, operation)
 			if not exportParams.converter then return false, 'Cannot initialize converters, check logfile for detailed information' end
 	end
 
-	-- Login to Photo Station: not required for CheckMoved, not required on Download if Download was disabled
-	if not 	exportParams.photoServer
-	and 	exportParams.publishMode ~= 'CheckMoved' 
-	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
-		local errorCode
-		exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner, 
-																exportParams.serverTimeout, exportParams.psVersion)
-		if not exportParams.photoServer then
-			local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
-			iif(exportParams.usePersonalPS, "Personal ", "Global "),
-			PHOTOSERVER_API[exportParams.psVersion].name,
-			iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
-			exportParams.serverUrl,
-			PHOTOSERVER_API[exportParams.psVersion].API.getErrorMsg(errorCode))
-			writeLogfile(1, errorMsg)
-			return 	false, errorMsg
-		end
+	-- Create a photoServer object in any case
+	local errorCode
+	exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner, 
+															exportParams.serverTimeout, exportParams.psVersion)
+	if not exportParams.photoServer then
+		local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
+		iif(exportParams.usePersonalPS, "Personal ", "Global "),
+		PHOTOSERVER_API[exportParams.psVersion].name,
+		iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
+		exportParams.serverUrl,
+		PHOTOSERVER_API[exportParams.psVersion].API.getErrorMsg(errorCode))
+		writeLogfile(1, errorMsg)
+		return 	false, errorMsg
+	end
 
+	-- Login to Photo Server: not required for CheckMoved, not required on Download if Download was disabled
+	if 	exportParams.publishMode ~= 'CheckMoved' 
+	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
 		result, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
 		if not result then
 			local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
@@ -812,7 +812,6 @@ function openSession(exportParams, publishedCollection, operation)
 			writeLogfile(1, errorMsg)
 			 exportParams.uHandle = nil
 			return 	false, errorMsg
-					
 		end
 		writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station") .. 
 								iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. 
