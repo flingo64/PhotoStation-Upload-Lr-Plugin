@@ -115,14 +115,19 @@ PHOTOSERVER_API[68] =  {
 }
 
 PHOTOSERVER_API[70] =  {
-                name	        =   'Synology Photos 7.0',
+                name	        =   'Photos 1.0',
                 API 	        =   Photos,
                 capabilities    =   PHOTOSERVER_METADATA_DESCRIPTION ..
---                                    PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION .. PHOTOSERVER_METADATA_PERSON ..
                                     PHOTOSERVER_METADATA_TAG ..
                                     PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S
 }
 
+PHOTOSERVER_API[71] =  {
+    name	        =   'Photos 1.1',
+    API 	        =   Photos,
+    capabilities    =   PHOTOSERVER_API[70].capabilities ..
+                        PHOTOSERVER_METADATA_RATING
+}
 ---------------------------------------------------------------------------------------------------------
 -- supports(h, metadataType)
 function PHOTOSERVER_API.supports (version, capabilityType)

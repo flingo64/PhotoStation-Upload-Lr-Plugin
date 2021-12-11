@@ -979,13 +979,14 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 	}
 
 	local versionItems = {
-        { title	= 'Photo Station 5',   value 	= 50 },
-        { title	= 'Photo Station 6',   value 	= 60 },
-        { title	= 'Photo Station 6.5', value 	= 65 },
-        { title	= 'Photo Station 6.6', value 	= 66 },
-        { title	= 'Photo Station 6.7', value 	= 67 },
-        { title	= 'Photo Station 6.8', value 	= 68 },
-        { title	= 'Synology Photos',   value 	= 70 },
+        { title	= 'Photo Station 5',   	value 	= 50 },
+        { title	= 'Photo Station 6',   	value 	= 60 },
+        { title	= 'Photo Station 6.5', 	value 	= 65 },
+        { title	= 'Photo Station 6.6', 	value 	= 66 },
+        { title	= 'Photo Station 6.7', 	value 	= 67 },
+        { title	= 'Photo Station 6.8',	value 	= 68 },
+        { title	= 'Photos 1.0',			value 	= 70 },
+        { title	= 'Photos 1.1',			value 	= 71 },
 	}
 	
 	local fileTimestampItems = {

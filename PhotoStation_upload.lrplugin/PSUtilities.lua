@@ -12,6 +12,7 @@ exported globals:
 exported functions:
 	- ifnil
 	- iif
+	- isNumber
 	- split
 	- trim
 
@@ -124,7 +125,7 @@ JSON.onDecodeOfHTMLError = JSON.onDecodeError
 
 function ifnil(str, subst)
 	return ((str == nil) and subst) or str
-end 
+end
 
 function iif(condition, thenExpr, elseExpr)
 	if condition then
@@ -132,7 +133,11 @@ function iif(condition, thenExpr, elseExpr)
 	else
 		return elseExpr
 	end
-end 
+end
+
+function isNumber(str)
+	return not (str == "" or string.match(str, "%D"))
+end
 
 --------------------------------------------------------------------------------------------
 -- split(inputstr, sep)

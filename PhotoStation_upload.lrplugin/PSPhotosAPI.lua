@@ -295,14 +295,17 @@ end
 function Photos.listAlbumItems(h, folderPath, folderId)
 	local apiParams = {
 			folder_id		= folderId or Photos.getFolderId(h, folderPath),
-			additional		= '["description","tag","exif","gps","video_meta","address","person"]',
+			additional		= iif(h.serverVersion == 70,
+-- 								'["description","tag","exif","resolution","orientation","gps","video_meta","video_convert","thumbnail","address","geocoding_id","rating","person"]',
+								'["description","tag","exif","gps","video_meta","address","person"]',
+								'["description","tag","exif","gps","video_meta","address","rating","person"]'),
 			sort_by			= "takentime",
 			sort_direction	= "asc",
 			offset			= 0,
 			limit			= 5000,
 			api				= "SYNO.FotoTeam.Browse.Item",
 			method			= "list",
-			version			= 1
+			version			= iif(h.serverVersion == 70, 1, 2)
 	}
 			
 	local respArray, errorCode = Photos.callSynoWebapi(h, apiParams)
@@ -656,12 +659,16 @@ function Photos.editPhoto(h, photoPath, attrValPairs)
 	writeLogfile(3, string.format("Photos.editPhoto('%s', %d items) ...\n", photoPath, #attrValPairs))
 	local apiParams = {
 		api 				= "SYNO.FotoTeam.Browse.Item",
-		version 			= "1",
+		version 			= iif(h.serverVersion == 70, "1", "2"),
 		method 				= "set",
 		id					= "[" .. h:getPhotoId(photoPath) .. "]",
 	}
 	for i = 1, #attrValPairs do
-		apiParams[attrValPairs[i].attribute] = '"' .. attrValPairs[i].value .. '"'
+		if isNumber(attrValPairs[i].value) then
+			apiParams[attrValPairs[i].attribute] = 		  attrValPairs[i].value
+		else
+			apiParams[attrValPairs[i].attribute] = '"' .. attrValPairs[i].value .. '"'
+		end
 	end
 	local respArray, errorCode = h:callSynoWebapi(apiParams)
 
@@ -1933,7 +1940,7 @@ function PhotosPhoto:getId()
 end
 
 function PhotosPhoto:getRating()
-	return nil
+	return self.additional and self.additional.rating
 end
 
 function PhotosPhoto:getTags()
@@ -1979,12 +1986,10 @@ function PhotosPhoto:setGPS(gps)
 end
 
 function PhotosPhoto:setRating(rating)
---[[
 	if not self.changes then self.changes = {} end
 	if not self.changes.metadata then self.changes.metadata = {} end
 
 	self.changes.metadata.rating = rating
-]]
 return true
 end
 
