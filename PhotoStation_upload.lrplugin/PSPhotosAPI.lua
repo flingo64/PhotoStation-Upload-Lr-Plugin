@@ -28,7 +28,6 @@ Photos object:
 	- createFolder
 	- uploadPicFile
 
-	Photo Station Utilities:
 	- getErrorMsg
 
 	- getFolderId

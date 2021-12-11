@@ -71,7 +71,7 @@ exportServiceProvider.allowColorSpaces = nil -- nil equates to all color spaces
 exportServiceProvider.canExportVideo = true	-- yes, we can
 	
 exportServiceProvider.exportPresetFields = {
-		-- Photo Station parameters
+		-- Photo Server parameters
 		{ key = 'proto', 			default = 'http' },	-- transport protocol for Photo Station upload
 		{ key = 'servername', 		default = '' },		-- name/address of the Photo Station, may include ':port' extension
 		{ key = 'serverTimeout', 	default = 10 },		-- http timeout
