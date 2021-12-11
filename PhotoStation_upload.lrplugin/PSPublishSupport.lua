@@ -1232,31 +1232,42 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		closeLogfile()
 		return
 	end
+
 	writeLogfile(2, string.format("Get ratings/metadata: options(title: %s, caption: %s, location: %s, locationTag: %s rating: %s, tags: %s, face xlat: %s, label xlat: %s, rating xlat: %s)\n",
 							publishSettings.titleDownload, publishSettings.captionDownload, publishSettings.locationDownload, publishSettings.locationTagDownload, publishSettings.ratingDownload, 
 							publishSettings.tagsDownload, publishSettings.PS2LrFaces, publishSettings.PS2LrLabel, publishSettings.PS2LrRating))
-	
---	local collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-	-- collectionSettings were copied to publishSettings during openSession()
-	local collectionSettings = publishSettings
 
-	if			collectionSettings.downloadMode == 'No' or
-		(	not collectionSettings.titleDownload 
-		and not collectionSettings.captionDownload 
-		and not collectionSettings.locationDownload 
-		and not collectionSettings.locationTagDownload 
-		and not collectionSettings.ratingDownload 
-		and not collectionSettings.tagsDownload 
-		and not collectionSettings.PS2LrFaces 
-		and not collectionSettings.PS2LrLabel 
-		and not collectionSettings.PS2LrRating
+	local doTitleDownload		= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_TITLE) 			and publishSettings.titleDownload
+	local doCaptionDownload		= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_DESCRIPTION)	and publishSettings.captionDownload
+	local doLocationDownload	= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_GPS)			and publishSettings.locationDownload
+	local doLocationTagDownload	= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_GPS)			and publishSettings.locationTagDownload
+	local doRatingDownload		= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_RATING)			and publishSettings.ratingDownload
+	local doTagDownload			= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_TAG)			and publishSettings.tagsDownload
+	local doPS2LrFacesDownload	= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_PERSON)			and publishSettings.PS2LrFaces
+
+	-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
+	local doPS2LrLabelDownload	= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_TAG)			and publishSettings.PS2LrLabel
+
+	-- ratings look like general tag '*', '**', ... '*****'
+	local doPS2LrRatingDownload	= publishSettings.photoServer:supports(PHOTOSERVER_METADATA_TAG)			and publishSettings.PS2LrRating
+
+	if			publishSettings.downloadMode == 'No' or
+		(	not doTitleDownload
+		and not doCaptionDownload
+		and not doLocationDownload
+		and not doLocationTagDownload
+		and not doRatingDownload
+		and not doTagDownload
+		and not doPS2LrFacesDownload
+		and not doPS2LrLabelDownload
+		and not doPS2LrRatingDownload
 	 	)
 	then
 		writeLogfile(2, string.format("Get ratings/metadata: Metadata download is not enabled for this collection.\n"))
 		closeLogfile()
 		return
 	end
-		
+
 	publishedCollectionName = publishedCollection:getName()
 	writeLogfile(2, string.format("Get ratings for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
 
@@ -1295,11 +1306,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
 		
 		-- get tags and translated tags (rating, label) from Photo Station if configured (via photo_tag API)
-		local doGetTags = 		collectionSettings.tagsDownload
-							or  collectionSettings.locationTagDownload
-							or  collectionSettings.PS2LrFaces 
-							or  collectionSettings.PS2LrLabel 
-							or  collectionSettings.PS2LrRating 
+		local doGetTags = 		doTagDownload
+							or  doLocationTagDownload
+							or  doPS2LrFacesDownload
+							or  doPS2LrLabelDownload
+							or  doPS2LrRatingDownload
 
 		local psPhoto, errorCode = 
 		publishSettings.photoServer.Photo.new(publishSettings.photoServer, photoInfo.remoteId, isVideo, 
@@ -1310,24 +1321,24 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		elseif tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
 			writeLogfile(2, string.format("Get ratings/metadata: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
 		elseif not psPhoto then
-			writeLogfile(2, string.format("Get ratings/metadata: %s - not metadata avaiable.\n", photoInfo.remoteId))
+			writeLogfile(2, string.format("Get ratings/metadata: %s - no metadata avaiable.\n", photoInfo.remoteId))
 		else
 
 			------------------------------------------------------------------------------------------------------
     		-- get title, caption, rating, location from Photo Station
-			if collectionSettings.titleDownload 	then titlePS = psPhoto:getTitle() end 
-			if collectionSettings.captionDownload	then captionPS = psPhoto:getDescription() end 
-			if collectionSettings.ratingDownload	then ratingPS = tonumber(psPhoto:getRating()) end 
-			if collectionSettings.locationDownload	then gpsPS = psPhoto:getGPS() end
+			if doTitleDownload 		then titlePS = psPhoto:getTitle() end 
+			if doCaptionDownload	then captionPS = psPhoto:getDescription() end 
+			if doRatingDownload		then ratingPS = tonumber(psPhoto:getRating()) end 
+			if doLocationDownload	then gpsPS = psPhoto:getGPS() end
 
     		------------------------------------------------------------------------------------------------------
     		-- get tags and translated tags (rating, label) from Photo Station if configured (via photo_tag API)
-    		if 		collectionSettings.tagsDownload
+    		if 		doTagDownload
     			-- GPS coords from locations only if no photo gps available
-    			or  (collectionSettings.locationTagDownload and  gpsPS.latitude == 0 and gpsPS.longitude == 0)
-    			or  collectionSettings.PS2LrFaces 
-    			or  collectionSettings.PS2LrLabel 
-    			or  collectionSettings.PS2LrRating 
+    			or  (doLocationTagDownload and  gpsPS.latitude == 0 and gpsPS.longitude == 0)
+    			or  doPS2LrFacesDownload
+    			or  doPS2LrLabelDownload
+    			or  doPS2LrRatingDownload
     		then
 				local photoTags = psPhoto:getTags()
     		
@@ -1341,35 +1352,35 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     					writeLogfile(4, string.format("Get ratings/metadata: found tag type %s name %s\n", photoTag.type, photoTag.name))
     					
         				-- a people tag has a face region in additional.info structure
-        				if collectionSettings.PS2LrFaces and photoTag.type == 'people' then
+        				if doPS2LrFacesDownload and photoTag.type == 'people' then
 --    						table.insert(facesPS, photoTag.additional.info)
     						table.insert(facesPS, photoTag)
         				
         				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
-    					elseif collectionSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, colorLabelTagPattern) then
+    					elseif doPS2LrLabelDownload and photoTag.type == 'desc' and string.match(photoTag.name, colorLabelTagPattern) then
     						labelPS = string.match(string.lower(photoTag.name), colorLabelTagPattern)
     
        					-- ratings look like general tag '*', '**', ... '*****'
-        				elseif collectionSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, ratingTagPattern) then
+        				elseif doPS2LrRatingDownload and photoTag.type == 'desc' and string.match(photoTag.name, ratingTagPattern) then
     						ratingTagPS = math.min(string.len(photoTag.name), 5)
     					
     					-- any other general tag is taken as-is
-    					elseif collectionSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, colorLabelTagPattern) and not string.match(photoTag.name, ratingTagPattern) then
+    					elseif doTagDownload and photoTag.type == 'desc' and not string.match(photoTag.name, colorLabelTagPattern) and not string.match(photoTag.name, ratingTagPattern) then
     						table.insert(tagsPS, photoTag.name)
     					
     					-- gps coords belonging to a location tag 
-    					elseif collectionSettings.locationTagDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
+    					elseif doLocationTagDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
             				gpsPS.latitude	= tonumber(ifnil(photoTag.additional.info.lat, 0))
             				gpsPS.longitude	= tonumber(ifnil(photoTag.additional.info.lng, 0))
             				gpsPS.type		= 'blue'
-    					end 
+    					end
         			end
         		end
         					
     		end
 
-    		if collectionSettings.ratingDownload or collectionSettings.PS2LrRating then 
-    			ratingCallback({ publishedPhoto = photoInfo, rating = iif(collectionSettings.PS2LrRating, ratingTagPS, ratingPS) or 0 })
+    		if doRatingDownload or doPS2LrRatingDownload then 
+    			ratingCallback({ publishedPhoto = photoInfo, rating = iif(doPS2LrRatingDownload, ratingTagPS, ratingPS) or 0 })
     		end
     
     		writeLogfile(3, string.format("Get ratings/metadata: %s - title '%s' caption '%s', location '%s/%s (%s)' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
@@ -1377,7 +1388,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     							ifnil(ratingPS, 0), ifnil(ratingTagPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
 
     		------------------------------------------------------------------------------------------------------
-			if collectionSettings.titleDownload then
+			if doTitleDownload then
         		-- check if PS title is not empty, is not the Default PS title (filename) and is different to Lr
         		if titlePS ~= '' and titlePS ~= ifnil(srcPhoto:getFormattedMetadata('title'), '') then
         			titleChanged = true
@@ -1398,7 +1409,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 			end
 			    
     		------------------------------------------------------------------------------------------------------
-			if collectionSettings.captionDownload then
+			if doCaptionDownload then
         		-- check if PS caption is not empty and is different to Lr
         		if captionPS and captionPS ~= '' and captionPS ~= ifnil(srcPhoto:getFormattedMetadata('caption'), '') then
         			captionChanged = true
@@ -1418,7 +1429,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     
     		------------------------------------------------------------------------------------------------------
-			if collectionSettings.ratingDownload then
+			if doRatingDownload then
         		-- check if PS rating is not empty and is different to Lr
         		if ratingPS and ratingPS ~= 0 and ratingPS ~= ifnil(photoInfo.photo:getRawMetadata('rating'), 0) then
         			ratingChanged = true
@@ -1437,7 +1448,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     
     		------------------------------------------------------------------------------------------------------
-			if collectionSettings.locationDownload then
+			if doLocationDownload then
         		-- check if PS location is not empty and is different to Lr
         		local gpsLr = srcPhoto:getRawMetadata('gps')
         		if not gpsLr then gpsLr = { latitude = 0, longitude = 0 } end  
@@ -1468,7 +1479,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
 
     		------------------------------------------------------------------------------------------------------
-    		if collectionSettings.PS2LrLabel then
+    		if doPS2LrLabelDownload then
 	    		-- check if PS label is not empty and is different to Lr
         		if labelPS and labelPS ~= photoInfo.photo:getRawMetadata('colorNameForLabel') then
         			labelChanged = true
@@ -1488,7 +1499,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     
     		------------------------------------------------------------------------------------------------------
-    		if collectionSettings.PS2LrRating then
+    		if doPS2LrRatingDownload then
         		-- check if PS rating tag is not empty and is different to Lr
         		if ratingTagPS and ratingTagPS ~= ifnil(photoInfo.photo:getRawMetadata('rating'), 0) then
         			ratingTagChanged = true
@@ -1507,7 +1518,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     
     		------------------------------------------------------------------------------------------------------
-    		if collectionSettings.tagsDownload then
+    		if doTagDownload then
     			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
 				local keywordsExported = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
     		
@@ -1545,7 +1556,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		end
     		
     		------------------------------------------------------------------------------------------------------
-    		if collectionSettings.PS2LrFaces and not isVideo then
+    		if doPS2LrFacesDownload and not isVideo then
 				-- get face regions in local photo
 				local facesLr 
 				facesLr, origPhotoDimension = publishSettings.exifTool:queryLrFaceRegionList(srcPhoto:getRawMetadata('path'))
