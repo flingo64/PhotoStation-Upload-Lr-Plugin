@@ -374,32 +374,34 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 		metadataChanged =  metadataChanged + 1
 	end
 
-	-- check GPS and location tags: only if allowed by Lr export/pubish settings ----- 
+	-- check GPS and location tags: only if allowed by Lr export/pubish settings -----
 	local latitude, longitude = '0', '0'
-	if photoServer:supports(PHOTOSERVER_METADATA_GPS) and LrExportLocations then
-		if isVideo then
-			if vinfo and vinfo.latitude and vinfo.longitude then 
-    			latitude = vinfo.latitude
-    			longitude = vinfo.longitude
-    		end
-		else
-			local gpsData = srcPhoto:getRawMetadata("gps")
-    		if gpsData and gpsData.latitude and gpsData.longitude then
-    			latitude = gpsData.latitude
-    			longitude = gpsData.longitude
+	if LrExportLocations then
+		if photoServer:supports(PHOTOSERVER_METADATA_GPS) then
+			if isVideo then
+				if vinfo and vinfo.latitude and vinfo.longitude then 
+					latitude = vinfo.latitude
+					longitude = vinfo.longitude
+				end
+			else
+				local gpsData = srcPhoto:getRawMetadata("gps")
+				if gpsData and gpsData.latitude and gpsData.longitude then
+					latitude = gpsData.latitude
+					longitude = gpsData.longitude
+				end
+			end
+
+			local gpsPS = psPhoto:getGPS()
+			if 		(not gpsPS and latitude and longitude)
+				or 	(	 gpsPS and math.abs(tonumber(latitude) - tonumber(gpsPS.latitude)) > 0.00001) or (math.abs(tonumber(longitude) - tonumber(gpsPS.longitude)) > 0.00001)
+			then
+				psPhoto:setGPS( {latitude = latitude, longitude = longitude, type = 'red' })
+				metadataChanged =  metadataChanged + 1
 			end
 		end
 
-		local gpsPS = psPhoto:getGPS()
-		if 		(not gpsPS and latitude and longitude)
-			or 	(	 gpsPS and math.abs(tonumber(latitude) - tonumber(gpsPS.latitude)) > 0.00001) or (math.abs(tonumber(longitude) - tonumber(gpsPS.longitude)) > 0.00001)
-		then
-			psPhoto:setGPS( {latitude = latitude, longitude = longitude, type = 'red' })
-			metadataChanged =  metadataChanged + 1
-    	end
-			
 		-- check location tags, if upload/translation option is set -----------------------
-		if exportParams.xlatLocationTags then
+		if photoServer:supports(PHOTOSERVER_METADATA_LOCATION) and exportParams.xlatLocationTags then
 			-- there may be more than one PS location tag, but only one Lr location tag
 			local locationTagsLrUntrimmed = PSLrUtilities.evaluatePlaceholderString(exportParams.locationTagTemplate, srcPhoto, 'tag', nil)
 			local locationTagsLrTrimmed = trim(locationTagsLrUntrimmed, exportParams.locationTagSeperator)

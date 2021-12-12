@@ -4,7 +4,7 @@ PSPhotoServer.lua
 This file is part of Photo StatLr - Lightroom plugin.
 Copyright(c) 2021, Martin Messmer
 
-Definitions for southbound PhotoServer (PhotoStation or Photos) API 
+Definitions for southbound PhotoServer (PhotoStation or Photos) API
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -118,7 +118,7 @@ PHOTOSERVER_API[70] =  {
                 name	        =   'Photos 1.0',
                 API 	        =   Photos,
                 capabilities    =   PHOTOSERVER_METADATA_DESCRIPTION ..
-                                    PHOTOSERVER_METADATA_TAG ..
+                                    PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION ..
                                     PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S
 }
 
