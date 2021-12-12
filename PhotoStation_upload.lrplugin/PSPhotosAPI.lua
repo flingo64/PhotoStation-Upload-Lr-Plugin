@@ -651,7 +651,7 @@ function Photos.createTag(h, type, name)
 		api 				= "SYNO.FotoTeam.Browse.GeneralTag",
 		version 			= "1",
 		method 				= "create",
-		name				= '"' .. name ..'"'
+		name				= '"' .. urlencode(name) ..'"'
 	}
 	local respArray, errorCode = Photos.callSynoWebapi(h, apiParams)
 
@@ -697,7 +697,7 @@ function Photos.editPhoto(h, photoPath, attrValPairs)
 		if isNumber(attrValPairs[i].value) then
 			apiParams[attrValPairs[i].attribute] = 		  attrValPairs[i].value
 		else
-			apiParams[attrValPairs[i].attribute] = '"' .. attrValPairs[i].value .. '"'
+			apiParams[attrValPairs[i].attribute] = '"' .. urlencode(attrValPairs[i].value) .. '"'
 		end
 	end
 	local respArray, errorCode = h:callSynoWebapi(apiParams)
@@ -1723,7 +1723,7 @@ end
 -- create and add a new tag (desc,people,geo) to a photo
 function Photos.createAndAddPhotoTag(h, dstFilename, type, name, addinfo)
 	local tagId = Photos.getTagId(h, type, name)
-	if not tagId then 
+	if not tagId then
 		tagId = Photos.createTag(h, type, name)
 		tagMappingUpdate(h, type)
 	end
