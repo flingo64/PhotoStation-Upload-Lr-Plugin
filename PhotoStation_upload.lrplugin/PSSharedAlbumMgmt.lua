@@ -454,7 +454,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
     		-- open session only if publish service changed or session not yet opened
 			if 		activePublishing.publishServiceName ~= sharedAlbum.publishServiceName
 				or 	not	activePublishing.publishSettings
-				or 	not	activePublishing.publishSettings.uHandle then
+				or 	not	activePublishing.publishSettings.photoServer then
     	    	-- open session: initialize environment, get missing params and login
 				publishSettings					= publishService:getPublishSettings()
             	local sessionSuccess, reason	= openSession(publishSettings, nil, 'ManageSharedAlbums')
