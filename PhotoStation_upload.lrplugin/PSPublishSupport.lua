@@ -1299,7 +1299,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
 		local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove
 		local resultText = ''
-		local changesRejected, changesFailed = 0, 0		
+		local changesRejected, changesFailed = '', ''
 		
 		local needRepublish = false
 		
@@ -1403,8 +1403,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get ratings/metadata: %s - title %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('title')))
         			needRepublish = true
-        			changesRejected = changesRejected + 1        		
-        			nRejectedChanges = nRejectedChanges + 1        		
+        			changesRejected = changesRejected .. 'title missing, '
+        			nRejectedChanges = nRejectedChanges + 1
         		end
 			end
 			    
@@ -1422,9 +1422,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			resultText = resultText ..  string.format(" caption %s removal ignored,", srcPhoto:getFormattedMetadata('caption'))
         			writeLogfile(3, string.format("Get ratings/metadata: %s - caption %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('caption')))
-        			needRepublish = true        		
-        			changesRejected = changesRejected + 1        		
-        			nRejectedChanges = nRejectedChanges + 1        		
+        			needRepublish = true
+        			changesRejected = changesRejected .. 'caption missing, '
+        			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
     
@@ -1442,7 +1442,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get ratings/metadata: %s - rating %d was removed, setting photo to edited.\n", 
       											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
         			needRepublish = true
-        			changesRejected = changesRejected + 1        		
+        			changesRejected = changesRejected .. 'rating missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
@@ -1472,9 +1472,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			resultText = resultText ..  string.format(" location removal ignored,")
         			writeLogfile(3, string.format("Get ratings/metadata: %s - location was removed, setting photo to edited.\n", 
         										photoInfo.remoteId))
-        			needRepublish = true        		
-        			changesRejected = changesRejected + 1        		
-        			nRejectedChanges = nRejectedChanges + 1        		
+        			needRepublish = true
+        			changesRejected = changesRejected .. 'location(GPS) missing, '
+        			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
 
@@ -1493,8 +1493,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get ratings/metadata: %s - label %s was removed, setting photo to edited.\n", 
         										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel')))
         			needRepublish = true
-        			changesRejected = changesRejected + 1        		
-        			nRejectedChanges = nRejectedChanges + 1        		
+        			changesRejected = changesRejected .. 'color label missing, '
+        			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
     
@@ -1512,8 +1512,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag %d was removed, setting photo to edited.\n", 
       											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
         			needRepublish = true
-        			changesRejected = changesRejected + 1        		
-        			nRejectedChanges = nRejectedChanges + 1        		
+        			changesRejected = changesRejected .. 'rating tag missing, '
+        			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
     
@@ -1543,14 +1543,14 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
-        			changesRejected = changesRejected + 1
+        			changesRejected = changesRejected .. 'keywords missing, '
         			nRejectedChanges = nRejectedChanges + 1
 				elseif #keywordNamesRemove > #keywordsRemove then
         			resultText = resultText ..  string.format(" keywords to remove '%s' include synonyms or parent keyword (not allowed), removal ignored,", table.concat(keywordNamesRemove, "','"))
         			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords '%s' removed in PS include synonyms or parent keyword (not allowed), setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
-        			changesRejected = changesRejected + 1        		
+        			changesRejected = changesRejected .. 'keywords missing, '
         			nRejectedChanges = nRejectedChanges + 1
     			end
     		end
@@ -1600,7 +1600,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			writeLogfile(3, string.format("Get ratings/metadata: %s - faces %s were removed in PS, setting photo to edited (removal rejected).\n", 
       											photoInfo.remoteId, table.concat(faceNamesRemove, "','")))
         			needRepublish = true
-        			changesRejected = changesRejected + 1        		
+        			changesRejected = changesRejected .. 'face regions missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
@@ -1668,8 +1668,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				if not origPhotoDimension then
         			writeLogfile(3, string.format("Get ratings/metadata: %s - cannot download added face regions, no local XMP data file!\n", 
       											photoInfo.remoteId))
-        			changesFailed = changesFailed + 1        		
-        			nFailed = nFailed + 1				
+        			changesFailed = changesFailed .. 'face region failed, '
+        			nFailed = nFailed + 1
     			else
     				-- take over the complete PS face list
         			local facesLrAdd = {}
@@ -1679,28 +1679,33 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
  --       			if not PSExiftoolAPI.setLrFaceRegionList(publishSettings.eHandle, srcPhoto, facesLrAdd, origPhotoDimension) then
         			if not publishSettings.exifTool:setLrFaceRegionList(srcPhoto, facesLrAdd, origPhotoDimension) then
     	   				nChanges = nChanges - (#facesAdd + #facesRemove)
-       					changesFailed = changesFailed +1
+       					changesFailed = changesFailed .. 'face region failed, '
        					nFailed = nFailed + 1
-       				end 
+       				end
 				end
-	    	end  
+	    	end
 
-    		if titleChanged	or captionChanged or ratingChanged or labelChanged or ratingTagChanged or tagsChanged or facesChanged or gpsChanged then
-        		writeLogfile(2, string.format("Get ratings/metadata: %s - %s %s%s%s.\n", 
+			-- trim trailing ', ' from changesFailed and changesRejected
+			if changesFailed   ~= '' then changesFailed   = string.sub(changesFailed,   1, string.len(changesFailed)   - 2) end
+			if changesRejected ~= '' then changesRejected = string.sub(changesRejected, 1, string.len(changesRejected) - 2) end
+
+			if titleChanged	or captionChanged or ratingChanged or labelChanged or ratingTagChanged or tagsChanged or facesChanged or gpsChanged then
+        		writeLogfile(2, string.format("Get ratings/metadata: %s - %s %s%s%s.\n",
         												photoInfo.remoteId, resultText,
-        												iif(changesFailed > 0, 'failed', 'done'), 
-        												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', ''),
-        												iif(needRepublish, ', Re-publish needed', '')))
+        												iif(changesFailed ~= '', ', but local issues: ' .. 'changesFailed', 'done'),
+        												iif(changesRejected ~= '', ', but remote issues: ' .. changesRejected, ''),
+        												iif(needRepublish, ', re-publishing required', '')))
     		else
-    			writeLogfile(2, string.format("Get ratings/metadata: %s - no changes%s.\n", 
+    			writeLogfile(2, string.format("Get ratings/metadata: %s - no local changes%s%s.\n",
     													photoInfo.remoteId, 
-        												iif(changesRejected > 0, ', ' .. tostring(changesRejected) .. ' rejected changes', '')))
+														iif(changesRejected ~= '', ', but remote issues: ' .. changesRejected, ''),
+														iif(needRepublish, ', re-publishing required', '')))
     		end
-		end 
-			
+		end
+
    		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
-	end 
+   		progressScope:setPortionComplete(nProcessed, nPhotos)
+	end
 	progressScope:done()
 
 	closeSession(publishSettings)
