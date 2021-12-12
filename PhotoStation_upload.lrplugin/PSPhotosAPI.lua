@@ -324,10 +324,7 @@ end
 --			[userid] (0 for Team Folders)
 --				[path] = { id, type, addinfo (only for items), validUntil }
 local pathIdCache = {
-	cache = {
-		-- Team folders belong to userid 0
-		[0] = {	}
-	},
+	cache 			= {},
 	timeout			= 300,
 	listFunction	= {
 		["folder"]	= Photos.listAlbumSubfolders,
@@ -337,11 +334,19 @@ local pathIdCache = {
 }
 
 ---------------------------------------------------------------------------------------------------------
+-- pathIdCacheInitialize: remove all entries from cache
+local function pathIdCacheInitialize(userid)
+	writeLogfile(3, string.format("pathIdCacheInitialize(user='%s')\n", userid))
+	pathIdCache.cache[userid] = {}
+	return true
+end
+
+---------------------------------------------------------------------------------------------------------
 -- pathIdCacheCleanup: remove old entries from id cache
 --   if path is given, remove this cache regardless of its age
 local function pathIdCacheCleanup(userid, path)
 	local user_pathIdCache = pathIdCache.cache[userid]
-	
+
 	if path and string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
 
 	if not user_pathIdCache then return true end
@@ -354,6 +359,29 @@ local function pathIdCacheCleanup(userid, path)
 		end
 	end
 	return true
+end
+
+---------------------------------------------------------------------------------------------------------
+-- pathIdCacheAddEntry(userid, path, id, type, addinfo)
+--	add a folde to the pathIdCache
+local function pathIdCacheAddEntry(userid, path, id, type, addinfo)
+	writeLogfile(4, string.format("pathIdCacheAddEntry(user='%s', path='%s', id=%d)\n", userid, path, id))
+	if not pathIdCache.cache[userid] then pathIdCache.cache[userid] = {} end
+	local user_pathIdCache = pathIdCache.cache[userid]
+
+	if not user_pathIdCache[path] then  user_pathIdCache[path] = {} end
+	local entry = user_pathIdCache[path]
+
+	entry.id 			= id
+	entry.type 			= type
+	if addinfo then
+		entry.addinfo 	= addinfo
+	end
+	-- root folder has unlimited validity, all other use the cache-specific timeout
+	entry.validUntil 	= iif(path == '/', 
+								LrDate.timeFromComponents(2050, 12, 31, 23, 59, 50, 'local'), 
+								LrDate.currentTime() + pathIdCache.timeout)
+	-- entry.parentId = parentId
 end
 
 -- ======================================= tagMapping ==============================================
@@ -450,6 +478,7 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 		h.psFolderRoot	= 	'/?launchApp=SYNO.Foto.AppInstance#/shared_space/folder/'
 		h.userid		= 	0
 	end
+	pathIdCacheInitialize(h.userid)
 
 	h.psWebAPI 		= 	'/webapi/'
 	h.hhid			= 	'9252' -- TODO: use random id
@@ -476,7 +505,8 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 	h.serverCapabilities = PHOTOSERVER_API[version].capabilities
 	h.Photo 	= PhotosPhoto.new()
 
-	writeLogfile(3, 'Photos.new() returns:\n' .. JSON:encode(h) .."\n")
+	writeLogfile(3, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d) returns\n%s\n", 
+						serverUrl, usePersonalPS, personalPSOwner, serverTimeout, JSON:encode(h)))
 
 	-- rewrite the apiInfo table with API infos retrieved via SYNO.API.Info
 	h.apiInfo 	= respArray.data
@@ -531,7 +561,7 @@ function Photos.login(h, username, password)
 	if not rootFolderId then return false, errorCode end
 
 	-- initialize folderId cache w/ root folder
-	Photos.addPathToCache(h, "/", rootFolderId, "folder")
+	pathIdCacheAddEntry(h.userid, "/", rootFolderId, "folder")
 
 	return respArray.success
 end
@@ -1370,29 +1400,6 @@ function Photos.uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mimeType
 end
 
 ---------------------------------------------------------------------------------------------------------
--- Photos.addPathToCache(h, path, id, type, addinfo)
---	add a folde to the pathIdCache
-function Photos.addPathToCache(h, path, id, type, addinfo)
-	writeLogfile(4, string.format("addPathToCache(user='%s', path='%s', id=%d)\n", h.userid, path, id))
-	if not pathIdCache.cache[h.userid] then pathIdCache.cache[h.userid] = {} end
-	local user_pathIdCache = pathIdCache.cache[h.userid]
-	
-	if not user_pathIdCache[path] then  user_pathIdCache[path] = {} end
-	local entry = user_pathIdCache[path]
-
-	entry.id 			= id
-	entry.type 			= type
-	if addinfo then
-		entry.addinfo 	= addinfo
-	end
-	-- root folder has unlimited validity, all other use the cache-specific timeout
-	entry.validUntil 	= iif(path == '/', 
-								LrDate.timeFromComponents(2050, 12, 31, 23, 59, 50, 'local'), 
-								LrDate.currentTime() + pathIdCache.timeout)
-	-- entry.parentId = parentId
-end
-
----------------------------------------------------------------------------------------------------------
 -- Photos.getFolderId(h, folderPath, doCreate)
 --	returns the id of a given folderPath (w/o leading/trailing '/')
 -- the folder is searched recursively in the pathIdCache until itself or one of its parents is found
@@ -1432,7 +1439,7 @@ function Photos.getFolderId(h, path, doCreate)
 		if not subfolderList then return nil end
 		writeLogfile(5, string.format("getFolderId(userid:%s, path:'%s') found %d subfolders in '%s'\n", h.userid, path, #subfolderList, folderParent))
 		for i = 1, #subfolderList do
-			Photos.addPathToCache(h, subfolderList[i].name, subfolderList[i].id, "folder")
+			pathIdCacheAddEntry(h.userid, subfolderList[i].name, subfolderList[i].id, "folder")
 			if subfolderList[i].name == path then id = subfolderList[i].id end
 		end
 		
@@ -1441,7 +1448,7 @@ function Photos.getFolderId(h, path, doCreate)
 			local folderLeaf = LrPathUtils.leafName(path)
 			id, errorCode = Photos.createFolder(h, folderParent, folderLeaf)
 			if id then
-				Photos.addPathToCache(h, path, id, "folder")
+				pathIdCacheAddEntry(h.userid, path, id, "folder")
 			end
 		end
 
@@ -1477,7 +1484,7 @@ function Photos.getPhotoId(h, path)
 
 	writeLogfile(4, string.format("getPhotoId(userid:%s, path:'%s') listFunction found %d items in '%s'\n", h.userid, path, #itemList, photoFolder))
 	for i = 1, #itemList do
-		Photos.addPathToCache(h, LrPathUtils.child(photoFolder, itemList[i].filename), itemList[i].id, itemList[i].type, itemList[i])
+		pathIdCacheAddEntry(h.userid, LrPathUtils.child(photoFolder, itemList[i].filename), itemList[i].id, itemList[i].type, itemList[i])
 		if itemList[i].filename == photoFilename then
 			id = itemList[i].id
 			photoInfo = itemList[i]
@@ -1600,7 +1607,7 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- uploadVideoFiles
 -- upload video plus its thumbnails (if configured) and add. videos)
--- exportParams.psutils.uploadVideoFiles(exportParams.uHandle, dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate, 
+-- exportParams.psutils.uploadVideoFiles(exportParams.photoServer, dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate, 
 --			vid_Orig_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 --			vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
 function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, video_Filename, title_Filename, 
