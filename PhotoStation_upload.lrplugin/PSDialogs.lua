@@ -114,7 +114,6 @@ local checkDescriptionSupport = {
 local checkPubLabelSupport = {
 	key			= 'psVersion',
 	transform 	= function( value, fromTable )
-		writeLogfile(2, string.format("checkLabelSupport(%s) returns %s\n", value, PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_LABEL_PUB)))
 		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_LABEL_PUB)
 	end,
 }
@@ -1881,7 +1880,6 @@ end
 -------------------------------------------------------------------------------
 -- downloadOptionsView(f, propertyTable)
 function PSDialogs.downloadOptionsView(f, propertyTable)
-	writeLogfile(2, string.format("psVersion= %s\n", propertyTable.psVersion))
 	return	f:group_box {
 		bind_to_object = propertyTable,
 
