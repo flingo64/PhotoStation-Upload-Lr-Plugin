@@ -711,7 +711,7 @@ end
 -- 	- login to Photo Server, if required
 --	- start exiftool listener, if required
 function openSession(exportParams, publishedCollection, operation)
-	writeLogfile(4, string.format("openSession: operation = %s, publishMode = %s\n", operation, exportParams.publishMode))
+	writeLogfile(3, string.format("openSession(operation = %s, publishMode = %s) starting ...\n", operation, exportParams.publishMode))
 
 	-- if "use secondary server" was choosen, temporarily overwrite primary address
 	if exportParams.useSecondAddress then
@@ -790,37 +790,40 @@ function openSession(exportParams, publishedCollection, operation)
 	end
 
 	-- Create a photoServer object in any case
-	local errorCode
-	exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner, 
-															exportParams.serverTimeout, exportParams.psVersion)
 	if not exportParams.photoServer then
-		local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
-		iif(exportParams.usePersonalPS, "Personal ", "Global "),
-		PHOTOSERVER_API[exportParams.psVersion].name,
-		iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
-		exportParams.serverUrl,
-		PHOTOSERVER_API[exportParams.psVersion].API.getErrorMsg(errorCode))
-		writeLogfile(1, errorMsg)
-		return 	false, errorMsg
+		local errorCode
+		exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner, 
+																exportParams.serverTimeout, exportParams.psVersion)
+		if not exportParams.photoServer then
+			local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
+			iif(exportParams.usePersonalPS, "Personal ", "Global "),
+			PHOTOSERVER_API[exportParams.psVersion].name,
+			iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
+			exportParams.serverUrl,
+			PHOTOSERVER_API[exportParams.psVersion].API.getErrorMsg(errorCode))
+			writeLogfile(1, errorMsg)
+			return 	false, errorMsg
+		end
 	end
 
 	-- Login to Photo Server: not required for CheckMoved, not required on Download if Download was disabled
-	if 	exportParams.publishMode ~= 'CheckMoved' 
-	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
-		result, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
-		if not result then
-			local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
-									iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
-									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
-									exportParams.serverUrl,
-									exportParams.photoServer.getErrorMsg(errorCode))
-			writeLogfile(1, errorMsg)
-			 exportParams.uHandle = nil
-			return 	false, errorMsg
+	if not exportParams.photoServerLoggedIn then
+		if 	exportParams.publishMode ~= 'CheckMoved' 
+		and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
+			exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
+			if not exportParams.photoServerLoggedIn then
+				local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
+										iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
+										iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
+										exportParams.serverUrl,
+										exportParams.photoServer.getErrorMsg(errorCode))
+				writeLogfile(1, errorMsg)
+				return 	false, errorMsg
+			end
+			writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station") .. 
+									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. 
+									"(" .. exportParams.serverUrl .. ") OK\n")
 		end
-		writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station") .. 
-								iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. 
-								 "(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
 	-- exiftool: required if Export/Publish and exif translation was selected, or if downloading faces
