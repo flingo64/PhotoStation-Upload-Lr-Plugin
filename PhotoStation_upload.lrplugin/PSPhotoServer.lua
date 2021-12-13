@@ -59,6 +59,9 @@ PHOTOSERVER_UPLOAD_THUMB_S			= "'UPLOAD_THUMB_S'"
 PHOTOSERVER_UPLOAD_TITLE			= "'UPLOAD_TITLE_FILE'"
 PHOTOSERVER_UPLOAD_VIDEO_ADD		= "'UPLOAD_VIDEO_ADDITIONAL'"
 
+-- album management capabilities  --
+PHOTOSERVER_ALBUM_SORT	            = "'ALBUM_SORT'"
+
 -- shared album support  --
 PHOTOSERVER_SHAREDALBUM_ADVANCED	= "'SHAREDALBUM_ADVANCED'"
 
@@ -83,7 +86,8 @@ PHOTOSERVER_API = {
                                     PHOTOSERVER_METADATA_COMMENT_PRIV .. PHOTOSERVER_METADATA_COMMENT_PUB ..
                                     PHOTOSERVER_UPLOAD_THUMB_XL ..
                                     PHOTOSERVER_UPLOAD_THUMB_B .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
-                                    PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD
+                                    PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD ..
+                                    PHOTOSERVER_ALBUM_SORT
             },
 }
 
@@ -118,7 +122,7 @@ PHOTOSERVER_API[70] =  {
                 name	        =   'Photos 1.0',
                 API 	        =   Photos,
                 capabilities    =   PHOTOSERVER_METADATA_DESCRIPTION ..
-                                    PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION ..
+                                    PHOTOSERVER_METADATA_TAG ..
                                     PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S
 }
 
