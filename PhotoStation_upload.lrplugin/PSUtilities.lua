@@ -724,73 +724,6 @@ function openSession(exportParams, publishedCollection, operation)
 		exportParams.serverTimeout = exportParams.serverTimeout2
 		exportParams.serverUrl = exportParams.proto2 .. "://" .. exportParams.servername2
 	end
-	
-	local collectionSettings
-	
-	-- if is Publish process, temporarily overwrite exportParams w/ collectionSettings
-	if publishedCollection and publishedCollection:type() == 'LrPublishedCollection' then
-    	collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
-		writeLogfile(4, "openSession: copy collection upload settings\n")
-    	
-    	exportParams.storeDstRoot 	= true			-- dstRoot must be set in a Published Collection
-    	exportParams.dstRoot 		= PSLrUtilities.getCollectionUploadPath(publishedCollection)
-    	exportParams.createDstRoot 	= collectionSettings.createDstRoot
-    	exportParams.copyTree 		= collectionSettings.copyTree
-    	exportParams.srcRoot 		= collectionSettings.srcRoot
-    	exportParams.renameDstFile	= collectionSettings.renameDstFile
-    	exportParams.dstFilename	= collectionSettings.dstFilename
-    	exportParams.RAWandJPG 		= collectionSettings.RAWandJPG
-    	exportParams.sortPhotos 	= collectionSettings.sortPhotos
-    	exportParams.exifTranslate 			= collectionSettings.exifTranslate
-    	exportParams.exifXlatFaceRegions 	= collectionSettings.exifXlatFaceRegions
-    	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
-    	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
-    	exportParams.xlatLocationTags		= collectionSettings.xlatLocationTags
-    	exportParams.locationTagSeperator	= collectionSettings.locationTagSeperator
-    	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
-
-		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
-    	if operation == 'GetCommentsFromPublishedCollection' then
-			writeLogfile(4, "openSession: copy collection download settings\n")
-        	exportParams.downloadMode	 		= collectionSettings.downloadMode
-        	exportParams.commentsDownload 		= collectionSettings.commentsDownload
-        	exportParams.pubCommentsDownload	= collectionSettings.pubCommentsDownload
-        	exportParams.pubColorDownload		= collectionSettings.pubColorDownload
-        	exportParams.titleDownload	 		= collectionSettings.titleDownload
-        	exportParams.captionDownload 		= collectionSettings.captionDownload
-        	exportParams.tagsDownload	 		= collectionSettings.tagsDownload
-        	exportParams.locationDownload 		= collectionSettings.locationDownload
-        	exportParams.locationTagDownload	= collectionSettings.locationTagDownload
-        	exportParams.ratingDownload	 		= collectionSettings.ratingDownload
-        	exportParams.PS2LrFaces	 			= collectionSettings.PS2LrFaces
-        	exportParams.PS2LrLabel	 			= collectionSettings.PS2LrLabel
-        	exportParams.PS2LrRating	 		= collectionSettings.PS2LrRating
-    	end
-
- 		if string.find('ProcessRenderedPhotos', operation, 1, true) then
-			exportParams.publishMode 	= collectionSettings.publishMode
-		else
-			-- avoid prompt for PublishMode if operation is not ProcessRenderedPhotos
-			exportParams.publishMode 	= 'Publish'
-		end
-	end
-	
-	if not exportParams.exifTranslate then
-    	exportParams.exifXlatFaceRegions 	= false
-    	exportParams.exifXlatLabel 			= false
-    	exportParams.exifXlatRating 		= false
-	end
-	
-	-- Get missing settings, if not stored in preset.
-	if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
-		return false, 'cancel'
-	end
-
-	-- ConvertAPI: required if Export/Publish/Metadata 
-	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.converter then
-			exportParams.converter = PSConvert.new()
-			if not exportParams.converter then return false, 'Cannot initialize converters, check logfile for detailed information' end
-	end
 
 	-- Create a photoServer object in any case
 	if not exportParams.photoServer then
@@ -807,6 +740,73 @@ function openSession(exportParams, publishedCollection, operation)
 			writeLogfile(1, errorMsg)
 			return 	false, errorMsg
 		end
+	end
+
+	local collectionSettings
+
+	-- if is Publish process, temporarily overwrite exportParams w/ collectionSettings
+	-- check collectionSettings against photoServer capabilities
+	if publishedCollection and publishedCollection:type() == 'LrPublishedCollection' then
+    	collectionSettings = publishedCollection:getCollectionInfoSummary().collectionSettings
+		writeLogfile(4, "openSession: copy collection upload settings\n")
+    	exportParams.storeDstRoot 			= true			-- dstRoot must be set in a Published Collection
+    	exportParams.dstRoot 				= PSLrUtilities.getCollectionUploadPath(publishedCollection)
+    	exportParams.createDstRoot 			= collectionSettings.createDstRoot
+    	exportParams.copyTree 				= collectionSettings.copyTree
+    	exportParams.srcRoot 				= collectionSettings.srcRoot
+    	exportParams.renameDstFile			= collectionSettings.renameDstFile
+    	exportParams.dstFilename			= collectionSettings.dstFilename
+    	exportParams.RAWandJPG 				= collectionSettings.RAWandJPG
+    	exportParams.sortPhotos 			= exportParams.photoServer:supports(PHOTOSERVER_ALBUM_SORT)			and collectionSettings.sortPhotos
+    	exportParams.exifTranslate 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifTranslate
+    	exportParams.exifXlatFaceRegions 	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON)	and collectionSettings.exifXlatFaceRegions
+    	exportParams.exifXlatLabel 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifXlatLabel
+    	exportParams.exifXlatRating 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifXlatRating
+    	exportParams.xlatLocationTags		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_LOCATION)	and collectionSettings.xlatLocationTags
+    	exportParams.locationTagSeperator	= collectionSettings.locationTagSeperator
+    	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
+
+		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
+    	if operation == 'GetCommentsFromPublishedCollection' then
+			writeLogfile(4, "openSession: copy collection download settings\n")
+        	exportParams.downloadMode	 		= collectionSettings.downloadMode
+        	exportParams.commentsDownload 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_COMMENT_PRIV)	and collectionSettings.commentsDownload
+        	exportParams.pubCommentsDownload	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_COMMENT_PUB) 	and collectionSettings.pubCommentsDownload
+        	exportParams.pubColorDownload		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_LABEL_PUB) 	and collectionSettings.pubColorDownload
+        	exportParams.titleDownload	 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TITLE) 		and collectionSettings.titleDownload
+        	exportParams.captionDownload 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_DESCRIPTION) 	and collectionSettings.captionDownload
+        	exportParams.tagsDownload	 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG) 			and collectionSettings.tagsDownload
+        	exportParams.locationDownload 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_GPS) 			and collectionSettings.locationDownload
+        	exportParams.locationTagDownload	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_GPS) 			and collectionSettings.locationTagDownload
+        	exportParams.ratingDownload	 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_RATING) 		and collectionSettings.ratingDownload
+        	exportParams.PS2LrFaces	 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON) 		and collectionSettings.PS2LrFaces
+        	exportParams.PS2LrLabel	 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG) 			and collectionSettings.PS2LrLabel
+        	exportParams.PS2LrRating	 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG) 			and collectionSettings.PS2LrRating
+    	end
+
+ 		if string.find('ProcessRenderedPhotos', operation, 1, true) then
+			exportParams.publishMode 	= collectionSettings.publishMode
+		else
+			-- avoid prompt for PublishMode if operation is not ProcessRenderedPhotos
+			exportParams.publishMode 	= 'Publish'
+		end
+	end
+
+	if not exportParams.exifTranslate then
+    	exportParams.exifXlatFaceRegions 	= false
+    	exportParams.exifXlatLabel 			= false
+    	exportParams.exifXlatRating 		= false
+	end
+
+	-- Get missing settings, if not stored in preset.
+	if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
+		return false, 'cancel'
+	end
+
+	-- ConvertAPI: required if Export/Publish/Metadata 
+	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.converter then
+			exportParams.converter = PSConvert.new()
+			if not exportParams.converter then return false, 'Cannot initialize converters, check logfile for detailed information' end
 	end
 
 	-- Login to Photo Server: not required for CheckMoved, not required on Download if Download was disabled

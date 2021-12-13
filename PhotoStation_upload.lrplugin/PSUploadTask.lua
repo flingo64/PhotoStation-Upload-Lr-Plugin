@@ -401,7 +401,7 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 		end
 
 		-- check location tags, if upload/translation option is set -----------------------
-		if photoServer:supports(PHOTOSERVER_METADATA_LOCATION) and exportParams.xlatLocationTags then
+		if exportParams.xlatLocationTags then
 			-- there may be more than one PS location tag, but only one Lr location tag
 			local locationTagsLrUntrimmed = PSLrUtilities.evaluatePlaceholderString(exportParams.locationTagTemplate, srcPhoto, 'tag', nil)
 			local locationTagsLrTrimmed = trim(locationTagsLrUntrimmed, exportParams.locationTagSeperator)
@@ -453,8 +453,9 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 	local facesAdd, facesRemove
 	facesRemove 	= facesPS
 
-	if 	photoServer:supports(PHOTOSERVER_METADATA_PERSON) and LrExportPersons and
-    	exportParams.exifXlatFaceRegions and not isVideo then
+	if 		LrExportPersons
+		and	exportParams.exifXlatFaceRegions and not isVideo
+	then
 		local facesLr, _ = exportParams.exifTool:queryLrFaceRegionList(srcPhoto:getRawMetadata('path'))
 		-- we don't need to filter faces by keyword export flag, because Lr won't write 
 		-- faceRegions for person keys with export flag turned off
