@@ -139,6 +139,10 @@ function isNumber(str)
 	return not (str == "" or string.match(str, "%D"))
 end
 
+function isJson(str)
+	return string.match(str, "^%{.+%}$") or string.match(str, "^%[.+%]$")
+end
+
 --------------------------------------------------------------------------------------------
 -- split(inputstr, sep)
 -- splits a string into a table, sep must be a single character 

@@ -694,8 +694,8 @@ function Photos.editPhoto(h, photoPath, attrValPairs)
 		id					= "[" .. h:getPhotoId(photoPath) .. "]",
 	}
 	for i = 1, #attrValPairs do
-		if isNumber(attrValPairs[i].value) then
-			apiParams[attrValPairs[i].attribute] = 		  attrValPairs[i].value
+		if isNumber(attrValPairs[i].value) or isJson(attrValPairs[i].value) then
+			apiParams[attrValPairs[i].attribute] = 		  urlencode(attrValPairs[i].value)
 		else
 			apiParams[attrValPairs[i].attribute] = '"' .. urlencode(attrValPairs[i].value) .. '"'
 		end
@@ -1982,12 +1982,21 @@ function PhotosPhoto:setDescription(description)
 end
 
 function PhotosPhoto:setGPS(gps)
---[[
 	if not self.changes then self.changes = {} end
 	if not self.changes.metadata then self.changes.metadata = {} end
 
-	self.changes.metadata.gps_lat =  gps.latitude
-	self.changes.metadata.gps_lng =  gps.longitude
+-- as string:
+-- 	self.changes.metadata.gps = gps.latitude ..',' .. gps.longitude
+-- as JSON array:
+--	self.changes.metadata.gps = '["' .. gps.latitude .. '","' .. gps.longitude ..'"]'
+
+-- as JSON object
+--[[
+	gpsData = {
+		latitude = 	gps.latitude,
+		longitude = gps.longitude
+	}
+	self.changes.metadata.gps = JSON:encode(gpsData)
 ]]
 	return true
 end
@@ -1997,7 +2006,7 @@ function PhotosPhoto:setRating(rating)
 	if not self.changes.metadata then self.changes.metadata = {} end
 
 	self.changes.metadata.rating = rating
-return true
+	return true
 end
 
 function PhotosPhoto:setTitle(title)
