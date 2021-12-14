@@ -297,8 +297,8 @@ function Photos.listAlbumItems(h, folderPath, folderId)
 			folder_id		= folderId or Photos.getFolderId(h, folderPath),
 			additional		= iif(h.serverVersion == 70,
 -- 								'["description","tag","exif","resolution","orientation","gps","video_meta","video_convert","thumbnail","address","geocoding_id","rating","person"]',
-								'["description","tag","exif","gps","video_meta","address","person"]',
-								'["description","tag","exif","gps","video_meta","address","rating","person"]'),
+								'["description","tag","gps","video_meta","address","person"]',
+								'["description","tag","gps","video_meta","address","rating","person"]'),
 			sort_by			= "takentime",
 			sort_direction	= "asc",
 			offset			= 0,
@@ -307,7 +307,7 @@ function Photos.listAlbumItems(h, folderPath, folderId)
 			method			= "list",
 			version			= iif(h.serverVersion == 70, 1, 2)
 	}
-			
+
 	local respArray, errorCode = Photos.callSynoWebapi(h, apiParams)
 
 	if not respArray then return nil, errorCode end
