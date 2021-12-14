@@ -63,6 +63,7 @@ PHOTOSERVER_UPLOAD_VIDEO_ADD		= "'UPLOAD_VIDEO_ADDITIONAL'"
 PHOTOSERVER_ALBUM_SORT	            = "'ALBUM_SORT'"
 
 -- shared album support  --
+PHOTOSERVER_SHAREDALBUM	            = "'SHAREDALBUM'"
 PHOTOSERVER_SHAREDALBUM_ADVANCED	= "'SHAREDALBUM_ADVANCED'"
 
 --======PhotoServer versions ==============================================--
@@ -87,7 +88,8 @@ PHOTOSERVER_API = {
                                     PHOTOSERVER_UPLOAD_THUMB_XL ..
                                     PHOTOSERVER_UPLOAD_THUMB_B .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
                                     PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD ..
-                                    PHOTOSERVER_ALBUM_SORT
+                                    PHOTOSERVER_ALBUM_SORT ..
+                                    PHOTOSERVER_SHAREDALBUM
             },
 }
 

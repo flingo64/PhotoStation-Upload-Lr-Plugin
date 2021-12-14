@@ -300,37 +300,42 @@ function PSSharedAlbumMgmt.readSharedAlbumsFromLr()
 	local nAlbums = 0
 
 	local sharedAlbums = {}
-	
+
+	local k = 0
+
     for i = 1, #publishServices	do
     	local publishService 		= publishServices[i]
-		publishServiceNames[i] 		= publishService:getName()
     	local publishServiceSettings= publishService:getPublishSettings()
-   	
-    	writeLogfile(3, string.format("getAllSharedAlbums: publish service '%s': psVersion: %d\n", publishServiceNames[i], publishServiceSettings.psVersion))
-    	
-    	local pubServiceSharedAlbums = PSSharedAlbumMgmt.getPublishServiceSharedAlbums(publishServiceNames[i])
-		
-		if pubServiceSharedAlbums then
-			for j = 1, #pubServiceSharedAlbums do
-    			nAlbums = nAlbums + 1
-				sharedAlbums[nAlbums] = {}
-				local sharedAlbum = sharedAlbums[nAlbums]
-				
-    			sharedAlbum.isEntry				= true
-    			sharedAlbum.wasAdded			= false
-    			sharedAlbum.wasModified			= false
-    			sharedAlbum.wasDeleted	 		= false
-    			sharedAlbum.wasRenamed	 		= false
-    			
-    	    	for key, defaultValue in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
-    	    		sharedAlbum[key] = ifnil(pubServiceSharedAlbums[j][key], defaultValue)
-    	    	end
-    			sharedAlbum.publishServiceName 	= publishService:getName()
+
+		if PHOTOSERVER_API.supports (publishServiceSettings.psVersion, PHOTOSERVER_SHAREDALBUM) then
+			writeLogfile(3, string.format("readSharedAlbumsFromLr: publish service '%s': psVersion: %d\n", publishService:getName(), publishServiceSettings.psVersion))
+			k = k + 1
+			publishServiceNames[k] 		= publishService:getName()
+
+			local pubServiceSharedAlbums = PSSharedAlbumMgmt.getPublishServiceSharedAlbums(publishServiceNames[k])
+
+			if pubServiceSharedAlbums then
+				for j = 1, #pubServiceSharedAlbums do
+					nAlbums = nAlbums + 1
+					sharedAlbums[nAlbums] = {}
+					local sharedAlbum = sharedAlbums[nAlbums]
+
+					sharedAlbum.isEntry				= true
+					sharedAlbum.wasAdded			= false
+					sharedAlbum.wasModified			= false
+					sharedAlbum.wasDeleted	 		= false
+					sharedAlbum.wasRenamed	 		= false
+
+					for key, defaultValue in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
+						sharedAlbum[key] = ifnil(pubServiceSharedAlbums[j][key], defaultValue)
+					end
+					sharedAlbum.publishServiceName 	= publishService:getName()
+				end
 			end
 		end
 	end
-	
-	return publishServiceNames, sharedAlbums 		
+
+	return publishServiceNames, sharedAlbums
 end
 
 -------------------------------------------------------------------------------
