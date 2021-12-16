@@ -27,11 +27,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-Photo StatLr uses the following free software to do its job:
-	- convert.exe,			see: http://www.imagemagick.org/
-	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
-	- exiftool.exe			see: http://www.sno.phy.queensu.ca/~phil/exiftool/
 ]]
 --------------------------------------------------------------------------------
 
@@ -52,7 +47,7 @@ PSExiftoolAPI = {}
 PSExiftoolAPI_mt = { __index = PSExiftoolAPI }
 
 
-PSExiftoolAPI.downloadUrl = 'http://www.sno.phy.queensu.ca/~phil/exiftool/' 
+PSExiftoolAPI.downloadUrl = 'http://www.sno.phy.queensu.ca/~phil/exiftool/'
 PSExiftoolAPI.defaultInstallPath = iif(WIN_ENV, 
 								'C:/Windows/exiftool.exe', 
 								'/usr/local/bin/exiftool') 

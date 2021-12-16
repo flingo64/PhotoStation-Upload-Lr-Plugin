@@ -19,10 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-Photo StatLr uses the following free software to do its job:
-	- convert.exe,			see: http://www.imagemagick.org/
-	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 ]]
 --------------------------------------------------------------------------------
 
