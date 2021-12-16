@@ -222,7 +222,6 @@
 "$$$/PSUpload/Progress/UpdateSharedAlbums/PleaseTranslate=Updating ^1 shared albums with ^2 photos"
 "$$$/PSUpload/Progress/Upload/One/PleaseTranslate=Uploading one photo to Photo Server"
 "$$$/PSUpload/Progress/Upload=^1 사진 Photo Station으로 업로드"
-"$$$/PSUpload/Progress/UploadVideoMeta/PleaseRemove=^1 비디오 메타데이터 업로드"
 "$$$/PSUpload/Progress/UploadVideoMeta2/PleaseTranslate=Uploading metadata for ^1 photos/videos"
 "$$$/PSUpload/SharedAlbumMgmt/activeSharedAlbum/PleaseTranslate=Active Shared Album"
 "$$$/PSUpload/SharedAlbumMgmt/AddDelete/PleaseTranslate=Delete"
