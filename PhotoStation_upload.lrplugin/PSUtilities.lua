@@ -801,7 +801,7 @@ function openSession(exportParams, publishedCollection, operation)
 
 	-- ConvertAPI: required if Export/Publish/Metadata 
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.converter then
-			exportParams.converter = PSConvert.new()
+			exportParams.converter = PSConvert.new(exportParams.LR_includeVideoFiles)
 			if not exportParams.converter then return false, 'Cannot initialize converters, check logfile for detailed information' end
 	end
 

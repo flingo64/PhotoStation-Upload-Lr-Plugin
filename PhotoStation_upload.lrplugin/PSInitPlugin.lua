@@ -20,10 +20,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-Photo StatLr uses the following free software to do its job:
-	- convert.exe,			see: http://www.imagemagick.org/
-	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 ]]
 --------------------------------------------------------------------------------
 
@@ -33,26 +29,46 @@ local LrPathUtils 		= import 'LrPathUtils'
 local LrPrefs			= import 'LrPrefs'
 
 require "PSUtilities"
+require "PSConvert"
+require "PSExiftoolAPI"
 
---========== Initialize plugin preference ==================================================================--
+--========== Initialize plugin preferences ==================================================================--
 local prefs = LrPrefs.prefsForPlugin()
 
--- local path to Synology Photo Station Uploader: required for thumb generation an video handling
-if not prefs.PSUploaderPath then 
-   	prefs.PSUploaderPath =  PSConvert.defaultInstallPath
+-- ImageMagick convert program path: required for thumb generation and video handling
+if not prefs.convertprog or prefs.convertprog == '' then
+	-- backward compatibility: check if Synology Uploader path is set
+	if prefs.PSUploaderPath then
+		prefs.convertprog = LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ImageMagick'), 'convert') .. getProgExt()
+	else
+   		prefs.convertprog =  PSConvert.defaultInstallPathIMConvert
+	end
 end
-	
+
+-- dcraw program path: required for thumb generation and video handling
+if not prefs.dcrawprog or prefs.dcrawprog == '' then
+	-- backward compatibility: check if Synology Uploader path is set
+	if prefs.PSUploaderPath then
+		prefs.dcrawprog = iif(WIN_ENV, 
+							LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ImageMagick'), 'dcraw.exe'),
+							LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'dcraw'), 'dcraw'))
+	else
+   		prefs.dcrawprog =  PSConvert.defaultInstallPathDcraw
+	end
+end
+
 -- exiftool program path: used for metadata translations on upload
-if not prefs.exiftoolprog then
+if not prefs.exiftoolprog or prefs.exiftoolprog == '' then
 	prefs.exiftoolprog = PSExiftoolAPI.defaultInstallPath
 end
 
 -- ffmpeg program path: default is <PSUploaderPath>/ffmpeg/ffmpeg(.exe)
-if not prefs.ffmpegprog then
-	if getProgExt() then
-		prefs.ffmpegprog = LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ffmpeg'), LrPathUtils.addExtension('ffmpeg', getProgExt()))
+if not prefs.ffmpegprog or prefs.ffmpegprog == '' then
+	-- backward compatibility: check if Synology Uploader path is set
+	if prefs.PSUploaderPath then
+		prefs.ffmpegprog = LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ffmpeg'), 'ffmpeg') .. getProgExt()
 	else
-		prefs.ffmpegprog = LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ffmpeg'), 'ffmpeg')
+		prefs.ffmpegprog =  PSConvert.defaultInstallPathFfmpeg
 	end
 end
 
@@ -61,7 +77,7 @@ if not prefs.videoConversionsFn then
 	prefs.videoConversionsFn = PSConvert.defaultVideoPresetsFn
 end
 
-writeLogfile(2, string.format("PSInitPlugin:\n\t\tPSUploader: '%s'\n\t\texiftool:   '%s'\n\t\tffmpeg:     '%s'\n", prefs.PSUploaderPath, prefs.exiftoolprog, prefs.ffmpegprog))
+writeLogfile(2, string.format("PSInitPlugin:\n\t\tconvert: '%s'\n\t\tdcraw: '%s'\n\t\texiftool:   '%s'\n\t\tffmpeg:     '%s'\n", prefs.convertprog, prefs.dcrawprog, prefs.exiftoolprog, prefs.ffmpegprog))
 
 --=========== Install Lr video conversion presets =================================================================--
 

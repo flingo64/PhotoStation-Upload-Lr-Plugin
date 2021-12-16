@@ -19,11 +19,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-Photo StatLr uses the following free software to do its job:
-	- convert.exe,			see: http://www.imagemagick.org/
-	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
-
 ------------------------------------------------------------------------------]]
 
 -- Lightroom SDK
@@ -52,30 +47,35 @@ local pluginInfoProvider = {}
 -------------------------------------------------------------------------------
 -- updatePluginStatus: do some sanity check on dialog settings
 local function updatePluginStatus( propertyTable )
-	
+
 	local message = nil
-	
+
 	repeat
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
-		
-		if not PSDialogs.validatePSUploadProgPath(nil, propertyTable.PSUploaderPath) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or incorrect Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+
+		if PSDialogs.validateProgram(nil, propertyTable.convertprog) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/ConvertPathMissing=Incorrect convert path."
+			break
+		end
+
+		if PSDialogs.validateProgram(nil, propertyTable.dcrawprog) then
+			message = LOC "$$$/PSUpload/Dialogs/Messages/DcrawPathMissing=Incorrect dcraw path."
 			break
 		end
 
 		if PSDialogs.validateProgram(nil, propertyTable.exiftoolprog) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Incorrect exiftool path." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/ExifToolPathMissing=Incorrect exiftool path."
 			break
 		end
 
 		if not PSDialogs.validateProgram(nil, propertyTable.ffmpegprog) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/VideoFfmpegMissing=Incorrect ffmpeg path." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/VideoFfmpegMissing=Incorrect ffmpeg path."
 			break
 		end
 
 		if not PSDialogs.validatePluginFile(nil, propertyTable.videoConversionsFn) then
-			message = LOC "$$$/PSUpload/Dialogs/Messages/VideoPresetsMissing=Incorrect video presets file." 
+			message = LOC "$$$/PSUpload/Dialogs/Messages/VideoPresetsMissing=Incorrect video presets file."
 			break
 		end
 
@@ -97,41 +97,26 @@ end
 -- pluginInfoProvider.startDialog( propertyTable )
 function pluginInfoProvider.startDialog( propertyTable )
 	local prefs = LrPrefs.prefsForPlugin()
-	
+
 	openLogfile(4)
 --	writeLogfile(4, "pluginInfoProvider.startDialog\n")
 	LrTasks.startAsyncTaskWithoutErrorHandler(PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
 
-	-- local path to Synology Photo Station Uploader: required for thumb generation an video handling
-	propertyTable.PSUploaderPath = prefs.PSUploaderPath
-	if not propertyTable.PSUploaderPath then 
-    	propertyTable.PSUploaderPath =  PSConvert.defaultInstallPath
-	end
-	
+	-- ImageMagick convert program path: required for thumb generation and video handling
+	propertyTable.convertprog = prefs.convertprog
+
+	-- dcraw program path: required for thumb generation and video handling
+	propertyTable.dcrawprog = prefs.dcrawprog
 	-- exiftool program path: used for metadata translations on upload
 	propertyTable.exiftoolprog = prefs.exiftoolprog
-	if not propertyTable.exiftoolprog then
-		propertyTable.exiftoolprog = PSExiftoolAPI.defaultInstallPath
-	end
-
 	-- ffmpeg program path: default is <PSUploaderPath>/ffmpeg/ffmpeg(.exe)
 	propertyTable.ffmpegprog = prefs.ffmpegprog
-	if not propertyTable.ffmpegprog then
-		local progExt = getProgExt()
-		if progExt then
-			propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), LrPathUtils.addExtension('ffmpeg', progExt))
-		else
-			propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), 'ffmpeg')
-		end
-	end
-	 
+
 	-- video presets file: used for video conversions
 	propertyTable.videoConversionsFn = prefs.videoConversionsFn
-	if not propertyTable.videoConversionsFn then
-		propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
-	end
 
-	propertyTable:addObserver('PSUploaderPath', updatePluginStatus )
+	propertyTable:addObserver('convertprog', updatePluginStatus )
+	propertyTable:addObserver('dcrawprog', updatePluginStatus )
 	propertyTable:addObserver('exiftoolprog', updatePluginStatus )
 	propertyTable:addObserver('ffmpegprog', updatePluginStatus )
 	propertyTable:addObserver('videoConversionsFn', updatePluginStatus )
@@ -145,7 +130,8 @@ function pluginInfoProvider.endDialog( propertyTable )
 --	writeLogfile(4, "pluginInfoProvider.endDialog\n")
 	local prefs = LrPrefs.prefsForPlugin()
 
-	prefs.PSUploaderPath		= propertyTable.PSUploaderPath
+	prefs.convertprog			= propertyTable.convertprog
+	prefs.dcrawprog				= propertyTable.dcrawprog
 	prefs.exiftoolprog 			= propertyTable.exiftoolprog
 	prefs.ffmpegprog 			= propertyTable.ffmpegprog
 	prefs.videoConversionsFn 	= propertyTable.videoConversionsFn
@@ -239,11 +225,11 @@ function pluginInfoProvider.sectionsForBottomOfDialog(f, propertyTable )
     		title = 	LOC "$$$/PSUpload/PluginDialog/PsSettings=Geneneral Settings",
     		synopsis = 	LOC "$$$/PSUpload/PluginDialog/PsSettingsSynopsis=Set program paths",
 			bind_to_object = propertyTable,
-			     		
+
     		f:view {
 				fill_horizontal = 1,
-				
-    			PSDialogs.psUploaderProgView(f, propertyTable),
+
+    			PSDialogs.converterToolsView(f, propertyTable),
 				PSDialogs.exiftoolProgView(f, propertyTable),
 				PSDialogs.videoConvSettingsView(f, propertyTable),
 				PSDialogs.convertPhotosView(f, propertyTable),

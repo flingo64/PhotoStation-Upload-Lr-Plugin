@@ -31,10 +31,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-Photo StatLr uses the following free software to do its job:
-	- convert.exe,			see: http://www.imagemagick.org/
-	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 ]]
 --------------------------------------------------------------------------------
 
@@ -185,46 +181,48 @@ end
 PSConvert = {}
 PSConvert_mt = { __index = PSConvert }
 
-PSConvert.downloadUrl 			= 'https://www.synology.com/support/download' 
-PSConvert.defaultInstallPath 	= iif(WIN_ENV, 
-    								'C:/Program Files (x86)/Synology/Photo Station Uploader',
-    								'/Applications/Synology Photo Station Uploader.app/Contents/MacOS')
+PSConvert.downloadUrlIMConvert			= 'https://imagemagick.org/script/download.php'
+PSConvert.defaultInstallPathIMConvert 	= iif(WIN_ENV,
+    										'C:/Program Files/ImageMagick-7.1.0-Q16-HDRI/convert.exe',
+    										'/usr/local/bin/convert')
+
+PSConvert.downloadUrlDcraw				= 'http://www.dechifro.org/dcraw/'
+PSConvert.defaultInstallPathDcraw 		= iif(WIN_ENV,
+    										'C:/Program Files/ImageMagick-7.1.0-Q16-HDRI/convert.exe/dcraw.exe',
+    										'/usr/local/bin/dcraw')
+
+PSConvert.downloadUrlFfmpeg				= 'https://ffmpeg.org/download.html'
+PSConvert.defaultInstallPathFfmpeg 		= iif(WIN_ENV,
+    										'C:/Windows/ffmpeg.exe',
+    										'/usr/local/bin/ffmpeg')
+
 PSConvert.defaultVideoPresetsFn = "PSVideoConversions.json"
 PSConvert.convOptions			= nil
 
 ------------------------ new ---------------------------------------------------------------------------------
 -- new: initialize convert program paths
-function PSConvert.new()
+function PSConvert.new(includeVideos)
 	local prefs 			= LrPrefs.prefsForPlugin()
-	local PSUploaderPath 	= prefs.PSUploaderPath
+	local convertprog 		= prefs.convertprog
+	local dcrawprog 		= prefs.dcrawprog
 	local ffmpegprog 		= prefs.ffmpegprog
 	local videoConvPath 	= LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn)
 	local h 				= {} -- the handle
 
-	writeLogfile(4, "PSConvert.new: PSUploaderPath= " .. PSUploaderPath .. "\n")
-	if not PSDialogs.validatePSUploadProgPath(nil, PSUploaderPath) then
-		writeLogfile(1, "PSConvert.new: Bad PSUploaderPath= " .. PSUploaderPath .. "!\n")
+	if 		not PSDialogs.validateProgram(nil, convertprog)
+		or 	not PSDialogs.validateProgram(nil, dcrawprog)
+		or 	(includeVideos and not PSDialogs.validateProgram(nil, ffmpegprog))
+	then
+		writeLogfile(1, string.format("PSConvert.new: one or more missing tools: convert: '%s', dcraw '%s', ffmpeg: '%s'\n", convertprog, dcrawprog, iif(includeVideos, 'not required', ffmpegprog)))
 		return nil
 	end
 
-	local convertprog	= 'convert'
-	local dcrawprog		= 'dcraw'
-
-	local progExt = getProgExt()
-	if progExt then
-		convertprog = LrPathUtils.addExtension(convertprog, progExt)
-		dcrawprog = LrPathUtils.addExtension(dcrawprog, progExt)
-	end
-	
-	h.conv =		LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), convertprog)
---	h.conv =		"C:/Program Files/ImageMagick-7.0.8-Q16/convert.exe"
-	h.dcraw = 		iif(WIN_ENV, 
-						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'ImageMagick'), dcrawprog),
-						LrPathUtils.child(LrPathUtils.child(PSUploaderPath, 'dcraw'), dcrawprog))
+	h.conv =		convertprog
+	h.dcraw = 		dcrawprog
 	h.ffmpeg = 		ffmpegprog
 
 	PSConvert.convOptions = PSConvert.getVideoConvPresets()
-	
+
 	if not PSConvert.convOptions then
 		writeLogfile(1, string.format("PSConvert.new: video preset file '%s' is not a valid JSON file!\n",  videoConvPath))
 		local action = LrDialogs.confirm("Video Conversion", 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
@@ -233,7 +231,7 @@ function PSConvert.new()
 		end	
 		return nil
 	end
-	
+
 	writeTableLogfile(4, "VideoConvPresets", PSConvert.convOptions)
 
 	writeLogfile(3, "PSConvert.new:\n\t\tconv:         '" .. h.conv ..   "'\n\t\tdcraw:        '" .. h.dcraw .. "'" .. 
@@ -629,7 +627,7 @@ end
 
 -- convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotate, videoQuality, dstVideoFilename) --------------------------
 --[[ 
-	converts a video to an mp4 with a given resolution using the ffmpeg and qt-faststart tool
+	converts a video to an mp4 with a given resolution using the ffmpeg tool
 	h					conversionHandle
 	srcVideoFilename	the src video file
 	vinfo				orig video metadata info

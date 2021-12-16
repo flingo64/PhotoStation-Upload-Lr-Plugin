@@ -9,10 +9,10 @@ Dialogs and validations for Photo StatLr
 	- validateDirectory
 	- validateProgram
 	- validatePSUploadProgPath
-	
-	- psUploaderProgView
+
+	- converterToolsView
 	- exiftoolProgView
-	
+
 	- targetPhotoStationView
 	- thumbnailOptionsView
 	- videoOptionsView
@@ -22,8 +22,8 @@ Dialogs and validations for Photo StatLr
 	- downloadOptionsView
 	- publishModeView
 	- downloadModeView
-	- loglevelView 
-		
+	- loglevelView
+
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -218,22 +218,21 @@ end
 -------------------------------------------------------------------------------
 -- validateDirectory: check if a given path points to a local directory
 function PSDialogs.validateDirectory( view, path )
-	if LrFileUtils.exists(path) ~= 'directory' then 
+	if LrFileUtils.exists(path) ~= 'directory' then
 		return false, path
 	end
-	
+
 	return true, LrPathUtils.standardizePath(path)
 end
 
 -------------------------------------------------------------------------------
--- validateProgram: check if a given path points to a local program
+-- validateProgram: check if a given path points to a local program file
 function PSDialogs.validateProgram( view, path )
-	if LrFileUtils.exists(path) ~= 'file'
-	or getProgExt() and string.lower(LrPathUtils.extension( path )) ~= getProgExt() then
+	if LrFileUtils.exists(path) ~= 'file' then
 		return false, path
 	end
 
-	return true, LrPathUtils.standardizePath(path)	
+	return true, LrPathUtils.standardizePath(path)
 end
 
 -------------------------------------------------------------------------------
@@ -244,32 +243,6 @@ function PSDialogs.validatePluginFile( view, path )
 	end
 
 	return true, path	
-end
-
--------------------------------------------------------------------------------
--- validatePSUploadProgPath:
---	check if a given path points to the root directory of the Synology Photo Station Uploader tool 
---		we require the following converters that ship with the Uploader:
---			- ImageMagick/convert(.exe)
---			- ffmpeg/ffpmeg(.exe)
---			- ffpmpeg/qt-faststart(.exe)
-function PSDialogs.validatePSUploadProgPath(view, path)
-	local convertprog = 'convert'
-	local ffmpegprog = 'ffmpeg'
-
-	local progExt = getProgExt()
-	if progExt then
-		convertprog = LrPathUtils.addExtension(convertprog, progExt)
-		ffmpegprog = LrPathUtils.addExtension(ffmpegprog, progExt)
-	end
-	
-	if LrFileUtils.exists(path) ~= 'directory' 
-	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ImageMagick'), convertprog))
-	or not LrFileUtils.exists(LrPathUtils.child(LrPathUtils.child(path, 'ffmpeg'), ffmpegprog)) then
-		return false, path
-	end
-
-	return true, LrPathUtils.standardizePath(path)
 end
 
 -------------------------------------------------------------------------------
@@ -294,15 +267,19 @@ function PSDialogs.updateDialogStatus( propertyTable )
 	local prefs = LrPrefs.prefsForPlugin()
 
 	local message = nil
-	
+
 	repeat
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
-		
+
 		-- ############### Pure Export/Publish Settings ##########################
 		if not propertyTable.isCollection then
-			if propertyTable.thumbGenerate and not PSDialogs.validatePSUploadProgPath(nil, prefs.PSUploaderPath) then
-				message = LOC "$$$/PSUpload/Dialogs/Messages/PSUploadPathMissing=Missing or incorrect Synology Photo Station Uploader path. Fix it in Plugin Manager settings section." 
+			if 		propertyTable.thumbGenerate
+				and (	not PSDialogs.validateProgram(nil, prefs.convertprog)
+					or 	not PSDialogs.validateProgram(nil, prefs.dcrawprog)
+					)
+			then
+				message = LOC "$$$/PSUpload/Dialogs/Messages/ConverterPathMissing=Missing or incorrect path to converter tools. Fix it in Plugin Manager settings section."
 				break
 			end
 
@@ -713,47 +690,47 @@ function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
     		},
     	}
 end
-	
+
 -------------------------------------------------------------------------------
--- psUploaderProgView(f, propertyTable)
-function PSDialogs.psUploaderProgView(f, propertyTable)
+-- converterToolsView(f, propertyTable)
+function PSDialogs.converterToolsView(f, propertyTable)
 	return
         f:group_box {
-			title	= 'Synology Photo Station Uploader',
+			title	= 'Converter Tools',
 			fill_horizontal = 1,
-			
+
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/PSUploaderDescription=Enter the path where 'Synology Photo Station Uploader' is installed.\nRequired, if you want to generate thumbs locally or upload videos.\n", 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConverterDescription=Enter the paths of 'ImageMagick convert' and 'dcraw'.\nRequired, if you want to generate thumbs locally or upload videos.\n", 
     			},
     		},
-    
+
     		f:row {
     			f:static_text {
-    				title 			= "Synology PS Uploader:",
+    				title 			= "ImageMagick convert:",
     				alignment 		= 'right',
     				width 			= share 'labelWidth',
     			},
-    
+
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
     				fill_horizontal = 1,
-    				value 			= bind 'PSUploaderPath',
-    				validate 		= PSDialogs.validatePSUploadProgPath,
+    				value 			= bind 'convertprog',
+    				validate 		= PSDialogs.validateProgram,
     			},
     		},
-    
-    		f:row {   			
+
+    		f:row {
      			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
-    					propertyTable.PSUploaderPath = PSConvert.defaultInstallPath
+    					propertyTable.convertprog = PSConvert.defaultInstallPathIMConvert
     				end,
-    			},   			
+    			},
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
@@ -763,7 +740,7 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     				action 			= function()
     					LrShell.revealInShell(getRootPath())
     				end,
-    			},   			
+    			},
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
@@ -771,9 +748,57 @@ function PSDialogs.psUploaderProgView(f, propertyTable)
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
-   						LrHttp.openUrlInBrowser(PSConvert.downloadUrl)
+   						LrHttp.openUrlInBrowser(PSConvert.downloadUrlIMConvert)
     				end,
-    			},   			
+    			},
+    		},
+
+    		f:row {
+    			f:static_text {
+    				title 			= "dcraw:",
+    				alignment 		= 'right',
+    				width 			= share 'labelWidth',
+    			},
+
+    			f:edit_field {
+    				truncation 		= 'middle',
+    				immediate 		= true,
+    				fill_horizontal = 1,
+    				value 			= bind 'dcrawprog',
+    				validate 		= PSDialogs.validateProgram,
+    			},
+    		},
+
+    		f:row {
+     			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+    					propertyTable.dcrawprog = PSConvert.defaultInstallPathDcraw
+    				end,
+    			},
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgSearchTT=Search in Explorer/Finder.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+    					LrShell.revealInShell(getRootPath())
+    				end,
+    			},
+
+    			f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download from Web.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+   						LrHttp.openUrlInBrowser(PSConvert.downloadUrlDcraw)
+    				end,
+    			},
     		},
     	}
 end
@@ -807,7 +832,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     				validate 		= PSDialogs.validateProgram,
     			},
     		},
-    
+
     		f:row {
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
@@ -827,7 +852,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     				action 			= function()
     					LrShell.revealInShell(getRootPath())
     				end,
-    			},   			
+    			},
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
@@ -837,7 +862,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     				action 			= function()
    						LrHttp.openUrlInBrowser(PSExiftoolAPI.downloadUrl)
     				end,
-    			},   			
+    			},
     		},
     	}
 end
@@ -895,12 +920,7 @@ function PSDialogs.videoConvSettingsView(f, propertyTable)
     				alignment 		= 'right',
     				fill_horizontal = 1,
     				action 			= function()
-						local progExt = getProgExt()
-						if progExt then
-							propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), LrPathUtils.addExtension('ffmpeg', progExt))
-						else
-							propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), 'ffmpeg')
-						end
+						propertyTable.ffmpegprog = LrPathUtils.child(LrPathUtils.child(propertyTable.PSUploaderPath, 'ffmpeg'), 'ffmpeg') .. getProgExt()
     					propertyTable.videoConversionsFn = PSConvert.defaultVideoPresetsFn
     				end,
     			},
@@ -913,7 +933,17 @@ function PSDialogs.videoConvSettingsView(f, propertyTable)
     				action 			= function()
     					LrShell.revealInShell(LrPathUtils.child(_PLUGIN.path, prefs.videoConversionsFn))
     				end,
-    			},   			
+    			},
+
+				f:push_button {
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDownload=Download",
+    				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDownloadTT=Download from Web.",
+    				alignment 		= 'right',
+    				fill_horizontal = 1,
+    				action 			= function()
+   						LrHttp.openUrlInBrowser(PSConvert.downloadUrlFfmpeg)
+    				end,
+    			},
     		},
     	}
 end
