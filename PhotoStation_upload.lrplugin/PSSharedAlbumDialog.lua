@@ -4,7 +4,7 @@ PSSharedAlbumDialog.lua
 This file is part of Photo StatLr - Lightroom plugin.
 Copyright(c) 2021, Martin Messmer
 
-Management of Photo Station Shared Albums for Lightroom Photo StatLr
+Management of Photo Server Shared Albums for Lightroom Photo StatLr
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -992,7 +992,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 	
 	return LrDialogs.presentModalDialog(
 		{
-			title 		= "Manage Photo Station Shared Albums",
+			title 		= "Manage Photo Server Shared Albums",
 			contents 	= dialogContents,
 			actionVerb 	=  LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyPS=Apply to Lr and PS (online)",
 			otherVerb	=  LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyLocal=Apply to Lr (offline)",
@@ -1145,7 +1145,7 @@ function PSSharedAlbumDialog.doDialog( )
        	end
        	
 		if retcode == 'ok' and saveSharedAlbums then
-			-- uodate Shared Albums in Photo Station
+			-- uodate Shared Albums in Photo Server
        		PSSharedAlbumMgmt.writeSharedAlbumsToPS(allSharedAlbums)
 		end
 		

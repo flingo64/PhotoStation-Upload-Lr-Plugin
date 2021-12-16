@@ -294,7 +294,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			end
 
 			if propertyTable.usePersonalPS and (propertyTable.personalPSOwner == "" or propertyTable.personalPSOwner == nil ) then
-				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Photo Station to upload to"
+				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Space to upload to"
 				break
 			end
 
@@ -400,7 +400,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			
 			-- exclusive or: rating download or rating tag download
 			if propertyTable.ratingDownload and propertyTable.PS2LrRating then 
-				message = LOC "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Station."
+				message = LOC "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Server."
 				break
 			end
 			
@@ -1027,7 +1027,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 	return
         f:group_box {
         	fill_horizontal = 1,
-        	title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Target Photo Station",
+        	title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Photo Server",
         
         	f:row {
 				f:static_text {
@@ -1037,7 +1037,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				},
 				
         		f:popup_menu {
-        			tooltip			= LOC "$$$/PSUpload/ExportDialog/PSVersionListTT=Photo Station Version",
+        			tooltip			= LOC "$$$/PSUpload/ExportDialog/PSVersionListTT=Photo Server Version",
         			items 			= versionItems,
         			value 			= bind 'psVersion',
         		},
@@ -1061,7 +1061,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         		},
         
         		f:edit_field {
-        			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServernameTT=Enter the IP address or hostname of the Photo Station.\nNon-standard port may be appended as :port",
+        			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServernameTT=Enter the IP address or hostname of Photo Server.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
         			immediate 		= true,
         			fill_horizontal = 0.6,
@@ -1154,7 +1154,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 
 			f:row {
 				f:radio_button {
-					title 			= LOC "$$$/PSUpload/ExportDialog/StandardPS=Std Photo Station",
+					title 			=	LOC "$$$/PSUpload/ExportDialog/StandardPS=Shared Space",
 					alignment 		= 'left',
 					width 			= share 'labelWidth',
 					value 			= bind 'usePersonalPS',
@@ -1162,14 +1162,14 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				},
 
 				f:radio_button {
-					title 			= LOC "$$$/PSUpload/ExportDialog/PersonalPS=Personal Photo Station of User:",
+					title 			= LOC "$$$/PSUpload/ExportDialog/PersonalPS=Personal Space of User:",
 					alignment 		= 'left',
 					value 			= bind 'usePersonalPS',
 					checked_value 	= true,
 				},
 
 				f:edit_field {
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/PersonalPSTT=Enter the name of the owner of the Personal Photo Station you want to upload to.",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/PersonalPSTT=Enter the name of the owner of the Personal Space you want to upload to.",
 					truncation 		= 'middle',
 					immediate 		= true,
 					fill_horizontal = 1,
@@ -1187,7 +1187,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				},
 	
 				f:edit_field {
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/UsernameTT=Enter the username for Photo Station access.",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/UsernameTT=Enter the username for Photo Server access.",
 					truncation 		= 'middle',
 					immediate 		= true,
 					fill_horizontal = 1,
@@ -1200,7 +1200,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				},
 	
 				f:password_field {
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/PasswordOptTT=Enter the password for Photo Station access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/PasswordOptTT=Enter the password for Photo Server access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
 					truncation 		= 'middle',
 					immediate 		= true,
 					fill_horizontal = 1,
@@ -1551,7 +1551,7 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 				-- else
 				f:checkbox {
     				title 		= LOC "$$$/PSUpload/ExportDialog/StoreDstRoot=Target Album:",
-    				tooltip 	= LOC "$$$/PSUpload/ExportDialog/StoreDstRootTT=Enter Target Album here or you will be prompted for it when the upload starts.",
+    				tooltip 	= LOC "$$$/PSUpload/ExportDialog/StoreDstRootTT=Enter target folder here or you will be prompted for it when the upload starts.",
     				alignment 	= 'left',
     				width 		= share 'labelWidth',
     				value 		= bind 'storeDstRoot',
@@ -1560,7 +1560,7 @@ function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
 			),
 
 			f:edit_field {
-					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in Photo Station)",
+					tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target folder.",
 				truncation 		= 'middle',
 --				width_in_chars 	= 16,
 				immediate 		= true,
@@ -1598,7 +1598,7 @@ function PSDialogs.dstRootForSetView(f, propertyTable)
 			},
 
 			f:edit_field {
-				tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target directory below the diskstation share '/photo' or '/home/photo'\n(may be different from the Album name shown in Photo Station)",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/DstRootTT=Enter the target folder.",
 				value = bind 'baseDir',
 				truncation = 'middle',
 				immediate = true,
@@ -1654,7 +1654,7 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 			conditionalItem(propertyTable.isCollection, f:row {
 				f:checkbox {
 					title 			= LOC "$$$/PSUpload/ExportDialog/SortPhotos=Sort Photos",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in Photo Station according to sort order of Published Collection.\nNote: Sorting is only possible for collections with 'Sort: Custom Order' when uploading to a flat album.",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/SortPhotosTT=Sort photos in Photo Server according to sort order of Published Collection.\nNote: Sorting is only possible for collections with 'Sort: Custom Order' when uploading to a flat album.",
 					alignment 		= 'left',
 					fill_horizontal = 1,
 					value 			= bind 'sortPhotos',
@@ -1679,7 +1679,7 @@ function PSDialogs.photoNamingView(f, propertyTable)
 			f:row {
 				f:checkbox {
     				title 		= LOC "$$$/PSUpload/ExportDialog/RenamePhoto=Rename To:",
-    				tooltip 	= LOC "$$$/PSUpload/ExportDialog/RenamePhotoTT=Rename photos in Photo Station acc. to a unique naming schema.",
+    				tooltip 	= LOC "$$$/PSUpload/ExportDialog/RenamePhotoTT=Rename photos in Photo Server acc. to a unique naming schema.",
     				alignment 	= 'left',
     				width 		= share 		'labelWidth',
     				value 		= bind 			'renameDstFile',
@@ -1698,7 +1698,7 @@ function PSDialogs.photoNamingView(f, propertyTable)
 
 				f:checkbox {
 					title 			= LOC "$$$/PSUpload/ExportDialog/RAWandJPG=RAW+JPG to same Album",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\nNote: All Non-JPEG photos will be renamed in Photo Station to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\nIMG-001.RW2 --> IMG-001_RW2.JPG\nIMG-001.JPG --> IMG-001.JPG",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/RAWandJPGTT=Allow Lr-developed RAW+JPG from camera to be uploaded to same Album.\nNote: All Non-JPEG photos will be renamed in Photo Server to <photoname>_<OrigExtension>.<OutputExtension>. E.g.:\nIMG-001.RW2 --> IMG-001_RW2.JPG\nIMG-001.JPG --> IMG-001.JPG",
 					alignment 		= 'left',
 					fill_horizontal = 0.1,
 					value 			= bind 'RAWandJPG',
@@ -1724,7 +1724,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 	
 	return	f:group_box {
 		fill_horizontal = 1,
-		title = LOC "$$$/PSUpload/ExportDialog/UploadOpt=Metadata Upload Options /Translations (To Photo Station)",
+		title = LOC "$$$/PSUpload/ExportDialog/UploadOpt=Metadata Upload Options /Translations (To Photo Server)",
 
 		f:row {
 			f:checkbox {
@@ -1772,7 +1772,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegions=Faces",
-    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Station person tags\n(Useful for Photo Station version < 6.5)",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Server person tags\n(Useful for Photo Station version < 6.5)",
     			fill_horizontal = 1,
     			value 			= bind 'exifXlatFaceRegions',
 				visible			= bind(checkPersonSupport),
@@ -1780,7 +1780,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     	
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLabel=Color Label Tag",
-    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLabelTT=Translate Lr color label (red, green, ...) to Photo Station '+color' general tag",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLabelTT=Translate Lr color label (red, green, ...) to Photo Server '+color' general tag",
     			fill_horizontal = 1,
     			value 			= bind 'exifXlatLabel',
 				visible			= bind(checkTagSupport),
@@ -1788,7 +1788,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateRating=Rating Tag",
-    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateRatingTT=Translate Lr rating (*stars*) to Photo Station '***' general tag\n(Useful for Photo Station version < 6.5)",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateRatingTT=Translate Lr rating (*stars*) to Photo Server '***' general tag\n(Useful for Photo Station version < 6.5)",
     			fill_horizontal = 1,
     			value 			= bind 'exifXlatRating',
 				visible			= bind(checkTagSupport),
@@ -1802,7 +1802,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLocation=Location Tag:",
-    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLocationTT=Translate Lr location tags to Photo Station location tag",
+    			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLocationTT=Translate Lr location tags to Photo Server location tag",
     			value 			= bind 'xlatLocationTags',
    				fill_horizontal = 1,
 				visible			= bind(checkLocationSupport),
@@ -1914,12 +1914,12 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		bind_to_object = propertyTable,
 
 		fill_horizontal = 1,
-		title = LOC "$$$/PSUpload/ExportDialog/DownloadOpt=Metadata Download Options / Translations  (From Photo Station)",
+		title = LOC "$$$/PSUpload/ExportDialog/DownloadOpt=Metadata Download Options / Translations  (From Photo Server)",
 
 		f:row {
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/TitleDownload=Title",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TitleDownloadTT=Download photo title tag from Photo Station",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TitleDownloadTT=Download photo title tag from Photo Server",
 				fill_horizontal = 1,
 				value 			= bind 'titleDownload',
 				visible			= bind(checkTitleSupport),
@@ -1927,7 +1927,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/CaptionDownload=Description",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CaptionDownloadTT=Download photo description (caption) from Photo Station",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CaptionDownloadTT=Download photo description (caption) from Photo Server",
 				fill_horizontal = 1,
 				value 			= bind 'captionDownload',
 				visible			= bind (checkDescriptionSupport),
@@ -1937,13 +1937,13 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
     			fill_horizontal = 1,
     			f:checkbox {
     				title 			= LOC "$$$/PSUpload/CollectionSettings/LocationDownload=GPS (red)",
-    				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationDownloadTT=Download GPS info of the photo (red pin) from Photo Station",
+    				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationDownloadTT=Download GPS info of the photo (red pin) from Photo Server",
     				value 			= bind 'locationDownload',
 					visible			= bind (checkGPSSupport),
     			},
     			f:checkbox {
     				title 			= LOC "$$$/PSUpload/CollectionSettings/LocationTagDownload=GPS (blue)",
-    				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationTagDownloadTT=Download GPS info of the photo's location tag (blue pin) from Photo Station.\nRed pin has preference over blue pin. Download of blue pin GPS takes significantly more time!",
+    				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/LocationTagDownloadTT=Download GPS info of the photo's location tag (blue pin) from Photo Server.\nRed pin has preference over blue pin. Download of blue pin GPS takes significantly more time!",
     				value 			= bind 'locationTagDownload',
     				enabled			= bind 'locationDownload',
 					visible			= bind (checkGPSSupport),
@@ -1952,7 +1952,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/RatingDownload=Rating",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/RatingDownloadTT=Download rating from Photo Station\n(Requires Photo Station 6.5 or later)",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/RatingDownloadTT=Download rating from Photo Server",
 				fill_horizontal = 1,
 				value 			= bind 'ratingDownload',
 				visible			= bind(checkRatingSupport),
@@ -1963,7 +1963,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		f:row {
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/TagsDownload=Tags/Keywords",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TagsDownloadTT=Download tags from Photo Station to Lr keywords",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/TagsDownloadTT=Download tags from Photo Server to Lr keywords",
 				fill_horizontal = 1,
 				value 			= bind 'tagsDownload',
 				visible			= bind (checkTagSupport),
@@ -1972,7 +1972,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 			f:checkbox {
 				fill_horizontal = 1,
 				title 			= LOC "$$$/PSUpload/CollectionSettings/PSTranslateFaces=Faces",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download and translate Photo Station People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download and translate Photo Server People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
 				value 			= bind 'PS2LrFaces',
 				enabled 		= bind 'exifXlatFaceRegions',
 				visible			= bind (checkPersonSupport),
@@ -1980,7 +1980,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/PSTranslateLabel=Color Label Tag",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateLabelTT=Translate Photo Station '+color' general tag to Lr color label (red, green, ...)",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateLabelTT=Translate Photo Server '+color' general tag to Lr color label (red, green, ...)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrLabel',
 				enabled 		= bind 'exifXlatLabel',
@@ -1989,7 +1989,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/PSTranslateRating=Rating Tag",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateRatingTT=Translate Photo Station '***' general tag to Lr rating\n(Useful for Photo Station version < 6.5)",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateRatingTT=Translate Photo Server '***' general tag to Lr rating\n(Useful for Photo Server version < 6.5)",
 				fill_horizontal = 1,
 				value 			= bind 'PS2LrRating',
 				enabled 		= bind 'exifXlatRating',
@@ -2002,7 +2002,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 		f:row {
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Private Comments",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download photo comments from Photo Station (internal) to Lr Comments panel",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/CommentsDownloadTT=Download photo comments from Photo Server (internal) to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'commentsDownload',
 				visible			= bind (checkPrivCommentSupport),
@@ -2010,7 +2010,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/PublicCommentsDownload=Public Comments",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicCommentsDownloadTT=Download photo comments from Photo Station public shares to Lr Comments panel",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicCommentsDownloadTT=Download photo comments from Photo Server public shares to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'pubCommentsDownload',
 				visible			= bind (checkPubCommentSupport),
@@ -2018,7 +2018,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/PublicColorDownload=Public Color",
-				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicColorDownloadTT=Download photo color from Photo Station public shares to Lr Comments panel",
+				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PublicColorDownloadTT=Download photo color from Photo Server public shares to Lr Comments panel",
 				fill_horizontal = 1,
 				value 			= bind 'pubColorDownload',
 				visible			= bind (checkPubLabelSupport),
@@ -2033,10 +2033,10 @@ function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 	local publishModeItems = {
 		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptAsk=Ask me later",																								value 	= 'Ask' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptUpload=Upload: Normal publishing of photos",														value 	= 'Publish' },
-		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMetadata=MetadataUpload: Upload only metadata (for photos already in Photo Station)",				value 	= 'Metadata' },
-		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptChkEx=CheckExisting: Set Unpublished to Published if existing in Photo Station.",					value 	= 'CheckExisting' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMetadata=MetadataUpload: Upload only metadata (for photos already in Photo Server)",				value 	= 'Metadata' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptChkEx=CheckExisting: Set Unpublished to Published if existing in Photo Server.",					value 	= 'CheckExisting' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptChkMv=CheckMoved: Set Published to Unpublished if moved locally.",									value 	= 'CheckMoved' },
-		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMove=MovePhotos: Move photos in Photo Station (for photos moved in Lr or changed target album).",	value 	= 'MovePhotos' },
+		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMove=MovePhotos: Move photos in Photo Server (for photos moved in Lr or changed target album).",	value 	= 'MovePhotos' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptConv=Convert: Convert collection to current version.",												value 	= 'Convert' },
 	}
 	

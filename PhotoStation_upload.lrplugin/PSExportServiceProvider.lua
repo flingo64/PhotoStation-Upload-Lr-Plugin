@@ -67,26 +67,26 @@ exportServiceProvider.canExportVideo = true	-- yes, we can
 	
 exportServiceProvider.exportPresetFields = {
 		-- Photo Server parameters
-		{ key = 'proto', 			default = 'http' },	-- transport protocol for Photo Station upload
-		{ key = 'servername', 		default = '' },		-- name/address of the Photo Station, may include ':port' extension
+		{ key = 'proto', 			default = 'http' },	-- transport protocol for Photo Server upload
+		{ key = 'servername', 		default = '' },		-- name/address of the Photo Server, may include ':port' extension
 		{ key = 'serverTimeout', 	default = 10 },		-- http timeout
 		{ key = 'serverUrl', 		default = '' },		-- proto + servername
-		{ key = 'psPath', 			default = '/photo/' },		-- Standard or Personal Photo Station path
-		{ key = 'psUrl', 			default = '' },		-- serverUrl + Photo Station path (used for synopsis)
-		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal Photo Station
-		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Station to upload to
-		{ key = 'username', 		default = '' },		-- account for Photo Station upload
+		{ key = 'psPath', 			default = '/photo/' },		-- Standard or Personal Photo Server path
+		{ key = 'psUrl', 			default = '' },		-- serverUrl + Photo Server path (used for synopsis)
+		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal Photo Server
+		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Server to upload to
+		{ key = 'username', 		default = '' },		-- account for Photo Server upload
 		{ key = 'password', 		default = '' },		-- guess what...
-		{ key = 'psVersion', 		default = 68 },		-- Photo Station version: default PS 6.8
+		{ key = 'psVersion', 		default = 68 },		-- Photo Server version: default PS 6.8
 		{ key = 'uploadTimestamp',	default = 'capture' },-- file timestamp for uploaded photos: 'capture', 'upload' or 'mixed' (photos=upload, videos=capture)
 
 		-- target album parameters
 		{ key = 'copyTree', 		default = false },	-- upload method: flat copy or tree mirror
 		{ key = 'srcRoot', 			default = '' },		-- local path to root of picture folders (only used if copyTree)
 		{ key = 'storeDstRoot', 	default = true },	-- enter destination Album in Export dialog or later
-		{ key = 'dstRoot', 			default = '' },		-- destination Album on Photo Station: no leading or trailing slash required
+		{ key = 'dstRoot', 			default = '' },		-- destination Album on Photo Server: no leading or trailing slash required
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
-		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Station acc. to collection sort order 
+		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Server acc. to collection sort order 
 
 		-- upload options / exif translation parameters
 		{ key = 'exifTranslate', 		default = false },	-- make exif translations: requires exiftool
@@ -130,8 +130,8 @@ exportServiceProvider.exportPresetFields = {
 
 		-- Secondary Server
 		{ key = 'useSecondAddress',		default = false },		-- specify a secondoray (external) server address
-		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary Photo Station upload
-		{ key = 'servername2', 			default = '' },			-- name/address of the secondary Photo Station, may include ':port' extension
+		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary Photo Server upload
+		{ key = 'servername2', 			default = '' },			-- name/address of the secondary Photo Server, may include ':port' extension
 		{ key = 'serverTimeout2',	 	default = 10 },			-- http timeout
 		
 		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, CheckExisting, ...

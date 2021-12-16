@@ -89,12 +89,12 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 	local result = {
 	
 		{
-			title = "Photo Station",
+			title = "Photo StatLr - Photo Server",
 			
 			synopsis = bind { key = 'psUrl', object = propertyTable },
 
 
-			-- ================== Target Photo Station ==========================================================
+			-- ================== Target Photo Server ==========================================================
 
 			PSDialogs.targetPhotoStationView(f, propertyTable),
 

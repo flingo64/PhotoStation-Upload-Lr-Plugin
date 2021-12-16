@@ -4,7 +4,7 @@ PSSharedAlbumMgmt.lua
 This file is part of Photo StatLr - Lightroom plugin.
 Copyright(c) 2021, Martin Messmer
 
-Management of Photo Station Shared Albums for Lightroom Photo StatLr
+Management of Photo Server Shared Albums for Lightroom Photo StatLr
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -433,7 +433,7 @@ end
 
 -------------------------------------------------------------------------------
 -- PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
--- update all modified/added/deleted Photo Station Shared Albums
+-- update all modified/added/deleted Photo Server Shared Albums
 function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 	local numDeletes, numAddOrMods, numRenames = 0, 0, 0
 	local numFailDeletes, numFailAddOrMods, numFailRenames = 0, 0, 0
@@ -460,7 +460,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
             	local sessionSuccess, reason	= openSession(publishSettings, nil, 'ManageSharedAlbums')
             	if not sessionSuccess then
             		if reason ~= 'cancel' then
-            			showFinalMessage("Photo StatLr: Update Photo Station SharedAlbums failed!", reason, "critical")
+            			showFinalMessage("Photo StatLr: Update Photo Server SharedAlbums failed!", reason, "critical")
             		end
             		closeLogfile()
             		writeLogfile(3, "PSSharedAlbumMgmt.writeSharedAlbumsToPS(): nothing to do\n")
@@ -475,7 +475,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 		
 		if sharedAlbum.wasDeleted then
 			if  not sharedAlbum.wasAdded then  
-    			-- delete Shared Album in Photo Station
+    			-- delete Shared Album in Photo Server
     			writeLogfile(3, string.format('writeSharedAlbumsToPS: deleting %s.\n', sharedAlbum.sharedAlbumName))
     			if publishSettings.photoServer:deleteSharedAlbum(sharedAlbum.sharedAlbumName) then
     				numDeletes = numDeletes + 1
@@ -486,7 +486,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 		else
 		
     		if sharedAlbum.wasRenamed and not sharedAlbum.wasAdded then
-    			-- rename Shared Album in Photo Station
+    			-- rename Shared Album in Photo Server
     			writeLogfile(3, string.format('writeSharedAlbumsToPS: rename %s to %s.\n', sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
     			local success, errorCode = publishSettings.photoServer:renameSharedAlbum(sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName) 
     	
@@ -502,7 +502,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
     
     		if sharedAlbum.wasAdded or sharedAlbum.wasModified then
 				sharedAlbum.isAdvanced = iif(publishSettings.photoServer:supports(PHOTOSERVER_SHAREDALBUM_ADVANCED), true, false)
-    			-- add/modify Shared Album in Photo Station
+    			-- add/modify Shared Album in Photo Server
     			local sharedAlbumInfo, errorCode = publishSettings.photoServer:createSharedAlbumAdvanced(sharedAlbum, true)
     			if sharedAlbumInfo then
     				writeLogfile(2, string.format('writeSharedAlbumsToPS(%s): add/modify returns OK.\n', sharedAlbum.sharedAlbumName))

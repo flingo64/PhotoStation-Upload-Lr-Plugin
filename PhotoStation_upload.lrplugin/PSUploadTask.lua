@@ -4,7 +4,7 @@ PSUploadTask.lua
 This file is part of Photo StatLr - Lightroom plugin.
 Copyright(c) 2021, Martin Messmer
 
-Upload photos to Synology Photo Station via HTTP(S) WebService
+Upload photos to Synology Photo Station / Photos via HTTP(S) WebService
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ local thumbSharpening = {
 	generate all required thumbnails and upload thumbnails and the original picture as a batch.
 	The upload batch must start with any of the thumbs and end with the original picture.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
-	When uploading to Synology Photos 7, we don't need to upload the THUMB_B
+	When uploading to Synology Photos, we don't need to upload the THUMB_B
 ]]
 local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams)
 	local photoServer = exportParams.photoServer
@@ -122,17 +122,17 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 	or ((exportParams.exifXlatFaceRegions or exifXlatLabelCmd or exportParams.exifXlatRating) 
 		and not exportParams.exifTool:doExifTranslations(renderedPhotoPath, exifXlatLabelCmd))
 
-	-- wait for Photo Station semaphore
-	or not waitSemaphore("PhotoStation", dstFilename)
+	-- wait for Photo Server semaphore
+	or not waitSemaphore("PhotoServer", dstFilename)
 
 	-- upload thumbnails and original file
 	or not exportParams.photoServer:uploadPhotoFiles(dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate,
 												renderedPhotoPath, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
 	then
-		signalSemaphore("PhotoStation", dstFilename)
+		signalSemaphore("PhotoServer", dstFilename)
 		retcode = false
 	else
-		signalSemaphore("PhotoStation", dstFilename)
+		signalSemaphore("PhotoServer", dstFilename)
 		retcode = true
 	end
 
@@ -156,7 +156,7 @@ end
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
-	When uploading to Synology Photos 7, we don't need to upload the THUMB_B
+	When uploading to Synology Photos, we don't need to upload the THUMB_B
 ]]
 local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, vinfo) 
 	local photoServer = exportParams.photoServer
@@ -280,18 +280,18 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	-- if photo has a title: generate a title file  	
 	or (title_Filename and not exportParams.converter.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
 
-	-- wait for Photo Station semaphore
-	or not waitSemaphore("PhotoStation", dstFilename)
+	-- wait for Photo Server semaphore
+	or not waitSemaphore("PhotoServer", dstFilename)
 	
 	-- upload thumbnails, original video and replacement/additional videos
 	or not exportParams.photoServer:uploadVideoFiles(dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate, 
 			vid_Orig_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 			vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
 	then 
-		signalSemaphore("PhotoStation", dstFilename)
+		signalSemaphore("PhotoServer", dstFilename)
 		retcode = false
 	else 
-		signalSemaphore("PhotoStation", dstFilename)
+		signalSemaphore("PhotoServer", dstFilename)
 		retcode = true
 	end
 	
@@ -328,7 +328,7 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 	local photoServer		= exportParams.photoServer
 	local psPhoto			= photoServer.Photo.new(photoServer, dstPath, isVideo, 'photo,tag', PHOTOSERVER_USE_CACHE)
 	if not psPhoto then
-		writeLogfile(1, string.format("%s - photo not yet in Photo Station, use 'Upload' mode --> failed!\n", logMessagePrefix))
+		writeLogfile(1, string.format("%s - photo not yet in Photo Server, use 'Upload' mode --> failed!\n", logMessagePrefix))
 		return false
 	end
 	local psPhotoTags 		= psPhoto:getTags()
@@ -482,16 +482,16 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 	end
 
 	-- publish changes
-	if (not waitSemaphore("PhotoStation", dstPath)
+	if (not waitSemaphore("PhotoServer", dstPath)
 		or (metadataChanged > 0	and not psPhoto:updateMetadata())
 		or ((tagsAdded > 0 or tagsRemoved > 0) and not psPhoto:updateTags())
 	   )
 	then
-		signalSemaphore("PhotoStation", dstPath)	
+		signalSemaphore("PhotoServer", dstPath)	
 		writeLogfile(1, string.format("%s - %s --> failed!!!\n", logMessagePrefix, logChanges))
 		retcode = false
 	else
-		signalSemaphore("PhotoStation", dstPath)
+		signalSemaphore("PhotoServer", dstPath)
 		writeLogfile(2, string.format("%s - %s --> done.\n", logMessagePrefix, logChanges))
 		retcode = true
 	end
@@ -664,7 +664,7 @@ end
 
 --------------------------------------------------------------------------------
 -- movePhotos(publishedCollection, exportContext, exportParams)
--- move unpublished photos within the Photo Station to the current target album, if they were moved locally
+-- move unpublished photos within the Photo Server to the current target album, if they were moved locally
 -- photos that are already in the target album are counted as moved.
 -- photos not yet published will stay unpublished
 -- return:
@@ -760,7 +760,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 				
 				-- if photo was moved locally ... 
 				elseif publishedPhotoId ~= newPublishedPhotoId then
-					-- move photo within Photo Station
+					-- move photo within Photo Server
 					local dstDir
 
      				-- check if target Album (dstRoot) should be created 
@@ -924,8 +924,8 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 	local progressScope = exportContext:configureProgress {
 						title = nPhotos > 1
-							   and LOC( "$$$/PSUpload/Progress/Upload=Uploading ^1 photos to Photo Station", nPhotos )
-							   or LOC "$$$/PSUpload/Progress/Upload/One=Uploading one photo to Photo Station",
+							   and LOC( "$$$/PSUpload/Progress/Upload=Uploading ^1 photos to Photo Server", nPhotos )
+							   or LOC "$$$/PSUpload/Progress/Upload/One=Uploading one photo to Photo Server",
 					}
 
 	writeLogfile(2, "--------------------------------------------------------------------\n")
@@ -1020,7 +1020,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					-- remove photo at old location
 					if publishMode == 'Publish' then
 						if not exportParams.photoServer:deletePhoto(publishedPhotoId, srcPhoto:getRawMetadata('isVideo')) then
-							writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Station permissions!\n')
+							writeLogfile(1, 'Cannot delete remote photo at old path: ' .. publishedPhotoId .. ', check Photo Server permissions!\n')
 							table.insert( failures, srcPath )
 							rendition:uploadFailed("Removal of photo at old taget failed")
 							skipPhoto = true
@@ -1045,7 +1045,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				-- continue w/ next photo
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
-				-- check if photo already in Photo Station
+				-- check if photo already in Photo Server
 				local dstAlbum = ifnil(string.match(publishedPhotoId , '(.*)/[^/]+'), '/')
 				local psPhoto, errorCode = exportParams.photoServer.Photo.new(exportParams.photoServer, publishedPhotoId, 
 																		srcPhoto:getRawMetadata('isVideo'), 'photo', PHOTOSERVER_USE_CACHE)

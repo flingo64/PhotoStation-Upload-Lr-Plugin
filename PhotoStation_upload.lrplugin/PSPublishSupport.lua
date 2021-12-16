@@ -169,7 +169,7 @@ end
 --- When set to the string "disable", the "Go to Published Collection" context-menu item
  -- is disabled (dimmed) for this publish service.
 
-publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSUpload/TitleForGoToPublishedCollection=Show Album in Photo Station"
+publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSUpload/TitleForGoToPublishedCollection=Show Album in Photo Server"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses
@@ -183,7 +183,7 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 	albumPath = PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
 	
 	if PSLrUtilities.isDynamicAlbumPath(albumPath)then 
-		showFinalMessage("Photo StatLr: GoToPublishedCollection failed!", "Show Album '" .. info.publishedCollection:getName() .. "' in Photo Station: can't open a dynamic target album!", "info")
+		showFinalMessage("Photo StatLr: GoToPublishedCollection failed!", "Show Album '" .. info.publishedCollection:getName() .. "' in Photo Server: can't open a dynamic target album!", "info")
 		closeLogfile()
 		return
 	end
@@ -208,7 +208,7 @@ end
  -- "Go to Published Photo" context-menu item, allowing you to use something more appropriate to
  -- your service. Set to the special value "disable" to disable (dim) the menu item for this service. 
 
-publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSUpload/TitleForGoToPublishedPhoto=Show Photo in Photo Station"
+publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSUpload/TitleForGoToPublishedPhoto=Show Photo in Photo Server"
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user chooses the
@@ -944,7 +944,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     								commentText = comment.comment,
     								dateCreated = commentTimestamp,
        								username = ifnil(comment.email, ''),
-      								realname = ifnil(comment.name, '') .. '@PS (Photo Station internal)',
+      								realname = ifnil(comment.name, '') .. '@PS (Photo Server internal)',
     							}
     				table.insert(commentListLr, commentLr)
    
@@ -1208,7 +1208,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
 		
-		-- get tags and translated tags (rating, label) from Photo Station if configured (via photo_tag API)
+		-- get tags and translated tags (rating, label) from Photo Server if configured (via photo_tag API)
 		local doGetTags = 		publishSettings.tagsDownload
 							or  publishSettings.locationTagDownload
 							or  publishSettings.PS2LrFaces
@@ -1228,14 +1228,14 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		else
 
 			------------------------------------------------------------------------------------------------------
-    		-- get title, caption, rating, location from Photo Station
+    		-- get title, caption, rating, location from Photo Server
 			if publishSettings.titleDownload 	then titlePS = psPhoto:getTitle() end 
 			if publishSettings.captionDownload	then captionPS = psPhoto:getDescription() end 
 			if publishSettings.ratingDownload	then ratingPS = tonumber(psPhoto:getRating()) end 
 			if publishSettings.locationDownload	then gpsPS = psPhoto:getGPS() end
 
     		------------------------------------------------------------------------------------------------------
-    		-- get tags and translated tags (rating, label) from Photo Station if configured (via photo_tag API)
+    		-- get tags and translated tags (rating, label) from Photo Server if configured (via photo_tag API)
     		if 		publishSettings.tagsDownload
     			-- GPS coords from locations only if no photo gps available
     			or  (publishSettings.locationTagDownload and  gpsPS.latitude == 0 and gpsPS.longitude == 0)
@@ -1510,7 +1510,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		
     		------------------------------------------------------------------------------------------------------
 
-    		-- if anything changed in Photo Station, change value in Lr
+    		-- if anything changed in Photo Server, change value in Lr
     		if titleChanged 
     		or captionChanged 
     		or ratingChanged 
@@ -1675,7 +1675,7 @@ end
 		return false
 	end
 
-	-- add comment to photo in Photo Station album, comments to public share is not possible 
+	-- add comment to photo in Photo Server album, comments to public share is not possible 
 	return publishSettings.photoServer:addPhotoComment(remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentText, publishSettings.username .. '@Lr')
 end
 --------------------------------------------------------------------------------

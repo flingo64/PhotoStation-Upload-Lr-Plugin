@@ -812,14 +812,14 @@ function openSession(exportParams, publishedCollection, operation)
 			exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
 			if not exportParams.photoServerLoggedIn then
 				local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
-										iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station"), 
+										iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space"), 
 										iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
 										exportParams.serverUrl,
 										exportParams.photoServer.getErrorMsg(errorCode))
 				writeLogfile(1, errorMsg)
 				return 	false, errorMsg
 			end
-			writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Photo Station of ", "Standard Photo Station") .. 
+			writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space") .. 
 									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. 
 									"(" .. exportParams.serverUrl .. ") OK\n")
 		end
@@ -909,7 +909,7 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 
 			f:edit_field {
 				value = bind 'username',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/UsernameTT=Enter the username for Photo Station access.",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/UsernameTT=Enter the username for Photo Server access.",
 				truncation = 'middle',
 				immediate = true,
 				width_in_chars = 16,
@@ -928,7 +928,7 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 
 			f:password_field {
 				value = bind 'password',
-				tooltip = LOC "$$$/PSUpload/ExportDialog/PasswordTT=Enter the password for Photo Station access.",
+				tooltip = LOC "$$$/PSUpload/ExportDialog/PasswordTT=Enter the password for Photo Server access.",
 				truncation = 'middle',
 				immediate = true,
 				width = share 'labelWidth',
