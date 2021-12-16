@@ -1660,7 +1660,7 @@ end
 
 	-- check if PhotoServer supports upload of comments
 	if not PHOTOSERVER_API.supports(publishSettings.psVersion, PHOTOSERVER_METADATA_COMMENT_PRIV) then
-		showFinalMessage("Photo StatLr: AddCommentToPublishedPhoto - nothing to do!", "Not supported by PhotoServer", "warning")
+		showFinalMessage("Photo StatLr: AddCommentToPublishedPhoto - nothing to do!", "Not supported by this Photo Server", "warning")
 		closeLogfile()
 		return false
 	end
