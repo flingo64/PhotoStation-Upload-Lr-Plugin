@@ -244,7 +244,7 @@ local PSAPIerrorMsgs = {
 	[1002]  = 'Http error: no response data, no errorcode in response header',
 	[1003]  = 'Http error: No JSON response data',
 	[12007] = 'Http error: cannotFindHost',
-	[12029] = 'Http error: cannotConnectToHost',
+	[12029] = 'Http error: cannotConnectToHost: check TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
 	[12038] = 'Http error: serverCertificateHasUnknownRoot',
 }
 
