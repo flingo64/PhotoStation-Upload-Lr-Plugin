@@ -82,7 +82,7 @@
 "$$$/PSUpload/ExportDialog/CopyTreeTT=Toutes les photos/vidéos seront copiées dans un répertoire en miroir sous l'album de destination"
 "$$$/PSUpload/ExportDialog/CreateDstRoot=Créer l'album, si nécessaire"
 "$$$/PSUpload/ExportDialog/DownloadOpt=Options de téléchargement/traduction de métadonnées (de Photo Station)"
-"$$$/PSUpload/ExportDialog/DstFileTimestamp/PleaseTranslate=Timestamp of uploaded files:"
+"$$$/PSUpload/ExportDialog/DstFileTimestamp/PleaseTranslate=Upload timestamp:"
 "$$$/PSUpload/ExportDialog/DstFileTimestampTT/PleaseTranslate=Choose the file timestamp for the uploaded photo/video"
 "$$$/PSUpload/ExportDialog/DstRootTT=Entrez le dossier cible sous le dossier partagé '/photo' ou '/home/photo'^n(Peut être différent du nom de l'album montré dans Photo Station)"
 "$$$/PSUpload/ExportDialog/FlatCopy=Copie à plat"
