@@ -1598,11 +1598,12 @@ end
 -- uploadPhotoFiles
 -- upload photo plus its thumbnails (if configured)
 function Photos.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, photo_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
+	dstFilePath = dstDir .. "/" .. dstFilename
 	return
 		-- HACK: Synology Photos will not overwrite photos w/ changed metadata, but will duplicate the photo, so we have to delete it ourself
-			Photos.deletePhoto(h, dstDir .. "/" .. dstFilename, false)
+			(not Photos.getPhotoId(h, dstFilePath) or Photos.deletePhoto(h, dstFilePath, false))
 		and Photos.uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'image/jpeg', photo_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
-		and	pathIdCacheCleanup(h.userid, dstDir .. "/" .. dstFilename)
+		and	pathIdCacheCleanup(h.userid, dstFilePath)
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -1614,11 +1615,12 @@ end
 function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, video_Filename, title_Filename, 
 										thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 										vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
+	dstFilePath = dstDir .. "/" .. dstFilename
 	return
 		-- HACK: Synology Photo will not overwrite photos w/ changed metadata, but will duplicate the photo, so we have to delete it ourself
-			Photos.deletePhoto(h, dstDir .. "/" .. dstFilename, false)
+			(not Photos.getPhotoId(h, dstFilePath) or Photos.deletePhoto(h, dstFilePath, false))
 		and	Photos.uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'video/mp4', video_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
-		and	pathIdCacheCleanup(h.userid, dstDir .. "/" .. dstFilename)
+		and	pathIdCacheCleanup(h.userid, dstFilePath)
 
 end
 
