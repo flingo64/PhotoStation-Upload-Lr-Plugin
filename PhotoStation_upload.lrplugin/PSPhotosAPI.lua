@@ -20,8 +20,6 @@ Photos object:
 	- movePhoto
 	- deletePhoto
 
-	- listAlbumItems
-	- listAlbumSubfolders
 	- sortAlbumPhotos
 	- deleteAlbum
 
@@ -268,7 +266,7 @@ end
 -- returns
 --		subfolderList:	table of subfolder infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-function Photos.listAlbumSubfolders(h, folderPath, folderId)
+local function listAlbumSubfolders(h, folderPath, folderId)
 	local apiParams = {
 			id				= folderId or Photos.getFolderId(h, folderPath),
 			additional		= "[]",
@@ -292,7 +290,7 @@ end
 -- returns
 --		itemList:		table of item infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-function Photos.listAlbumItems(h, folderPath, folderId)
+local function listAlbumItems(h, folderPath, folderId)
 	local apiParams = {
 			folder_id		= folderId or Photos.getFolderId(h, folderPath),
 			additional		= iif(h.serverVersion == 70,
@@ -327,10 +325,10 @@ local pathIdCache = {
 	cache 			= {},
 	timeout			= 300,
 	listFunction	= {
-		["folder"]	= Photos.listAlbumSubfolders,
-		["item"]	= Photos.listAlbumItems
+		["folder"]	= listAlbumSubfolders,
+		["item"]	= listAlbumItems
 	},
- 	Photos.listAlbumSubfolders,
+-- 	Photos.listAlbumSubfolders,
 }
 
 ---------------------------------------------------------------------------------------------------------
@@ -472,11 +470,9 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 	h.serverVersion	= version
 
 	if usePersonalPS then
-		h.psFolderRoot	= 	'/?launchApp=SYNO.Foto.AppInstance#/personal_space/folder/'
 		h.userid 		= personalPSOwner
 	else
-		h.psFolderRoot	= 	'/?launchApp=SYNO.Foto.AppInstance#/shared_space/folder/'
-		h.userid		= 	0
+		h.userid		= 0
 	end
 	pathIdCacheInitialize(h.userid)
 
@@ -521,6 +517,16 @@ function Photos.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- basedir(area, owner)
+function Photos.basedir (area, owner)
+	if area == 'personal' then
+		return '/?launchApp=SYNO.Foto.AppInstance#/personal_space/'
+	else
+		return '/?launchApp=SYNO.Foto.AppInstance#/shared_space/'
+	end
+end
+
+---------------------------------------------------------------------------------------------------------
 -- login(h, username, passowrd)
 -- does, what it says
 function Photos.login(h, username, password)
@@ -532,13 +538,8 @@ function Photos.login(h, username, password)
 		account				= urlencode(username),
 		passwd				= urlencode(password),
 		logintype			= "local",
---		otp_code			= "",
---		enable_device_token	= "no",
---		rememberme			= "0",
---		timezone			= "+01:00",
 		hhid 				= h.hhid,
 		enable_syno_token 	= "yes",
---		ik_message =  "MRbQfACEC4kjS1SFetrwa_LKZnrkUWGxLBjuIrk0R2oyxe363W6N32S1cUdYvWQCheg55CUS5mQKbu-j4naAKZQljStTnc6dDrQ-QmrEEbgHojpnL5zAqgLepe2b0H8F",
 		launchApp 			=  "SYNO.Foto.Sharing.AppInstance",
 		app_name 			=  "SYNO.Foto.Sharing.AppInstance",
 		action 				= "external_login",
@@ -913,8 +914,8 @@ function Photos.deleteEmptyAlbumAndParents(h, folderPath)
 
 	currentFolderPath = folderPath
 	while currentFolderPath do
-		local photoInfos =  h:listAlbumItems(currentFolderPath)
-		local subfolders =  h:listAlbumSubfolders(currentFolderPath)
+		local photoInfos =  listAlbumItems(h, currentFolderPath)
+		local subfolders =  listAlbumSubfolders(h, currentFolderPath)
 
     	-- if not empty, we are ready
     	if 		(photoInfos and #photoInfos > 0)

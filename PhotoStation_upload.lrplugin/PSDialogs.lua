@@ -324,9 +324,9 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			
 			-- Publish Service Provider end ---------------------
 
-			propertyTable.serverUrl = 	propertyTable.proto .. "://" .. propertyTable.servername
-			propertyTable.psPath = 		iif(propertyTable.usePersonalPS, "/~" .. ifnil(propertyTable.personalPSOwner, "unknown") .. "/photo/", "/photo/")
-			propertyTable.psUrl = 		propertyTable.serverUrl .. propertyTable.psPath
+			propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
+			propertyTable.psPath 	= PHOTOSERVER_API[propertyTable.psVersion].API.basedir(iif(propertyTable.usePersonalPS, 'personal', 'shared'), propertyTable.personalPSOwner)
+			propertyTable.psUrl		= propertyTable.serverUrl .. propertyTable.psPath
 		end
 
 		-- ###############  Export or Collection Settings ##########################
@@ -1064,7 +1064,8 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServernameTT=Enter the IP address or hostname of Photo Server.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
         			immediate 		= true,
-        			fill_horizontal = 0.6,
+					width_in_chars	= 18,
+        			fill_horizontal = 0.8,
         			value 			= bind 'servername',
         			enabled 		= negativeOfKey 'useSecondAddress',
         		},
@@ -1072,8 +1073,9 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				f:static_text {
 					title 			= bind 'psPath',
         			truncation 		= 'middle',
+					width_in_chars	= 20,
         			immediate 		= true,
-        			fill_horizontal = 0.4,
+        			fill_horizontal = 0.2,
         			enabled 		= negativeOfKey 'useSecondAddress',
         		},
         
@@ -1117,7 +1119,8 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			tooltip 		= LOC "$$$/PSUpload/ExportDialog/Servername2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
         			immediate 		= true,
-        			fill_horizontal = 0.6,
+        			fill_horizontal = 0.8,
+					width_in_chars	= 18,
         			value 			= bind 'servername2',
         			enabled 		= bind 'useSecondAddress',
         		},
@@ -1125,8 +1128,9 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				f:static_text {
 					title 			= bind 'psPath',
         			truncation 		= 'middle',
+					width_in_chars	= 20,
         			immediate 		= true,
-        			fill_horizontal = 0.4,
+        			fill_horizontal = 0.2,
         			enabled 		= bind 'useSecondAddress',
         		},
         
@@ -1212,7 +1216,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 
 			f:row {
 				f:static_text {
-					title 			= LOC "$$$/PSUpload/ExportDialog/DstFileTimestamp=Timestamp of uploaded files:",
+					title 			= LOC "$$$/PSUpload/ExportDialog/DstFileTimestamp=Upload timestamp:",
 					alignment 		= 'right',
 					width 			= share 'labelWidth'
 				},

@@ -130,6 +130,7 @@ PHOTOSERVER_API[71] =  {
     capabilities    =   PHOTOSERVER_API[70].capabilities ..
                         PHOTOSERVER_METADATA_RATING
 }
+
 ---------------------------------------------------------------------------------------------------------
 -- supports(h, metadataType)
 function PHOTOSERVER_API.supports (version, capabilityType)

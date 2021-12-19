@@ -378,6 +378,17 @@ function PhotoStation.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- basedir(area, owner)
+function PhotoStation.basedir (area, owner)
+	if area == 'personal' then
+		return "/~" .. ifnil(owner, "unknown") .. "/photo/"
+	else
+		return "/photo/"
+	end
+end
+
+
+---------------------------------------------------------------------------------------------------------
 -- login(h, username, passowrd)
 -- does, what it says
 function PhotoStation.login(h, username, password)
