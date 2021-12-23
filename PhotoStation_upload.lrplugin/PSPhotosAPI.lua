@@ -578,6 +578,7 @@ function Photos.getFolderId(h, path, doCreate)
 
 	local errorCode = 0
 	if not folderId and doCreate then
+		local parentFolder = LrPathUtils.parent(path)
 		local folderLeaf = LrPathUtils.leafName(path)
 		folderId, errorCode = Photos_createFolder(h, parentFolder, folderLeaf)
 		if folderId then
