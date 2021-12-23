@@ -1,16 +1,18 @@
-Photo StatLr (Lightroom plugin)
-======================================
-Version 6.9.5<br>
-__[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+# Photo StatLr (Lightroom plugin)
+
+Version 7.0.0<br>
+__[Notes for migrating from Photo Station to Photos](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
+
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
+__[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
 
 [Changelog](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/CHANGELOG.md)<br>
 [Releases](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
-[FAQs](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki)<br>
+[FAQs](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/tree/master/Documentation)<br>
 
 Forum threads: 
-- [English Synology forum](http://forum.synology.com/enu/viewtopic.php?f=17&t=96477)
-- [German Synology forum](http://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
+- [English Synology forum](https://community.synology.com/enu/forum/17/post/80082)
+- [German Synology forum](https://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
 
 [Support Page](https://messmer-online.de/index.php/software/11-photo-statlr)<br>
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
@@ -18,68 +20,56 @@ Forum threads:
  
 Copyright(c) 2015-2021, Martin Messmer<br>
 
-Overview
-=========
-Photo StatLr (aka PhotoStation Upload) is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service and an Export target called "Photo StatLr" to the "Publish Services" panel / "Export" dialog. 
-Both the Publish service as well as the Export service enable the export of photos and videos from Lightroom directly to a Synology Photo Station. It will not only upload the selected photos/videos but also create 
+## Overview
+Photo StatLr is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service and an Export target called "Photo StatLr" to the "Publish Services" panel / "Export" dialog. 
+Both the Publish service as well as the Export service enable the export of photos and videos from Lightroom directly to a Synology Photo Station or Synology Photos. It will not only upload the selected photos/videos but also create 
 and upload all required thumbnails and accompanying additional video files.<br>
 Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature which will download comments and ratings from Photo Station to the Lightroom Comments panel (Library mode: bottom right panel).
 Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label, rating, person tags/faces regions and GPS info. 
 
-This plugin uses the same converters and the same upload API as the official "Synology Photo Station Uploader" tool, but does not use the Uploader itself. The Photo Station API is http-based, so you have to specify the target Photo Station by protocol (http/https) and servename (IP@, hostname, FQDN).
+## Synology Photo Station and Synology Photos
+---------------------------------
+This plugin supports Synology Photo Station and Synology Photos. Some of the plugin features are not supported on both systems. Throughout this document we use the term 'Photo Station' (for historical reasons), even if  the description applies to both systems. If there is a restriction to Photo Station, it will be marked with an asterisk (*).
 
-Requirements
-=============
+# Requirements
 * OS (Windows or Mac OS X):
 	- Windows 7
 	- Windows 8.0, 8.1
 	- Windows 10
-	- MacOS X 7.5
-	- MacOS X 8.5
-	- MacOS X 9.5	
-	- MacOS X 10.2, 10.3, 10.4, 10.5 
-	- MacOS X 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6
-	- MacOS X 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6
-	- MacOS X 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6
-	- MacOS X 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6
-	- MacOS X 15.0, 15.1, 15.2, 15.3, 15.4
+	- MacOS X:	7.5 - 16.0
+	- MacOS 11:	0.1 - 6.2
+	- MacOS 12:	0.0 - 1.0
 * Lightroom: 
-  	- Lr 4.0, 4.1, 4.2, 4.3, 4.4, 4.4.1
-	- Lr 5.0, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.7.1 
-	- Lr 6.0, 6.0.1, 6.1, 6.1.1, 6.2, 6.2.1, 6.3, 6.4, 6.5, 6.5.1, 6.6, 6.6.1, 6.7, 6.8, 6.9, 6.10, 6.10.1, 6.12, 6.13, 6.14
-	- Lr Classic 7.0, 7.1, 7.2, 7.3, 7.3.1, 7.4, 7.5
-	- Lr Classic 8.0, 8.1, 8.2, 8.2.1, 8.3, 8.3.1, 8.4, 8.4.1
-	- Lr Classic 9.0, 9.1, 9.2
+  	- Lr 4.0 - 6.14
+	- Lr Classic 7.0 - 11.1
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
-* For local thumbnail generation and for video upload: Synology Photo Station Uploader, required components:
-	- ImageMagick/convert(.exe)
+* Synology Photos:
+	Photos 1.0, 1.1
+* For local thumbnail generation and for video upload, we need the following tools (not included, check the links under [Credits](#credits)). Alternatively, you may use the Synology Photo Station Uploader, which includes the required components:
+	- ImageMagick/convert(.exe) 7.x
 	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
-	- ffmpeg/ffmpeg(.exe)
-	- ffmpeg/qt-faststart(.exe)
-* For Metatdata translations (e.g Lr/Picasa face regions, ratings and color labels):
-	- exiftool: Version 10.0.2.0 (tested) and later should be fine
+	- ffmpeg/ffmpeg(.exe) 4.x
+* For metadata translations (e.g Lr/Picasa face regions, ratings and color labels):
+	- exiftool: Version 11.x (tested) and later should be fine
 	
-Installation
-=============
-- install Synology Photo Station Uploader, if not already done
-- install exiftool (see credits below), if not already done<br>
+# Installation
+- install the required converters
+- install exiftool (see credits below), if required<br>
   On Windows, __don't use "Run this program as administrator"__ setting (otherwise a command box will open everytime it is used and the plugin will not be able to get the output from exiftool)!<br>
   On Windows, use __'exiftool.exe'__ instead of __'exiftool(-k).exe'__ as program name (otherwise the plugin can't terminate the exiftool background process when done)! 
-- unzip the downloaded archive
-- copy the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
+- download and unzip the Photo StatLr plugin archive from the [Photo StatLr GitHub project](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/)
+- copy/move the subdirectory "PhotoStation_upload.lrplugin" to the machine where Lightroom is installed
 - In Lightroom:
 	*File* --\> *Plugin Manager* --\> *Add*: Enter the path to the directory 
 		"PhotoStation_upload.lrplugin" 
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/01-Install-Plugin.jpg)
- - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required tools are correct.
+ - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required converters and tools are correct.
  ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/03-Install_OK.jpg)
 
-Description
-============
+# Description
 
-Export vs. Publish Service - general remarks
----------------------------------------------
+## Export vs. Publish Service - general remarks
 Exporting in Lightroom is a simple one-time processe: you define the photos to export by selecting the photos or folders to export in library view and then choose "Export". 
 Lightroom does not keep track of exports, thus if you want to re-export changed or added photos or remove deleted photos form the target (e.g. a Photo Station album) later, you will have to keep track yourself for those changes, addtions or deletions.
 
@@ -91,8 +81,7 @@ Publishing in Lightroom on the other hand is meant for synchonizing local photo 
 As soon as you've done this, Lightroom will keep track of which photo from the collection has to been published, needs to be re-published (when it was modified locally) or deleted. 
 Besides that basic functions, some publish services can also re-import certain infos such as tags, comments or ratings back from the publish target.
 
-Export vs. Publish Service - Photo StatLr
--------------------------------------------------
+## Export vs. Publish Service - Photo StatLr
 The main functionality of Photo StatLr is basicly the same in Export and in Publish mode: uploading pictures/videos to a Synology Photo Station. 
 On top of this the Publish mode also implements the basic publishing function, so that Lr can keep track of added, modified and deleted photos/videos.<br>
 As of V5.0.0 Photo StatLr also supports downloading of certain metadata, so that changes to photos in Photo Station can be synched back to Lightroom. 
@@ -119,9 +108,8 @@ c) quality parameters for thumbs and additional videos<br>
 The Album settings ( b) ) are not stored within the Publish settings but within the Published Collections settings. Therefore, you don't need to define a different Publish Service for each Published Collection you want to publish. In most cases you will only have one Publish Service definition and a bunch of Published Collections below it. An additional Publish Service definition is only required, if you want to upload to a different Photo Station or if you want to use different upload quality settings.<br>
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/11-Publish-Collection.jpg)
 
-Export Funtionality
---------------------
-- Upload to the __Standard Photo Station__ or to a __Personal Photo Station__<br>
+## Export Funtionality
+- Upload to the __Standard Photo Station__ or to a __Personal Photo Station__ (in Photos: __Shared Space__ or __Personal Space__)<br>
 (make sure the Personal Photo Station feature is enabled for the given Personal Station owner)
 - Definition of a __secondary server address__<br>
 You may want to publish to your Photo Station from at home or via the Internet. 
@@ -158,7 +146,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {LrCC:path ^Yearly Collections}
 	  - {LrCC:name}
 	  - {LrPC:name}<br>
-  To learn more about the use of metadata placeholders and how they work, take a look at the [Wiki](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-How-to-use-metadata-placeholders-in-'Target-Album'-or-'Rename-Photos-To'-definitions) 
+  To learn more about the use of metadata placeholders and how they work, take a look at the [Metadata Placeholdes FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/03-Publish%20and%20Export-How%20to%20use%20metadata%20placeholders%20in%20Target%20Album%20or%20Rename%20Photos%20To%20definitions.md) 
 
 - __Rename photos__ in target album using __metadata placehoders__:<br>
      Rename photos to a unique naming schema in the target album 
@@ -170,20 +158,17 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	It also makes sense to upload w/ Photo-only option when you don't need the thumbnails on the diskstation (e.g. upload photos for backup purpose) and you upload to an un-indexed folder, so that no thumb conversion will be done on the diskstation. 
 	Important note: It is not possible to keep already uploaded thumbs and just upload the photo itself. When you use the photo-only option, any belonging, already existing thumb on the diskstation will be removed! (Sorry, I wish I could do better)  
 
-- __Optimize the upload for Photo Station 6__ by not generating/uploading the THUMB_L thumbnail.
-
-- Upload of __photo metadata__ including title, description, keywords and gps info (from Lr or video header)
-
+- Upload of __photo metadata__ including title*, description, keywords and GPS info* (from Lr or video header)
 - __Metadata translations on upload:__<br>
-	- Translation of __Face regions__ generated by Lr or Picasa face detection to Photo Station Person tags (useful for Photo Station below version 6.5)<br>
+	- Translation of __Face regions__ generated by Lr or Picasa face detection to Photo Station Person tags*(useful for Photo Station below version 6.5)<br>
 	- Translation of __Star Rating (* to *****)__  to Photo Station General tags (useful for Photo Station below version 6.5)<br>
 	- Translation of __Color Label (yellow, red, etc.)__  to Photo Station General tags(+yellow, +red, etc.)<br>
-	- Translation of __Location Tags (country, city, etc.)__ to a single Photo Station Location tag (via additional Metadata Upload pass)<br>
+	- Translation of __Location Tags (country, city, etc.)__ to a single Photo Station Location tag* (via additional Metadata Upload pass)<br>
 
-- Upload of __original or processed videos__ and accompanying videos with a lower resolution__<br>
-For more information on video processing with Photo StatLr read the [Wiki post on Video upload and conversion](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish-and-Export:-Video-upload-and-conversion-with-Photo-StatLr) 
+- Upload of __original or processed videos__ and accompanying videos* with a lower resolution__<br>
+For more information on video processing with Photo StatLr read the [Video upload and conversion FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/04-Publish%20and%20Export-Video%20upload%20and%20conversion%20with%20Photo%20StatLr.md) 
 
-- Upload of __video metadata__ including title, description, keywords, rating, label and gps info (both from Lr or video header) 
+- Upload of __video metadata__ including title*, description, keywords, rating, label and GPS info* (both from Lr or video header) 
 
 - __Different video rotation options:__<br>
 	- __Hard-rotation for soft-rotated videos__ for better player compatibility:<br>
@@ -207,12 +192,11 @@ For more information on video processing with Photo StatLr read the [Wiki post o
 	thus override each others during upload. To circumvent this collision, this option will rename all non-jpg files to <orig-filename><orig-extension>.jpg.   
 
 
-Publish Functionality:
----------------------
+## Publish Functionality
 
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/12-Publish-Action.jpg)
 
-- All Export Functions are supported in Publish mode
+- All Export functions are also supported in Publish mode
 
 - Support for __Published Collections and Published Smart Collections__ 
 
@@ -245,7 +229,7 @@ Publish Functionality:
 	  This is not a publish mode itself but let's you postpone the publish mode decision to the point in time where the actual publish action is started (e.g. when you click the "Publish" button)<br>
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/13-AskMeLater.jpg)
 
-- Impose __sort order of photos in Lr Published Collections__ in Photo Station:<br>
+- Impose __sort order of photos in Lr Published Collections__ * in Photo Station:<br>
 	Sort order is only supported on Published Collections w/ Custom Sort Order when uploaded as Flat Copy 
 
 - __Deletion of published photos__, when deleted locally (from Collection or Library)
@@ -262,34 +246,33 @@ Publish Functionality:
   To identify the Default Collection, just edit an existing Published Collection: the name of the Default Collection will be shown in the header section of the dialog.
   If the Default Collection has been removed before (this was possible in Photo StatLr befor v5.8.0) there is no way to create a new Default Collection for that Publish Service.     
 
-- Manage __Photo Station Shared Albums__ via Shared Album keyword hierarchies in Lr:<br>
+- Manage __Photo Station Shared Albums__ * via Shared Album keyword hierarchies in Lr:<br>
   Define Shared Album keywords under "Photo StatLr" | "Shared Albums" | "\<Publish Service Name\>" and assign them to photos you want to link to Photo Station Shared Albums.
   As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums.<br>
   You may define whether a Shared Album should be public (default) or private (using __keyword synonym 'private'__)<br>
   You may define a __password__ for a public Shared Album (using __keyword synonym 'password:\<AlbumPassword\>'__) (requires Photo Station 6.6 or above)<br>
-  For more infos please read the [Wiki article](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Managing-Photo-Station-Shared-Albums-in-Lightroom-via-Photo-StatLr).
+  For more infos please read the [Shared Albums FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/06-Publish-Managing%20Photo%20Station%20Shared%20Albums%20in%20Lightroom%20via%20Photo%20StatLr.md).
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/14-ManageSharedAlbums.jpg)
   
-Download / Sync Functionality:
--------------------------------
+## Download / Sync Functionality:
 - Support for download of __Comments__
-	- Download of private and public comments from Photo Station
+	- Download of private and public comments* from Photo Station
 	- Lr plugin metadata for comments: __search and filter__ photos with comments<br>
 	- __Metadata Tagsets__ to view comments in the Metadata panel<br>
-	For more infos please read the [Wiki article on comments](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Some-comments-on-comments).
+	For more infos please read the [Comments FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/08-Publish-Some%20comments%20on%20comments.md).
 
   ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/15-Comment-Metadata.jpg)
 
 - __Download and two-way sync of various metadata__ for photos and videos:
-	- title, description/caption
+	- title*, description/caption
 	- rating (for Photo Station 6.5 and above)
 	- general tags (Keywords)
-	- GPS info (added via Location Tag)
+	- GPS info* (added via Location Tag)
 	- sync PS keywords with Lr keyword hierarchies and synonyms
 	- support for adding hierachical keywords (format: {<keyword>|}keyword) from PS to Lr 
  	- Translation of __Star Rating tags (* to *****)__  to Lr rating (useful for Photo Station below version 6.5)<br>
 	- Translation of __Color Label tags (+yellow, +red, etc.)__  to Lr color label <br>
-	- Translation of __Person tags__  to Lr face regions (requires reloading of photo metadata from file)<br>
+	- Translation of __Person tags__  * to Lr face regions (requires reloading of photo metadata from file)<br>
 	
 - __Different Download modes__:
 	- __Yes__:<br>
@@ -300,10 +283,9 @@ Download / Sync Functionality:
 	  This is not a download mode itself but let's you postpone the download mode decision to the point in time where the actual download action is started (e.g. after a publish action or when you click the "Refresh Comments" button).
 	  This mode is useful if you do not want to download metadata after every publish action, but only occasionally.<br>
 
-- For more detail, please read the [Wiki article on metadata two-way sync](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/wiki/Publish:-Some-words-on-the-two-way-sync-of-metadata)
+- For more detail, please read the [Metadata Two-way Sync FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/07-Publish-Some%20words%20on%20the%20two%20way%20sync%20of%20metadata.md)
 
-Additional Funtionality
-------------------------
+## Additional Funtionality
 - __Checks for updates__ in background when Exporting, Publishing or opening the Plugin section in the Plugin Manager no more than once per day.
   If a new version is available, you'll get an info message after the Export/Publish and also a note in the Plugin Manager section.
   The update check will send the following information to the update server:
@@ -315,21 +297,22 @@ Additional Funtionality
 
 This helps me keep track of the different environments/combinations the plugin is running in.
 
-Important note
---------------
+## Important note
 Passwords entered in the export settings are stored unencrypted, so they might be accessible by other plugins or other people that have access to your system. So, if you mind storing your password in the export settings, you may leave the password field in the export settings empty so that you will be prompted to enter username/password when the export starts.
 
-Open issues
-============
-- issue in Photo Station: if video aspect ratio is different from video dimension 
-  (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
-  the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
+## Open issues
+### Generic issues
 - due to missing Lr SDK support for face region handling, face regions downloaded from Photo Station will be written to the original file (or xmp side-car file in case of RAW photos) and wil have to be manually re-synched w/ Lr. 
 Face regions can't be downloaded for cropped photos, since Lr won't accept the face region metadata if the "AppliedDimension" are not equal to the original photo dimension.
 - Face regions added via XMP re-import are not properly synched w/ Lr's database: if you change or delete one of those in Lr, it won't be reflected in the XMP of the photo file. 
+### Synology Photo Station
+- if video aspect ratio is different from video dimension 
+  (i.e. sample aspect ratio [sar] different from display aspect ratio [dar]) 
+  the galery thumb of the video will be shown with a wrong aspect ratio (= sar)
+### Synology Photos
+tbd.
 
-Copyright
-==========
+# Copyright
 Copyright(c) 2015 - 2021, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
@@ -345,15 +328,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
-Credits
-=======
+# Credits
 Photo StatLr uses the following phantastic free software to do its job:
-- convert(.exe),		see: http://www.imagemagick.org/
-- dcraw(.exe),			see: https://www.cybercom.net/~dcoffin/dcraw/ (by David J. Coffin)
-- ffmpeg(.exe), 		see: https://www.ffmpeg.org/
-- qt-faststart(.exe), 	see: http://multimedia.cx/eggs/improving-qt-faststart/
-- JSON.lua				see: http://regex.info/blog/lua/json (by Jeffrey Friedl)
-- exiftool(.exe)		see: http://www.sno.phy.queensu.ca/~phil/exiftool/ (by Phil Harvey)
+- [convert](http://www.imagemagick.org/) by ImageMagick
+- [dcraw](http://www.dechifro.org/dcraw/) by David J. Coffin
+- [ffmpeg](https://www.ffmpeg.org/) by ffmpeg.org
+- [JSON.lua](http://regex.info/blog/lua/json) by Jeffrey Friedl
+- [exiftool](http://www.sno.phy.queensu.ca/~phil/exiftool/) by Phil Harvey
+- Optional: [Synology Photo Station Uploader](https://www.synology.com/de-de/support/download/DS218+?version=6.2#utilities) by Synology
 
 Thanks to all you folks providing these real valuable software gems. This plugin would be nothing without it!
 

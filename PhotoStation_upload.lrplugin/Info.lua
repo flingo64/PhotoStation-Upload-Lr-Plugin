@@ -21,8 +21,9 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
 Photo StatLr uses the following free software to do its job:
 	- convert.exe,			see: http://www.imagemagick.org/
+	- dcraw.exe, 			see: http://www.dechifro.org/dcraw/
+	- exftool,				see: http://www.sno.phy.queensu.ca/~phil/exiftool/
 	- ffmpeg.exe, 			see: https://www.ffmpeg.org/
-	- qt-faststart.exe, 	see: http://multimedia.cx/eggs/improving-qt-faststart/
 
 This code is derived from the Lr SDK FTP Export and Flickr sample code. Copyright: see below
 --------------------------------------------------------------------------------
@@ -38,10 +39,10 @@ of it requires the prior written permission of Adobe.
 
 
 ------------------------------------------------------------------------------]]
-plugin_major = 6
-plugin_minor = 9
-plugin_rev = 5
-plugin_build = 20210214
+plugin_major = 7
+plugin_minor = 0
+plugin_rev = 0
+plugin_build = 20211223
 
 pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' ..plugin_rev .. '.' .. plugin_build
 plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
@@ -54,29 +55,29 @@ return {
 	LrToolkitIdentifier = plugin_TkId,
 
 	LrPluginName = "Photo StatLr",
-	
+
 	LrInitPlugin = "PSInitPlugin.lua",
-	
+
 	LrPluginInfoUrl = "https://messmer-online.de/index.php/software/11-photo-statlr",
-	
+
 	LrPluginInfoProvider = 'PSPluginInfoProvider.lua',
-	
+
 	LrExportServiceProvider = {
 		title = "Photo StatLr",
 		file = 'PSExportServiceProvider.lua',
 	},
-	
+
 	LrMetadataProvider 		= 'PSPluginMetadata.lua',
 	LrMetadataTagsetFactory = { 'PSPluginTagsetCompact.lua', 
 								'PSPluginTagsetLong.lua',
-								'PSPluginTagsetComments.lua', }, 
+								'PSPluginTagsetComments.lua', },
 
 	LrLibraryMenuItems = {
 		title = "Manage PS Shared Albums",
 		file = "PSSharedAlbumDialog.lua",
 	},
-	
-	VERSION = { major=plugin_major, minor=plugin_minor, revision=plugin_rev, build=plugin_build, 
-				-- display = '3.0.0-20150524 (Something)', 
+
+	VERSION = { major=plugin_major, minor=plugin_minor, revision=plugin_rev, build=plugin_build,
+				-- display = '3.0.0-20150524 (Something)',
 	},
 }

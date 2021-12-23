@@ -1,5 +1,43 @@
 Photo StatLr Changelog
 ======================
+Version 7.0.0
+-------------
+This is the first alpha release that supports both Synology Photo Station and Synology Photos (DSM7). While the PhotoStation support has been tested quite thoroughly, support for Synology Photos is quite fresh and might not have been tested in all common scenarios. So, the aplha attribute mostly refers to the Synology Photos support. 
+
+Since the feature set and the API of Synology Photos is quite different to the Photo Station API and some of the real cool features of Photo Station are not or not yet supported, some of the cool features of Photo StatLr are also not available for Synology Photos. 
+
+### New Features for Photo Station and Synology Photos:
+- Publish: Delete empty folders after Normal Upload<br>
+  Empty folders might occure due to photos being moved to another target folder. Until now, empty folders were only removed after deleting photos or collections or when using publish mode MovePhotos
+
+Following is a non-comprehensive list of Photo StatLr features for Synology Photos:
+### Export Features:
+- Upload of photos with or without accompanying thumbnails
+- Overwriting of existing photos
+- Upload of videos (accompamying videos w/ lower resolution are currently not supported)
+- Creation of folders and folder hierarchies on Photos, if required
+- Flat or tree-mirror upload mode
+- Upload to Shared Space or Personal Space
+### Publish Features:
+- Delete photos / videos, if no longer in Published Collection
+- Delete Empty Folders after deleting or moving photos/videos
+- Show Photo in Synology Photos (this will fail the first time, if the Browser session is not yet authenticated)
+- Show Published Collection Album in Synology Photos
+- Upload Modes:
+  - Upload: Normal Upload of photos/videos
+  - MetadataUpload: Upload only Metadata for photos/videos already uploaded:
+    - Description
+    - Tags / Keywords
+    - Rating
+    - Rating Tags('*' - '*****'): only useful for Photos 1.0 (w/o native rating support)
+    - Color Label Tags('+red', '+green',...)
+  - CheckExisting: no upload, just check if photo/video is already there
+  - MovePhotos: move photos/videos in Photos if moved locally or target folder was changed
+- Metadata Download:
+  - Description
+  - Tags / Keywords
+  - Rating (native) or Rating Tags('*' - '*****'): only useful for Photos 1.0 (w/o native rating support)
+  - Color Label Tags('+red', '+green',...)
 
 Version 6.9.5
 -------------
