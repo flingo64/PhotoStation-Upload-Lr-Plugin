@@ -1817,7 +1817,6 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 			f:popup_menu {
 				value 			= bind 'locationTagField1',
---				visible 		= bind 'xlatLocationTags',
 				visible 		= bind(checkLocationSelected),
 				enabled 		= keyIsNotNil 'xlatLocationTags',
 				items 			= locationTagItems,
@@ -1828,7 +1827,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 			f:combo_box {
 				value 			= bind 			'locationTagSeperator',
-				visible 		= bind 			'xlatLocationTags',
+				visible 		= bind			(checkLocationSelected),
 				enabled			= andAllKeys	('locationTagField2'),
 				items 			= locationTagSepItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagSeperatorTT=Enter a tag seperator character",
@@ -1839,7 +1838,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 			f:popup_menu {
 				value 			= bind 			'locationTagField2',
-				visible 		= bind 			'xlatLocationTags',
+				visible 		= bind			(checkLocationSelected),
 				enabled			= andAllKeys	('locationTagField1'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
@@ -1849,14 +1848,15 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= andAllKeys('xlatLocationTags', 'locationTagField3'),
+				visible 		= bind			(checkLocationSelected),
+				enabled 		= andAllKeys	('xlatLocationTags', 'locationTagField3'),
    				alignment 		= 'center',
 --   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
 				value 			= bind 			'locationTagField3',
-				visible 		= bind 			'xlatLocationTags',
+				visible 		= bind			(checkLocationSelected),
 				enabled			= andAllKeys	('locationTagField2'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
@@ -1866,14 +1866,15 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= andAllKeys('xlatLocationTags', 'locationTagField4'),
+				visible 		= bind			(checkLocationSelected),
+				enabled 		= andAllKeys	('xlatLocationTags', 'locationTagField4'),
    				alignment 		= 'center',
 --   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
 				value 			= bind 			'locationTagField4',
-				visible 		= bind 			'xlatLocationTags',
+				visible 		= bind			(checkLocationSelected),
 				enabled			= andAllKeys	('locationTagField3'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
@@ -1883,14 +1884,15 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 
 			f:static_text {
 				title 			= bind 			'locationTagSeperator',
-				visible 		= andAllKeys('xlatLocationTags', 'locationTagField5'),
+				visible 		= bind			(checkLocationSelected),
+				enable 			= andAllKeys	('xlatLocationTags', 'locationTagField5'),
    				alignment 		= 'center',
 --   				fill_horizontal = 0.05,
 			},
 
 			f:popup_menu {
 				value 			= bind 			'locationTagField5',
-				visible 		= bind 			'xlatLocationTags',
+				visible 		= bind			(checkLocationSelected),
 				enabled			= andAllKeys	('locationTagField4'),
 				items 			= locationTagItems,
 				tooltip 		 = LOC "$$$/PSUpload/ExportDialog/LocationTagFieldTT=Enter a Lr location tag to be used",
