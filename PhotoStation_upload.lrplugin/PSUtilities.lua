@@ -48,7 +48,7 @@ exported functions:
 	- closeSession
 
 	- promptForMissingSettings
-	- showFinalMessage	
+	- showFinalMessage
 
 	- PSUtilities.areaCompare
 	- PSUtilities.denormalizeArea
@@ -105,13 +105,13 @@ end
 ]]
 
 -- overwriting of JSON:onDecodeError() to write error message to logfile
-function JSON:onDecodeError (message, text, location, etc) 
-	writeLogfile(1, string.format("JSON-DecodeError('%s')%s at character %s\n", 
+function JSON:onDecodeError (message, text, location, etc)
+	writeLogfile(1, string.format("JSON-DecodeError('%s')%s at character %s\n",
 									ifnil(etc, 'Unknown object'), ifnil(message, '<Nil>'), ifnil(location, '<Nil>')))
 	local action = LrDialogs.confirm("JSON Decoder", 'Booo!!\n' .. "Internal Error: Invalid JSON data in " .. ifnil(etc, 'Unknown object'), "Go to Logfile", "Never mind")
 	if action == "ok" then
 		LrShell.revealInShell(getLogFilename())
-	end	
+	end
 end
 JSON.onDecodeOfNilError  = JSON.onDecodeError
 JSON.onDecodeOfHTMLError = JSON.onDecodeError
@@ -141,10 +141,10 @@ end
 
 --------------------------------------------------------------------------------------------
 -- split(inputstr, sep)
--- splits a string into a table, sep must be a single character 
+-- splits a string into a table, sep must be a single character
 function split(inputstr, sep)
 	if not inputstr then return nil end
-	 
+
     if sep == nil then sep = "%s" end
 
     local t={} ; i=1
@@ -254,11 +254,11 @@ end
 -- findInAttrValueTable(inputTable, indexField, indexValue, valueField)
 function findInAttrValueTable(inputTable, indexField, indexValue, valueField)
 	if not inputTable then return nil end
-	
+
 	for i = 1, #inputTable do
 		if inputTable[i][indexField] == indexValue then return inputTable[i][valueField] end
 	end
-	
+
 	return nil
 end
 
@@ -272,7 +272,7 @@ function findInStringTable(inputTable, string, isPattern)
 		or (inputTable[i] == string)
 		then return i end
 	end
-	
+
 	return nil
 end
 
@@ -280,15 +280,15 @@ end
 -- getTableExtract(inputTable, tableField, filterAttr, filterPattern)
 --  returns a table extract consisting of:
 --   - the elements 'tableField' or the whole structure
---   - all elements matching filteAttr / filterPattern or all 
+--   - all elements matching filteAttr / filterPattern or all
 function getTableExtract(inputTable, tableField, filterAttr, filterPattern)
 	if not inputTable then return nil end
 
 	local j, tableExtract = 1, {}
-	
+
 	for i = 1, #inputTable do
 		if not filterAttr or string.match(inputTable[i][filterAttr], filterPattern) then
-			if tableField then 
+			if tableField then
 				tableExtract[j] = inputTable[i][tableField]
 			else
 				tableExtract[j] = inputTable[i]
@@ -304,7 +304,7 @@ end
 -- getTableDiff(table1, table2, keyName, isSameCheck)
 --  returns a table of elements in table1, but not in table2
 --  if keyName is given, then tables of structure are compared based on keyName
---  if isSameCheck function is given, use it as compar operator  
+--  if isSameCheck function is given, use it as compar operator
 function getTableDiff(table1, table2, keyName, isSameCheck)
 	local tableDiff
 	if not table1 or #table1 == 0 or not table2 or #table2 == 0 then
@@ -314,15 +314,15 @@ function getTableDiff(table1, table2, keyName, isSameCheck)
 	else
     	tableDiff = {}
     	local nDiff = 0
-    	
+
     	for i = 1, #table1 do
-    		local found = false 
-    		
+    		local found = false
+
     		for j = 1, #table2 do
     			if 	(not keyName and table1[i] == table2[j]) or
-    				(	 keyName and 
+    				(	 keyName and
     					(not isSameCheck and table1[i][keyName] == table2[j][keyName]) or
-    					(	 isSameCheck and isSameCheck(table1[i], table2[j]))) 
+    					(	 isSameCheck and isSameCheck(table1[i], table2[j])))
     			then
     				found = true
     				break
@@ -334,16 +334,16 @@ function getTableDiff(table1, table2, keyName, isSameCheck)
     		end
     	end
 	end
-	
+
 	if keyName then
-		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n", 
-				#table1,	table.concat(getTableExtract(table1, 'name'), "','"), 
-				#table2,	table.concat(getTableExtract(table2, 'name'), "','"), 
+		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n",
+				#table1,	table.concat(getTableExtract(table1, 'name'), "','"),
+				#table2,	table.concat(getTableExtract(table2, 'name'), "','"),
 				#tableDiff, table.concat(getTableExtract(tableDiff, 'name'), "','")))
 	else
-		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n", 
-				#table1,	table.concat(table1, "','"), 
-				#table2,	table.concat(table2, "','"), 
+		writeLogfile(3, string.format("getTableDiff: t1(%d: '%s') - t2(%d: '%s') = tDiff(%d: '%s')\n",
+				#table1,	table.concat(table1, "','"),
+				#table2,	table.concat(table2, "','"),
 				#tableDiff,	table.concat(tableDiff, "','")))
 	end
 
@@ -364,7 +364,7 @@ local loglevel
 	3 - tracing
 	4 - debug
 	5 - extended debug
-]]	
+]]
 
 local loglevelname = {
 	'ERROR',
@@ -398,18 +398,18 @@ function openLogfile (level)
 	loglevel = level
 
 	logfilename = getLogFilename()
-	
+
 	-- if logfile does not exist: nothing to do, logfile will be created on first writeLogfile()
 	if not LrFileUtils.exists(logfilename) then return end
 
 	-- if logfile exists and is younger than 60 secs: do not truncate, it may be in use by a parallel export/publish process
 	local logfileAttrs = LrFileUtils.fileAttributes(logfilename)
 	if logfileAttrs and logfileAttrs.fileModificationDate > (LrDate.currentTime() - 300) then return end
-	
+
 	-- else: truncate existing logfile
 	local logfile = io.open(logfilename, "w")
 	io.close (logfile)
-	
+
 end
 
 -- writeLogfile: always open, write, close, otherwise output will get lost in case of unexpected errors
@@ -443,14 +443,14 @@ end
 --   obfuscate value for keys matching pwKeyPattern
 function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, hideKeyPattern, isObservableTable)
 	if level > ifnil(loglevel, 2) then return end
-	
+
 	local tableCompactOutputLine = {}
-	
+
 	if type(printTable) ~= 'table' then
 		writeLogfile(level, tableName .. ' is not a table, but ' .. type(printTable) .. '\n')
 		return
 	end
-	
+
 	-- the pairs() iterator is different for observable tables
 	local pairs_r1, pairs_r2, pairs_r3
 	if isObservableTable then
@@ -458,7 +458,7 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 	else
 		pairs_r1, pairs_r2, pairs_r3 = pairs(printTable)
 	end
-	
+
 	if not compact then writeLogfile(level, '"' .. tableName .. '":{\n') end
 --	for key, value in pairs( printTable ) do
 	for key, value in pairs_r1, pairs_r2, pairs_r3 do
@@ -470,10 +470,10 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 			local attrValueString
 			for key2, value2 in pairs( key ) do
 				attrValueString = getAttrValueOutputString(key2, value2, pwKeyPattern, hideKeyPattern)
-				
+
 				if compact then
 					table.insert(outputLine, attrValueString)
-				else	
+				else
 					writeLogfile(level, '\t\t' .. attrValueString .. '\n')
 				end
 			end
@@ -481,7 +481,7 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 				if compact then
 					table.sort(outputLine)
 					table.insert(tableCompactOutputLine, '\n\t\t<table> : {' .. table.concat(outputLine, ', ') .. '}')
-				else				
+				else
 					writeLogfile(level, '\t}\n')
 				end
 			end
@@ -495,21 +495,21 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 				if attrValueString then
 					if compact then
 						table.insert(outputLine, attrValueString)
-					else	
-						 writeLogfile(level, '\t\t' .. attrValueString .. '\n') 
+					else
+						 writeLogfile(level, '\t\t' .. attrValueString .. '\n')
 					end
 				end
 			end
 			if compact then
 				table.sort(outputLine)
 				table.insert(tableCompactOutputLine, '\n\t\t"' .. key .. '":{' .. table.concat(outputLine, ', ') .. '}')
-			else				
+			else
 				writeLogfile(level, '\t}\n')
 			end
 		else
 			local attrValueString = getAttrValueOutputString(key, value, pwKeyPattern, hideKeyPattern)
 			if attrValueString then
-				if compact then 
+				if compact then
 					table.insert(tableCompactOutputLine, attrValueString)
 				else
 					writeLogfile(level, '	' .. attrValueString .. '\n')
@@ -526,7 +526,7 @@ function writeTableLogfile(level, tableName, printTable, compact, pwKeyPattern, 
 	end
 end
 
--- closeLogfile: do nothing 
+-- closeLogfile: do nothing
 function closeLogfile()
 --[[
 	local logfile = io.open(logfilename, "a")
@@ -549,7 +549,7 @@ function waitSemaphore(semaName, info)
 			signalSemaphore(semaName)
 		else
 			LrTasks.sleep(1)
-		end	
+		end
 	end
 
 	local semaphoreFile = io.open(semaphoreFn, "w")
@@ -569,14 +569,14 @@ local semaphores = {}
 
 function waitSemaphore(semaName, owner)
 	while semaphores[semaName] do
-		writeLogfile(3, string.format("waitSemaphore('%s'): '%s' is occupied by '%s' since %d sec\n", 
+		writeLogfile(3, string.format("waitSemaphore('%s'): '%s' is occupied by '%s' since %d sec\n",
 							owner, semaName, semaphores[semaName].owner, LrDate.currentTime() - semaphores[semaName].timestamp))
 		-- warn user and exit if we are waiting too long  for a possibly orphaned semaphore
 		if semaphores[semaName].timestamp < LrDate.currentTime() - 300 then
-			writeLogfile(1, string.format("waitSemaphore('%s'): '%s' is blocked by '%s' since %d sec! Please, restart Lr if it this is not going to end!\n", 
+			writeLogfile(1, string.format("waitSemaphore('%s'): '%s' is blocked by '%s' since %d sec! Please, restart Lr if it this is not going to end!\n",
 							owner, semaName, semaphores[semaName].owner, LrDate.currentTime() - semaphores[semaName].timestamp))
 			return false
-		end	
+		end
 		LrTasks.sleep(1)
 	end
 
@@ -591,7 +591,7 @@ function signalSemaphore(semaName, owner)
 	-- make sure, we do not remove a semaphore which we don't possess
 	if semaphores[semaName] and semaphores[semaName].owner == owner then
 		semaphores[semaName] = nil
-	end 
+	end
 end
 
 
@@ -631,35 +631,35 @@ end
 
 ---------------------------------------------------------------------------------------
 -- mkLegalFilename: substitute illegal filename char by their %nnn representation
--- This function should be used when a arbitrary string shall be used as filename or dirname 
+-- This function should be used when a arbitrary string shall be used as filename or dirname
 function mkLegalFilename(str)
 	if (str) then
 		local newStr
-		-- illegal filename characters: '\', '/', ':', '?', '*',  '"', '<', '>', '|'  
+		-- illegal filename characters: '\', '/', ':', '?', '*',  '"', '<', '>', '|'
 		newStr = string.gsub (str, '([\\/:%?%*"<>|])', function (c)
 								return string.format ("%%%02X", string.byte(c))
-         end) 
+         end)
 		if newStr ~= str then
 			writeLogfile(4, string.format("mkLegalFilename(%s) = %s\n", str, newStr))
 		end
 		str = newStr
 	end
 	return str
-end 
+end
 
 ---------------------------------------------------------------------------------------
 -- mkSafeFilename: substitute illegal and critical characters by '-'
 -- may only be used for temp. files!
 function mkSafeFilename(str)
 	if (str) then
-		-- illegal filename characters: '\', ':', '?', '*',  '"', '<', '>', '|'  
+		-- illegal filename characters: '\', ':', '?', '*',  '"', '<', '>', '|'
 		-- critical characters '(', ')', and ' '
---		writeLogfile(4, string.format("mkSafeFilename: was %s\n", str)) 
-		str = string.gsub (str, '[\\:%?%*"<>|%s%(%)]', '-') 
---		writeLogfile(4, string.format("mkSafeFilename: now %s\n", str)) 
+--		writeLogfile(4, string.format("mkSafeFilename: was %s\n", str))
+		str = string.gsub (str, '[\\:%?%*"<>|%s%(%)]', '-')
+--		writeLogfile(4, string.format("mkSafeFilename: now %s\n", str))
 	end
 	return str
-end 
+end
 
 -- normalizeDirname(str)
 -- sanitize dstRoot: replace \ by /, remove leading and trailings slashes
@@ -670,7 +670,7 @@ function normalizeDirname(str)
 		str = string.gsub(string.gsub(string.gsub (str, "\\", "/"), "^/", ""), "/$", "")
 	end
 	return str
-end 
+end
 
 ---------------------- http encoding routines ---------------------------------------------------------
 
@@ -680,7 +680,7 @@ function urlencode(str)
 		str = string.gsub (str, "([%W])",function (c) return string.format ("%%%02X", string.byte(c)) end)
 	end
 	return str
-end 
+end
 ---------------------- regexp escaping routines ---------------------------------------------------------
 -- regexpEscape(str): escape all regexp special chars to make str a exact match pattern
 function regexpEscape(str)
@@ -688,15 +688,15 @@ function regexpEscape(str)
 		str = string.gsub(str, "[%^%$%(%)%%%.%[%]%*%+%-%?]", function (c) return '%' .. c end )
 	end
 	return str
-end 
+end
 
----------------------------------------------------------------------------------------------------- 
+----------------------------------------------------------------------------------------------------
 -- applyDefaultsIfNeededFromTo(srcTable, dstTable
 -- For all all nil elements in dstTable, copy corresponding value from srcTable
 function applyDefaultsIfNeededFromTo(srcTable, dstTable)
     for orig_key, orig_value in pairs(srcTable) do
-		if dstTable[orig_key] == nil then 
-			dstTable[orig_key] = orig_value 
+		if dstTable[orig_key] == nil then
+			dstTable[orig_key] = orig_value
 			writeLogfile(4, string.format("applyDefaultsIfNeededFromTo: copying orig_key %s, orig_value '%s'\n", orig_key, tostring(orig_value)))
 		end
     end
@@ -705,7 +705,7 @@ end
 ---------------------- session environment ----------------------------------------------------------
 
 -- openSession(exportParams, publishedCollection, operation)
--- 	- copy all relevant settings into exportParams 
+-- 	- copy all relevant settings into exportParams
 -- 	- initialize all required APIs: Convert, Upload, Exiftool
 -- 	- login to Photo Server, if required
 --	- start exiftool listener, if required
@@ -724,7 +724,7 @@ function openSession(exportParams, publishedCollection, operation)
 	-- Create a photoServer object in any case
 	if not exportParams.photoServer then
 		local errorCode
-		exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner, 
+		exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner,
 																exportParams.serverTimeout, exportParams.psVersion)
 		if not exportParams.photoServer then
 			local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
@@ -762,7 +762,7 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.locationTagSeperator	= collectionSettings.locationTagSeperator
     	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
 
-		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once  
+		-- copy download options to exportParams only for GetComments(), so promptForMissingSettings() will only be called once
     	if operation == 'GetCommentsFromPublishedCollection' then
 			writeLogfile(4, "openSession: copy collection download settings\n")
         	exportParams.downloadMode	 		= collectionSettings.downloadMode
@@ -799,7 +799,7 @@ function openSession(exportParams, publishedCollection, operation)
 		return false, 'cancel'
 	end
 
-	-- ConvertAPI: required if Export/Publish/Metadata 
+	-- ConvertAPI: required if Export/Publish/Metadata
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.converter then
 			exportParams.converter = PSConvert.new(exportParams.LR_includeVideoFiles)
 			if not exportParams.converter then return false, 'Cannot initialize converters, check logfile for detailed information' end
@@ -807,20 +807,20 @@ function openSession(exportParams, publishedCollection, operation)
 
 	-- Login to Photo Server: not required for CheckMoved, not required on Download if Download was disabled
 	if not exportParams.photoServerLoggedIn then
-		if 	exportParams.publishMode ~= 'CheckMoved' 
+		if 	exportParams.publishMode ~= 'CheckMoved'
 		and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
 			exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
 			if not exportParams.photoServerLoggedIn then
 				local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
-										iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space"), 
-										iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""), 
+										iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space"),
+										iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
 										exportParams.serverUrl,
 										exportParams.photoServer.getErrorMsg(errorCode))
 				writeLogfile(1, errorMsg)
 				return 	false, errorMsg
 			end
-			writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space") .. 
-									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") .. 
+			writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space") ..
+									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") ..
 									"(" .. exportParams.serverUrl .. ") OK\n")
 		end
 	end
@@ -848,11 +848,11 @@ end
 function closeSession(exportParams)
 	writeLogfile(3,"closeSession() starting\n")
 
-	if exportParams.exifTool then 
+	if exportParams.exifTool then
 		exportParams.exifTool:close()
 		exportParams.exifTool = nil
 	end
-		
+
 	writeLogfile(3,"closeSession() done.\n")
 
 	return true
@@ -879,26 +879,26 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 		exportParams.publishMode = 'Publish'
 		needPublishMode = true
 	end
-		
+
 	if string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation, 1, true) and ifnil(exportParams.downloadMode, 'Ask') == 'Ask' then
 		exportParams.downloadMode = 'Yes'
 		needDownloadMode = true
 	end
-		
+
 	-- logLevel 9999 means  'Ask me later'
 	if exportParams.logLevel == 9999 then
 		exportParams.logLevel = 2 			-- Normal
 		needLoglevel = true
 	end
-	
+
 	if not (needPw or needDstRoot or needPublishMode or needDownloadMode or needLoglevel) then
 		return "ok"
 	end
-	
+
 	if publishedCollection then
 		pubCollectionName = publishedCollection:getName()
-	end 
-	
+	end
+
 	local passwdView = f:view {
 		f:row {
 			f:static_text {
@@ -916,7 +916,7 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 				fill_horizontal = 1,
 			},
 		},
-		
+
 		f:spacer {	height = 5, },
 
 		f:row {
@@ -941,28 +941,28 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 	local c = f:view {
 		bind_to_object = exportParams,
 
-		PSDialogs.missingParamsHeaderView(f, exportParams, operation), 
+		PSDialogs.missingParamsHeaderView(f, exportParams, operation),
 		f:spacer {	height = 10, },
-		conditionalItem(needPw, passwdView), 
+		conditionalItem(needPw, passwdView),
 		f:spacer {	height = 10, },
-		conditionalItem(needDstRoot, 	 PSDialogs.dstRootView(f, exportParams, isAskForMissingParams)), 
+		conditionalItem(needDstRoot, 	 PSDialogs.dstRootView(f, exportParams, isAskForMissingParams)),
 		f:spacer {	height = 10, },
-		conditionalItem(needPublishMode, PSDialogs.publishModeView(f, exportParams, isAskForMissingParams)), 
+		conditionalItem(needPublishMode, PSDialogs.publishModeView(f, exportParams, isAskForMissingParams)),
 		f:spacer {	height = 10, },
-		conditionalItem(needDownloadMode, PSDialogs.downloadOptionsView(f, exportParams, isAskForMissingParams)), 
+		conditionalItem(needDownloadMode, PSDialogs.downloadOptionsView(f, exportParams, isAskForMissingParams)),
 		f:spacer {	height = 10, },
-		conditionalItem(needLoglevel, 	 PSDialogs.loglevelView(f, exportParams, isAskForMissingParams)), 
+		conditionalItem(needLoglevel, 	 PSDialogs.loglevelView(f, exportParams, isAskForMissingParams)),
 	}
 
 	local result = LrDialogs.presentModalDialog {
 			title = "Photo StatLr" .. iif(pubCollectionName, ": Published Collection '" .. ifnil(pubCollectionName, '') .. "'", ""),
 			contents = c
 		}
-	
+
 	if result == 'ok' and needLoglevel then
 		changeLogLevel(exportParams.logLevel)
 	end
-	
+
 	return result
 end
 
@@ -973,25 +973,25 @@ function showFinalMessage (title, message, msgType)
 	local prefs = LrPrefs.prefsForPlugin()
 	local updateAvail = false
 	local updateNotice
-	
+
 	if ifnil(prefs.updateAvailable, '') ~= '' and ifnil(prefs.updateAvailable, '') ~= pluginVersion then
 		updateNotice = 'This is a very moving moment: Version ' .. prefs.updateAvailable .. ' is available!\n'
 		updateAvail = true
 	end
-	
+
 	writeLogfile(2, title .. ": " .. message .. '\n')
 
-	if msgType == 'critical' or msgType == 'warning' then 
+	if msgType == 'critical' or msgType == 'warning' then
 --		LrDialogs.message(title, 'Booo!! ' .. message, msgType)
 		local action = LrDialogs.confirm(title, iif(msgType == 'critical', 'Booo!!\n', ' Well, that was different:\n') .. message, "Go to Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(getLogFilename())
-		end	
+		end
 	elseif appVersion.major >= 5 then
-		-- showBezel not supported in Lr4 and below  
+		-- showBezel not supported in Lr4 and below
 		LrDialogs.showBezel('Boooor-ing! ' .. message, 10)
 	end
-	
+
 	if updateAvail then
 		writeLogfile(2,updateNotice .. '\n')
 		if LrDialogs.promptForActionWithDoNotShow( {
@@ -1015,46 +1015,46 @@ PSUtilities = {}
 function PSUtilities.normalizeArea(area)
 	local areaNew
 	if not area then return nil end
-	
+
 	areaNew = tableShallowCopy(area)
 	-- rotate area if required (rotation ~= 0):
 	if area.rotation ~= 0 then
 		--		1) mirror y to get orthogonal coords
 		--		2) shift area (0:1, 0:1) to (-0.5:0.5, -0.5:0.5) (centered)
 		--		3) rotate according to rotation matrix:
-		--			x' = x * cosA - y * sinA 
-		--			y' = x * sinA + y * cosA 
-		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1) 
+		--			x' = x * cosA - y * sinA
+		--			y' = x * sinA + y * cosA
+		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1)
 		-- 		5) mirror y to get original coords
 		local sinA = math.sin(area.rotation)
 		local cosA = math.cos(area.rotation)
-		
+
 		-- 1)
 		local x,y = area.xCenter, 1 - area.yCenter
-		
+
 		-- 2) - 4)
 		areaNew.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
 		-- 2) - 5)
 		areaNew.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
-		
+
 		areaNew.width		= math.abs(area.width * cosA - area.height * sinA)
 		areaNew.height		= math.abs(area.width * sinA + area.height * cosA)
---		writeLogfile(3, string.format("PSUtilities.normalizeArea: sinA:%f, cosA:%f w:%f/%f, h:%f/%f\n", 
---										sinA, cosA, area.width, areaNew.width, area.height, areaNew.height)) 
+--		writeLogfile(3, string.format("PSUtilities.normalizeArea: sinA:%f, cosA:%f w:%f/%f, h:%f/%f\n",
+--										sinA, cosA, area.width, areaNew.width, area.height, areaNew.height))
 		areaNew.rotation 	= 0
 	end
-	
+
 	areaNew.xLeft	= areaNew.xCenter - (areaNew.width / 2)
 	areaNew.yUp		= areaNew.yCenter - (areaNew.height / 2)
 
-	writeLogfile(3, string.format("PSUtilities.normalizeArea: '%s' --> xC:%f/xL:%f yC:%f/yU:%f, w:%f, h:%f\n", 
+	writeLogfile(3, string.format("PSUtilities.normalizeArea: '%s' --> xC:%f/xL:%f yC:%f/yU:%f, w:%f, h:%f\n",
 										areaNew.name,
 										areaNew.xCenter,
 										areaNew.xLeft,
 										areaNew.yCenter,
 										areaNew.yUp,
 										areaNew.width,
-										areaNew.height	
+										areaNew.height
 									))
 	return areaNew
 end
@@ -1064,15 +1064,15 @@ end
 function PSUtilities.denormalizeArea(area, photoDimension)
 	if not area or not photoDimension or not photoDimension.orient then return nil end
 
-	writeLogfile(3, string.format("PSUtilities.denormalizeArea: photo - Orient: %s, Crop: %s, Top: %f, Bottom: %f, Left: %f, Right: %f\n", 
-									photoDimension.orient, photoDimension.hasCrop, photoDimension.cropTop, photoDimension.cropBottom, photoDimension.cropLeft, photoDimension.cropRight)) 
+	writeLogfile(3, string.format("PSUtilities.denormalizeArea: photo - Orient: %s, Crop: %s, Top: %f, Bottom: %f, Left: %f, Right: %f\n",
+									photoDimension.orient, photoDimension.hasCrop, photoDimension.cropTop, photoDimension.cropBottom, photoDimension.cropLeft, photoDimension.cropRight))
 
-	writeLogfile(3, string.format("                             area  - x: %f, y: %f, width: %f, height: %f\n", 
-									area.x, area.y, area.width, area.height)) 
+	writeLogfile(3, string.format("                             area  - x: %f, y: %f, width: %f, height: %f\n",
+									area.x, area.y, area.width, area.height))
 
 	local areaNew = tableShallowCopy(area)
 	local photoRotation = string.format("%1.5f", 0)
-	
+
 	if string.find(photoDimension.orient, 'Horizontal') then
 		photoRotation	= string.format("%1.5f", 0)
 	elseif string.find(photoDimension.orient, '90') then
@@ -1086,46 +1086,46 @@ function PSUtilities.denormalizeArea(area, photoDimension)
 	--	 transform upper left to center coords
 	areaNew.xCenter = areaNew.x + (areaNew.width / 2)
 	areaNew.yCenter = areaNew.y + (areaNew.height / 2)
-	
+
 	-- de-crop
 	if photoDimension.hasCrop then
-		areaNew.width	= areaNew.width   * (photoDimension.cropRight - photoDimension.cropLeft) 
-		areaNew.xCenter = areaNew.xCenter * (photoDimension.cropRight - photoDimension.cropLeft) + photoDimension.cropLeft 
+		areaNew.width	= areaNew.width   * (photoDimension.cropRight - photoDimension.cropLeft)
+		areaNew.xCenter = areaNew.xCenter * (photoDimension.cropRight - photoDimension.cropLeft) + photoDimension.cropLeft
 		areaNew.height 	= areaNew.height  * (photoDimension.cropBottom - photoDimension.cropTop)
 		areaNew.yCenter = areaNew.yCenter * (photoDimension.cropBottom - photoDimension.cropTop) + photoDimension.cropTop
 	end
-	 
+
 	-- if orig photo is rotated:
 	if photoRotation ~= 0 then
 		--		1) mirror y to get orthogonal coords
 		--		2) shift area (0:1, 0:1) to (-0.5:0.5, -0.5:0.5) (centered)
 		--		3) rotate according to rotation matrix:
-		--			x' = x * cosA - y * sinA 
-		--			y' = x * sinA + y * cosA 
-		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1) 
+		--			x' = x * cosA - y * sinA
+		--			y' = x * sinA + y * cosA
+		-- 		4) shift area (-0.5:0.5, -0.5:0.5) back to (0:1, 0:1)
 		-- 		5) mirror y to get original coords
 		local sinA = math.sin(photoRotation)
 		local cosA = math.cos(photoRotation)
-		
+
 		-- 1)
-		local x,y, width, height = areaNew.xCenter, 1 - areaNew.yCenter, areaNew.width, areaNew.height 
-		
+		local x,y, width, height = areaNew.xCenter, 1 - areaNew.yCenter, areaNew.width, areaNew.height
+
 		-- 2) - 4)
 		areaNew.xCenter	= 		((x - 0.5) * cosA - (y - 0.5) * sinA) + 0.5
 		-- 2) - 5)
 		areaNew.yCenter	= 1 -  (((x - 0.5) * sinA + (y - 0.5) * cosA) + 0.5)
-		
+
 		areaNew.width		= math.abs(width * cosA - height * sinA)
 		areaNew.height		= math.abs(width * sinA + height * cosA)
 		areaNew.rotation 	= 0
 	end
-	
-	writeLogfile(3, string.format("PSUtilities.denormalizeArea: '%s' --> xC:%f, yC:%f, w:%f, h:%f\n", 
+
+	writeLogfile(3, string.format("PSUtilities.denormalizeArea: '%s' --> xC:%f, yC:%f, w:%f, h:%f\n",
 										areaNew.name,
 										areaNew.xCenter,
 										areaNew.yCenter,
 										areaNew.width,
-										areaNew.height	
+										areaNew.height
 									))
 	return areaNew
 end
@@ -1151,18 +1151,18 @@ function PSUtilities.areaCompare(area1, area2)
 		math.abs(areaLr.yUp		- areaPS.additional.info.y) < 0.05 and
 		math.abs(areaLr.width	- areaPS.additional.info.width) < 0.05 and
 		math.abs(areaLr.height 	- areaPS.additional.info.height) < 0.05
-	then 
+	then
 		writeLogfile(3, string.format("PSUtilities.areaCompare('%s', '%s') returns true\n", areaLr.name, areaPS.name))
 		return true
-	else 
+	else
 		-- writeTableLogfile(3, 'areaPS.additional.info', areaPS.additional.info, true)
 		writeLogfile(3, string.format("PSUtilities.areaCompare('%s', '%s') returns false\n", areaLr.name, areaPS.name))
 		return false
-	end 
+	end
 end
 
 ---------------------------------------------------------------------------------------------------------
--- rating2Stars (rating) 
+-- rating2Stars (rating)
 function PSUtilities.rating2Stars(rating)
 	return string.rep ('*', rating)
 end
@@ -1185,26 +1185,26 @@ function PSUtilities.noteFolder(albumCheckList, photoPath)
 	local previousAlbum, currentAlbum = nil, albumCheckList
 
 	while currentAlbum do
-		if string.find(currentAlbum.albumPath, albumPath, 1, true) == 1 then 
+		if string.find(currentAlbum.albumPath, albumPath, 1, true) == 1 then
 			writeLogfile(4, string.format("PSUtilities.noteFolder(%s): %s already in list\n", albumPath, currentAlbum.albumPath))
 			return albumCheckList
 		elseif string.len(currentAlbum.albumPath) <= string.len(albumPath) then
 			newAlbum.next = currentAlbum
 			if previousAlbum then
 				previousAlbum.next = newAlbum
-			else		 
-				albumCheckList = newAlbum 
+			else
+				albumCheckList = newAlbum
 			end
 			writeLogfile(3, string.format("PSUtilities.noteFolder(%s): insert before %s\n", albumPath, currentAlbum.albumPath))
 			return albumCheckList
 		else
 			previousAlbum = currentAlbum
-			currentAlbum = currentAlbum.next			
+			currentAlbum = currentAlbum.next
 		end
 	end
 
 	newAlbum.next		= nil
-	if not previousAlbum then 
+	if not previousAlbum then
 		writeLogfile(3, string.format("PSUtilities.noteFolder(%s): insert as first in list\n", albumPath))
 		albumCheckList 		= newAlbum
 	else

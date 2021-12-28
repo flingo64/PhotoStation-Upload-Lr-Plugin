@@ -41,7 +41,7 @@ return {
         'com.adobe.copyright',
         'com.adobe.colorLabels',
         'com.adobe.rating',
-        
+
         'com.adobe.separator',
         { 'com.adobe.label', label = "Exif" },
         'com.adobe.make',
@@ -85,8 +85,8 @@ return {
         'com.adobe.copyright',
         'com.adobe.rightsUsageTerms',
         'com.adobe.copyrightInfoURL',
-        
-		-- exifs 
+
+		-- exifs
         'com.adobe.exposure',
         'com.adobe.focalLength',
         'com.adobe.focalLength35mm',
@@ -105,7 +105,7 @@ return {
         'com.adobe.lens',
         'com.adobe.software',
 
-		-- location info 
+		-- location info
         'com.adobe.GPS',
         'com.adobe.GPSAltitude',
         'com.adobe.location',
@@ -114,7 +114,7 @@ return {
         'com.adobe.country',
         'com.adobe.isoCountryCode',
         'com.adobe.scene',
-        
+
 		-- creator
         'com.adobe.creator',
         'com.adobe.creatorJobTitle',

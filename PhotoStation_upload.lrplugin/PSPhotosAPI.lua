@@ -88,7 +88,7 @@ local PSAPIerrorMsgs = {
 	[641]	= 'error_file_exist',
 --[[
 	[100] = 'Unknown error',
-    [101] = 'No parameter of API, method or version',		-- PS 6.6: no such directory 
+    [101] = 'No parameter of API, method or version',		-- PS 6.6: no such directory
     [102] = 'The requested API does not exist',
     [103] = 'The requested method does not exist',
     [104] = 'The requested version does not support the functionality',
@@ -268,7 +268,7 @@ local function Photos_API (h, apiParams)
 
 	local synoAPI, postBody = '', ''
 	for key, value in pairs(apiParams) do
-		if key == 'api' then 
+		if key == 'api' then
 			if h.userid ~= 0 then value = string.gsub(value, 'FotoTeam', 'Foto') end
 			synoAPI = value
 		end
@@ -566,7 +566,7 @@ local Photos_createFolder
 -- the folder is searched recursively in the pathIdCache until itself or one of its parents is found
 -- if the folder is found return its id,
 -- else if folder is / (root) return not found
--- elseif parent is found (recursively) in cache, 
+-- elseif parent is found (recursively) in cache,
 -- 			call the cache's folder listFunction to get all its childs into the cache
 --	 		if the requested folder is one of its childs,
 --			then return its id
@@ -714,7 +714,7 @@ function Photos.getPhotoUrl(h, photoPath, isVideo)
 	local folderId	= h:getFolderId(normalizeDirname(LrPathUtils.parent(photoPath)))
 	local itemId 	= h:getPhotoId(photoPath, isVideo)
 	if not folderId or not itemId then
-		writeLogfile(1, string.format("getPhotoUrl(server='%s', userid='%s', path='%s'): folderId '%s', itemId '%s' returns nil\n", 
+		writeLogfile(1, string.format("getPhotoUrl(server='%s', userid='%s', path='%s'): folderId '%s', itemId '%s' returns nil\n",
 							h.serverUrl, h.userid, photoPath, ifnil(folderId, '<nil>'), ifnil(itemId, '<nil>')))
 		return ''
 	end
@@ -801,7 +801,7 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 	h.serverCapabilities = PHOTOSERVER_API[version].capabilities
 	h.Photo 	= PhotosPhoto.new()
 
-	writeLogfile(3, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d) returns\n%s\n", 
+	writeLogfile(3, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d) returns\n%s\n",
 						serverUrl, usePersonalPS, personalPSOwner, serverTimeout, JSON:encode(h)))
 
 	-- rewrite the apiInfo table with API infos retrieved via SYNO.API.Info
@@ -877,7 +877,7 @@ function Photos_createFolder (h, parentDir, newDir)
 	}
 	local respArray, errorCode = Photos_API(h, apiParams)
 
-	if not respArray and Photos.getErrorMsg(errorCode) == 'error_file_exist' then 
+	if not respArray and Photos.getErrorMsg(errorCode) == 'error_file_exist' then
 		return Photos.getFolderId(h, LrPathUtils.child(parentDir, newDir))
 	end
 
@@ -889,12 +889,12 @@ function Photos_createFolder (h, parentDir, newDir)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- function createTree(h, srcDir, srcRoot, dstRoot, dirsCreated) 
--- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir), 
+-- function createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
+-- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir),
 --	create each folder recursively if not already created
 -- 	store created directories in dirsCreated
 -- 	return created dstDir or nil on error
-function Photos.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated) 
+function Photos.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 	writeLogfile(3, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
 
 	-- sanitize srcRoot: avoid trailing slash and backslash
@@ -1018,7 +1018,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 		-- remember: LrFileUtils.readFile() can't handle huge files, e.g videos > 2GB, at least on Windows
  		-- respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
 	else
-    	-- use callback function returning 10MB chunks to feed LrHttp.post() 
+    	-- use callback function returning 10MB chunks to feed LrHttp.post()
     	-- local postFile = io.open(srcFilename, "rb")
     	-- if not postFile then return false, "Cannot open " .. srcFilename ..' for reading' end
 		local synoAPI = iif(h.userid ~= 0, 'SYNO.Foto.Upload.Item', 'SYNO.FotoTeam.Upload.Item')
@@ -1092,7 +1092,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 
 	if not respBody then
 		if respHeaders then
-			errorMsg = 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
+			errorMsg = 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' ..
 							trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
 			writeTableLogfile(3, 'respHeaders', respHeaders)
 		else
@@ -1101,7 +1101,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 		writeLogfile(1, string.format("%s failed: %s!\n", funcAndParams, errorMsg))
 		return false, errorMsg
 	end
-	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")	
+	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
 
 	local respArray = JSON:decode(respBody, funcAndParams)
 
@@ -1142,10 +1142,10 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- uploadVideoFiles
 -- upload video plus its thumbnails (if configured) and add. videos)
--- exportParams.psutils.uploadVideoFiles(exportParams.photoServer, dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate, 
+-- exportParams.psutils.uploadVideoFiles(exportParams.photoServer, dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate,
 --			vid_Orig_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 --			vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
-function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, video_Filename, title_Filename, 
+function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, video_Filename, title_Filename,
 										thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 										vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
 	dstFilePath = dstDir .. "/" .. dstFilename
@@ -1269,7 +1269,7 @@ local tagIdCache = {
 }
 
 ---------------------------------------------------------------------------------------------------------
--- tagIdCacheUpdate(h, type) 
+-- tagIdCacheUpdate(h, type)
 local function tagIdCacheUpdate(h, type)
 	writeLogfile(3, string.format('tagIdCacheUpdate(%s).\n', type))
 	tagIdCache[type] = Photos_getTagIds(h, type)
@@ -1277,7 +1277,7 @@ local function tagIdCacheUpdate(h, type)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- tagIdCacheGetEntry(h, type, name) 
+-- tagIdCacheGetEntry(h, type, name)
 local function tagIdCacheGetEntry(h, type, name)
 	writeLogfile(4, string.format("getTagId(%s, %s)...\n", type, name))
 	local tagsOfType = tagIdCache[type]
@@ -1288,9 +1288,9 @@ local function tagIdCacheGetEntry(h, type, name)
 	tagsOfType = tagIdCache[type]
 
 	for i = 1, #tagsOfType do
-		if tagsOfType[i].name == name then 
+		if tagsOfType[i].name == name then
 			writeLogfile(3, string.format("getTagId(%s, '%s') found  %s.\n", type, name, tagsOfType[i].id))
-			return tagsOfType[i].id 
+			return tagsOfType[i].id
 		end
 	end
 
@@ -1396,7 +1396,7 @@ function Photos.removePhotoTag(h, photoPath, tagType, tagId)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotoTag (h, dstFilename, type, name, addinfo) 
+-- createAndAddPhotoTag (h, dstFilename, type, name, addinfo)
 -- create and add a new tag (desc,people,geo) to a photo
 function Photos.createAndAddPhotoTag(h, dstFilename, type, name, addinfo)
 	local tagId = tagIdCacheGetEntry(h, type, name)
@@ -1455,7 +1455,7 @@ function PhotosPhoto.new(photoServer, photoPath, isVideo, infoTypeList, useCache
 	photoInfo.photoPath = photoPath
 
 	writeLogfile(3, string.format("PhotosPhoto:new(): returns photoInfo %s\n", JSON:encode(photoInfo)))
-	
+
 	photoInfo.photoServer 	= photoServer
 
 	return setmetatable(photoInfo, PhotosPhoto_mt)

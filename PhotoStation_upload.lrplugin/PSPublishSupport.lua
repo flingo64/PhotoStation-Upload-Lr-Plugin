@@ -60,7 +60,7 @@ local publishServiceProvider = {}
 
 --------------------------------------------------------------------------------
 --- (string) Plug-in defined value is the filename of the icon to be displayed
- -- for this publish service provider, in the Publish Services panel, the Publish 
+ -- for this publish service provider, in the Publish Services panel, the Publish
  -- Manager dialog, and in the header shown when a published collection is selected.
  -- The icon must be in PNG format and no more than 24 pixels wide or 19 pixels tall.
 
@@ -73,7 +73,7 @@ publishServiceProvider.small_icon = 'PhotoStatLr.png'
  -- an explicit name choice, Lightroom can provide one based on another entry
  -- in the publishSettings property table. This entry contains the name of the
  -- property that should be used in this case.
-	
+
 -- publishServiceProvider.publish_fallbackNameBinding = 'fullname'
 
 --------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ publishServiceProvider.small_icon = 'PhotoStatLr.png'
  -- <p>This string is typically used in combination with verbs that take action on
  -- the published collection, such as "Create ^1" or "Rename ^1".</p>
  -- <p>If not provided, Lightroom uses the default name, "Published Collection." </p>
-	
+
 publishServiceProvider.titleForPublishedCollection = LOC "$$$/PSUpload/TitleForPublishedCollection=Published Collection"
 
 --------------------------------------------------------------------------------
@@ -104,7 +104,7 @@ publishServiceProvider.titleForPublishedCollection_standalone = LOC "$$$/PSUploa
  -- <p>This string is typically used in combination with verbs that take action on
  -- the published collection set, such as "Create ^1" or "Rename ^1".</p>
  -- <p>If not provided, Lightroom uses the default name, "Published Collection Set." </p>
-	
+
 publishServiceProvider.titleForPublishedCollectionSet = LOC "$$$/PSUpload/TitleForPublishedCollectionSet=Published Collection Set"
 
 --------------------------------------------------------------------------------
@@ -143,8 +143,8 @@ publishServiceProvider.titleForPublishedSmartCollection = LOC "$$$/PSUpload/Titl
 publishServiceProvider.titleForPublishedSmartCollection_standalone = LOC "$$$/PSUpload/TitleForPublishedSmartCollection/Standalone=Published Smart Collection"
 
 --------------------------------------------------------------------------------
--- This (optional) plug-in defined callback function is called when publishing has been initiated, 
--- and should simply return true or false to indicate whether any deletion of photos from the service 
+-- This (optional) plug-in defined callback function is called when publishing has been initiated,
+-- and should simply return true or false to indicate whether any deletion of photos from the service
 -- should take place before any publishing of new images and updating of previously published images.
 function publishServiceProvider.deleteFirstOnPublish()
 	return false
@@ -153,8 +153,8 @@ end
 --------------------------------------------------------------------------------
 --- (optional) If you provide this plug-in defined callback function, Lightroom calls it to
  -- retrieve the default collection behavior for this publish service, then use that information to create
- -- a built-in <i>default collection</i> for this service (if one does not yet exist). 
- 
+ -- a built-in <i>default collection</i> for this service (if one does not yet exist).
+
 function publishServiceProvider.getCollectionBehaviorInfo( publishSettings )
 
 	return {
@@ -162,7 +162,7 @@ function publishServiceProvider.getCollectionBehaviorInfo( publishSettings )
 		defaultCollectionCanBeDeleted = false,
 		canAddCollection = true,
 	}
-	
+
 end
 
 --------------------------------------------------------------------------------
@@ -175,14 +175,14 @@ publishServiceProvider.titleForGoToPublishedCollection = LOC "$$$/PSUpload/Title
 --- (optional) This plug-in defined callback function is called when the user chooses
  -- the "Go to Published Collection" context-menu item.
 function publishServiceProvider.goToPublishedCollection( publishSettings, info )
-	local albumPath, albumUrl 
+	local albumPath, albumUrl
 
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
 	albumPath = PSLrUtilities.getCollectionUploadPath(info.publishedCollection)
-	
-	if PSLrUtilities.isDynamicAlbumPath(albumPath)then 
+
+	if PSLrUtilities.isDynamicAlbumPath(albumPath)then
 		showFinalMessage("Photo StatLr: GoToPublishedCollection failed!", "Show Album '" .. info.publishedCollection:getName() .. "' in Photo Server: can't open a dynamic target album!", "info")
 		closeLogfile()
 		return
@@ -197,16 +197,16 @@ function publishServiceProvider.goToPublishedCollection( publishSettings, info )
 		closeLogfile()
 		return
 	end
-	
+
 	albumUrl = publishSettings.photoServer:getAlbumUrl(albumPath)
 
 	LrHttp.openUrlInBrowser(albumUrl)
 end
 
 --------------------------------------------------------------------------------
---- (optional, string) Plug-in defined value overrides the label for the 
+--- (optional, string) Plug-in defined value overrides the label for the
  -- "Go to Published Photo" context-menu item, allowing you to use something more appropriate to
- -- your service. Set to the special value "disable" to disable (dim) the menu item for this service. 
+ -- your service. Set to the special value "disable" to disable (dim) the menu item for this service.
 
 publishServiceProvider.titleForGoToPublishedPhoto = LOC "$$$/PSUpload/TitleForGoToPublishedPhoto=Show Photo in Photo Server"
 
@@ -220,7 +220,7 @@ function publishServiceProvider.goToPublishedPhoto( publishSettings, info )
 	openLogfile(publishSettings.logLevel)
 
 	-- open session: initialize environment, get missing params and login
-	-- 		now way to get the belgonging publishedCollection here: use nil 
+	-- 		now way to get the belgonging publishedCollection here: use nil
 	local sessionSuccess, reason = openSession(publishSettings, nil, 'GoToPublishedPhoto')
 	if not sessionSuccess then
 		if reason ~= 'cancel' then
@@ -286,10 +286,10 @@ end
 function publishServiceProvider.willDeletePublishService( publishSettings, info )
 	-- we would like to remove the belonging Shared Album keyword hierarchy here
 	-- but: there is no API to remove keywords ...
-	
-	LrDialogs.message("Photo StatLr: Delete Publish Service", 
+
+	LrDialogs.message("Photo StatLr: Delete Publish Service",
 					LOC("$$$/PSUpload/FinalMsg/DeletePublishService/RemoveSharedAlbum=Please consider removing the following service-related keyword hierarchy:\n'^1'.",
-						"Photo StatLr|Shared Albums|" .. info.connectionName), 'info') 
+						"Photo StatLr|Shared Albums|" .. info.connectionName), 'info')
 end
 
 --------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ end
 function publishServiceProvider.deletePhotosFromPublishedCollection(publishSettings, arrayOfPhotoIds, deletedCallback, localCollectionId)
 	publishSettings.publishMode = 'Delete'
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(localCollectionId)
-	
+
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
@@ -342,16 +342,16 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 
 	local startTime = LrDate.currentTime()
 	local nPhotos = #arrayOfPhotoIds
-	local nProcessed = 0 
+	local nProcessed = 0
 	local albumsForCheckEmpty
-	
+
 	for i, photoId in ipairs( arrayOfPhotoIds ) do
-		
-		
+
+
 		if publishSettings.photoServer:deletePhoto (photoId, PSLrUtilities.isVideo(photoId)) then
 			writeLogfile(2, "deletePhotosFromPublishedCollection: '" .. photoId .. "': successfully deleted.\n")
 			albumsForCheckEmpty = PSUtilities.noteFolder(albumsForCheckEmpty, photoId)
-			
+
 			nProcessed = nProcessed + 1
 			deletedCallback( photoId )
 		else
@@ -363,7 +363,7 @@ function publishServiceProvider.deletePhotosFromPublishedCollection(publishSetti
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePhotosFromPublishedCollection=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePhotosFromPublishedCollection=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n",
 					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 
 	showFinalMessage("Photo StatLr: Delete photos done", message, "info")
@@ -403,11 +403,11 @@ end
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
  -- creates a new published collection or edits an existing one. It can add
- -- additional controls to the dialog box for editing this collection. 
+ -- additional controls to the dialog box for editing this collection.
 function publishServiceProvider.viewForCollectionSettings( f, publishSettings, info )
 	local prefs = LrPrefs.prefsForPlugin()
 	local collectionSettings = assert( info.collectionSettings )
-	
+
     local pluginDefaultCollectionSettings = {
 		hasError 			= false,
 		isCollection 		= true,
@@ -418,12 +418,12 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
     	createDstRoot		= false,
     	copyTree			= false,
     	srcRoot				= '',
-    
+
     	renameDstFile		= false,
     	dstFilename			= '',
     	RAWandJPG			= false,
     	sortPhotos			= false,
-    
+
     	exifTranslate			= publishSettings.exifTranslate,
     	exifXlatFaceRegions		= publishSettings.exifXlatFaceRegions,
     	exifXlatRating			= publishSettings.exifXlatRating,
@@ -431,35 +431,35 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 		xlatLocationTags		= publishSettings.xlatLocationTags,
 		locationTagSeperator	= publishSettings.locationTagSeperator,
 		locationTagTemplate 	= publishSettings.locationTagTemplate,
-    
+
     	titleDownload		= false,
     	captionDownload		= false,
     	locationDownload	= false,
     	locationTagDownload	= false,
     	ratingDownload		= false,
-    
+
     	tagsDownload		= false,
     	PS2LrFaces			= false,
     	PS2LrLabel			= false,
     	PS2LrRating			= false,
-    
+
     	commentsDownload	= false,
     	pubCommentsDownload	= false,
     	pubColorDownload	= false,
-    
+
     	publishMode 		= 'Publish',
     	downloadMode		= 'Yes',
     }
-	
+
 	-- make sure logfile is opened
-	openLogfile(iif(publishSettings.logLevel == 9999, 2, publishSettings.logLevel))	
-	
-	-- if we are not the defaultCollection, find the defaultColletionSettings for initializing our settings 
-	local serviceDefaultCollectionName, serviceDefaultCollectionSettings 
+	openLogfile(iif(publishSettings.logLevel == 9999, 2, publishSettings.logLevel))
+
+	-- if we are not the defaultCollection, find the defaultColletionSettings for initializing our settings
+	local serviceDefaultCollectionName, serviceDefaultCollectionSettings
 	if not info.isDefaultCollection then
 		serviceDefaultCollectionName, serviceDefaultCollectionSettings = PSLrUtilities.getDefaultCollectionSettings(info.publishService)
 	end
-	
+
 	if serviceDefaultCollectionSettings then
 		writeLogfile(3,string.format("Found Default Collection '%s' for service:\nApplying plugin defaults to unitialized values of Service Default Collection\n", serviceDefaultCollectionName))
 		applyDefaultsIfNeededFromTo(pluginDefaultCollectionSettings, serviceDefaultCollectionSettings)
@@ -476,41 +476,41 @@ function publishServiceProvider.viewForCollectionSettings( f, publishSettings, i
 	--============= observe changes in collection setiings dialog ==============
 	PSDialogs.addObservers( collectionSettings )
 
-	-- manual suggest group_box as outmost container, but nested group_boxes will get an invisible title 
+	-- manual suggest group_box as outmost container, but nested group_boxes will get an invisible title
 	--	f:group_box {
 	--	title		= 'Photo StatLr collection settings',
 	return f:view {
 		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSettings ),
-		
+
     	f:column {
     		fill_horizontal = 1,
     		spacing = f:label_spacing(),
 			PSDialogs.collectionHeaderView(f, collectionSettings, info.isDefaultCollection, serviceDefaultCollectionName),
-			
+
 			PSDialogs.targetAlbumView(f, collectionSettings),
 
 			PSDialogs.photoNamingView(f, collectionSettings),
 
             PSDialogs.uploadOptionsView(f, collectionSettings),
- 
+
             PSDialogs.downloadOptionsView(f, collectionSettings),
- 
+
             PSDialogs.downloadModeView(f, collectionSettings),
 
             PSDialogs.publishModeView(f, collectionSettings),
 
    			f:spacer { fill_horizontal = 1,	},
-			
+
     		f:row {
     			alignment = 'center',
-    
+
     			f:static_text {
     				title 			= bind 'message',
     				text_color 		= LrColor("red"),
    					font			= '<system/bold>',
-   					alignment		= 'center', 
+   					alignment		= 'center',
     				fill_horizontal = 1,
     				visible 		= bind 'hasError'
     			},
@@ -532,7 +532,7 @@ end
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
  -- closes the dialog for creating a new published collection or editing an existing
- -- one. 
+ -- one.
 --[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.endDialogForCollectionSettings( publishSettings, info )
@@ -544,7 +544,7 @@ end
 -- updatCollectionSetStatus: do some sanity checks on Published Collection Set dialog settings
 local function updateCollectionSetStatus( collectionSetSettings )
 	return true
---[[	
+--[[
 	local message = nil
 
 	if message then
@@ -556,13 +556,13 @@ local function updateCollectionSetStatus( collectionSetSettings )
 		collectionSetSettings.message = nil
 		collectionSetSettings.LR_canSaveCollection = true
 	end
-]]	
+]]
 end
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
  -- creates a new published collection set or edits an existing one. It can add
- -- additional controls to the dialog box for editing this collection set. 
+ -- additional controls to the dialog box for editing this collection set.
 
 function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings, info )
 	local collectionSetSettings = assert( info.collectionSettings )
@@ -574,7 +574,7 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 
 	collectionSetSettings:addObserver( 'baseDir', updateCollectionSetStatus )
 	updateCollectionSetStatus( collectionSetSettings )
-		
+
 	if collectionSetSettings.baseDir == nil then
 		collectionSetSettings.baseDir = ''
 	end
@@ -583,15 +583,15 @@ function publishServiceProvider.viewForCollectionSetSettings( f, publishSettings
 --		size = 'small',
 		fill_horizontal = 1,
 		bind_to_object = assert( collectionSetSettings ),
-		
+
 		f:column {
 			fill_horizontal = 1,
 			spacing = f:label_spacing(),
 
 			PSDialogs.collectionHeaderView(f, collectionSetSettings, false, nil),
-			
+
 			PSDialogs.dstRootForSetView(f, collectionSetSettings),
-			
+
 			f:row {
 				alignment = 'left',
 
@@ -609,7 +609,7 @@ end
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called when the user
  -- closes the dialog for creating a new published collection set or editing an existing
- -- one. 
+ -- one.
 --[[ Not used for Photo StatLr plug-in.
 
 function publishServiceProvider.endDialogForCollectionSetSettings( publishSettings, info )
@@ -649,7 +649,7 @@ end
  -- the <a href="#publishServiceProvider.imposeSortOrderOnPublishedCollection"><code>imposeSortOrderOnPublishedCollection</code></a>
  -- callback to cause photos to be sorted on the service after each Publish
 publishServiceProvider.supportsCustomSortOrder = true
-	
+
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called after each time
  -- that photos are published via this service assuming the published collection
@@ -659,7 +659,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	openLogfile(publishSettings.logLevel)
 	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n")
 
-	-- get publishedCollections: 
+	-- get publishedCollections:
 	--   remoteCollectionId is the only collectionId we have here, so it must be equal to localCollectionId to retrieve the publishedCollection!!!
 	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
 	local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
@@ -676,7 +676,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 		return false
 	end
 
-	-- do not sort if not configured or is Tree Mirror or Target Album is dynamic 
+	-- do not sort if not configured or is Tree Mirror or Target Album is dynamic
 	if not publishSettings.sortPhotos or publishSettings.copyTree then
 		writeLogfile(3, "imposeSortOrderOnPublishedCollection: nothing to sort, done.\n")
 		return false
@@ -684,7 +684,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Cannot sort photo: target album is dynamic!\n")
 		return false
 	end
-	
+
 	publishSettings.photoServer:sortAlbumPhotos(albumPath, remoteIdSequence)
 
 	showFinalMessage("Photo StatLr: Sort Photos in Album done", "Sort Photos in Album done.", "info")
@@ -707,14 +707,14 @@ end
 
 -------------------------------------------------------------------------------
 --- (Boolean) This plug-in defined value, when true, disables (dims) the Rename Published
- -- Collection command in the context menu of the Publish Services panel 
- -- for all published collections created by this service. 
+ -- Collection command in the context menu of the Publish Services panel
+ -- for all published collections created by this service.
 publishServiceProvider.disableRenamePublishedCollection = false
 
 -------------------------------------------------------------------------------
 --- (Boolean) This plug-in defined value, when true, disables (dims) the Rename Published
  -- Collection Set command in the context menu of the Publish Services panel
- -- for all published collection sets created by this service. 
+ -- for all published collection sets created by this service.
 
 publishServiceProvider.disableRenamePublishedCollectionSet = false
 
@@ -756,34 +756,34 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 		closeLogfile()
 		return
 	end
-	
+
 	if info.publishedCollection:type() == 'LrPublishedCollectionSet' then
 		writeLogfile(2, "deletePublishedCollection: Published Collection Set - nothing to do.\n")
 		return
 	end
-	
+
 	writeLogfile(3, "deletePublishedCollection: starting\n")
-	local publishedPhotos = info.publishedCollection:getPublishedPhotos() 
+	local publishedPhotos = info.publishedCollection:getPublishedPhotos()
 	local startTime = LrDate.currentTime()
 	local nPhotos = #publishedPhotos
-	local nProcessed = 0 
-	
+	local nProcessed = 0
+
 	writeLogfile(2, string.format("deletePublishedCollection: deleting %d published photos from collection %s\n", nPhotos, info.name ))
 
 	local progressScope = LrProgressScope ( {
 							title = LOC( "$$$/PSUpload/Progress/DeletingCollectionAndContents=Deleting collection ^[^1^] with ^2 photos", info.name, nPhotos),
 --								functionContext = context,
-						 }) 
-						
+						 })
+
 	local albumsForCheckEmpty
 	local canceled = false
 
 	for i = 1, nPhotos do
-		if progressScope:isCanceled() then 
+		if progressScope:isCanceled() then
 			canceled = true
-			break 
+			break
 		end
-		
+
 		local pubPhoto = publishedPhotos[i]
 		local publishedPath = pubPhoto:getRemoteId()
 
@@ -807,17 +807,17 @@ function publishServiceProvider.deletePublishedCollection( publishSettings, info
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePublishedColletion=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/DeletePublishedColletion=Deleted ^1 of ^2 pics and ^3 empty albums in ^4 seconds (^5 pics/sec).\n",
 					nProcessed, nPhotos, nDeletedAlbums, string.format("%.1f",timeUsed + 0.5), string.format("%.1f",picPerSec))
 
 	showFinalMessage("Photo StatLr: DeletePublishedCollection done", message, "info")
 	closeLogfile()
-	
+
 end
 
 --------------------------------------------------------------------------------
---- (optional) This plug-in defined callback function is called (if supplied)  
- -- to retrieve comments from the remote service, for a single collection of photos 
+--- (optional) This plug-in defined callback function is called (if supplied)
+ -- to retrieve comments from the remote service, for a single collection of photos
  -- that have been published through this service.
  -- 	publishSettings (table) The settings for this publish service, as specified
 		-- by the user in the Publish Manager dialog. Any changes that you make in
@@ -833,16 +833,16 @@ end
 			-- commentCount: (number) The number of existing comments
 					-- 	for this photo in Lightroom's catalog database.
  -- 	commentCallback (function) A callback function that your implementation should call to record
- -- 
+ --
 function publishServiceProvider.getCommentsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, commentCallback )
 	-- get the belonging Published Collection by evaluating the first photo
 	local nPhotos =  #arrayOfPhotoInfo
 	local publishServiceName
 	local publishedCollection, publishedCollectionName
-	local nProcessed 	= 0 
-	local nComments 	= 0 
-	local nColorLabel	= 0 
-	
+	local nProcessed 	= 0
+	local nComments 	= 0
+	local nColorLabel	= 0
+
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 	writeLogfile(3, string.format("Get comments: starting...\n"))
@@ -851,7 +851,7 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		writeLogfile(2, string.format("Get comments: canceled by user\n"))
 		return
 	end
-	
+
 	if nPhotos == 0 then
 		writeLogfile(2, string.format("Get comments: nothing to do.\n"))
 		closeLogfile()
@@ -868,8 +868,8 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		showFinalMessage("Photo StatLr: Get comments failed!", 'Cannot sync comments on corrupted collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
-	end	
-	
+	end
+
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetCommentsFromPublishedCollection')
 	if not sessionSuccess then
@@ -889,19 +889,19 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 		closeLogfile()
 		return
 	end
-		
+
 	publishedCollectionName = publishedCollection:getName()
 	publishServiceName		= publishedCollection:getService():getName()
 	writeLogfile(2, string.format("Get comments for %d photos in collection %s (%s).\n", nPhotos, publishedCollectionName, publishServiceName))
 
 	local startTime = LrDate.currentTime()
 
-	local progressScope = LrProgressScope( 
+	local progressScope = LrProgressScope(
 								{ 	title = LOC( "$$$/PSUpload/Progress/GetCommentsFromPublishedCollection=Downloading comments for ^1 photos in collection ^[^2^]", nPhotos, publishedCollection:getName()),
---							 		functionContext = context 
-							 	})  
-	
-	-- if pubComemntDownload: download a comment list for all shared albums of this publish service						 	
+--							 		functionContext = context
+							 	})
+
+	-- if pubComemntDownload: download a comment list for all shared albums of this publish service
 	local serviceSharedAlbumComments = {}
 
 	-- get all Shared Albums belonging to this service
@@ -915,30 +915,30 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
 			end
 		end
 	end
-	
+
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
 		local srcPhoto = photoInfo.photo
 		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
-   		local lastCommentTimestamp 
+   		local lastCommentTimestamp
    		local commentInfo = {}
-   		local commentListLr = {} 
+   		local commentListLr = {}
 
 		-- get photo comments from PS albums
-		if publishSettings.commentsDownload then 
+		if publishSettings.commentsDownload then
     		local commentsPS = publishSettings.photoServer:getPhotoComments(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
-    		
+
     		if not commentsPS then
     			writeLogfile(1, string.format("Get comments: %s failed!\n", photoInfo.remoteId))
     		elseif  #commentsPS > 0 then
-        
+
        			writeLogfile(3, string.format("Get comments: %s - found %d comments in private Album\n", photoInfo.remoteId, #commentsPS))
     			for _, comment in ipairs( commentsPS ) do
     				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
     				local commentTimestamp = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local')
-    				
+
     				local commentLr = {
     								commentId = string.match(comment.id, 'comment_(%d+)'),
     								commentText = comment.comment,
@@ -947,27 +947,27 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
       								realname = ifnil(comment.name, '') .. '@PS (Photo Server internal)',
     							}
     				table.insert(commentListLr, commentLr)
-   
+
        				if commentTimestamp > ifnil(lastCommentTimestamp, 0) then
        					lastCommentTimestamp			= commentTimestamp
-       					
+
        					commentInfo.lastCommentType 	= 'private'
        					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
        					commentInfo.lastCommentUrl		= publishSettings.photoServer:getPhotoUrl(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
        					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
        					commentInfo.lastCommentText		= commentLr.commentText
-       					
+
     				end
-    			end			
-    
-    		end	
+    			end
+
+    		end
 		end
 
 		if publishSettings.pubColorDownload or publishSettings.pubCommentsDownload then
     		-- get photo comments from PS public shared albums, if photo is member of any shared album
     		local photoSharedAlbums = PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
     		if photoSharedAlbums then
-    		
+
        			writeLogfile(4, string.format("Get comments: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
     			for i = 1, #photoSharedAlbums do
   					-- download color label and or comments from this shared album only if:
@@ -977,56 +977,56 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
     				local collectionId, sharedAlbumName = string.match(photoSharedAlbums[i], '(%d+):(.+)')
     				local psSharedPhotoId 		= publishSettings.photoServer:getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
 	    			local psSharedPhotoLogFound	= findInAttrValueTable(serviceSharedAlbumComments[sharedAlbumName], 'item_id', psSharedPhotoId, 'name')
-	    			 
-    				if 		tonumber(collectionId) == publishedCollection.localIdentifier 
+
+    				if 		tonumber(collectionId) == publishedCollection.localIdentifier
     					and	publishSettings.photoServer:isSharedAlbumPublic(sharedAlbumName)
 	    				and psSharedPhotoLogFound
 					then
-						
+
 						if publishSettings.pubColorDownload then
 							local psPubColorLabel = publishSettings.photoServer:getPublicSharedPhotoColorLabel(sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
-        		   			writeLogfile(3, string.format("Get comments: %s - found color label '%s' in Shared Album '%s'\n", 
+        		   			writeLogfile(3, string.format("Get comments: %s - found color label '%s' in Shared Album '%s'\n",
     		   							photoInfo.remoteId, ifnil(psPubColorLabel, '<nil>'), sharedAlbumName))
     		   				nColorLabel = nColorLabel + 1
 							-- TODO: set label in Lr
 --[[
 							-- all label actions (labeling and unlabeling) are stored in the photo log, so we have to find the last action
-							local psSharedPhotoLabelColor, psSharedPhotoLabelDate 
+							local psSharedPhotoLabelColor, psSharedPhotoLabelDate
 							local psSharedAlbumLog = serviceSharedAlbumComments[sharedAlbumName]
-							
+
 							for i = 1, #psSharedAlbumLog do
 								local psSharedPhotoLog =  psSharedAlbumLog[i]
 								if psSharedPhotoLog.item_id == psSharedPhotoId and psSharedPhotoLog.category == 'label' then
-	            		   			writeLogfile(3, string.format("Get comments: %s - found label action '%s (%s)' in Shared Album '%s'\n", 
+	            		   			writeLogfile(3, string.format("Get comments: %s - found label action '%s (%s)' in Shared Album '%s'\n",
 	            		   							photoInfo.remoteId, psSharedPhotoLog.log, psSharedPhotoLog.date, sharedAlbumName))
 									if not psSharedPhotoLabelDate or psSharedPhotoLog.date > psSharedPhotoLabelDate then
 										psSharedPhotoLabelDate = psSharedPhotoLog.date
 										psSharedPhotoLabelColor = string.match(psSharedPhotoLog.log, '.*%[(%w+)%]')
-		            		   			writeLogfile(3, string.format("Get comments: %s - note label '%s' (%s) in Shared Album '%s'\n", 
+		            		   			writeLogfile(3, string.format("Get comments: %s - note label '%s' (%s) in Shared Album '%s'\n",
 	            		   							photoInfo.remoteId, ifnil(psSharedPhotoLabelColor, '<nil>'), psSharedPhotoLog.date, sharedAlbumName))
 	            		   			end
 								end
 							end
 							-- if we found one ...
 							if psSharedPhotoLabelDate then
-            		   			writeLogfile(3, string.format("Get comments: %s - using label '%s (%s)' in Shared Album '%s'\n", 
+            		   			writeLogfile(3, string.format("Get comments: %s - using label '%s (%s)' in Shared Album '%s'\n",
         		   							photoInfo.remoteId, ifnil(psSharedPhotoLabelColor, '<nil>'), psSharedPhotoLabelDate, sharedAlbumName))
         		   				nColorLabel = nColorLabel + 1
 								-- TODO: set label in Lr
 							end
 ]]
 						end
-							
+
 						if publishSettings.pubCommentsDownload then
             				local sharedCommentsPS 	= publishSettings.photoServer:getPublicSharedPhotoComments(sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
-            
+
                     		if sharedCommentsPS and #sharedCommentsPS > 0 then
             		   			writeLogfile(3, string.format("Get comments: %s - found %d comments in Shared Album '%s'\n", photoInfo.remoteId, #sharedCommentsPS, sharedAlbumName))
-                    
+
                     			for j, comment in ipairs( sharedCommentsPS ) do
                     				local year, month, day, hour, minute, second = string.match(comment.date, '(%d+)-(%d+)-(%d+) (%d+):(%d+):(%d)')
     			    				local commentTimestamp = LrDate.timeFromComponents(year, month, day, hour, minute, second, 'local')
-                    
+
                     				local commentLr = {
                     								commentId = photoSharedAlbums[i] .. '_' .. comment.date, -- we need something unique
                     								commentText = comment.comment,
@@ -1034,50 +1034,50 @@ function publishServiceProvider.getCommentsFromPublishedCollection( publishSetti
                 	   								username = ifnil(comment.email, ''),
                 	  								realname = ifnil(comment.name, '') .. '@' .. sharedAlbumName .. ' (Public Shared Album)',
                     							}
-                    							
+
                     				table.insert(commentListLr, commentLr)
-    
+
                        				if commentTimestamp > ifnil(lastCommentTimestamp, 0) then
                        					lastCommentTimestamp	= commentTimestamp
-    
+
                        					commentInfo.lastCommentType 	= 'public'
                        					commentInfo.lastCommentSource	= publishServiceName .. '/' .. publishedCollectionName
-                       					commentInfo.lastCommentUrl		= publishSettings.photoServer:getSharedPhotoPublicUrl(sharedAlbumName, 
+                       					commentInfo.lastCommentUrl		= publishSettings.photoServer:getSharedPhotoPublicUrl(sharedAlbumName,
                        																							 photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
                        					commentInfo.lastCommentAuthor	= ifnil(comment.name, '')
                        					commentInfo.lastCommentText		= commentLr.commentText
                     				end
                     			end
         					end
-                		end	
+                		end
 					end
     			end
     		end
 		end
 
 		writeLogfile(2, string.format("Get comments: %s - %d comments\n", photoInfo.remoteId, #commentListLr))
-		
-		local lastCommentDate 
+
+		local lastCommentDate
 		if lastCommentTimestamp then
 			commentInfo.lastCommentDate= LrDate.timeToUserFormat(lastCommentTimestamp, "%Y-%m-%d", false)
 			commentInfo.commentCount = #commentListLr
 		end
 		PSLrUtilities.setPhotoPluginMetaCommentInfo(srcPhoto, commentInfo)
-		
+
 		writeTableLogfile(4, "commentListLr", commentListLr)
 
 		-- if we do not call commentCallback, the photo goes to 'To re-publish'
 		commentCallback({publishedPhoto = photoInfo, comments = commentListLr})
 		nComments = nComments + #commentListLr
-    	
+
    		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
-	end 
+   		progressScope:setPortionComplete(nProcessed, nPhotos)
+	end
 	progressScope:done()
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/FinalMsg/GetCommentsFromPublishedCollection=Got ^1 comments for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/GetCommentsFromPublishedCollection=Got ^1 comments for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).",
 					nComments, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 
 	showFinalMessage("Photo StatLr: Get comments done", message, "info")
@@ -1096,7 +1096,7 @@ publishServiceProvider.titleForPhotoRating = LOC "$$$/PSUpload/TitleForPhotoRati
 
 --------------------------------------------------------------------------------
 --- (optional) This plug-in defined callback function is called (if supplied)
- -- to retrieve ratings from the remote service, for a single collection of photos 
+ -- to retrieve ratings from the remote service, for a single collection of photos
  -- that have been published through this service. This function is called:
     -- For every photo in the published collection each time any photo in the collection is published or re-published.
  	-- When the user clicks the Refresh button in the Library module's Comments panel.
@@ -1105,11 +1105,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	-- get the belonging Published Collection by evaluating the first photo
 	local nPhotos =  #arrayOfPhotoInfo
 	local publishedCollection, publishedCollectionName
-	local nProcessed 		= 0 
-	local nChanges 			= 0 
-	local nRejectedChanges	= 0 
-	local nFailed			= 0 
-	
+	local nProcessed 		= 0
+	local nChanges 			= 0
+	local nRejectedChanges	= 0
+	local nFailed			= 0
+
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 	writeLogfile(3, string.format("Get ratings/metadata: starting...\n"))
@@ -1118,7 +1118,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		writeLogfile(2, string.format("Get ratings/metadata: canceled by user\n"))
 		return
 	end
-	
+
 	if nPhotos == 0 then
 		writeLogfile(2, string.format("Get ratings/metadata: nothing to do.\n"))
 		closeLogfile()
@@ -1135,8 +1135,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		showFinalMessage("Photo StatLr: Get ratings/metadata failed!", 'Cannot sync ratings on corrupted collection.\nPlease convert this collection first!', "critical")
 		closeLogfile()
 		return
-	end	
-	
+	end
+
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'GetRatingsFromPublishedCollection')
 	if not sessionSuccess then
@@ -1151,7 +1151,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	end
 
 	writeLogfile(2, string.format("Get ratings/metadata: options(title: %s, caption: %s, location: %s, locationTag: %s rating: %s, tags: %s, face xlat: %s, label xlat: %s, rating xlat: %s)\n",
-							publishSettings.titleDownload, publishSettings.captionDownload, publishSettings.locationDownload, publishSettings.locationTagDownload, publishSettings.ratingDownload, 
+							publishSettings.titleDownload, publishSettings.captionDownload, publishSettings.locationDownload, publishSettings.locationTagDownload, publishSettings.ratingDownload,
 							publishSettings.tagsDownload, publishSettings.PS2LrFaces, publishSettings.PS2LrLabel, publishSettings.PS2LrRating))
 
 	if			publishSettings.downloadMode == 'No' or
@@ -1178,22 +1178,22 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local startTime = LrDate.currentTime()
 
 	local catalog = LrApplication.activeCatalog()
-	local progressScope = LrProgressScope( 
+	local progressScope = LrProgressScope(
 								{ 	title = LOC( "$$$/PSUpload/Progress/GetRatingsFromPublishedCollection=Downloading ratings/metadata for ^1 photos in collection ^[^2^]", nPhotos, publishedCollection:getName()),
---							 		functionContext = context 
-							 	})    
+--							 		functionContext = context
+							 	})
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
 		local srcPhoto 		= photoInfo.photo
 		local isVideo		= srcPhoto:getRawMetadata('isVideo')
-		
+
 		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
 		local titlePS,		titleChanged
 		local captionPS, 	captionChanged
 		local ratingPS, 	ratingChanged
-		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }		-- GPS data from photo or from location tag (second best) 
+		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }		-- GPS data from photo or from location tag (second best)
 		local ratingTagPS, 	ratingTagChanged
 		local labelPS,		labelChanged
 		local tagsPS, 		tagsChanged = {}
@@ -1203,11 +1203,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove
 		local resultText = ''
 		local changesRejected, changesFailed = '', ''
-		
+
 		local needRepublish = false
-		
+
 		local photoLastUpload = string.match(photoInfo.url, '%d+/(%d+)')
-		
+
 		-- get tags and translated tags (rating, label) from Photo Server if configured (via photo_tag API)
 		local doGetTags = 		publishSettings.tagsDownload
 							or  publishSettings.locationTagDownload
@@ -1215,13 +1215,13 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 							or  publishSettings.PS2LrLabel
 							or  publishSettings.PS2LrRating
 
-		local psPhoto, errorCode = 
-		publishSettings.photoServer.Photo.new(publishSettings.photoServer, photoInfo.remoteId, isVideo, 
+		local psPhoto, errorCode =
+		publishSettings.photoServer.Photo.new(publishSettings.photoServer, photoInfo.remoteId, isVideo,
 													'photo' .. iif(doGetTags, ',tag', ''), PHOTOSERVER_USE_CACHE)
 		if photoInfo.publishedPhoto:getEditedFlag() then
 			-- do not download infos to original photo for unpublished photos
 			writeLogfile(2, string.format("Get ratings/metadata: %s - latest version not published, skip download.\n", photoInfo.remoteId))
-		elseif tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then 
+		elseif tonumber(ifnil(photoLastUpload, '0')) > (LrDate.currentTime() - 60) then
 			writeLogfile(2, string.format("Get ratings/metadata: %s - recently uploaded, skip download.\n", photoInfo.remoteId))
 		elseif not psPhoto then
 			writeLogfile(2, string.format("Get ratings/metadata: %s - no metadata avaiable.\n", photoInfo.remoteId))
@@ -1229,9 +1229,9 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 
 			------------------------------------------------------------------------------------------------------
     		-- get title, caption, rating, location from Photo Server
-			if publishSettings.titleDownload 	then titlePS = psPhoto:getTitle() end 
-			if publishSettings.captionDownload	then captionPS = psPhoto:getDescription() end 
-			if publishSettings.ratingDownload	then ratingPS = tonumber(psPhoto:getRating()) end 
+			if publishSettings.titleDownload 	then titlePS = psPhoto:getTitle() end
+			if publishSettings.captionDownload	then captionPS = psPhoto:getDescription() end
+			if publishSettings.ratingDownload	then ratingPS = tonumber(psPhoto:getRating()) end
 			if publishSettings.locationDownload	then gpsPS = psPhoto:getGPS() end
 
     		------------------------------------------------------------------------------------------------------
@@ -1244,7 +1244,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     			or  publishSettings.PS2LrRating
     		then
 				local photoTags = psPhoto:getTags()
-    		
+
         		if not photoTags then
         			writeLogfile(1, string.format("Get ratings/metadata: %s failed!\n", photoInfo.remoteId))
         		elseif #photoTags > 0 then
@@ -1253,25 +1253,25 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 						local ratingTagPattern		= '^([%*]+)$'
 						local photoTag = photoTags[i]
     					writeLogfile(4, string.format("Get ratings/metadata: found tag type %s name %s\n", photoTag.type, photoTag.name))
-    					
+
         				-- a people tag has a face region in additional.info structure
         				if publishSettings.PS2LrFaces and photoTag.type == 'people' then
 --    						table.insert(facesPS, photoTag.additional.info)
     						table.insert(facesPS, photoTag)
-        				
+
         				-- a color label looks like '+red, '+yellow, '+green', '+blue', '+purple' (case-insensitive)
     					elseif publishSettings.PS2LrLabel and photoTag.type == 'desc' and string.match(photoTag.name, colorLabelTagPattern) then
     						labelPS = string.match(string.lower(photoTag.name), colorLabelTagPattern)
-    
+
        					-- ratings look like general tag '*', '**', ... '*****'
         				elseif publishSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, ratingTagPattern) then
     						ratingTagPS = math.min(string.len(photoTag.name), 5)
-    					
+
     					-- any other general tag is taken as-is
     					elseif publishSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, colorLabelTagPattern) and not string.match(photoTag.name, ratingTagPattern) then
     						table.insert(tagsPS, photoTag.name)
-    					
-    					-- gps coords belonging to a location tag 
+
+    					-- gps coords belonging to a location tag
     					elseif publishSettings.locationTagDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
             				gpsPS.latitude	= tonumber(ifnil(photoTag.additional.info.lat, 0))
             				gpsPS.longitude	= tonumber(ifnil(photoTag.additional.info.lng, 0))
@@ -1279,14 +1279,14 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     					end
         			end
         		end
-        					
+
     		end
 
-    		if publishSettings.ratingDownload or publishSettings.PS2LrRating then 
+    		if publishSettings.ratingDownload or publishSettings.PS2LrRating then
     			ratingCallback({ publishedPhoto = photoInfo, rating = iif(publishSettings.PS2LrRating, ratingTagPS, ratingPS) or 0 })
     		end
-    
-    		writeLogfile(3, string.format("Get ratings/metadata: %s - title '%s' caption '%s', location '%s/%s (%s)' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n", 
+
+    		writeLogfile(3, string.format("Get ratings/metadata: %s - title '%s' caption '%s', location '%s/%s (%s)' rating %d ratingTag %d, label '%s', %d general tags, %d faces\n",
    							photoInfo.remoteId, ifnil(titlePS, ''), ifnil(captionPS, ''), tostring(gpsPS.latitude), tostring(gpsPS.longitude), ifnil(gpsPS.type, ''),
     							ifnil(ratingPS, 0), ifnil(ratingTagPS, 0), ifnil(labelPS, ''), #tagsPS, #facesPS))
 
@@ -1296,84 +1296,84 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         		if titlePS ~= '' and titlePS ~= ifnil(srcPhoto:getFormattedMetadata('title'), '') then
         			titleChanged = true
         			nChanges = nChanges + 1
-        			resultText = resultText ..  string.format(" title changed from '%s' to '%s',", 
+        			resultText = resultText ..  string.format(" title changed from '%s' to '%s',",
         												ifnil(srcPhoto:getFormattedMetadata('title'), ''), titlePS)
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - title changed from '%s' to '%s'\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - title changed from '%s' to '%s'\n",
         											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('title'), ''), titlePS))
-        											
+
         		elseif titlePS == '' and ifnil(srcPhoto:getFormattedMetadata('title'), '') ~= '' then
         			resultText = resultText ..  string.format(" title %s removal ignored,", srcPhoto:getFormattedMetadata('title'))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - title %s was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - title %s was removed, setting photo to edited.\n",
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('title')))
         			needRepublish = true
         			changesRejected = changesRejected .. 'title missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
 			end
-			    
+
     		------------------------------------------------------------------------------------------------------
 			if publishSettings.captionDownload then
         		-- check if PS caption is not empty and is different to Lr
         		if captionPS and captionPS ~= '' and captionPS ~= ifnil(srcPhoto:getFormattedMetadata('caption'), '') then
         			captionChanged = true
         			nChanges = nChanges + 1
-        			resultText = resultText ..  string.format(" caption changed from '%s' to '%s',", 
+        			resultText = resultText ..  string.format(" caption changed from '%s' to '%s',",
         												ifnil(srcPhoto:getFormattedMetadata('caption'), ''), captionPS)
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - caption changed from '%s' to '%s'\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - caption changed from '%s' to '%s'\n",
         											photoInfo.remoteId, ifnil(srcPhoto:getFormattedMetadata('caption'), ''), captionPS))
         		elseif ifnil(captionPS, '') == '' and ifnil(srcPhoto:getFormattedMetadata('caption'), '') ~= '' then
         			resultText = resultText ..  string.format(" caption %s removal ignored,", srcPhoto:getFormattedMetadata('caption'))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - caption %s was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - caption %s was removed, setting photo to edited.\n",
         										photoInfo.remoteId, srcPhoto:getFormattedMetadata('caption')))
         			needRepublish = true
         			changesRejected = changesRejected .. 'caption missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
-    
+
     		------------------------------------------------------------------------------------------------------
 			if publishSettings.ratingDownload then
         		-- check if PS rating is not empty and is different to Lr
         		if ratingPS and ratingPS ~= 0 and ratingPS ~= ifnil(photoInfo.photo:getRawMetadata('rating'), 0) then
         			ratingChanged = true
-        			nChanges = nChanges + 1  
+        			nChanges = nChanges + 1
         			resultText = resultText ..  string.format(" rating changed from %d to %d,", ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag changed from %d to %d\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag changed from %d to %d\n",
         										photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingPS, 0)))
         		elseif (not ratingPS or ratingPS == 0) and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  > 0 then
         			resultText = resultText ..  string.format(" rating %d removal ignored,", ifnil(srcPhoto:getRawMetadata('rating'), 0))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating %d was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating %d was removed, setting photo to edited.\n",
       											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
         			needRepublish = true
         			changesRejected = changesRejected .. 'rating missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
-    
+
     		------------------------------------------------------------------------------------------------------
 			if publishSettings.locationDownload then
         		-- check if PS location is not empty and is different to Lr
         		local gpsLr = srcPhoto:getRawMetadata('gps')
-        		if not gpsLr then gpsLr = { latitude = 0, longitude = 0 } end  
-        		gpsLr.latitude = ifnil(gpsLr.latitude, 0)	
-        		gpsLr.longitude = ifnil(gpsLr.longitude, 0)	
+        		if not gpsLr then gpsLr = { latitude = 0, longitude = 0 } end
+        		gpsLr.latitude = ifnil(gpsLr.latitude, 0)
+        		gpsLr.longitude = ifnil(gpsLr.longitude, 0)
 
-        		if 	(gpsPS.latitude ~= 0 or gpsPS.longitude ~= 0) 
+        		if 	(gpsPS.latitude ~= 0 or gpsPS.longitude ~= 0)
         		and (math.abs(gpsPS.latitude - gpsLr.latitude) > 0.00001 or math.abs(gpsPS.longitude - gpsLr.longitude) > 0.00001) then
         			gpsChanged = true
         			nChanges = nChanges + 1
-        			resultText = resultText ..  string.format(" location changed from '%s/%s' to '%s/%s',", 
+        			resultText = resultText ..  string.format(" location changed from '%s/%s' to '%s/%s',",
         												tostring(gpsLr.latitude), tostring(gpsLr.longitude),
         												tostring(gpsPS.latitude), tostring(gpsPS.longitude))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - location changed from '%s/%s' to '%s/%s'\n", 
-        											photoInfo.remoteId, 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - location changed from '%s/%s' to '%s/%s'\n",
+        											photoInfo.remoteId,
        												tostring(gpsLr.latitude), tostring(gpsLr.longitude),
        												tostring(gpsPS.latitude), tostring(gpsPS.longitude)))
 
-        		elseif	(gpsPS.latitude == 0 and  gpsPS.longitude == 0) 
+        		elseif	(gpsPS.latitude == 0 and  gpsPS.longitude == 0)
         		and 	(gpsLr.latitude ~= 0 or gpsLr.longitude ~= 0) then
         			resultText = resultText ..  string.format(" location removal ignored,")
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - location was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - location was removed, setting photo to edited.\n",
         										photoInfo.remoteId))
         			needRepublish = true
         			changesRejected = changesRejected .. 'location(GPS) missing, '
@@ -1386,84 +1386,84 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	    		-- check if PS label is not empty and is different to Lr
         		if labelPS and labelPS ~= photoInfo.photo:getRawMetadata('colorNameForLabel') then
         			labelChanged = true
-        			nChanges = nChanges + 1  
-        			resultText = resultText ..  string.format(" label changed from %s to %s,", 
+        			nChanges = nChanges + 1
+        			resultText = resultText ..  string.format(" label changed from %s to %s,",
         												srcPhoto:getRawMetadata('colorNameForLabel'), labelPS)
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - label changed from %s to %s\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - label changed from %s to %s\n",
         										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel'), labelPS))
         		elseif not labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= 'grey' then
         			resultText = resultText ..  string.format(" label %s removal ignored,", srcPhoto:getRawMetadata('colorNameForLabel'))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - label %s was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - label %s was removed, setting photo to edited.\n",
         										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel')))
         			needRepublish = true
         			changesRejected = changesRejected .. 'color label missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
-    
+
     		------------------------------------------------------------------------------------------------------
     		if publishSettings.PS2LrRating then
         		-- check if PS rating tag is not empty and is different to Lr
         		if ratingTagPS and ratingTagPS ~= ifnil(photoInfo.photo:getRawMetadata('rating'), 0) then
         			ratingTagChanged = true
-        			nChanges = nChanges + 1  
+        			nChanges = nChanges + 1
         			resultText = resultText ..  string.format(" rating tag changed from %d to %d,", ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingTagPS, 0))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag changed from %d to %d\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag changed from %d to %d\n",
         										photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0), ifnil(ratingTagPS, 0)))
         		elseif not ratingTagPS and ifnil(photoInfo.photo:getRawMetadata('rating'), 0)  > 0 then
         			resultText = resultText ..  string.format(" rating tag %d removal ignored,", ifnil(srcPhoto:getRawMetadata('rating'), 0))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag %d was removed, setting photo to edited.\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - rating tag %d was removed, setting photo to edited.\n",
       											photoInfo.remoteId, ifnil(srcPhoto:getRawMetadata('rating'), 0)))
         			needRepublish = true
         			changesRejected = changesRejected .. 'rating tag missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
-    
+
     		------------------------------------------------------------------------------------------------------
     		if publishSettings.tagsDownload then
     			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
 				local keywordsExported = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
-    		
+
     			-- get delta lists: which keywords were added and removed
-    			keywordNamesAdd 	= getTableDiff(tagsPS, keywordsExported) 
+    			keywordNamesAdd 	= getTableDiff(tagsPS, keywordsExported)
     			keywordNamesRemove  = getTableDiff(keywordsExported, tagsPS)
-    			
-    			-- get list of keyword objects to be removed: only leaf keywords can be removed, cannot remove synonyms or parent keywords 
+
+    			-- get list of keyword objects to be removed: only leaf keywords can be removed, cannot remove synonyms or parent keywords
    				keywordsRemove 	= PSLrUtilities.getPhotoKeywordObjects(srcPhoto, keywordNamesRemove)
-    			
+
     			-- allow update of keywords only if keyword were added or changed, not if keywords were removed
-    			-- compare w/ effectively removed keywords 
+    			-- compare w/ effectively removed keywords
     			if (#keywordNamesAdd > 0) and (#keywordNamesAdd >= #keywordsRemove) then
     				tagsChanged = true
-    				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove 
+    				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove
     				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, "','")) end
     				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: '%s',", table.concat(keywordNamesRemove, "','")) end
-    				writeLogfile(3, string.format("Get ratings/metadata: %s - tags to add: '%s', tags to remove: '%s'\n", 
+    				writeLogfile(3, string.format("Get ratings/metadata: %s - tags to add: '%s', tags to remove: '%s'\n",
     										photoInfo.remoteId, table.concat(keywordNamesAdd, "','"), table.concat(keywordNamesRemove, "','")))
 				elseif #keywordNamesAdd < #keywordsRemove then
         			resultText = resultText ..  string.format(" keywords %s removal ignored,", table.concat(keywordNamesRemove, "','"))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n",
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
         			changesRejected = changesRejected .. 'keywords missing, '
         			nRejectedChanges = nRejectedChanges + 1
 				elseif #keywordNamesRemove > #keywordsRemove then
         			resultText = resultText ..  string.format(" keywords to remove '%s' include synonyms or parent keyword (not allowed), removal ignored,", table.concat(keywordNamesRemove, "','"))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords '%s' removed in PS include synonyms or parent keyword (not allowed), setting photo to edited (removal rejected).\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords '%s' removed in PS include synonyms or parent keyword (not allowed), setting photo to edited (removal rejected).\n",
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
         			needRepublish = true
         			changesRejected = changesRejected .. 'keywords missing, '
         			nRejectedChanges = nRejectedChanges + 1
     			end
     		end
-    		
+
     		------------------------------------------------------------------------------------------------------
     		if publishSettings.PS2LrFaces and not isVideo then
 				-- get face regions in local photo
-				local facesLr 
+				local facesLr
 				facesLr, origPhotoDimension = publishSettings.exifTool:queryLrFaceRegionList(srcPhoto:getRawMetadata('path'))
-				
+
         		if facesLr and #facesLr > 0 then
         			local j, faceLrNorm = 0, {}
         			for i = 1, #facesLr do
@@ -1473,13 +1473,13 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         					faceLrNorm[j] = PSUtilities.normalizeArea(facesLr[i]);
         				end
         			end
-    
+
         			-- compare only names, not the area itself
         			facesAdd 			= getTableDiff(facesPS, faceLrNorm, 'name')
         			facesRemove 		= getTableDiff(faceLrNorm, facesPS, 'name')
 
         			if facesAdd and facesRemove then
-    	       			writeLogfile(3, string.format("Get ratings/metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n", 
+    	       			writeLogfile(3, string.format("Get ratings/metadata: %s - Lr faces: %d, PS faces: %d, Add: %d, Remove: %d\n",
         	  											photoInfo.remoteId, #facesLr, #facesPS, #facesAdd, #facesRemove))
         			end
 				else
@@ -1488,38 +1488,38 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				end
        			faceNamesAdd 		= getTableExtract(facesAdd, 'name')
        			faceNamesRemove 	= getTableExtract(facesRemove, 'name')
-								
-    			-- allow update of faces only if faces were added or changed, not if faces were removed 
+
+    			-- allow update of faces only if faces were added or changed, not if faces were removed
     			if (#facesAdd > 0) and (#facesAdd >= #facesRemove) then
     				facesChanged = true
     				table.insert(reloadPhotos, srcPhoto:getRawMetadata('path'))
-    				nChanges = nChanges + #facesAdd + #facesRemove 
+    				nChanges = nChanges + #facesAdd + #facesRemove
     				if #facesAdd > 0 then resultText = resultText ..  string.format(" faces to add: '%s',", table.concat(faceNamesAdd, "','")) end
     				if #facesRemove > 0 then resultText = resultText ..  string.format(" faces to remove: '%s',", table.concat(faceNamesRemove, "','")) end
-    				writeLogfile(3, string.format("Get ratings/metadata: %s - faces to add: %s, faces to remove: %s\n", 
+    				writeLogfile(3, string.format("Get ratings/metadata: %s - faces to add: %s, faces to remove: %s\n",
     										photoInfo.remoteId, table.concat(faceNamesAdd, ','), table.concat(faceNamesRemove, ',')))
 				elseif #facesAdd < #facesRemove then
         			resultText = resultText ..  string.format(" faces %s removal ignored,", table.concat(faceNamesRemove, "','"))
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - faces %s were removed in PS, setting photo to edited (removal rejected).\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - faces %s were removed in PS, setting photo to edited (removal rejected).\n",
       											photoInfo.remoteId, table.concat(faceNamesRemove, "','")))
         			needRepublish = true
         			changesRejected = changesRejected .. 'face regions missing, '
         			nRejectedChanges = nRejectedChanges + 1
         		end
     		end
-    		
+
     		------------------------------------------------------------------------------------------------------
 
     		-- if anything changed in Photo Server, change value in Lr
-    		if titleChanged 
-    		or captionChanged 
-    		or ratingChanged 
-     		or gpsChanged 
-    		or labelChanged 
-    		or ratingTagChanged 
-    		or tagsChanged 
+    		if titleChanged
+    		or captionChanged
+    		or ratingChanged
+     		or gpsChanged
+    		or labelChanged
+    		or ratingTagChanged
+    		or tagsChanged
     		or needRepublish then
-        		catalog:withWriteAccessDo( 
+        		catalog:withWriteAccessDo(
         			'SetCaptionLabelRating',
         			function(context)
         				if titleChanged			then srcPhoto:setRawMetadata('title', titlePS) end
@@ -1528,10 +1528,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         				if labelChanged			then srcPhoto:setRawMetadata('colorNameForLabel', labelPS) end
         				if ratingChanged		then srcPhoto:setRawMetadata('rating', ratingPS) end
         				if ratingTagChanged		then srcPhoto:setRawMetadata('rating', ratingTagPS) end
-        				if tagsChanged then 
+        				if tagsChanged then
     						for i = 1, #keywordNamesAdd do PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordNamesAdd[i])	end
     						for i = 1, #keywordsRemove 	do srcPhoto:removeKeyword(keywordsRemove[i])	end
-        				end 
+        				end
         				if needRepublish 		then photoInfo.publishedPhoto:setEditedFlag(true) end
         			end,
         			{timeout=5}
@@ -1542,34 +1542,34 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				if tagsChanged then
         			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
     				local keywordsForExport = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
-        		
+
         			-- get delta lists: which keywords need to be added or removed in PS
-        			local keywordNamesNeedRemoveinPS	= getTableDiff(tagsPS, keywordsForExport) 
+        			local keywordNamesNeedRemoveinPS	= getTableDiff(tagsPS, keywordsForExport)
         			local keywordNamesNeedAddinPS 	 	= getTableDiff(keywordsForExport, tagsPS)
         			if #keywordNamesNeedRemoveinPS > 0 or #keywordNamesNeedAddinPS > 0 then
-	    				writeLogfile(3, string.format("Get ratings/metadata: %s - must sync keywords to PS, add: '%s', remove '%s'\n", 
+	    				writeLogfile(3, string.format("Get ratings/metadata: %s - must sync keywords to PS, add: '%s', remove '%s'\n",
 	    												photoInfo.remoteId,
 	    												table.concat(keywordNamesNeedAddinPS, "','"),
 	    												table.concat(keywordNamesNeedRemoveinPS, "','")))
         				needRepublish = true
         			end
 				end
-				
+
 				if not needRepublish then
     				writeLogfile(3, string.format("Get ratings/metadata: %s - set to Published\n", photoInfo.remoteId))
-    				 
-            		catalog:withWriteAccessDo( 
+
+            		catalog:withWriteAccessDo(
             			'ResetEdited',
             			function(context) photoInfo.publishedPhoto:setEditedFlag(false) end,
             			{timeout=5}
             		)
 				end
     		end
-    		
+
    			-- overwrite all existing face regions in local photo
     		if facesChanged then
 				if not origPhotoDimension then
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - cannot download added face regions, no local XMP data file!\n", 
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - cannot download added face regions, no local XMP data file!\n",
       											photoInfo.remoteId))
         			changesFailed = changesFailed .. 'face region failed, '
         			nFailed = nFailed + 1
@@ -1600,7 +1600,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         												iif(needRepublish, ', re-publishing required', '')))
     		else
     			writeLogfile(2, string.format("Get ratings/metadata: %s - no local changes%s%s.\n",
-    													photoInfo.remoteId, 
+    													photoInfo.remoteId,
 														iif(changesRejected ~= '', ', but remote issues: ' .. changesRejected, ''),
 														iif(needRepublish, ', re-publishing required', '')))
     		end
@@ -1616,13 +1616,13 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
 	local message
-	
+
 	if (nRejectedChanges > 0) or (nFailed > 0) then
-		message = LOC ("$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection/Error=^1 added/modified, ^2 failed and ^3 rejected removed metadata items for ^4 of ^5 pics in ^6 seconds (^7 pics/sec).", 
+		message = LOC ("$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection/Error=^1 added/modified, ^2 failed and ^3 rejected removed metadata items for ^4 of ^5 pics in ^6 seconds (^7 pics/sec).",
 					nChanges, nFailed, nRejectedChanges, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 		showFinalMessage("Photo StatLr: Get ratings/metadata done", message, "critical")
 	else
-		message = LOC ("$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection=^1 added/modified metadata items for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
+		message = LOC ("$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection=^1 added/modified metadata items for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).",
 					nChanges, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 		if #reloadPhotos > 0 then
 			message = message .. string.format("\nThe following photos must be reloaded (added faces):\n%s", table.concat(reloadPhotos, '\n'))
@@ -1650,8 +1650,8 @@ function publishServiceProvider.canAddCommentsToService( publishSettings )
 	return true
 end
 --------------------------------------------------------------------------------
---- (optional) This plug-in defined callback function is called when the user adds 
- -- a new comment to a published photo in the Library module's Comments panel. 
+--- (optional) This plug-in defined callback function is called when the user adds
+ -- a new comment to a published photo in the Library module's Comments panel.
  -- Your implementation should publish the comment to the service.
 
  function publishServiceProvider.addCommentToPublishedPhoto( publishSettings, remotePhotoId, commentText )
@@ -1675,7 +1675,7 @@ end
 		return false
 	end
 
-	-- add comment to photo in Photo Server album, comments to public share is not possible 
+	-- add comment to photo in Photo Server album, comments to public share is not possible
 	return publishSettings.photoServer:addPhotoComment(remotePhotoId, PSLrUtilities.isVideo(remotePhotoId), commentText, publishSettings.username .. '@Lr')
 end
 --------------------------------------------------------------------------------

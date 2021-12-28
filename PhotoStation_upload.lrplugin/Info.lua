@@ -68,7 +68,7 @@ return {
 	},
 
 	LrMetadataProvider 		= 'PSPluginMetadata.lua',
-	LrMetadataTagsetFactory = { 'PSPluginTagsetCompact.lua', 
+	LrMetadataTagsetFactory = { 'PSPluginTagsetCompact.lua',
 								'PSPluginTagsetLong.lua',
 								'PSPluginTagsetComments.lua', },
 

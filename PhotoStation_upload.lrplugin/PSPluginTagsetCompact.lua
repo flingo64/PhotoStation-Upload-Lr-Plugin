@@ -39,7 +39,7 @@ return {
         'com.adobe.copyright',
         'com.adobe.colorLabels',
         'com.adobe.rating',
-        
+
         'com.adobe.separator',
 --        { 'com.adobe.label', label = "Exif" },
         'com.adobe.model',

@@ -6,7 +6,7 @@ Copyright(c) 2021, Martin Messmer
 
 plugin initialization:
 	- load Lr video presets
-	
+
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -49,7 +49,7 @@ end
 if not prefs.dcrawprog or prefs.dcrawprog == '' then
 	-- backward compatibility: check if Synology Uploader path is set
 	if prefs.PSUploaderPath then
-		prefs.dcrawprog = iif(WIN_ENV, 
+		prefs.dcrawprog = iif(WIN_ENV,
 							LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'ImageMagick'), 'dcraw.exe'),
 							LrPathUtils.child(LrPathUtils.child(prefs.PSUploaderPath, 'dcraw'), 'dcraw'))
 	else
@@ -81,7 +81,7 @@ writeLogfile(2, string.format("PSInitPlugin:\n\t\tconvert: '%s'\n\t\tdcraw: '%s'
 
 --=========== Install Lr video conversion presets =================================================================--
 
--- check if my custom video output presets are already installed 
+-- check if my custom video output presets are already installed
 local myVideoExportPresets = LrExportSettings.videoExportPresetsForPlugin( _PLUGIN )
 
 if myVideoExportPresets and #myVideoExportPresets > 0 then
@@ -90,7 +90,7 @@ if myVideoExportPresets and #myVideoExportPresets > 0 then
 --		writeLogfile(2, 'PSInitPlugin: found my custom video export presets.\n')
   	end
 
--- (re-)install my video export presets 	
+-- (re-)install my video export presets
 local pluginDir = _PLUGIN.path
 local presetFile = 'OrigSizeHiBit.epr'
 local presetFile2 = 'OrigSizeMedBit.epr'
@@ -109,7 +109,7 @@ local origSizeVideoPreset = LrExportSettings.addVideoExportPresets( {
 
 		-- To be displayed as target info in export dialog.
 		targetInfo =  LOC "$$$/PSUpload/ExportDialog/VideoSection/OrigSizePreset/TargetInfo=original resolution, high bitrate",
- 	}, 
+ 	},
 
 	[ 'Original Size - Medium Bitrate' ] = {
 		format = 'h.264',
@@ -119,7 +119,7 @@ local origSizeVideoPreset = LrExportSettings.addVideoExportPresets( {
 
 		-- To be displayed as target info in export dialog.
 		targetInfo =  LOC "$$$/PSUpload/ExportDialog/VideoSection/OrigSizePreset2/TargetInfo=original resolution, medium bitrate",
- 	}, 
+ 	},
  },	_PLUGIN
 )
 

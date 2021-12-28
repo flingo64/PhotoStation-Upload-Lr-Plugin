@@ -80,7 +80,7 @@ local function updatePluginStatus( propertyTable )
 		end
 
 	until true
-	
+
 	if message then
 		propertyTable.message = message
 		propertyTable.hasError = true
@@ -90,7 +90,7 @@ local function updatePluginStatus( propertyTable )
 		propertyTable.hasError = false
 		propertyTable.hasNoError = true
 	end
-	
+
 end
 
 -------------------------------------------------------------------------------
@@ -148,23 +148,23 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 	local prefs = LrPrefs.prefsForPlugin()
 	local updateAvail
 	local synops
-		
+
 	if prefs.updateAvailable == nil then
 		synops = "You plan to like this show?"
 		updateAvail = false
 	elseif prefs.updateAvailable == '' or prefs.updateAvailable == pluginVersion then
-		synops = 	"Nothing, just thought I'd mention it: " .. 
+		synops = 	"Nothing, just thought I'd mention it: " ..
 					LOC "$$$/PSUpload/PluginDialog/Header/NoUpdateAvail=Plugin is up-to-date"
 		updateAvail = false
 	else
-		synops =	"This is a very moving moment: " .. 
+		synops =	"This is a very moving moment: " ..
 					LOC("$$$/PSUpload/PluginDialog/Header/UpdateAvail=Version ^1 is available!", prefs.updateAvailable)
 		updateAvail = true
-	end 
-	
+	end
+
 	local noUpdateAvailableView = f:view {
 		fill_horizontal = 1,
-		
+
 		f:column {
 			f:static_text {
 				title 		= synops,
@@ -175,7 +175,7 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 
 	local updateAvailableView = f:view {
 		fill_horizontal = 1,
-		
+
 		f:row {
 			f:static_text {
 				title = synops,
@@ -195,24 +195,24 @@ function pluginInfoProvider.sectionsForTopOfDialog( f, propertyTable )
 		},
 	}
 	local result = {
-	
+
 		{
 			title = "Photo StatLr",
-			
+
 			synopsis = synops,
 			f:row {
 				fill_horizontal = 1,
-				
+
 				conditionalItem(updateAvail, updateAvailableView),
 				conditionalItem(not updateAvail, noUpdateAvailableView),
 			},
-							
+
 			f:row {
 				PSDialogs.photoStatLrHeaderView(f, propertyTable),
     		},
 		},
 	}
-	
+
 	return result
 
 end

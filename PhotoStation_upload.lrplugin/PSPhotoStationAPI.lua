@@ -19,7 +19,7 @@ Photo Station object:
 	- getPhotoComments
 	- addPhotoComments
 	- movePhoto
-	- deletePhoto	
+	- deletePhoto
 
 	- createAlbum
 	- listAlbum
@@ -54,9 +54,9 @@ Photo Station object:
 	- getSharedAlbumId
 	- isSharedAlbumPublic
 	- getSharedAlbumShareId
-	
+
 	- getPhotoInfoFromList
-	
+
 	- getSharedPhotoPublicUrl
 	- getPublicSharedPhotoColorLabel
 
@@ -113,7 +113,7 @@ PhotoStation_mt = { __index = PhotoStation }
 local PSAPIerrorMsgs = {
 	[0]   = 'No error',
 	[100] = 'Unknown error',
-    [101] = 'No parameter of API, method or version',		-- PS 6.6: no such directory 
+    [101] = 'No parameter of API, method or version',		-- PS 6.6: no such directory
     [102] = 'The requested API does not exist',
     [103] = 'The requested method does not exist',
     [104] = 'The requested version does not support the functionality',
@@ -273,13 +273,13 @@ local PSAPIerrorMsgs = {
 	[12038] = 'Http error: serverCertificateHasUnknownRoot',
 }
 
---[[ 
+--[[
 PhotoStation.callSynoAPI (h, synoAPI, formData)
 	calls the named synoAPI with the respective parameters in formData
 	returns nil, on http error
 	returns the decoded JSON response as table on success
 ]]
-function PhotoStation.callSynoAPI (h, synoAPI, formData) 
+function PhotoStation.callSynoAPI (h, synoAPI, formData)
 	local postHeaders = {
 		{ field = 'Content-Type', value = 'application/x-www-form-urlencoded' },
 	}
@@ -291,15 +291,15 @@ function PhotoStation.callSynoAPI (h, synoAPI, formData)
 	else
 		writeLogfile(4, string.format("PhotoStation.callSynoAPI: LrHttp.post(%s%s%s, api=%s&%s\n", h.serverUrl, h.psWebAPI, h.apiInfo[synoAPI].path, synoAPI, formData))
 	end
-	
+
 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path, postBody, postHeaders, 'POST', h.serverTimeout, string.len(postBody))
-	
+
 	if not respBody then
 	    writeTableLogfile(3, 'respHeaders', respHeaders)
     	if respHeaders then
-      		writeLogfile(3, string.format("Error %s on http request: %s\n", 
+      		writeLogfile(3, string.format("Error %s on http request: %s\n",
       				ifnil(respHeaders["error"].errorCode, 'Unknown'),
-          			trim(ifnil(respHeaders["error"].name, 'Unknown error description')))) 
+          			trim(ifnil(respHeaders["error"].name, 'Unknown error description'))))
     		local errorCode = tonumber(ifnil(respHeaders["error"].nativeCode, '1002'))
       		return nil, errorCode
     	else
@@ -308,17 +308,17 @@ function PhotoStation.callSynoAPI (h, synoAPI, formData)
 	end
 	writeLogfile(4, "Got Body:\n" .. string.sub(respBody, 1, 4096) .. iif(string.len(respBody) > 4096, "...", "") .. "\n")
 	writeLogfile(5, "Got Body(full):\n" .. respBody .. "\n")
-	
+
 	local respArray = JSON:decode(respBody, "PhotoStation.callSynoAPI(" .. synoAPI .. ")")
 
-	if not respArray then return nil, 1003 end 
+	if not respArray then return nil, 1003 end
 
-	if respArray.error then 
+	if respArray.error then
 		local errorCode = tonumber(respArray.error.code)
 		writeLogfile(3, string.format('PhotoStation.callSynoAPI: %s returns error %d\n', synoAPI, errorCode))
 		return nil, errorCode
 	end
-	
+
 	return respArray
 end
 
@@ -341,21 +341,21 @@ function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeo
 	h.psWebAPI 		= psPath .. 'webapi/'
 	h.uploadPath 	= psPath .. 'include/asst_file_upload.php'
 
-	-- bootstrap the apiInfo table 
+	-- bootstrap the apiInfo table
 	apiInfo['SYNO.API.Info'] = {
 		path		= "query.php",
 		minVersion	= 1,
 		maxVersion	= 1,
 	}
 	h.apiInfo = apiInfo
-	
+
 	-- get all API paths via 'SYNO.API.Info'
-	local formData = 
+	local formData =
 			'query=all&' ..
 			'method=query&' ..
-			'version=1&' .. 
+			'version=1&' ..
 			'ps_username='
-			 
+
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.API.Info', formData)
 
 	if not respArray then return nil, errorCode end
@@ -367,7 +367,7 @@ function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeo
 
 	-- rewrite the apiInfo table with API infos retrieved via SYNO.API.Info
 	h.apiInfo 	= respArray.data
-	
+
 	return setmetatable(h, PhotoStation_mt)
 end
 
@@ -393,15 +393,15 @@ end
 -- does, what it says
 function PhotoStation.login(h, username, password)
 	local formData = 'method=login&' ..
-					 'version=1&' .. 
---					 'enable_syno_token=true&' .. 
-					 'username=' .. urlencode(username) .. '&' .. 
+					 'version=1&' ..
+--					 'enable_syno_token=true&' ..
+					 'username=' .. urlencode(username) .. '&' ..
 					 'password=' .. urlencode(password)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Auth', formData)
-	
-	if not respArray then return false, errorCode end 
-	
+
+	if not respArray then return false, errorCode end
+
 	return respArray.success
 end
 
@@ -416,36 +416,36 @@ end
 -- ########################## tag management ###########################################################
 
 ---------------------------------------------------------------------------------------------------------
--- getTags (h, type) 
+-- getTags (h, type)
 -- get table of tagId/tagString mappings for given type: desc, people, geo
 function PhotoStation.getTags(h, type)
 	local formData = 'method=list&' ..
-					 'version=1&' .. 
-					 'type=' .. type .. '&' .. 
---					 'additional=info&' .. 
-					 'offset=0&' ..  
-					 'limit=-1' 
+					 'version=1&' ..
+					 'type=' .. type .. '&' ..
+--					 'additional=info&' ..
+					 'offset=0&' ..
+					 'limit=-1'
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Tag', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('getTags returns %d tags.\n', respArray.data.total))
 	return respArray.data.tags
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createTag (h, type, name) 
+-- createTag (h, type, name)
 -- create a new tagId/tagString mapping of or given type: desc, people, geo
 function PhotoStation.createTag(h, type, name)
 	local formData = 'method=create&' ..
-					 'version=1&' .. 
-					 'type=' .. type .. '&' .. 
-					 'name=' .. urlencode(name) 
+					 'version=1&' ..
+					 'type=' .. type .. '&' ..
+					 'name=' .. urlencode(name)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Tag', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('createTag(%s, %s) returns tagId %s.\n', type, name, respArray.data.id))
 	return respArray.data.id
@@ -454,54 +454,54 @@ end
 -- ########################## photo management #########################################################
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoExifs (h, dstFilename, isVideo) 
-function PhotoStation.getPhotoExifs (h, dstFilename, isVideo) 
+-- getPhotoExifs (h, dstFilename, isVideo)
+function PhotoStation.getPhotoExifs (h, dstFilename, isVideo)
 	local formData = 'method=getexif&' ..
-					 'version=1&' .. 
-					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo) 
+					 'version=1&' ..
+					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('getPhotoExifs(%s) returns %d exifs.\n', dstFilename, respArray.data.total))
 	return respArray.data.exifs
 end
 
 ---------------------------------------------------------------------------------------------------------
--- editPhoto (h, dstFilename, isVideo, attrValPairs) 
+-- editPhoto (h, dstFilename, isVideo, attrValPairs)
 -- edit specific metadata field of a photo
 function PhotoStation.editPhoto(h, dstFilename, isVideo, attrValPairs)
 	local formData = 'method=edit&' ..
-					 'version=1&' .. 
+					 'version=1&' ..
 					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo)
 	local logMessage = ''
 
 	for i = 1, #attrValPairs do
 	 	formData = formData .. '&' 		.. attrValPairs[i].attribute .. '=' .. urlencode(attrValPairs[i].value)
-	 	logMessage = logMessage .. ', ' .. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value  
+	 	logMessage = logMessage .. ', ' .. attrValPairs[i].attribute .. '=' .. attrValPairs[i].value
 	end
 
 	local success, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
-	
-	if not success then return false, errorCode end 
+
+	if not success then return false, errorCode end
 
 	writeLogfile(3, string.format('editPhoto(%s,%s) returns OK.\n', dstFilename, logMessage))
 	return logMessage
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoTags (h, dstFilename, isVideo) 
+-- getPhotoTags (h, dstFilename, isVideo)
 -- get table of tags (general,people,geo) of a photo
 function PhotoStation.getPhotoTags(h, dstFilename, isVideo)
 	local formData = 'method=list&' ..
-					 'version=1&' .. 
-					 'type=people,geo,desc&' .. 
+					 'version=1&' ..
+					 'type=people,geo,desc&' ..
 					 'additional=info&' ..
-					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo) 
+					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
-	
+
 	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('getPhotoTags(%s) returns %d tags.\n', dstFilename, #respArray.data.tags))
@@ -509,48 +509,48 @@ function PhotoStation.getPhotoTags(h, dstFilename, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- addPhotoTag (h, dstFilename, isVideo, tagId, addinfo) 
+-- addPhotoTag (h, dstFilename, isVideo, tagId, addinfo)
 -- add a new tag (general,people,geo) to a photo
 function PhotoStation.addPhotoTag(h, dstFilename, isVideo, type, tagId, addinfo)
 	local formData = 'method=' .. type .. '_tag&' ..
-					 'version=1&' .. 
-					 'tag_id=' .. tagId .. '&' .. 
+					 'version=1&' ..
+					 'tag_id=' .. tagId .. '&' ..
 					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo)
 	if type == 'people' and addinfo then
-		formData = formData .. 
-        			 iif(addinfo.xLeft,	'&x=' 		.. ifnil(addinfo.xLeft,''), '') ..  
+		formData = formData ..
+        			 iif(addinfo.xLeft,	'&x=' 		.. ifnil(addinfo.xLeft,''), '') ..
         			 iif(addinfo.yUp,	'&y=' 		.. ifnil(addinfo.yUp,''), '')  ..
-        			 iif(addinfo.width,	'&width=' 	.. ifnil(addinfo.width,''), '') ..  
-        			 iif(addinfo.height,'&height='	.. ifnil(addinfo.height,''), '') 
+        			 iif(addinfo.width,	'&width=' 	.. ifnil(addinfo.width,''), '') ..
+        			 iif(addinfo.height,'&height='	.. ifnil(addinfo.height,''), '')
 	elseif type == 'geo' and addinfo then
-		formData = formData .. 
-        			 iif(addinfo.address,	'&address='		.. ifnil(addinfo.address,''), '') ..  
-        			 iif(addinfo.lat,		'&lat=' 		.. ifnil(addinfo.lat,''), '') ..  
+		formData = formData ..
+        			 iif(addinfo.address,	'&address='		.. ifnil(addinfo.address,''), '') ..
+        			 iif(addinfo.lat,		'&lat=' 		.. ifnil(addinfo.lat,''), '') ..
         			 iif(addinfo.lng,		'&lng=' 		.. ifnil(addinfo.lng,''), '')  ..
         			 iif(addinfo.place_id,	'&place_id=' 	.. ifnil(addinfo.place_id,''), '')
 	end
-		
+
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format("addPhotoTag('%s', '%s') returns %d item_tag_ids.\n", dstFilename, tagId, #respArray.data.item_tag_ids))
 	return respArray.data.item_tag_ids
 end
 
 ---------------------------------------------------------------------------------------------------------
--- removePhotoTag(h, dstFilename, isVideo, tagType, itemTagId) 
+-- removePhotoTag(h, dstFilename, isVideo, tagType, itemTagId)
 -- remove a tag from a photo
 function PhotoStation.removePhotoTag(h, dstFilename, isVideo, tagType, itemTagId)
 	local formData = 'method=delete&' ..
-					 'version=1&' .. 
-					 'item_tag_id=' .. itemTagId .. '&' .. 
+					 'version=1&' ..
+					 'item_tag_id=' .. itemTagId .. '&' ..
 					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo)
-					  
+
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.PhotoTag', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format("removePhotoTag('%s', '%s') returns %s\n", dstFilename, itemTagId, respArray.success))
 	return respArray.success
@@ -558,50 +558,50 @@ end
 
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoComments (h, dstFilename, isVideo) 
-function PhotoStation.getPhotoComments (h, dstFilename, isVideo) 
+-- getPhotoComments (h, dstFilename, isVideo)
+function PhotoStation.getPhotoComments (h, dstFilename, isVideo)
 	local formData = 'method=list&' ..
-					 'version=1&' .. 
-					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo) 
+					 'version=1&' ..
+					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('getPhotoComments(%s) returns OK.\n', dstFilename))
 	return respArray.data.comments
 end
 
 ---------------------------------------------------------------------------------------------------------
--- addPhotoComment (h, dstFilename, isVideo, comment, username) 
-function PhotoStation.addPhotoComment (h, dstFilename, isVideo, comment, username) 
+-- addPhotoComment (h, dstFilename, isVideo, comment, username)
+function PhotoStation.addPhotoComment (h, dstFilename, isVideo, comment, username)
 	local formData = 'method=create&' ..
-					 'version=1&' .. 
-					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo) .. '&' .. 
-					 'name=' .. username .. '&' .. 
-					 'comment='.. urlencode(comment) 
+					 'version=1&' ..
+					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo) .. '&' ..
+					 'name=' .. username .. '&' ..
+					 'comment='.. urlencode(comment)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Comment', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('addPhotoComment(%s, %s, %s) returns OK.\n', dstFilename, comment, username))
 	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
--- movePhoto (h, srcFilename, dstAlbum, isVideo) 
+-- movePhoto (h, srcFilename, dstAlbum, isVideo)
 function PhotoStation.movePhoto(h, srcFilename, dstAlbum, isVideo)
 	local formData = 'method=copy&' ..
 					 'version=1&' ..
-					 'mode=move&' .. 
-					 'duplicate=ignore&' .. 
+					 'mode=move&' ..
+					 'duplicate=ignore&' ..
 					 'id=' .. PhotoStation.getPhotoId(h, srcFilename, isVideo) .. '&' ..
 					 'sharepath=' .. PhotoStation.getAlbumId(h, dstAlbum)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('movePhoto(%s, %s) returns OK\n', srcFilename, dstAlbum))
 	return respArray.success
@@ -609,15 +609,15 @@ function PhotoStation.movePhoto(h, srcFilename, dstAlbum, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- deletePhoto (h, dstFilename, isVideo) 
-function PhotoStation.deletePhoto (h, dstFilename, isVideo) 
+-- deletePhoto (h, dstFilename, isVideo)
+function PhotoStation.deletePhoto (h, dstFilename, isVideo)
 	local formData = 'method=delete&' ..
-					 'version=1&' .. 
+					 'version=1&' ..
 					 'id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
-	
-	if not respArray and errorCode ~= 101 then return false, errorCode end 
+
+	if not respArray and errorCode ~= 101 then return false, errorCode end
 
 	writeLogfile(3, string.format('deletePhoto(%s) returns OK (errorCode was %d)\n', dstFilename, ifnil(errorCode, 0)))
 	return respArray.success
@@ -635,7 +635,7 @@ function PhotoStation.createAlbum(h, parentAlbum, newAlbum)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
 
-	if not respArray and errorCode == 421 then 
+	if not respArray and errorCode == 421 then
 		writeLogfile(2, string.format("createAlbum('%s', '%s'): already exists, returns OK.\n", parentAlbum, newAlbum))
 		return true
 	end
@@ -654,61 +654,61 @@ end
 function PhotoStation.listAlbum(h, dstDir, listItems)
 	-- recursive doesn't seem to work
 	local formData = 'method=list&' ..
-					 'version=1&' .. 
+					 'version=1&' ..
 					 'id=' .. PhotoStation.getAlbumId(h, dstDir) .. '&' ..
-					 'type=' .. listItems .. '&' ..   
-					 'offset=0&' .. 
+					 'type=' .. listItems .. '&' ..
+					 'offset=0&' ..
 					 'limit=-1&' ..
-					 'recursive=false&'.. 
+					 'recursive=false&'..
 					 'additional=album_permission,photo_exif'
 --					 'additional=album_permission,photo_exif,video_codec,video_quality,thumb_size,file_location'
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
-	
-	if not respArray then return nil, errorCode end 
+
+	if not respArray then return nil, errorCode end
 
 	writeTableLogfile(5, 'listAlbum(' .. dstDir .. ')', respArray.data.items)
 	return respArray.data.items
 end
 
 ---------------------------------------------------------------------------------------------------------
--- sortAlbumPhotos (h, albumPath, sortedPhotos) 
-function PhotoStation.sortAlbumPhotos (h, albumPath, sortedPhotos) 
+-- sortAlbumPhotos (h, albumPath, sortedPhotos)
+function PhotoStation.sortAlbumPhotos (h, albumPath, sortedPhotos)
 	local formData = 'method=arrangeitem&' ..
-					 'version=1&' .. 
-					 'offset=0&' .. 
-					 'limit='.. #sortedPhotos .. '&' .. 
+					 'version=1&' ..
+					 'offset=0&' ..
+					 'limit='.. #sortedPhotos .. '&' ..
 					 'id=' .. PhotoStation.getAlbumId(h, albumPath)
 	local i, photoPath, item_ids = {}
-	
+
 	for i, photoPath in ipairs(sortedPhotos) do
 		if i == 1 then
 			item_ids = PhotoStation.getPhotoId(h, sortedPhotos[i])
 		else
 			item_ids = item_ids .. ',' .. PhotoStation.getPhotoId(h, sortedPhotos[i])
 		end
-	end	
-	
+	end
+
 	formData = formData .. '&item_id=' .. item_ids
-	
+
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('sortAlbumPhotos(%s) returns OK.\n', albumPath))
 	return respArray.success
 end
 
 ---------------------------------------------------------------------------------------------------------
--- deleteAlbum(h, albumPath) 
-function PhotoStation.deleteAlbum (h, albumPath) 
+-- deleteAlbum(h, albumPath)
+function PhotoStation.deleteAlbum (h, albumPath)
 	local formData = 'method=delete&' ..
-					 'version=1&' .. 
+					 'version=1&' ..
 					 'id=' .. PhotoStation.getAlbumId(h, albumPath)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Album', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('deleteAlbum(%s) returns OK\n', albumPath))
 	return respArray.success
@@ -717,18 +717,18 @@ end
 -- ########################## shared album management ##################################################
 
 ---------------------------------------------------------------------------------------------------------
--- getSharedAlbums (h) 
+-- getSharedAlbums (h)
 -- get table of sharedAlbumId/sharedAlbumName mappings
 function PhotoStation.getSharedAlbums(h)
 	local formData = 'method=list&' ..
-					 'version=1&' .. 
-					 'additional=public_share&' .. 
-					 'offset=0&' ..  
-					 'limit=-1' 
+					 'version=1&' ..
+					 'additional=public_share&' ..
+					 'offset=0&' ..
+					 'limit=-1'
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not respArray then return nil, errorCode end 
+
+	if not respArray then return nil, errorCode end
 
 	writeLogfile(3, string.format('getSharedAlbums() returns %d albums.\n', respArray.data.total))
 	return respArray.data.items
@@ -741,24 +741,24 @@ end
 --		errorcode:		errorcode, if not success
 function PhotoStation.listSharedAlbum(h, sharedAlbumName, listItems)
 	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then 
+	if not albumId then
 		writeLogfile(3, string.format('listSharedAlbum(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local formData = 'method=list&' ..
-					 'version=1&' .. 
+					 'version=1&' ..
 					 'filter_shared_album=' .. albumId .. '&' ..
-					 'type=' .. listItems .. '&' ..   
-					 'offset=0&' .. 
+					 'type=' .. listItems .. '&' ..
+					 'offset=0&' ..
 					 'limit=-1&' ..
-					 'recursive=false&'.. 
+					 'recursive=false&'..
 					 'additional=photo_exif'
 --					 'additional=photo_exif,video_codec,video_quality,thumb_size'
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
-	
-	if not respArray then return nil, errorCode end 
+
+	if not respArray then return nil, errorCode end
 
 	writeTableLogfile(5, 'listSharedAlbum', respArray.data.items)
 	return respArray.data.items
@@ -768,12 +768,12 @@ end
 -- createSharedAlbum(h, name)
 function PhotoStation.createSharedAlbum(h, sharedAlbumName)
 	local formData = 'method=create&' ..
-					 'version=1&' .. 
-					 'name=' .. urlencode(sharedAlbumName) 
+					 'version=1&' ..
+					 'name=' .. urlencode(sharedAlbumName)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(2, string.format('createSharedAlbum(%s) returns sharedAlbumId %s.\n', sharedAlbumName, respArray.data.id))
 	return respArray.data.id
@@ -783,24 +783,24 @@ end
 -- editSharedAlbum(h, sharedAlbumName, sharedAlbumAttributes)
 function PhotoStation.editSharedAlbum(h, sharedAlbumName, sharedAlbumAttributes)
 	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then 
+	if not albumId then
 		writeLogfile(3, string.format('editSharedAlbum(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local numAttributes = 0
 	local formData = 'method=edit_public_share&' ..
-					 'version=1&' .. 
+					 'version=1&' ..
 					 'id=' .. albumId
 
-	for attr, value in pairs(sharedAlbumAttributes) do 
+	for attr, value in pairs(sharedAlbumAttributes) do
 		formData = formData .. '&' .. attr .. '=' .. urlencode(tostring(value))
 		numAttributes = numAttributes + 1
 	end
-					 
+
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not respArray then return nil, errorCode end 
+
+	if not respArray then return nil, errorCode end
 
 	writeLogfile(3, string.format('editSharedAlbum(%s, %d attributes) returns shareId %s.\n', sharedAlbumName, numAttributes, respArray.data.shareid))
 	return respArray.data
@@ -811,24 +811,24 @@ end
 -- add photos to Shared Album
 function PhotoStation.addPhotosToSharedAlbum(h, sharedAlbumName, photos)
 	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then 
+	if not albumId then
 		writeLogfile(3, string.format('addPhotosToSharedAlbum(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local photoIds = {}
 	for i = 1, #photos do
 		photoIds[i] = PhotoStation.getPhotoId(h, photos[i].dstFilename, photos[i].isVideo)
 	end
 	local itemList = table.concat(photoIds, ',')
 	local formData = 'method=add_items&' ..
-				 'version=1&' .. 
-				 'id=' ..  albumId .. '&' .. 
+				 'version=1&' ..
+				 'id=' ..  albumId .. '&' ..
 				 'item_id=' .. itemList
-				 
+
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('addPhotosToSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true
@@ -839,24 +839,24 @@ end
 -- remove photos from Shared Album
 function PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
 	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then 
+	if not albumId then
 		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local photoIds = {}
 	for i = 1, #photos do
 		photoIds[i] = PhotoStation.getPhotoId(h, photos[i].dstFilename, photos[i].isVideo)
 	end
 	local itemList = table.concat(photoIds, ',')
 	local formData = 'method=remove_items&' ..
-				 'version=1&' .. 
-				 'id=' .. albumId .. '&' .. 
+				 'version=1&' ..
+				 'id=' .. albumId .. '&' ..
 				 'item_id=' .. itemList
-				 
+
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
 	return true
@@ -864,18 +864,18 @@ end
 
 --[[ currently not needed
 ---------------------------------------------------------------------------------------------------------
--- addSharedPhotoComment (h, dstFilename, isVideo, comment, username, sharedAlbumName) 
-function PhotoStation.addSharedPhotoComment (h, dstFilename, isVideo, comment, username, sharedAlbumName) 
+-- addSharedPhotoComment (h, dstFilename, isVideo, comment, username, sharedAlbumName)
+function PhotoStation.addSharedPhotoComment (h, dstFilename, isVideo, comment, username, sharedAlbumName)
 	local formData = 'method=add_comment&' ..
-					 'version=1&' .. 
-					 'item_id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo) .. '&' .. 
-					 'name=' .. username .. '&' .. 
-					 'comment='.. urlencode(comment) ..'&' .. 
-					 'public_share_id=' .. PhotoStation.getSharedAlbumShareId(h, sharedAlbumName) 
+					 'version=1&' ..
+					 'item_id=' .. PhotoStation.getPhotoId(h, dstFilename, isVideo) .. '&' ..
+					 'name=' .. username .. '&' ..
+					 'comment='.. urlencode(comment) ..'&' ..
+					 'public_share_id=' .. PhotoStation.getSharedAlbumShareId(h, sharedAlbumName)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.AdvancedShare', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	writeLogfile(3, string.format('addSharedPhotoComment(%s, %s, %s, %s) returns OK.\n', dstFilename, sharedAlbumName, comment, username))
 	return respArray.success
@@ -886,19 +886,19 @@ end
 -- renameSharedAlbum(h, sharedAlbumName, newSharedAlbumName)
 function PhotoStation.renameSharedAlbum(h, sharedAlbumName, newSharedAlbumName)
 	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then 
+	if not albumId then
 		writeLogfile(3, string.format('renameSharedAlbum(%s, %s): album not found!\n', sharedAlbumName, newSharedAlbumName))
 		return false, 555
 	end
-	
+
 	local formData = 'method=edit&' ..
 					 'version=1&' ..
 					 'name='  ..  newSharedAlbumName .. '&' ..
 					 'id=' .. albumId
 
 	local success, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not success then return false, errorCode end 
+
+	if not success then return false, errorCode end
 
 	writeLogfile(3, string.format('renameSharedAlbum(%s, %s) returns OK.\n', sharedAlbumName, newSharedAlbumName))
 	return true
@@ -908,18 +908,18 @@ end
 -- deleteSharedAlbum(h, sharedAlbumName)
 function PhotoStation.deleteSharedAlbum(h, sharedAlbumName)
 	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then 
+	if not albumId then
 		writeLogfile(3, string.format('deleteSharedAlbum(%s): album not found, returning OK anyway!\n', sharedAlbumName))
 		return true
 	end
-	
+
 	local formData = 'method=delete&' ..
 					 'version=1&' ..
 					 'id=' .. albumId
 
 	local success, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not success then return false, errorCode end 
+
+	if not success then return false, errorCode end
 
 	writeLogfile(3, string.format('deleteSharedAlbum(%s) returns OK.\n', sharedAlbumName))
 	return true
@@ -934,44 +934,44 @@ end
 --		errorcode:		errorcode, if not success
 function PhotoStation.listPublicSharedAlbum(h, sharedAlbumName, listItems)
 	local shareId  = PhotoStation.getSharedAlbumShareId(h, sharedAlbumName)
-	if not shareId then 
+	if not shareId then
 		writeLogfile(3, string.format('listPublicSharedAlbum(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local formData = 'method=list&' ..
-					 'version=1&' .. 
+					 'version=1&' ..
 					 'filter_public_share=' .. shareId .. '&' ..
-					 'type=' .. listItems .. '&' ..   
-					 'offset=0&' .. 
+					 'type=' .. listItems .. '&' ..
+					 'offset=0&' ..
 					 'limit=-1&' ..
-					 'color_label=0,1,2,3,4,5,6&'.. 
+					 'color_label=0,1,2,3,4,5,6&'..
 					 'additional=photo_exif'
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Photo', formData)
-	
-	if not respArray then return nil, errorCode end 
+
+	if not respArray then return nil, errorCode end
 
 	writeTableLogfile(5, 'listPublicSharedAlbum', respArray.data.items)
 	return respArray.data.items
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPublicSharedAlbumInfo (h, sharedAlbumName) 
-function PhotoStation.getPublicSharedAlbumInfo (h, sharedAlbumName) 
+-- getPublicSharedAlbumInfo (h, sharedAlbumName)
+function PhotoStation.getPublicSharedAlbumInfo (h, sharedAlbumName)
 	local shareId  = PhotoStation.getSharedAlbumShareId(h, sharedAlbumName)
-	if not shareId then 
+	if not shareId then
 		writeLogfile(3, string.format('getPublicSharedAlbumInfo(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local formData = 'method=getinfo_public&' ..
-					 'version=1&' .. 
-					 'public_share_id=' .. shareId 
+					 'version=1&' ..
+					 'public_share_id=' .. shareId
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.SharedAlbum', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	if respArray.data then
 		writeLogfile(3, string.format('getPublicSharedAlbumInfo(%s) returns infos for album id %d.\n', sharedAlbumName, respArray.data.shared_album.id))
@@ -983,24 +983,24 @@ function PhotoStation.getPublicSharedAlbumInfo (h, sharedAlbumName)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPublicSharedAlbumLogList (h, sharedAlbumName) 
-function PhotoStation.getPublicSharedAlbumLogList (h, sharedAlbumName) 
+-- getPublicSharedAlbumLogList (h, sharedAlbumName)
+function PhotoStation.getPublicSharedAlbumLogList (h, sharedAlbumName)
 	local shareId  = PhotoStation.getSharedAlbumShareId(h, sharedAlbumName)
-	if not shareId then 
+	if not shareId then
 		writeLogfile(3, string.format('getPublicSharedAlbumLogList(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local formData = 'method=list_log&' ..
-					 'version=1&' .. 
-					 'offset=0&' .. 
-					 'limit=-1&' .. 
+					 'version=1&' ..
+					 'offset=0&' ..
+					 'limit=-1&' ..
 					 'category=all&' ..
-					 'public_share_id=' .. shareId 
+					 'public_share_id=' .. shareId
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.AdvancedShare', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	if respArray.data then
 		writeLogfile(3, string.format('getPublicSharedAlbumLogList(%s) returns %d logs.\n', sharedAlbumName, respArray.data.total))
@@ -1011,24 +1011,24 @@ function PhotoStation.getPublicSharedAlbumLogList (h, sharedAlbumName)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPublicSharedPhotoComments (h, sharedAlbumName, dstFilename, isVideo) 
+-- getPublicSharedPhotoComments (h, sharedAlbumName, dstFilename, isVideo)
 function PhotoStation.getPublicSharedPhotoComments (h, sharedAlbumName, dstFilename, isVideo)
 	local shareId  = PhotoStation.getSharedAlbumShareId(h, sharedAlbumName)
-	if not shareId then 
+	if not shareId then
 		writeLogfile(3, string.format('getPublicSharedPhotoComments(%s): album not found!\n', sharedAlbumName))
 		return false, 555
 	end
-	
+
 	local formData = 'method=list_comment&' ..
-					 'version=1&' .. 
-					 'offset=0&' .. 
-					 'limit=-1&' .. 
+					 'version=1&' ..
+					 'offset=0&' ..
+					 'limit=-1&' ..
 					 'item_id=' 		.. PhotoStation.getPhotoId(h, dstFilename, isVideo) .. '&' ..
-					 'public_share_id=' .. shareId 
+					 'public_share_id=' .. shareId
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.AdvancedShare', formData)
-	
-	if not respArray then return false, errorCode end 
+
+	if not respArray then return false, errorCode end
 
 	if respArray.data then
 		writeLogfile(3, string.format('getPublicSharedPhotoComments(%s, %s) returns %d comments.\n', dstFilename, sharedAlbumName, #respArray.data))
@@ -1044,11 +1044,11 @@ end
 -- checkPhotoStationAnswer(funcAndParams, respHeaders, respBody)
 --   returns success, errorMsg
 local function checkPhotoStationAnswer(funcAndParams, respHeaders, respBody)
-	local success, errorMsg = true, nil  
+	local success, errorMsg = true, nil
 
 	if not respBody then
         if respHeaders then
-        	errorMsg = 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' .. 
+        	errorMsg = 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' ..
               				trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
 			writeTableLogfile(3, 'respHeaders', respHeaders)
         else
@@ -1057,7 +1057,7 @@ local function checkPhotoStationAnswer(funcAndParams, respHeaders, respBody)
 	   	writeLogfile(1, string.format("%s failed: %s!\n", funcAndParams, errorMsg))
         return false, errorMsg
 	end
-	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")	
+	writeLogfile(4, "Got Body:\n" .. respBody .. "\n")
 
 	local respArray = JSON:decode(respBody, "checkPhotoStationAnswer(" .. funcAndParams .. ")")
 
@@ -1068,10 +1068,10 @@ local function checkPhotoStationAnswer(funcAndParams, respHeaders, respBody)
  		success = false
     	errorMsg = respArray.err_msg
  	end
- 	
+
  	if not success then
 	   	writeLogfile(1, string.format("%s failed: %s!\n", funcAndParams, errorMsg))
- 	end 
+ 	end
 
 	return success, errorMsg
 end
@@ -1079,31 +1079,31 @@ end
 ----------- PhotoStation Upload: global functions ------------------------------------
 --[[
 -- Disabled: using createAlbum() instead
--- createFolder (h, parentDir, newDir) 
+-- createFolder (h, parentDir, newDir)
 -- parentDir must exit
--- newDir may or may not exist, will be created 
-function PhotoStation.createFolder (h, parentDir, newDir) 
+-- newDir may or may not exist, will be created
+function PhotoStation.createFolder (h, parentDir, newDir)
 	local postHeaders = {
 		{ field = 'Content-Type',			value = 'application/x-www-form-urlencoded' },
 		{ field = 'X-PATH', 				value = urlencode(parentDir) },
 --		{ field = 'X-DUPLICATE', 			value = 'OVERWRITE' },
 		{ field = 'X-DUPLICATE', 			value = 'SKIP' },
-		{ field = 'X-ORIG-FNAME', 			value =  urlencode(newDir) }, 
+		{ field = 'X-ORIG-FNAME', 			value =  urlencode(newDir) },
 		{ field = 'X-UPLOAD-TYPE',			value = 'FOLDER' },
 	}
 	local postBody = ''
 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, postBody, postHeaders, 'POST', h.serverTimeout, 0)
-	
+
 	writeLogfile(4, "createFolder: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ",...)\n")
 	writeTableLogfile(4, 'postHeaders', postHeaders, true)
-	
+
 	return checkPhotoStationAnswer(string.format("PhotoStation.createFolder('%s', '%s')", parentDir, newDir),
 									respHeaders, respBody)
 end
 ]]
 
---[[ 
-uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position) 
+--[[
+uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position)
 upload a single file to Photo Station
 	srcFilename	- local path to file
 	srcDateTime	- DateTimeOriginal (exposure date), only needed for the originals, not accompanying files
@@ -1120,20 +1120,20 @@ upload a single file to Photo Station
 		LAST	- the original file must always be the last
 	The files belonging to one batch must be send in the right chronological order and tagged accordingly
 ]]
-function PhotoStation.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position) 
+function PhotoStation.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position)
 	local seqOption
 	local datetimeOption
 	local retcode,reason
-	
+
 	local thisPhoto = dstDir .. '/' .. dstFilename
 	if thisPhoto ~= lastPhoto then
-		if position ~= 'FIRST' then 
-			writeLogfile(1, string.format("uploadPictureFile(%s) to (%s - %s - %s) interrupts upload of %s\n", 
+		if position ~= 'FIRST' then
+			writeLogfile(1, string.format("uploadPictureFile(%s) to (%s - %s - %s) interrupts upload of %s\n",
 										LrPathUtils.leafName(srcFilename), thisPhoto, position, picType, lastPhoto))
 		end
 		lastPhoto = thisPhoto
 	end
-	
+
 	datetimeOption = nil
 	seqOption = nil
 	if position == 'FIRST' then
@@ -1142,9 +1142,9 @@ function PhotoStation.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dst
 		seqOption = 		{ field = 'X-IS-BATCH-LAST-FILE', 	value = '1'}
 		datetimeOption = 	{ field = 'X-LAST-MODIFIED-TIME',	value = srcDateTime }
 	end
-		
+
 	local postHeaders = {
-		{ field = 'Content-Type',	value = mimeType }, 
+		{ field = 'Content-Type',	value = mimeType },
 		{ field = 'X-PATH',			value = urlencode(dstDir) },
 		{ field = 'X-DUPLICATE',	value = 'OVERWRITE' },
 		{ field = 'X-ORIG-FNAME',	value = urlencode(dstFilename) },
@@ -1163,9 +1163,9 @@ function PhotoStation.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dst
 	end
 	local timeout = math.floor(fileSize / 1250000)
 	if timeout < 30 then timeout = 30 end
-	
+
 	-- string.format does not %ld, which would be required for fileSize; in case of huge files
-	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size " .. fileSize .. " timeout %d --> %s\n", 
+	writeLogfile(3, string.format("uploadPictureFile: %s dstDir %s dstFn %s type %s pos %s size " .. fileSize .. " timeout %d --> %s\n",
 								srcFilename, dstDir, dstFilename, picType, position, timeout, h.serverUrl .. h.uploadPath))
 	writeTableLogfile(4, 'postHeaders', postHeaders, true)
 
@@ -1175,29 +1175,29 @@ function PhotoStation.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dst
 		-- remember: LrFileUtils.readFile() can't handle huge files, e.g videos > 2GB, at least on Windows
  		respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
 	else
-    	-- use callback function returning 10MB chunks to feed LrHttp.post() 
+    	-- use callback function returning 10MB chunks to feed LrHttp.post()
     	local postFile = io.open(srcFilename, "rb")
     	if not postFile then return false, "Cannot open " .. srcFilename ..' for reading' end
         --[[ testing for MacOS
-        	local respBody, respHeaders = 
-        		LrHttp.post(h.serverUrl .. h.uploadPath, 
+        	local respBody, respHeaders =
+        		LrHttp.post(h.serverUrl .. h.uploadPath,
         				function ()
         --					local readBuf = postFile:read(10000000)
         					local readBuf = postFile:read(30000)
-        					if readBuf then 
-        						writeLogfile(4, "uploadPictureFile: postFile reader returns " .. #readBuf .. " bytes\n") 
+        					if readBuf then
+        						writeLogfile(4, "uploadPictureFile: postFile reader returns " .. #readBuf .. " bytes\n")
         					else
-        						writeLogfile(4, "uploadPictureFile: postFile reader returns <nil>\n") 
-        					end 
+        						writeLogfile(4, "uploadPictureFile: postFile reader returns <nil>\n")
+        					end
         					return readBuf
-        				end, 
+        				end,
         				postHeaders, 'POST', timeout, fileSize)
          ]]
     	respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, function () return postFile:read(10000000) end, postHeaders, 'POST', timeout, fileSize)
      	postFile:close()
-	end 
-	
-	return checkPhotoStationAnswer(string.format("PhotoStation.uploadPictureFile('%s', '%s', '%s')", srcFilename, dstDir, dstFilename), 
+	end
+
+	return checkPhotoStationAnswer(string.format("PhotoStation.uploadPictureFile('%s', '%s', '%s')", srcFilename, dstDir, dstFilename),
 									respHeaders, respBody)
 end
 
@@ -1211,7 +1211,7 @@ local contentCache = {
 		timeout			= 60,
 		listFunction	= PhotoStation.listAlbum,
 	},
-	
+
 	["sharedAlbum"] = {
 		cache 			= {},
 		timeout			= 60,
@@ -1229,11 +1229,11 @@ local contentCache = {
 -- contentCacheCleanup: remove old entries from cache
 local function contentCacheCleanup(cacheName, albumPath)
 	local albumContentCache = contentCache[cacheName].cache
-	
+
 	for i = #albumContentCache, 1, -1 do
 		local cachedAlbum = albumContentCache[i]
-		if (cachedAlbum.validUntil < LrDate.currentTime()) 
-		or (albumPath and cachedAlbum.albumPath == albumPath)then 
+		if (cachedAlbum.validUntil < LrDate.currentTime())
+		or (albumPath and cachedAlbum.albumPath == albumPath)then
 			writeLogfile(3, string.format("contentCacheCleanup(%s); removing %s\n", cacheName, cachedAlbum.albumPath))
 			table.remove(albumContentCache, i)
 		end
@@ -1248,14 +1248,14 @@ end
 local function contentCacheList(cacheName, h, albumName, listItems, updateCache)
 	contentCacheCleanup(cacheName, iif(updateCache, albumName, nil))
 	local albumContentCache = contentCache[cacheName].cache
-	
+
 	for i = 1, #albumContentCache do
 		local cachedAlbum = albumContentCache[i]
-		if cachedAlbum.albumPath == albumName then 
+		if cachedAlbum.albumPath == albumName then
 			return cachedAlbum.albumItems
 		end
 	end
-	
+
 	-- not found in cache: get it from Photo Station
 	local albumItems, errorCode = contentCache[cacheName].listFunction(h, albumName, listItems)
 	if not albumItems then
@@ -1266,17 +1266,17 @@ local function contentCacheList(cacheName, h, albumName, listItems, updateCache)
 			writeLogfile(2, string.format('contentCacheList(%s): Error on listAlbum: %d\n', cacheName, errorCode))
 		   	return nil, errorCode
 		end
-		albumItems = {} -- avoid re-requesting non-existing album 
+		albumItems = {} -- avoid re-requesting non-existing album
 	end
-	
+
 	local cacheEntry = {}
 	cacheEntry.albumPath = albumName
 	cacheEntry.albumItems = albumItems
 	cacheEntry.validUntil = LrDate.currentTime() + contentCache[cacheName].timeout
 	table.insert(albumContentCache, 1, cacheEntry)
-	
+
 	writeLogfile(3, string.format("contentCacheList(%s): added to cache with %d items\n", albumName, #albumItems))
-	
+
 	return albumItems
 end
 
@@ -1295,7 +1295,7 @@ local function sharedAlbumsCacheCleanup(h)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- sharedAlbumsCacheUpdate(h) 
+-- sharedAlbumsCacheUpdate(h)
 local function sharedAlbumsCacheUpdate(h)
 	writeLogfile(3, string.format('sharedAlbumsCacheUpdate().\n'))
 	h.sharedAlbumsCache = PhotoStation.getSharedAlbums(h)
@@ -1304,17 +1304,17 @@ local function sharedAlbumsCacheUpdate(h)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- sharedAlbumsCacheFind(h, name) 
+-- sharedAlbumsCacheFind(h, name)
 local function sharedAlbumsCacheFind(h, name)
 	sharedAlbumsCacheCleanup(h)
 	if (not h.sharedAlbumsCache or #h.sharedAlbumsCache == 0) and not sharedAlbumsCacheUpdate(h) then
-		return nil 
+		return nil
 	end
-	
+
 	for i = 1, #h.sharedAlbumsCache do
-		if h.sharedAlbumsCache[i].name == name then 
+		if h.sharedAlbumsCache[i].name == name then
 			writeLogfile(4, string.format('sharedAlbumsCacheFind(%s) found  %s.\n', name, h.sharedAlbumsCache[i].id))
-			return h.sharedAlbumsCache[i] 
+			return h.sharedAlbumsCache[i]
 		end
 	end
 
@@ -1332,7 +1332,7 @@ local tagMapping = {
 }
 
 ---------------------------------------------------------------------------------------------------------
--- tagMappingUpdate(h, type) 
+-- tagMappingUpdate(h, type)
 local function tagMappingUpdate(h, type)
 	writeLogfile(3, string.format('tagMappingUpdate(%s).\n', type))
 	tagMapping[type] = PhotoStation.getTags(h, type)
@@ -1353,12 +1353,12 @@ function PhotoStation.getErrorMsg(errorCode)
 	return PSAPIerrorMsgs[errorCode]
 end
 
--- function createTree(h, srcDir, srcRoot, dstRoot, dirsCreated) 
--- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir), 
+-- function createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
+-- 	derive destination folder: dstDir = dstRoot + (srcRoot - srcDir),
 --	create each folder recursively if not already created
 -- 	store created directories in dirsCreated
 -- 	return created dstDir or nil on error
-function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated) 
+function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 	writeLogfile(3, "  createTree: Src Path: " .. srcDir .. " from: " .. srcRoot .. " to: " .. dstRoot .. "\n")
 
 	-- sanitize srcRoot: avoid trailing slash and backslash
@@ -1368,7 +1368,7 @@ function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 	if srcDir == srcRoot then
 		return normalizeDirname(dstRoot)
 	end
-	
+
 	-- check if picture source path is below the specified local root directory
 	local subDirStartPos, subDirEndPos = string.find(string.lower(srcDir), string.lower(srcRoot), 1, true)
 	if subDirStartPos ~= 1 then
@@ -1385,10 +1385,10 @@ function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 	local dstDir = dstRoot .."/" .. dstDirRel
 
 	writeLogfile(4,"  createTree: dstDir is: " .. dstDir .. "\n")
-	
+
 	local parentDir = dstRoot
 	local restDir = dstDirRel
-	
+
 	while restDir do
 		local slashPos = ifnil(string.find(restDir,"/", 1, true), 0)
 		local newDir = string.sub(restDir,1, slashPos-1)
@@ -1396,7 +1396,7 @@ function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 
 		if not dirsCreated[newPath] then
 			writeLogfile(2,"Create dir - parent: '" .. parentDir .. "' newDir: '" .. newDir .. "' newPath: '" .. newPath .. "'\n")
-			
+
 			local paramParentDir
 			if parentDir == "" then paramParentDir = "/" else paramParentDir = parentDir  end
 			if not PhotoStation.createAlbum (h, paramParentDir, newDir) then
@@ -1405,9 +1405,9 @@ function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 			end
 			dirsCreated[newPath] = true
 		else
-			writeLogfile(4,"  Directory: " .. newPath .. " already created\n")						
+			writeLogfile(4,"  Directory: " .. newPath .. " already created\n")
 		end
-	
+
 		parentDir = newPath
 		if slashPos == 0 then
 			restDir = nil
@@ -1415,7 +1415,7 @@ function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 			restDir = string.sub(restDir, slashPos + 1)
 		end
 	end
-	
+
 	return dstDir
 end
 
@@ -1426,9 +1426,9 @@ function PhotoStation.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp,
 	return
 			( not thumbGenerate or
 				(
-					PhotoStation.uploadPictureFile(h, thmb_B_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-					and PhotoStation.uploadPictureFile(h, thmb_M_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-					and PhotoStation.uploadPictureFile(h, thmb_S_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+					PhotoStation.uploadPictureFile(h, thmb_B_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST')
+					and PhotoStation.uploadPictureFile(h, thmb_M_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE')
+					and PhotoStation.uploadPictureFile(h, thmb_S_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE')
 					and (thmb_L_Filename == '' or PhotoStation.uploadPictureFile(h, thmb_L_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
 					and PhotoStation.uploadPictureFile(h, thmb_XL_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 				)
@@ -1447,21 +1447,21 @@ function PhotoStation.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp,
 			PhotoStation.deletePhoto (h, dstDir .. '/' .. dstFilename, true)
 		and (not thumbGenerate or
 				(
-						PhotoStation.uploadPictureFile(h, thmb_B_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST') 
-					and PhotoStation.uploadPictureFile(h, thmb_M_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE') 
-					and PhotoStation.uploadPictureFile(h, thmb_S_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE') 
+						PhotoStation.uploadPictureFile(h, thmb_B_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_B', 'image/jpeg', 'FIRST')
+					and PhotoStation.uploadPictureFile(h, thmb_M_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_M', 'image/jpeg', 'MIDDLE')
+					and PhotoStation.uploadPictureFile(h, thmb_S_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_S', 'image/jpeg', 'MIDDLE')
 					and (thmb_L_Filename == '' or PhotoStation.uploadPictureFile(h, thmb_L_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_L', 'image/jpeg', 'MIDDLE'))
 					and PhotoStation.uploadPictureFile(h, thmb_XL_Filename, dstFileTimestamp, dstDir, dstFilename, 'THUM_XL', 'image/jpeg', 'MIDDLE')
 				)
 			)
 		and (not title_Filename or PhotoStation.uploadPictureFile(h, title_Filename, dstFileTimestamp, dstDir, dstFilename, 'CUST_TITLE', 'text', 'MIDDLE'))
 		and ((convKeyAdd == 'None') or PhotoStation.uploadPictureFile(h, video_Add_Filename, dstFileTimestamp, dstDir, dstFilename, 'MP4_'.. convParams[convKeyAdd].type, 'video/mpeg', 'MIDDLE'))
-		-- add mp4 version in original resolution fo Non-MP4s 
+		-- add mp4 version in original resolution fo Non-MP4s
 		and (not addOrigAsMp4 or PhotoStation.uploadPictureFile(h, video_Replace_Filename, dstFileTimestamp, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
-		-- upload at least one mp4 file to avoid the generation of a flash video by synomediaparserd 
+		-- upload at least one mp4 file to avoid the generation of a flash video by synomediaparserd
 		and ((convKeyAdd ~= 'None') or  addOrigAsMp4
 	 	   						 or PhotoStation.uploadPictureFile(h, video_Filename, dstFileTimestamp, dstDir, dstFilename, 'MP4_'.. convParams[convKeyOrig].type, 'video/mpeg', 'MIDDLE'))
-		and PhotoStation.uploadPictureFile(h, video_Filename, dstFileTimestamp, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST') 
+		and PhotoStation.uploadPictureFile(h, video_Filename, dstFileTimestamp, dstDir, dstFilename, 'ORIG_FILE', 'video/mpeg', 'LAST')
 end
 ---------------------------------------------------------------------------------------------------------
 -- PhotoStation.getAlbumId(h, albumPath)
@@ -1478,7 +1478,7 @@ function PhotoStation.getAlbumId(h, albumPath)
 
 	albumPath = string.gsub (albumPath, '/*(.*)/*', '%1')
 	if ifnil(albumPath, '') == '' then return '' end
-	
+
 	for i = 1, string.len(albumPath) do
 		albumId = albumId .. string.format('%x', string.byte(albumPath,i))
 	end
@@ -1497,27 +1497,27 @@ end
 --		Server: http://diskstation; Standard Photo Station; Album Breadcrumb: Albums/Test/2007
 --	yields PS Photo-URL:
 --		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037
-function PhotoStation.getAlbumUrl(h, albumPath) 
+function PhotoStation.getAlbumUrl(h, albumPath)
 	local i
 	local albumUrl
 	local subDirPath = ''
 	local subDirUrl  = ''
-	
+
 	local albumDirname = split(albumPath, '/')
-	
+
 	albumUrl = h.serverUrl .. h.psAlbumRoot
-	
+
 	for i = 1, #albumDirname do
-		if i > 1 then  
+		if i > 1 then
 			subDirPath = subDirPath .. '/'
 		end
 		subDirPath = subDirPath .. albumDirname[i]
-		subDirUrl = PhotoStation.getAlbumId(h, subDirPath) 
+		subDirUrl = PhotoStation.getAlbumId(h, subDirPath)
 		albumUrl = albumUrl .. '/' .. subDirUrl
 	end
-	
+
 	writeLogfile(3, string.format("getAlbumUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, albumPath, albumUrl))
-	
+
 	return albumUrl
 end
 
@@ -1541,7 +1541,7 @@ function PhotoStation.getPhotoId(h, photoPath, isVideo)
 	local albumSubId = ''
 	local photoSubId = ''
 	local photoId = iif(isVideo, 'video_', 'photo_')
-	
+
 	for i = 1, string.len(photoDir) do
 		albumSubId = albumSubId .. string.format('%x', string.byte(photoDir,i))
 	end
@@ -1551,9 +1551,9 @@ function PhotoStation.getPhotoId(h, photoPath, isVideo)
 	end
 
 	photoId = photoId .. albumSubId .. '_' .. photoSubId
-	
+
 --	writeLogfile(4, string.format("getPhotoId(%s) returns %s\n", photoPath, photoId))
-	
+
 	return photoId
 end
 
@@ -1566,37 +1566,37 @@ end
 --		Server: http://diskstation; Standard Photo Station; Photo Breadcrumb: Albums/Test/2007/2007_08_13_IMG_7415.JPG
 --	yields PS Photo-URL:
 --		http://diskstation/photo/#!Albums/album_54657374/album_546573742f32303037/photo_546573742f32303037_323030375f30385f31335f494d475f373431352e4a5047
-function PhotoStation.getPhotoUrl(h, photoPath, isVideo) 
+function PhotoStation.getPhotoUrl(h, photoPath, isVideo)
 	local i
 	local subDirPath = ''
 	local subDirUrl  = ''
 	local photoUrl
-	
+
 	local albumDir, _ = string.match(photoPath, '(.+)/([^/]+)')
-	
+
 	local albumDirname = split(albumDir, '/')
 	if not albumDirname then albumDirname = {} end
 
 	photoUrl = h.serverUrl .. h.psAlbumRoot
-	
+
 	for i = 1, #albumDirname do
-		if i > 1 then  
+		if i > 1 then
 			subDirPath = subDirPath .. '/'
 		end
 		subDirPath = subDirPath .. albumDirname[i]
-		subDirUrl = PhotoStation.getAlbumId(h, subDirPath) 
+		subDirUrl = PhotoStation.getAlbumId(h, subDirPath)
 		photoUrl = photoUrl .. '/' .. subDirUrl
 	end
-	
+
 	photoUrl = photoUrl .. '/' .. PhotoStation.getPhotoId(h, photoPath, isVideo)
-	
+
 	writeLogfile(3, string.format("getPhotoUrl(%s, %s) returns %s\n", h.serverUrl .. h.psAlbumRoot, photoPath, photoUrl))
-	
+
 	return photoUrl
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoInfoFromList(h, albumType, albumName, dstFilename, isVideo, useCache) 
+-- getPhotoInfoFromList(h, albumType, albumName, dstFilename, isVideo, useCache)
 -- return photo infos for a photo in a given album list (album, shared album or public shared album)
 -- returns:
 -- 		photoInfos				if remote photo was found
@@ -1605,8 +1605,8 @@ end
 function PhotoStation.getPhotoInfoFromList(h, albumType, albumName, photoName, isVideo, useCache)
 	local updateCache = not useCache
 	local photoInfos, errorCode = contentCacheList(albumType, h, albumName, 'photo,video', updateCache)
-	
-	if not photoInfos then return nil, errorCode end 
+
+	if not photoInfos then return nil, errorCode end
 
 	local photoId = PhotoStation.getPhotoId(h, photoName, isVideo)
 	for i = 1, #photoInfos do
@@ -1615,14 +1615,14 @@ function PhotoStation.getPhotoInfoFromList(h, albumType, albumName, photoName, i
 			return photoInfos[i]
 		end
 	end
-	
+
 	writeLogfile(3, string.format("getPhotoInfoFromList('%s', '%s', '%s', useCache %s) found no infos.\n", albumType, albumName, photoName, useCache))
 	return nil
 end
 
 ---------------------------------------------------------------------------------------------------------
 -- PhotoStation.getSharedAlbumInfo(h, sharedAlbumName, useCache)
--- 	returns the shared album info  of a given SharedAlbum 
+-- 	returns the shared album info  of a given SharedAlbum
 function PhotoStation.getSharedAlbumInfo(h, sharedAlbumName, useCache)
 	if not useCache then sharedAlbumsCacheUpdate(h) end
 	return sharedAlbumsCacheFind(h, sharedAlbumName)
@@ -1633,8 +1633,8 @@ end
 -- 	returns the shared Album Id of a given SharedAlbum using the Shared Album cache
 function PhotoStation.getSharedAlbumId(h, sharedAlbumName)
 	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
-	
-	if not sharedAlbumInfo then 
+
+	if not sharedAlbumInfo then
 		writeLogfile(3, string.format('getSharedAlbumId(%s): Shared Album not found.\n', sharedAlbumName))
 		return nil
 	end
@@ -1647,12 +1647,12 @@ end
 --  returns the public flage of a given SharedAlbum using the Shared Album cache
 function PhotoStation.isSharedAlbumPublic(h, sharedAlbumName)
 	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
-	
-	if not sharedAlbumInfo then 
+
+	if not sharedAlbumInfo then
 		writeLogfile(3, string.format('isSharedAlbumPublic(%s): Shared album not found.\n', sharedAlbumName))
 		return false
 	end
-	if not sharedAlbumInfo.additional or not sharedAlbumInfo.additional.public_share or sharedAlbumInfo.additional.public_share.share_status ~= 'valid' then 
+	if not sharedAlbumInfo.additional or not sharedAlbumInfo.additional.public_share or sharedAlbumInfo.additional.public_share.share_status ~= 'valid' then
 		return false
 	end
 
@@ -1664,8 +1664,8 @@ end
 -- 	returns the shareId of a given SharedAlbum using the Shared Album cache
 function PhotoStation.getSharedAlbumShareId(h, sharedAlbumName)
 	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
-	
-	if not sharedAlbumInfo then 
+
+	if not sharedAlbumInfo then
 		writeLogfile(3, string.format('getSharedAlbumShareId(%s): Shared Album not found.\n', sharedAlbumName))
 		return nil
 	end
@@ -1674,41 +1674,41 @@ function PhotoStation.getSharedAlbumShareId(h, sharedAlbumName)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getSharedPhotoPublicUrl (h, albumName, photoName, isVideo) 
+-- getSharedPhotoPublicUrl (h, albumName, photoName, isVideo)
 -- returns the public share url of a shared photo
 function PhotoStation.getSharedPhotoPublicUrl(h, albumName, photoName, isVideo)
 	local photoInfos, errorCode = PhotoStation.getPhotoInfoFromList(h, 'sharedAlbum', albumName, photoName, isVideo, true)
 
-	if not photoInfos then return nil, errorCode end 
+	if not photoInfos then return nil, errorCode end
 
 	return photoInfos.public_share_url
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPublicSharedPhotoColorLabel (h, albumName, photoName, isVideo) 
+-- getPublicSharedPhotoColorLabel (h, albumName, photoName, isVideo)
 -- returns the color label of a pbulic shared photo
 function PhotoStation.getPublicSharedPhotoColorLabel(h, albumName, photoName, isVideo)
 	local photoInfos, errorCode = PhotoStation.getPhotoInfoFromList(h, 'publicSharedAlbum', albumName, photoName, isVideo, true)
 
-	if not photoInfos then return nil, errorCode end 
+	if not photoInfos then return nil, errorCode end
 
 	return photoInfos.info.color_label
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getTagId(h, type, name) 
+-- getTagId(h, type, name)
 function PhotoStation.getTagId(h, type, name)
 	local tagsOfType = tagMapping[type]
 
 	if (#tagsOfType == 0) and not tagMappingUpdate(h, type) then
-		return nil 
+		return nil
 	end
 	tagsOfType = tagMapping[type]
-	
+
 	for i = 1, #tagsOfType do
-		if tagsOfType[i].name == name then 
+		if tagsOfType[i].name == name then
 			writeLogfile(3, string.format("getTagId(%s, '%s') found  %s.\n", type, name, tagsOfType[i].id))
-			return tagsOfType[i].id 
+			return tagsOfType[i].id
 		end
 	end
 
@@ -1718,31 +1718,31 @@ end
 
 
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotoTag (h, dstFilename, isVideo, type, name, addinfo) 
+-- createAndAddPhotoTag (h, dstFilename, isVideo, type, name, addinfo)
 -- create and add a new tag (desc,people,geo) to a photo
 function PhotoStation.createAndAddPhotoTag(h, dstFilename, isVideo, type, name, addinfo)
 	local tagId = PhotoStation.getTagId(h, type, name)
-	if not tagId then 
+	if not tagId then
 		tagId = PhotoStation.createTag(h, type, name)
 		tagMappingUpdate(h, type)
 	end
-	
+
 	if not tagId then return false end
-	
+
 	local photoTagIds, errorCode = PhotoStation.addPhotoTag(h, dstFilename, isVideo, type, tagId, addinfo)
-	
+
 	if not photoTagIds and errorCode == 467 then
 		-- tag was deleted, cache wasn't up to date
 		tagId = PhotoStation.createTag(h, type, name)
 		tagMappingUpdate(h, type)
 	 	photoTagIds, errorCode = PhotoStation.addPhotoTag(h, dstFilename, isVideo, type, tagId, addinfo)
-	end 
-	
+	end
+
 	-- errorCode 468: duplicate tag (tag already there)
 	if not photoTagIds and errorCode ~= 468 then return false end
-	
+
 	writeLogfile(3, string.format("createAndAddPhotoTag('%s', '%s', '%s') returns OK.\n", dstFilename, type, name))
-	return true	
+	return true
 end
 
 
@@ -1756,41 +1756,41 @@ PhotoStation.colorMapping = {
 }
 
 ---------------------------------------------------------------------------------------------------------
--- createSharedAlbumAdvanced(h, sharedAlbumParams, useExisting) 
+-- createSharedAlbumAdvanced(h, sharedAlbumParams, useExisting)
 -- create a Shared Album and add a list of photos to it
 -- returns success and share-link (if public)
 function PhotoStation.createSharedAlbumAdvanced(h, sharedAlbumParams, useExisting)
 	local sharedAlbumInfo = PhotoStation.getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 	local sharedAlbumAttributes = {}
-	
+
 	if sharedAlbumInfo and not useExisting then
-		writeLogfile(3, string.format('createSharedAlbum(%s, useExisting %s): returns error: Album already exists!\n', 
+		writeLogfile(3, string.format('createSharedAlbum(%s, useExisting %s): returns error: Album already exists!\n',
 									sharedAlbumParams.sharedAlbumName, tostring(useExisting)))
 		return nil, 414
 	end
-	
-	if not sharedAlbumInfo then 
+
+	if not sharedAlbumInfo then
 		local sharedAlbumId, errorCode = PhotoStation.createSharedAlbum(h, sharedAlbumParams.sharedAlbumName)
-		
+
 		if not sharedAlbumId then return nil, errorCode end
-		
+
 		sharedAlbumInfo = PhotoStation.getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 		if not sharedAlbumInfo then return nil, 555 end
-	
+
 		isNewSharedAlbum = true
 	end
-	
+
 	sharedAlbumAttributes.is_shared = sharedAlbumParams.isPublic
-	
+
 	if 	sharedAlbumParams.isPublic then
 --		sharedAlbumAttributes.status		= 'valid'
 		sharedAlbumAttributes.start_time 	= ifnil(sharedAlbumParams.startTime, sharedAlbumInfo.additional.public_share.start_time)
 		sharedAlbumAttributes.end_time 		= ifnil(sharedAlbumParams.stopTime, sharedAlbumInfo.additional.public_share.end_time)
 	end
-		
+
 	if sharedAlbumParams.isAdvanced then
 		sharedAlbumAttributes.is_advanced = true
-		
+
 		if sharedAlbumParams.sharedAlbumPassword then
 			sharedAlbumAttributes.enable_password = true
 			sharedAlbumAttributes.password = sharedAlbumParams.sharedAlbumPassword
@@ -1815,7 +1815,7 @@ function PhotoStation.createSharedAlbumAdvanced(h, sharedAlbumParams, useExistin
 		    	color_label_6			= 'purple',
 			}
 		end
-			
+
 		-- set advanced album info: use existing/default values if not defined otherwise
     	sharedAlbumAttributes.enable_marquee_tool	= ifnil(sharedAlbumParams.areaTool, 	 advancedInfo.enable_marquee_tool)
     	sharedAlbumAttributes.enable_comment 		= ifnil(sharedAlbumParams.comments, 	 advancedInfo.enable_comment)
@@ -1831,56 +1831,56 @@ function PhotoStation.createSharedAlbumAdvanced(h, sharedAlbumParams, useExistin
 	end
 
 	writeTableLogfile(3, "PhotoStation.createSharedAlbum: sharedAlbumParams", sharedAlbumParams, true, '^password')
-	local shareResult, errorCode = PhotoStation.editSharedAlbum(h, sharedAlbumParams.sharedAlbumName, sharedAlbumAttributes) 
+	local shareResult, errorCode = PhotoStation.editSharedAlbum(h, sharedAlbumParams.sharedAlbumName, sharedAlbumAttributes)
 
 	if not shareResult then return nil, errorCode end
-	
+
 	return shareResult
 end
 ---------------------------------------------------------------------------------------------------------
--- createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos) 
+-- createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
 -- create a Shared Album and add a list of photos to it
 -- returns success and share-link (if public)
 function PhotoStation.createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
 	local shareResult = h:createSharedAlbumAdvanced(sharedAlbumParams, true)
-	 
-	if 		not shareResult 
-		or	not h:addPhotosToSharedAlbum(sharedAlbumParams.sharedAlbumName, photos) 
-	then 
-		return false 
+
+	if 		not shareResult
+		or	not h:addPhotosToSharedAlbum(sharedAlbumParams.sharedAlbumName, photos)
+	then
+		return false
 	end
-	
-	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n', 
-			sharedAlbumParams.sharedAlbumName, iif(sharedAlbumParams.isAdvanced, 'advanced', 'old'), 
-			iif(sharedAlbumParams.isPublic, 'public', 'private'), iif(sharedAlbumParams.sharedAlbumPassword, 'w/ passwd', 'w/o passwd'), 
+
+	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n',
+			sharedAlbumParams.sharedAlbumName, iif(sharedAlbumParams.isAdvanced, 'advanced', 'old'),
+			iif(sharedAlbumParams.isPublic, 'public', 'private'), iif(sharedAlbumParams.sharedAlbumPassword, 'w/ passwd', 'w/o passwd'),
 			#photos))
 	return true, shareResult
 end
 
 ---------------------------------------------------------------------------------------------------------
--- removePhotosFromSharedAlbum(h, sharedAlbumName, photos) 
+-- removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
 -- remove a list of photos from a Shared Album
 -- ignore error if Shared Album doesn't exist
 function PhotoStation.removePhotosFromSharedAlbumIfExists(h, sharedAlbumName, photos)
 	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
-	
-	if not sharedAlbumInfo then 
+
+	if not sharedAlbumInfo then
 		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end
-	
+
 	local success, errorCode = PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
-	
+
 	if not success and errorCode == 555 then
 		-- shared album was deleted, mapping wasn't up to date
 		sharedAlbumsCacheUpdate(h)
 		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
 		return true
-	end 
-	
-	if not success then return false end 
-	
-	return true	
+	end
+
+	if not success then return false end
+
+	return true
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -1890,26 +1890,26 @@ end
 function PhotoStation.deleteEmptyAlbumAndParents(h, albumPath)
 	local nDeletedAlbums = 0
 	local currentAlbumPath
-	
+
 	currentAlbumPath = albumPath
 	while currentAlbumPath do
 		local photoInfos, errorCode =  PhotoStation.listAlbum(h, currentAlbumPath, 'photo,video,album')
 
     	-- if not existing or not empty or delete fails, we are ready
-    	if 		not photoInfos 
-    		or 	#photoInfos > 0 
-    		or not PhotoStation.deleteAlbum (h, currentAlbumPath) 
-    	then 
+    	if 		not photoInfos
+    		or 	#photoInfos > 0
+    		or not PhotoStation.deleteAlbum (h, currentAlbumPath)
+    	then
     		writeLogfile(3, string.format('deleteEmptyAlbumAndParents(%s) not deleted.\n', currentAlbumPath))
-    		return nDeletedAlbums 
+    		return nDeletedAlbums
     	end
-	
+
    		writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) was empty: deleted.\n', currentAlbumPath))
 		nDeletedAlbums = nDeletedAlbums + 1
 		currentAlbumPath = string.match(currentAlbumPath , '(.+)/[^/]+')
 	end
-	
-	return nDeletedAlbums 
+
+	return nDeletedAlbums
 end
 
 -- #####################################################################################################

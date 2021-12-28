@@ -60,11 +60,11 @@ exportServiceProvider.supportsIncrementalPublish = true
 exportServiceProvider.hideSections = { 'exportLocation' }
 
 exportServiceProvider.allowFileFormats = nil -- nil equates to all available formats
-	
+
 exportServiceProvider.allowColorSpaces = nil -- nil equates to all color spaces
 
 exportServiceProvider.canExportVideo = true	-- yes, we can
-	
+
 exportServiceProvider.exportPresetFields = {
 		-- Photo Server parameters
 		{ key = 'proto', 			default = 'http' },	-- transport protocol for Photo Server upload
@@ -86,7 +86,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'storeDstRoot', 	default = true },	-- enter destination Album in Export dialog or later
 		{ key = 'dstRoot', 			default = '' },		-- destination Album on Photo Server: no leading or trailing slash required
 		{ key = 'createDstRoot', 	default = false },	-- create Destination album (if not exist)
-		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Server acc. to collection sort order 
+		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Server acc. to collection sort order
 
 		-- upload options / exif translation parameters
 		{ key = 'exifTranslate', 		default = false },	-- make exif translations: requires exiftool
@@ -95,13 +95,13 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'exifXlatRating', 		default = false},	-- translate Lr star rating (XMP:rating) to PS keywords
 
 		{ key = 'xlatLocationTags',		default = false},					-- translate Lr location tags to single PS locaton tag
-		{ key = 'locationTagSeperator',	default = '-' },					-- output seperator for locaton tags  
+		{ key = 'locationTagSeperator',	default = '-' },					-- output seperator for locaton tags
 		{ key = 'locationTagField1',	default = '{LrFM:isoCountryCode}' },-- field 1 of location tag template
 		{ key = 'locationTagField2',	default = '{LrFM:country}' }, 		-- field 2 of location tag template
 		{ key = 'locationTagField3',	default = '{LrFM:stateProvince}' }, -- field 3 of location tag template
 		{ key = 'locationTagField4',	default = '{LrFM:city}' }, 			-- field 4 of location tag template
 		{ key = 'locationTagField5',	default = '{LrFM:location}' }, 		-- field 5 of location tag template
-		{ key = 'locationTagTemplate',	default = '' },						-- the resulting location tag template 
+		{ key = 'locationTagTemplate',	default = '' },						-- the resulting location tag template
 
 		-- thumbnail parameters
 		{ key = 'thumbGenerate',	default = true },	-- generate thumbs: yes or nos
@@ -110,37 +110,37 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'thumbSharpness', 	default = 'MED' },	-- sharpening for thumbs
 
 		-- target filename parameters
-		{ key = 'renameDstFile',	default = false },	-- rename photo when uploading 
-		{ key = 'dstFilename',		default = '' },		-- rename photo to this filename (containing placeholders) 
-		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album 
+		{ key = 'renameDstFile',	default = false },	-- rename photo when uploading
+		{ key = 'dstFilename',		default = '' },		-- rename photo to this filename (containing placeholders)
+		{ key = 'RAWandJPG',		default = false },	-- allow to upload RAW+JPG to same album
 
 		-- video parameters
-		{ key = 'orgVideoForceConv',	default = false },  -- force orig video conversion even if video format is supported by PS 
-		{ key = 'orgVideoQuality',		default = 3 },  	-- video conversion quality for orig video 
-		{ key = 'hardRotate', 			default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos 
+		{ key = 'orgVideoForceConv',	default = false },  -- force orig video conversion even if video format is supported by PS
+		{ key = 'orgVideoQuality',		default = 3 },  	-- video conversion quality for orig video
+		{ key = 'hardRotate', 			default = false }, 	-- Hard-rotate soft-rotated or meta-rotated videos
 
-		{ key = 'addVideoQuality',		default = 2 },  	-- video conversion quality for the additional video  
+		{ key = 'addVideoQuality',		default = 2 },  	-- video conversion quality for the additional video
 		{ key = 'addVideoUltra', 		default = 'None' },	-- additional video resolution for ULTRA res videos
 		{ key = 'addVideoHigh', 		default = 'None' },	-- additional video resolution for HIGH res videos
 		{ key = 'addVideoMed',			default = 'None' }, -- additional video resolution for MEDIUM res videos
-		{ key = 'addVideoLow', 			default = 'None' },	-- additional video resolution for LOW res videos	
+		{ key = 'addVideoLow', 			default = 'None' },	-- additional video resolution for LOW res videos
 
 		-- logging/debugging parameters
-		{ key = 'logLevel', 		default = 2 },		-- loglevel 
+		{ key = 'logLevel', 		default = 2 },		-- loglevel
 
 		-- Secondary Server
 		{ key = 'useSecondAddress',		default = false },		-- specify a secondoray (external) server address
 		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary Photo Server upload
 		{ key = 'servername2', 			default = '' },			-- name/address of the secondary Photo Server, may include ':port' extension
 		{ key = 'serverTimeout2',	 	default = 10 },			-- http timeout
-		
+
 		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, CheckExisting, ...
 }
 
 exportServiceProvider.startDialog = PSUploadExportDialogSections.startDialog
 exportServiceProvider.sectionsForTopOfDialog = PSUploadExportDialogSections.sectionsForTopOfDialog
 exportServiceProvider.sectionsForBottomOfDialog = PSUploadExportDialogSections.sectionsForBottomOfDialog
-	
+
 exportServiceProvider.updateExportSettings = PSUploadTask.updateExportSettings
 exportServiceProvider.processRenderedPhotos = PSUploadTask.processRenderedPhotos
 

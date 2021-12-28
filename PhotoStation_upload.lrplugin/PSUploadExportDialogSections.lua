@@ -50,7 +50,7 @@ require "PSDialogs"
 PSUploadExportDialogSections = {}
 
 -------------------------------------------------------------------------------
--- startDialog 
+-- startDialog
 function PSUploadExportDialogSections.startDialog( propertyTable )
 	PSDialogs.addObservers( propertyTable )
 end
@@ -62,13 +62,13 @@ function PSUploadExportDialogSections.sectionsForTopOfDialog( f, propertyTable )
 		{
 			title = "Photo StatLr",
     		synopsis = "Yeah, but they can't put a moon on a man!",
-    		
+
     		-- ================== Photo StatLr header ==================================================================
 
-   			PSDialogs.photoStatLrHeaderView(f, propertyTable),	
-    
+   			PSDialogs.photoStatLrHeaderView(f, propertyTable),
+
 		}
-	}	
+	}
 end
 
 -------------------------------------------------------------------------------
@@ -80,17 +80,17 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 	local bind = LrView.bind
 	local share = LrView.share
 	local conditionalItem = LrView.conditionalItem
-	
+
 	if propertyTable.isCollection == nil then
 		propertyTable.isCollection = false
 	end
-	
+
 	-- config section for Export or Publish dialog
 	local result = {
-	
+
 		{
 			title = "Photo StatLr - Photo Server",
-			
+
 			synopsis = bind { key = 'psUrl', object = propertyTable },
 
 
@@ -99,13 +99,13 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			PSDialogs.targetPhotoStationView(f, propertyTable),
 
 			-- ================== Target Album and Upload Method ===============================================
-			
+
 			conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.targetAlbumView(f, propertyTable)),
-			
+
 			-- ================== Photo Renaming Options ========================================================
-			
+
 			conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.photoNamingView(f, propertyTable)),
-			
+
 			-- ================== Thumbnail Options =============================================================
 
 			PSDialogs.thumbnailOptionsView(f, propertyTable),
@@ -115,7 +115,7 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 			PSDialogs.videoOptionsView(f, propertyTable),
 
             -- ================== Upload Options ================================================================
-            
+
             conditionalItem(not propertyTable.LR_isExportForPublish, PSDialogs.uploadOptionsView(f, propertyTable)),
 
 			-- ================== Log Options ===================================================================

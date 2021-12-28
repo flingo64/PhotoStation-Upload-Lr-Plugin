@@ -81,7 +81,7 @@ function PSSharedAlbumMgmt.getSharedAlbumKeywordPath(pubServiceName, sharedAlbum
 		return "Photo StatLr|Shared Albums|" .. pubServiceName .. "|" .. sharedAlbumName
 	else
 		return "Photo StatLr|Shared Albums|" .. pubServiceName
-	end	
+	end
 end
 
 --------------------------------------------------------------------------------------------
@@ -90,21 +90,21 @@ end
 function PSSharedAlbumMgmt.getSharedAlbumParams(sharedAlbumKeyword, publishSettings)
 	local keywordSynonyms	= sharedAlbumKeyword:getSynonyms()
 	local myPrefs 			= LrPrefs.prefsForPlugin()
- 
+
 	local privateUrlIndex = findInStringTable(keywordSynonyms, '.*#!SharedAlbums.*', true)
 	local privateUrl
 	if privateUrlIndex then privateUrl = keywordSynonyms[privateUrlIndex] end
- 
+
   	local publicUrlIndex = findInStringTable(keywordSynonyms, '.*' .. regexpEscape(publishSettings.servername) .. '.*/photo/share/.*', true)
 	local publicUrl
 	if publicUrlIndex then publicUrl = keywordSynonyms[publicUrlIndex] end
-	
+
 	local publicUrl2Index, publicUrl2
 	if ifnil(publishSettings.servername2, '') ~= '' then
 		publicUrl2Index = findInStringTable(keywordSynonyms, '.*' .. regexpEscape(publishSettings.servername2) .. '.*/photo/share/.*', true)
 		if publicUrl2Index then publicUrl2 = keywordSynonyms[publicUrl2Index] end
 	end
-	
+
 	local sharedAlbumPassword
 	for i = 1,  #keywordSynonyms do
 		sharedAlbumPassword = string.match(keywordSynonyms[i], 'password:(.*)')
@@ -113,7 +113,7 @@ function PSSharedAlbumMgmt.getSharedAlbumParams(sharedAlbumKeyword, publishSetti
 
 	local sharedAlbumParams = {
 			keywordId			= sharedAlbumKeyword.localIdentifier,
-			sharedAlbumName 	= sharedAlbumKeyword:getName(), 
+			sharedAlbumName 	= sharedAlbumKeyword:getName(),
 			isPublic			= iif(findInStringTable(keywordSynonyms, 'private'), false, true),
 			privateUrl			= privateUrl,
 			publicUrl			= publicUrl,
@@ -140,56 +140,56 @@ end
 -- setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, publishSettings)
 --   adds the private and public Shared Album URLs to the Shared Album Keyword
 function PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, publishSettings)
-	local firstServerUrl 	= publishSettings.proto .. "://" .. publishSettings.servername 
+	local firstServerUrl 	= publishSettings.proto .. "://" .. publishSettings.servername
 	local secondServerUrl	= iif(ifnil(publishSettings.servername2, '') ~= '', publishSettings.proto2 .. "://" .. publishSettings.servername2, nil)
 	local sharedAlbumId		= publishSettings.photoServer:getSharedAlbumId(sharedAlbumParams.sharedAlbumName)
-	
+
 	local sharedAlbumUrls 	= {}
-		
+
     sharedAlbumUrls[1] 		= publishSettings.psUrl .. "#!SharedAlbums/" .. sharedAlbumId
 
-	writeLogfile(3, string.format("setSharedAlbumUrls: firstServer: %s secondServer: %s, albumId: %s, share_url: %s\n", 
+	writeLogfile(3, string.format("setSharedAlbumUrls: firstServer: %s secondServer: %s, albumId: %s, share_url: %s\n",
 	firstServerUrl, ifnil(secondServerUrl, '<nil>'), sharedAlbumId, sharedAlbumInfo.public_share_url))
-	
-	if sharedAlbumInfo.public_share_url then 
+
+	if sharedAlbumInfo.public_share_url then
 		local pathUrl = string.match(sharedAlbumInfo.public_share_url, 'http[s]*://[^/]*(.*)')
 		sharedAlbumUrls[2] = firstServerUrl .. pathUrl
-		
+
 		if secondServerUrl then
 			sharedAlbumUrls[3] = secondServerUrl .. pathUrl
 		end
 	end
 
 	PSLrUtilities.addKeywordSynonyms(sharedAlbumParams.keywordId, sharedAlbumUrls)
-	
+
 	if not sharedAlbumParams.isPublic then
 		local shareUrlPatterns = {}
 		shareUrlPatterns[1] = '/photo/share/'
 		PSLrUtilities.removeKeywordSynonyms(sharedAlbumParams.keywordId, shareUrlPatterns, true)
 	end
-	
+
 end
 
 --------------------------------------------------------------------------------------------
 -- getPublishServiceSharedAlbums(pubServiceName)
 --   returns a list of all Shared Album for a Publish Service, i.e. derived from keywords below "Photo StatLr"|"Shared Albums"
 function PSSharedAlbumMgmt.getPublishServiceSharedAlbums(pubServiceName)
-	local sharedAlbumParamsList					= {} 	
+	local sharedAlbumParamsList					= {}
 	local pubService 							= PSLrUtilities.getPublishServiceByName(pubServiceName)
 	local pubServiceSettings 					= pubService:getPublishSettings()
 	local pubServiceSharedAlbumPath 			= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(pubServiceName, nil)
 	local _, pubServiceSharedAlbumRootKeyword	= PSLrUtilities.getKeywordByPath(pubServiceSharedAlbumPath)
 
 	if not pubServiceSharedAlbumRootKeyword then return sharedAlbumParamsList end
-	 
+
 	local pubServiceKeywords = pubServiceSharedAlbumRootKeyword:getChildren()
 	for i = 1, #pubServiceKeywords do
 		local keyword = pubServiceKeywords[i]
-		sharedAlbumParamsList[i] = PSSharedAlbumMgmt.getSharedAlbumParams(keyword, pubServiceSettings) 
+		sharedAlbumParamsList[i] = PSSharedAlbumMgmt.getSharedAlbumParams(keyword, pubServiceSettings)
 	end
-	writeLogfile(3, string.format("getPublishServiceSharedAlbums(%s): found Shared Albums: '%s'\n", 
+	writeLogfile(3, string.format("getPublishServiceSharedAlbums(%s): found Shared Albums: '%s'\n",
 									pubServiceName, table.concat(getTableExtract(sharedAlbumParamsList, 'sharedAlbumName'), ',')))
-	return sharedAlbumParamsList   		
+	return sharedAlbumParamsList
 
 end
 
@@ -197,8 +197,8 @@ end
 -- getPhotoSharedAlbums(srcPhoto, pubServiceName)
 --   returns a list of all Shared Album params for a photo in within the scope of a given Publish Service
 function PSSharedAlbumMgmt.getPhotoSharedAlbums(srcPhoto, pubServiceName)
-	local photoKeywords 			= srcPhoto:getRawMetadata("keywords")  
-	local sharedAlbumParamsList 	= {} 	
+	local photoKeywords 			= srcPhoto:getRawMetadata("keywords")
+	local sharedAlbumParamsList 	= {}
 	local numSharedAlbumKeywords 	= 0
 	local pubService 				= PSLrUtilities.getPublishServiceByName(pubServiceName)
 	local pubServiceSettings 		= pubService:getPublishSettings()
@@ -210,12 +210,12 @@ function PSSharedAlbumMgmt.getPhotoSharedAlbums(srcPhoto, pubServiceName)
 
 		if	keyword:getParent() and keyword:getParent() == pubServiceSharedAlbumRootKeyword then
     		numSharedAlbumKeywords = numSharedAlbumKeywords + 1
-			sharedAlbumParamsList[numSharedAlbumKeywords] = PSSharedAlbumMgmt.getSharedAlbumParams(keyword, pubServiceSettings) 
+			sharedAlbumParamsList[numSharedAlbumKeywords] = PSSharedAlbumMgmt.getSharedAlbumParams(keyword, pubServiceSettings)
 		end
 	end
-	writeLogfile(3, string.format("getPhotoSharedAlbums(%s, %s): found Shared Albums: '%s'\n", 
+	writeLogfile(3, string.format("getPhotoSharedAlbums(%s, %s): found Shared Albums: '%s'\n",
 									srcPhoto:getFormattedMetadata('fileName'), pubServiceName, table.concat(getTableExtract(sharedAlbumParamsList, 'sharedAlbumName'), ',')))
-	return sharedAlbumParamsList   		
+	return sharedAlbumParamsList
 
 end
 
@@ -230,10 +230,10 @@ function PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
 	if ifnil(sharedAlbumPluginMetadata, '') ~= '' then
 		sharedAlbumsPS = split(sharedAlbumPluginMetadata, '/')
 	end
-	writeLogfile(3, string.format("getPhotoPluginMetaLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n", 
-									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))    		
+	writeLogfile(3, string.format("getPhotoPluginMetaLinkedSharedAlbums(%s): Shared Albums plugin metadata: '%s'\n",
+									srcPhoto:getRawMetadata('path'), ifnil(sharedAlbumPluginMetadata, '')))
 	return sharedAlbumsPS
-end 
+end
 
 --------------------------------------------------------------------------------------------
 -- setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
@@ -244,22 +244,22 @@ function PSSharedAlbumMgmt.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, shared
 	local oldSharedAlbumPluginMetadata 	= srcPhoto:getPropertyForPlugin(_PLUGIN, 'sharedAlbums', nil, true)
 	table.sort(sharedAlbums)
 	local newSharedAlbumPluginMetadata 	= table.concat(sharedAlbums, '/')
-	
+
 	if newSharedAlbumPluginMetadata ~= oldSharedAlbumPluginMetadata then
-		activeCatalog:withWriteAccessDo( 
+		activeCatalog:withWriteAccessDo(
 				'Update Plugin Metadata for Shared Albums',
 				function(context)
 					srcPhoto:setPropertyForPlugin(_PLUGIN, 'sharedAlbums', iif(#newSharedAlbumPluginMetadata == 0, nil, newSharedAlbumPluginMetadata))
 				end,
 				{timeout=5}
 		)
-		writeLogfile(3, string.format("setPhotoPluginMetaLinkedSharedAlbums(%s): updated Shared Albums plugin metadata to '%s'\n", 
-									srcPhoto:getRawMetadata('path'), newSharedAlbumPluginMetadata))    		
+		writeLogfile(3, string.format("setPhotoPluginMetaLinkedSharedAlbums(%s): updated Shared Albums plugin metadata to '%s'\n",
+									srcPhoto:getRawMetadata('path'), newSharedAlbumPluginMetadata))
 		return 1
 	end
 
 	return 0
-end 
+end
 
 --------------------------------------------------------------------------------------------
 -- removePhotoPluginMetaLinkedSharedAlbumForCollection(srcPhoto, collectionId)
@@ -268,7 +268,7 @@ function PSSharedAlbumMgmt.removePhotoPluginMetaLinkedSharedAlbumForCollection(s
 	local sharedAlbums 			= PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
 	local sharedAlbumsRemoved	= false
 
-	writeLogfile(4, string.format("removePhotoPluginMetaLinkedSharedAlbumForCollection(%s, {%s}): removing all Shared Albums for colletion '%d'\n", 
+	writeLogfile(4, string.format("removePhotoPluginMetaLinkedSharedAlbumForCollection(%s, {%s}): removing all Shared Albums for colletion '%d'\n",
 									srcPhoto:getRawMetadata('path'), table.concat(ifnil(sharedAlbums, {}), ","), collectionId))
 
 	if sharedAlbums then
@@ -278,13 +278,13 @@ function PSSharedAlbumMgmt.removePhotoPluginMetaLinkedSharedAlbumForCollection(s
     			sharedAlbumsRemoved = true
     		end
     	end
-    	
+
     	if sharedAlbumsRemoved then
     		return PSSharedAlbumMgmt.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
     	end
 	end
 	return 0
-end 
+end
 
 -------------------------------------------------------------------------------
 -- PSSharedAlbumMgmt.readSharedAlbumsFromLr()
@@ -338,23 +338,23 @@ end
 function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
 	local isPattern = true
 	local myPrefs = LrPrefs.prefsForPlugin()
-	
+
 	for i = 1, #sharedAlbumParamsList do
 		local sharedAlbum = sharedAlbumParamsList[i]
-		
+
 		if sharedAlbum.isEntry then
     		if sharedAlbum.wasDeleted and not sharedAlbum.wasAdded then
     			writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: PubServ %s, ShAlbum: %s: deleting Album\n",
     								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
-    			-- remove shared album plugin metadata from all belonging photos 
+    			-- remove shared album plugin metadata from all belonging photos
     			local srcPhotos = PSLrUtilities.getKeywordPhotos(sharedAlbum.keywordId)
-    			
+
     			for i = 1, #srcPhotos do
     				local srcPhoto = srcPhotos[i]
     				local sharedAlbums = PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
         			if sharedAlbums then
         				local numOldSharedAlbumsPS = #sharedAlbums
-        
+
         				for j = #sharedAlbums, 1, -1 do
         					if string.match(sharedAlbums[j],  '%d+:(.+)')  == sharedAlbum.sharedAlbumName then
     							writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: srcPhoto %s, removing Shared Album '%s' from Plugin Metadata\n",
@@ -367,59 +367,59 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
         					PSSharedAlbumMgmt.setPhotoPluginMetaLinkedSharedAlbums(srcPhoto, sharedAlbums)
         				end
         			end
-        			
+
     				-- remove shared album keyword from photo
         			PSLrUtilities.removePhotoKeyword(srcPhoto, sharedAlbum.keywordId)
     			end
-    
+
     			-- remove all keywrd synonyms from shared album keyword
     			PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {".*"}, isPattern)
     			-- delete album from Lr keyword hierarchy  (currently not supported by Lr)
     			PSLrUtilities.deleteKeyword(sharedAlbum.keywordId)
     		end
-    		
+
     		if sharedAlbum.wasAdded and not sharedAlbum.wasDeleted then
     			writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: PubServ %s, ShAlbum: %s: adding Album\n",
     								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
     			local createIfMissing, includeOnExport = true, true
-    			local shareAlbumKeyword 
-    			
+    			local shareAlbumKeyword
+
     			local sharedAlbumKeywordPath 				= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName)
     			sharedAlbum.keywordId, shareAlbumKeyword	= PSLrUtilities.getKeywordByPath(sharedAlbumKeywordPath, createIfMissing, includeOnExport)
     			-- TODO: set keyword attributes
     			local keywordAttributes = shareAlbumKeyword:getAttributes()
 	   			writeTableLogfile(2, "PSSharedAlbumMgmt.writeSharedAlbumsToLr: keywordAttributes", keywordAttributes, true)
     		end
-    
+
     		if sharedAlbum.wasRenamed and not sharedAlbum.wasAdded and not sharedAlbum.wasDeleted then
     			writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: PubServ %s, ShAlbum: %s: renaming Album to %s\n",
     								sharedAlbum.publishServiceName, sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
     			PSLrUtilities.renameKeyword(sharedAlbum.keywordId, sharedAlbum.sharedAlbumName)
     			-- TODO: check result of renameKeyword
     		end
-    
+
     		if (sharedAlbum.wasAdded or sharedAlbum.wasModified) and not sharedAlbum.wasDeleted then
     			writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: PubServ %s, ShAlbum: %s: storing modified params\n",
     								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
-    
+
     			-- write back attribute to Shared Album keyword synonyms: private/public and password
     			if not sharedAlbum.isPublic then
     				PSLrUtilities.addKeywordSynonyms(sharedAlbum.keywordId, {"private"})
     			else
     				PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {"private"})
     			end
-    			
+
    				if ifnil(sharedAlbum.sharedAlbumPassword, '') ~= '' then
        				PSLrUtilities.replaceKeywordSynonyms(sharedAlbum.keywordId, {"password:.*"}, {"password:" .. sharedAlbum.sharedAlbumPassword})
 				else
        				PSLrUtilities.removeKeywordSynonyms(sharedAlbum.keywordId, {"password:.*"}, true)
        			end
-    			
+
     			-- write back attributes to Shared Album plugin prefs:
     			--   colors, comments, start/stoptime
     			if not myPrefs.sharedAlbums then myPrefs.sharedAlbums = {} end
     			if not myPrefs.sharedAlbums[sharedAlbum.keywordId] then myPrefs.sharedAlbums[sharedAlbum.keywordId] = {} end
-    			
+
     			local sharedAlbumPrefs = myPrefs.sharedAlbums[sharedAlbum.keywordId]
     			for _, key in ipairs(sharedAlbumPrefKeys) do
     				sharedAlbumPrefs[key] = sharedAlbum[key]
@@ -427,7 +427,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
     			myPrefs.sharedAlbums[sharedAlbum.keywordId] = myPrefs.sharedAlbums[sharedAlbum.keywordId]
     			myPrefs.sharedAlbums = myPrefs.sharedAlbums
     		end
-    	end	
+    	end
 	end
 end
 
@@ -441,14 +441,14 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 			publishServiceName	= nil,
 			publishSettings		= nil,
 		}
-	
+
 	-- TODO: sort shared albums by publishService
 	for i = 1, #sharedAlbumParamsList do
 		local sharedAlbum 		= sharedAlbumParamsList[i]
 		local publishService 	= PSLrUtilities.getPublishServiceByName(sharedAlbum.publishServiceName)
 		local publishSettings
 
-		if 	 sharedAlbum.isEntry and 
+		if 	 sharedAlbum.isEntry and
 			(sharedAlbum.wasAdded or sharedAlbum.wasDeleted or sharedAlbum.wasRenamed or sharedAlbum.wasModified) then
 
     		-- open session only if publish service changed or session not yet opened
@@ -471,26 +471,26 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
             else
             	publishSettings = activePublishing.publishSettings
 			end
-		end 
-		
+		end
+
 		if sharedAlbum.wasDeleted then
-			if  not sharedAlbum.wasAdded then  
+			if  not sharedAlbum.wasAdded then
     			-- delete Shared Album in Photo Server
     			writeLogfile(3, string.format('writeSharedAlbumsToPS: deleting %s.\n', sharedAlbum.sharedAlbumName))
     			if publishSettings.photoServer:deleteSharedAlbum(sharedAlbum.sharedAlbumName) then
     				numDeletes = numDeletes + 1
     			else
     				numFailDeletes = numFailDeletes + 1
-    			end			
+    			end
 			end
 		else
-		
+
     		if sharedAlbum.wasRenamed and not sharedAlbum.wasAdded then
     			-- rename Shared Album in Photo Server
     			writeLogfile(3, string.format('writeSharedAlbumsToPS: rename %s to %s.\n', sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
-    			local success, errorCode = publishSettings.photoServer:renameSharedAlbum(sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName) 
-    	
-    			writeLogfile(2, string.format('writeSharedAlbumsToPS(%s):renameSharedAlbum to %s returns %s.\n', 
+    			local success, errorCode = publishSettings.photoServer:renameSharedAlbum(sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName)
+
+    			writeLogfile(2, string.format('writeSharedAlbumsToPS(%s):renameSharedAlbum to %s returns %s.\n',
     											sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName, iif(success, 'OK', tostring(ifnil(errorCode, '<nil>')))))
     			if success then
     				numRenames = numRenames + 1
@@ -499,7 +499,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
     			end
     			-- TODO: update plugin metadata for all belonging photos
     		end
-    
+
     		if sharedAlbum.wasAdded or sharedAlbum.wasModified then
 				sharedAlbum.isAdvanced = iif(publishSettings.photoServer:supports(PHOTOSERVER_SHAREDALBUM_ADVANCED), true, false)
     			-- add/modify Shared Album in Photo Server
@@ -515,8 +515,8 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
     		end
 		end
 	end
-	
-	local message = LOC ("$$$/PSUpload/FinalMsg/UpdatePSSharedAlbums=Update Shared Albums: Add/Modify: ^1 OK / ^2 Fail, Rename: ^3 OK / ^4 Fail, Delete: ^5 OK / ^6 Fail\n", 
+
+	local message = LOC ("$$$/PSUpload/FinalMsg/UpdatePSSharedAlbums=Update Shared Albums: Add/Modify: ^1 OK / ^2 Fail, Rename: ^3 OK / ^4 Fail, Delete: ^5 OK / ^6 Fail\n",
 					numAddOrMods, numFailAddOrMods, numRenames, numFailRenames, numDeletes, numFailDeletes)
 	local messageType = iif(numFailAddOrMods > 0 or numFailRenames > 0 or numFailDeletes > 0, 'critical', 'info')
 	showFinalMessage ("Photo StatLr: Update Shared Albums done", message, messageType)
@@ -531,17 +531,17 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
 	local sharedAlbumsLr 	= PSSharedAlbumMgmt.getPhotoSharedAlbums(srcPhoto, pubServiceName)
 	local oldSharedAlbumsPS	= ifnil(PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto), {})
 	local newSharedAlbumsPS	= tableShallowCopy(oldSharedAlbumsPS)
-	
+
 	-- add photo to all given Shared Albums that it is not already member of
 	for i = 1, #sharedAlbumsLr do
 		local sharedAlbumName		= sharedAlbumsLr[i].sharedAlbumName
 		local photoSharedAlbum 		= publishedCollectionId .. ':' .. sharedAlbumName
-		
-		if 		not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) 
+
+		if 		not findInStringTable(newSharedAlbumsPS, photoSharedAlbum)
 			or	not exportParams.photoServer:getPhotoInfoFromList('sharedAlbum', sharedAlbumName, publishedPhotoId, srcPhoto:getRawMetadata('isVideo'), true)
 		then
     		local sharedAlbumUpdate = nil
-    		
+
     		for k = 1, #sharedAlbumUpdates do
     			if sharedAlbumUpdates[k].sharedAlbumName == sharedAlbumName then
     				sharedAlbumUpdate = sharedAlbumUpdates[k]
@@ -552,40 +552,40 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
     			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s' as entry %d due to addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
     				sharedAlbumName			= sharedAlbumName,
-    				addPhotos 				= {}, 
-    				removePhotos 			= {}, 
+    				addPhotos 				= {},
+    				removePhotos 			= {},
     			}
-				
+
 --[[
     			sharedAlbumUpdate = {
-    				sharedAlbumName 		= sharedAlbumName, 
-    				isAdvanced 				= isAdvanced, 
-    				isPublic 				= isPublic, 
-    				sharedAlbumPassword 	= sharedAlbumPassword, 
-    				keywordId 				= keywordId, 
-    				addPhotos 				= {}, 
-    				removePhotos 			= {}, 
+    				sharedAlbumName 		= sharedAlbumName,
+    				isAdvanced 				= isAdvanced,
+    				isPublic 				= isPublic,
+    				sharedAlbumPassword 	= sharedAlbumPassword,
+    				keywordId 				= keywordId,
+    				addPhotos 				= {},
+    				removePhotos 			= {},
     			}
 ]]
     			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
     		end
 
 			if not sharedAlbumUpdate.sharedAlbumParams then
-				sharedAlbumUpdate.sharedAlbumParams = {} 
+				sharedAlbumUpdate.sharedAlbumParams = {}
 				for key, value in pairs(sharedAlbumsLr[i]) do
-					sharedAlbumUpdate.sharedAlbumParams[key] = value		
+					sharedAlbumUpdate.sharedAlbumParams[key] = value
 				end
 			end
-			
+
     		local addPhotos = sharedAlbumUpdate.addPhotos
     		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note in entry '%s' --> addPhotos[%d]\n", publishedPhotoId, sharedAlbumName, #addPhotos))
-    		
+
    			if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
    				table.insert(newSharedAlbumsPS, photoSharedAlbum)
    			end
 		end
-	end 
+	end
 
 	-- remove photo from all Shared Albums that it is not member of
 	for i = 1, #oldSharedAlbumsPS do
@@ -604,19 +604,19 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
     			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s' as entry %d due to removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
     				sharedAlbumName			= sharedAlbumName,
-    				addPhotos 				= {}, 
-    				removePhotos 			= {}, 
+    				addPhotos 				= {},
+    				removePhotos 			= {},
     			}
-				
+
     			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
     		end
     		local removePhotos = sharedAlbumUpdate.removePhotos
     		removePhotos[#removePhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note in entry '%s' --> removePhotos[%d]\n", publishedPhotoId, sharedAlbumName, #removePhotos))
-    		
+
     		local removeId = findInStringTable(newSharedAlbumsPS, oldSharedAlbumsPS[i])
     		table.remove(newSharedAlbumsPS, removeId)
- 		end 
+ 		end
 	end
 
 	if table.concat(oldSharedAlbumsPS, '/') ~= table.concat(newSharedAlbumsPS, '/') then
@@ -624,25 +624,25 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
 		local sharedPhotoUpdate = { srcPhoto = srcPhoto, sharedAlbums = newSharedAlbumsPS }
 		table.insert(sharedPhotoUpdates, sharedPhotoUpdate)
 	end
-	
-	return true 
+
+	return true
 end
 
 -----------------
--- updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams) 
+-- updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams)
 -- update Shared Albums for photos/videos just uploaded
 -- 	  sharedAlbumUpdates contains the list of required Shared Album updates (adds and removes)
 -- 	  sharedPhotoUpdates contains the list of required plugin metadata updates
 function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdates, sharedPhotoUpdates, exportParams)
 	local catalog = LrApplication.activeCatalog()
-	local nUpdateItems =  #sharedAlbumUpdates + #sharedPhotoUpdates 
-	local nProcessed 		= 0 
-		
+	local nUpdateItems =  #sharedAlbumUpdates + #sharedPhotoUpdates
+	local nProcessed 		= 0
+
 	writeLogfile(3, string.format("updateSharedAlbums: updating %d shared album and %d photo metadata\n", #sharedAlbumUpdates, #sharedPhotoUpdates))
-	local progressScope = LrProgressScope( 
+	local progressScope = LrProgressScope(
 								{ 	title = LOC( "$$$/PSUpload/Progress/UpdateSharedAlbums=Updating ^1 shared albums with ^2 photos",  #sharedAlbumUpdates,  #sharedPhotoUpdates),
-							 		functionContext = functionContext 
-							 	})    
+							 		functionContext = functionContext
+							 	})
 	for i = 1, #sharedAlbumUpdates do
 		if progressScope:isCanceled() then break end
 		local sharedAlbumUpdate = sharedAlbumUpdates[i]
@@ -650,26 +650,26 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 
 		progressScope:setCaption(sharedAlbumUpdate.sharedAlbumName)
 
-		if #sharedAlbumUpdate.addPhotos > 0 then 
+		if #sharedAlbumUpdate.addPhotos > 0 then
 			local success, sharedAlbumInfo = exportParams.photoServer:createAndAddPhotosToSharedAlbum(sharedAlbumParams, sharedAlbumUpdate.addPhotos)
 			if success then
 				PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, exportParams)
 --[[
-        		local firstServerUrl 	= exportParams.proto .. "://" .. exportParams.servername 
+        		local firstServerUrl 	= exportParams.proto .. "://" .. exportParams.servername
         		local secondServerUrl	= iif(ifnil(exportParams.servername2, '') ~= '', exportParams.proto2 .. "://" .. exportParams.servername2, nil)
         		writeLogfile(4, string.format("updateSharedAlbum: firstServer: %s secondServer %s\n", firstServerUrl, ifnil(secondServerUrl, '<nil>')))
-        		
+
 				local sharedAlbumUrls = {}
 				sharedAlbumUrls[1] = exportParams.psUrl .. "#!SharedAlbums/" .. exportParams.photoServer:getSharedAlbumId(sharedAlbumParams.sharedAlbumName)
 
-				if sharedAlbumParams.isPublic and shareResult.public_share_url then 
+				if sharedAlbumParams.isPublic and shareResult.public_share_url then
 					local pathUrl = string.match(shareResult.public_share_url, 'http[s]*://[^/]*(.*)')
 					sharedAlbumUrls[2] = firstServerUrl .. pathUrl
 					if secondServerUrl then
 						sharedAlbumUrls[3] = secondServerUrl .. pathUrl
 					end
 				end
-				PSLrUtilities.addKeywordSynonyms(sharedAlbumParams.keywordId, sharedAlbumUrls) 
+				PSLrUtilities.addKeywordSynonyms(sharedAlbumParams.keywordId, sharedAlbumUrls)
 				if not sharedAlbumParams.isPublic then
 					local shareUrlPatterns = {}
 					shareUrlPatterns[1] = firstServerUrl .. '/photo/share/'
@@ -679,13 +679,13 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 ]]
 			end
 		end
-		
+
 		if #sharedAlbumUpdate.removePhotos > 0 then exportParams.photoServer:removePhotosFromSharedAlbumIfExists(sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
-		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n', 
+		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n',
 										sharedAlbumUpdate.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
 		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
-	end 
+   		progressScope:setPortionComplete(nProcessed, nUpdateItems)
+	end
 
 	for i = 1, #sharedPhotoUpdates do
 		if progressScope:isCanceled() then break end
@@ -696,23 +696,23 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 		PSSharedAlbumMgmt.setPhotoPluginMetaLinkedSharedAlbums(sharedPhotoUpdate.srcPhoto, sharedPhotoUpdate.sharedAlbums)
 		writeLogfile(3, string.format("%s: updated plugin metadata.\n",	sharedPhotoUpdate.srcPhoto:getRawMetadata('path')))
    		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nUpdateItems) 						    
-	end 
+   		progressScope:setPortionComplete(nProcessed, nUpdateItems)
+	end
 
 	progressScope:done()
-	 
+
 	return true
 end
 
 ---------------------------------------------------------------------------------------------------
--- getColorLabelsFromPublishService(functionContext, publishServiceName, arrayOfPhotoInfo) 
+-- getColorLabelsFromPublishService(functionContext, publishServiceName, arrayOfPhotoInfo)
 local function getColorLabelsFromPublishService(functionContext, publishServiceName, arrayOfPhotoInfo)
 	local publishService = PSLrUtilities.getPublishServiceByName(publishServiceName)
 	local publishSettings = publishService:getPublishSettings()
 	local nPhotos =  #arrayOfPhotoInfo
-	local nProcessed 	= 0 
-	local nColorLabels	= 0 
-	
+	local nProcessed 	= 0
+	local nColorLabels	= 0
+
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
 
@@ -743,11 +743,11 @@ local function getColorLabelsFromPublishService(functionContext, publishServiceN
 
 	local startTime = LrDate.currentTime()
 
-	local progressScope = LrProgressScope( 
+	local progressScope = LrProgressScope(
 								{ 	title = LOC( "$$$/PSUpload/Progress/GetColorLabelsFromPublishService=Downloading color labels for ^1 photos in Publish Service ^[^2^]", nPhotos, publishServiceName),
-							 		functionContext = functionContext 
-							 	})  
-	
+							 		functionContext = functionContext
+							 	})
+
 	local serviceSharedAlbumComments = {}
 
 	-- get all Shared Albums belonging to this service
@@ -762,26 +762,26 @@ local function getColorLabelsFromPublishService(functionContext, publishServiceN
 		-- get photo comments from PS public shared albums, if photo is member of any shared album
 		local photoSharedAlbums = PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
 		if photoSharedAlbums then
-		
+
    			writeLogfile(4, string.format("Get color labels: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
 			for i = 1, #photoSharedAlbums do
 				-- download color label from this shared album only if the shared album is public
 				local sharedAlbumName = string.match(photoSharedAlbums[i], '%d+:(.+)')
 				local psSharedPhotoId 		= publishSettings.photoServer:getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
-    			 
+
 				if publishSettings.photoServer:isSharedAlbumPublic(sharedAlbumName)
 				then
 					local psPubColorLabel = publishSettings.photoServer:getPublicSharedPhotoColorLabel(sharedAlbumName, photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
 					local colorLabelPS = ifnil(publishSettings.photoServer.colorMapping[tonumber(psPubColorLabel)], 'none')
 					local colorLabelLr = srcPhoto:getRawMetadata('colorNameForLabel')
-		   			writeLogfile(3, string.format("Get color labels: %s - found color label '%s'(%s) in Shared Album '%s', Lr color is '%s'\n", 
+		   			writeLogfile(3, string.format("Get color labels: %s - found color label '%s'(%s) in Shared Album '%s', Lr color is '%s'\n",
 	   							photoInfo.remoteId, colorLabelPS, psPubColorLabel, sharedAlbumName, colorLabelLr))
 					if colorLabelLr ~= iif(colorLabelPS == 'none', 'grey', colorLabelPS) then
 		   				nColorLabels = nColorLabels + 1
-						LrApplication.activeCatalog():withWriteAccessDo( 
+						LrApplication.activeCatalog():withWriteAccessDo(
 							'ChangeColorLabel',
                     		function(context)
-                    			srcPhoto:setRawMetadata('colorNameForLabel', colorLabelPS) 
+                    			srcPhoto:setRawMetadata('colorNameForLabel', colorLabelPS)
                       		end,
                     		{timeout=5}
                     	)
@@ -789,15 +789,15 @@ local function getColorLabelsFromPublishService(functionContext, publishServiceN
 				end
 			end
 		end
-    	
+
    		nProcessed = nProcessed + 1
-   		progressScope:setPortionComplete(nProcessed, nPhotos) 						    
-	end 
+   		progressScope:setPortionComplete(nProcessed, nPhotos)
+	end
 	progressScope:done()
 
 	local timeUsed 	= LrDate.currentTime() - startTime
 	local picPerSec = nProcessed / timeUsed
-	local message = LOC ("$$$/PSUpload/FinalMsg/GetColorLabelsFromPublishService=Got ^1 color labels for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).", 
+	local message = LOC ("$$$/PSUpload/FinalMsg/GetColorLabelsFromPublishService=Got ^1 color labels for ^2 of ^3 pics in ^4 seconds (^5 pics/sec).",
 					nColorLabels, nProcessed, nPhotos, string.format("%.1f", timeUsed + 0.5), string.format("%.1f", picPerSec))
 
 	showFinalMessage("Photo StatLr: Get color labels done", message, "info")
@@ -805,25 +805,25 @@ local function getColorLabelsFromPublishService(functionContext, publishServiceN
 end
 
 ---------------------------------------------------------------------------------------------------
--- downloadColorLabels(functionContext, downloadSharedAlbums) 
+-- downloadColorLabels(functionContext, downloadSharedAlbums)
 -- download color labels for given grouped list of Shared Albums
 function PSSharedAlbumMgmt.downloadColorLabels(functionContext, downloadSharedAlbums)
 	local downloadSharedPhotos = {}
 
 	writeLogfile(3, string.format("downloadColorLabels: starting: %d Publish Services\n", #downloadSharedAlbums))
 
-	local colorLabelDownloadProgressScope = LrProgressScope( 
+	local colorLabelDownloadProgressScope = LrProgressScope(
 								{ 	title 			= LOC( "$$$/PSUpload/Progress/ColorLabelsRetrievePublishService=Retrieving public shared photos from ^1 Publish Services",  #downloadSharedAlbums),
-							 		functionContext = functionContext, 
-							 	})    
-							
+							 		functionContext = functionContext,
+							 	})
+
 	writeLogfile(3, string.format("downloadColorLabels: going to loop\n"))
 
 	for h = 1, #downloadSharedAlbums do
 		local downloadSharedAlbum = downloadSharedAlbums[h]
 		writeLogfile(3, string.format("downloadColorLabels: %d. Publish Service\n", h))
 		writeLogfile(3, string.format("downloadColorLabels: Publish Service '%s' --> %d Shared Albums\n", downloadSharedAlbum.publishServiceName, #(downloadSharedAlbum.sharedAlbums)))
-		
+
 		if colorLabelDownloadProgressScope:isCanceled() then break end
 		colorLabelDownloadProgressScope:setCaption(downloadSharedAlbum.publishServiceName)
 
@@ -831,24 +831,24 @@ function PSSharedAlbumMgmt.downloadColorLabels(functionContext, downloadSharedAl
 			publishServiceName 	= downloadSharedAlbum.publishServiceName,
 			photoInfos				= {},
 		}
-		
+
 		local publishedCollections = PSLrUtilities.getPublishedCollections(PSLrUtilities.getPublishServiceByName(downloadSharedAlbum.publishServiceName))
 		if publishedCollections and #publishedCollections > 0 then
 
-        	local colorLabelCollectionDownloadProgressScope = LrProgressScope( 
+        	local colorLabelCollectionDownloadProgressScope = LrProgressScope(
         								{ 	title 			= LOC( "$$$/PSUpload/Progress/ColorLabelsRetrievePublishedCollection=Retrieving public shared photos from ^1 Published Collections",  #publishedCollections),
 --        									parent			= colorLabelDownloadProgressScope,
-        							 		functionContext = functionContext, 
-        							 	})    
-		
+        							 		functionContext = functionContext,
+        							 	})
+
 			for i = 1, #publishedCollections do
 				local publishedCollection = publishedCollections[i]
 				local publishedPhotos = publishedCollection:getPublishedPhotos()
-				
+
         		if colorLabelCollectionDownloadProgressScope:isCanceled() then break end
         		colorLabelCollectionDownloadProgressScope:setCaption(publishedCollection:getName())
 
-				for j = 1, #publishedPhotos do 
+				for j = 1, #publishedPhotos do
 					local pubPhoto = publishedPhotos[j]
 					local photo = pubPhoto:getPhoto()
 					local photoKeywords = photo:getRawMetadata('keywords')
@@ -871,14 +871,14 @@ function PSSharedAlbumMgmt.downloadColorLabels(functionContext, downloadSharedAl
 					end
 				end
 				colorLabelCollectionDownloadProgressScope:setPortionComplete(i, #publishedCollections)
-			end 
+			end
 			colorLabelCollectionDownloadProgressScope:done()
 		end
 		colorLabelDownloadProgressScope:setPortionComplete(h, #downloadSharedAlbums)
-		
+
 	end
 	colorLabelDownloadProgressScope:done()
-	
+
 
 
 	for i = 1, #downloadSharedPhotos do

@@ -179,20 +179,20 @@ local checkPubCommentSupport = {
 -------------------------------------------------------------------------------
 -- validateSeperator: check if a string is a valid string seperator (must be exactly 1 char)
 function PSDialogs.validateSeperator( view, value )
-	if string.match(value, '(.)') ~= value then 
+	if string.match(value, '(.)') ~= value then
 		return false, string.sub(value, 1)
 	end
-	
+
  	return true, value
 end
 
 -------------------------------------------------------------------------------
 -- validatePort: check if a string is numeric
 function PSDialogs.validatePort( view, value )
-	if string.match(value, '(%d+)') ~= value then 
+	if string.match(value, '(%d+)') ~= value then
 		return false, value
 	end
-	
+
 	return true, value
 end
 
@@ -207,11 +207,11 @@ function PSDialogs.validateAlbumPath( view, path )
 	 	string.match(path, ' /') or
 	 	string.match(path, '/ ') or
 	 	string.match(path, '\\') or
-	 	string.match(path, '//') 
+	 	string.match(path, '//')
 	 then
 		return false, path
 	end
-	
+
 	return true, path
 end
 
@@ -236,26 +236,26 @@ function PSDialogs.validateProgram( view, path )
 end
 
 -------------------------------------------------------------------------------
--- validatePluginFile: check if a given filenam exists in the PLUGIN dir 
+-- validatePluginFile: check if a given filenam exists in the PLUGIN dir
 function PSDialogs.validatePluginFile( view, path )
 	if LrFileUtils.exists(LrPathUtils.child(_PLUGIN.path, path)) ~= 'file' then
 		return false, path
 	end
 
-	return true, path	
+	return true, path
 end
 
 -------------------------------------------------------------------------------
 -- validateMetadataPlaceholder: check if a given strings includes metadata placeholders
 function PSDialogs.validateMetadataPlaceholder( view, string )
 	-- validate at least one metadata placeholders:
-	-- check up to 3 balanced '{', '}' 
-	if	not string.match(string, '^[^{}]*%b{}[^{}]*$')  
-	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*$') 
-	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*%b{}.*$') then 
+	-- check up to 3 balanced '{', '}'
+	if	not string.match(string, '^[^{}]*%b{}[^{}]*$')
+	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*$')
+	and	not string.match(string, '^[^{}]*%b{}[^{}]*%b{}[^{}]*%b{}.*$') then
 		return false, string
 	end
-	
+
 	return true, string
 end
 
@@ -311,7 +311,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			end
 
 			-- Publish Service Provider start ------------------------
-			
+
 			if propertyTable.LR_isExportForPublish and propertyTable.LR_renamingTokensOn then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/RenameNoSupp= Lr File Renaming option not supported in Publish mode!"
 				break
@@ -321,7 +321,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 				message = LOC "$$$/PSUpload/Dialogs/Messages/Servername2Missing=Enter a secondary servername"
 				break
 			end
-			
+
 			-- Publish Service Provider end ---------------------
 
 			propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
@@ -336,12 +336,12 @@ function PSDialogs.updateDialogStatus( propertyTable )
 				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterSubPath=Enter a source path"
 				break
 			end
-					
+
 			if not PSDialogs.validateAlbumPath(nil, propertyTable.dstRoot) then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/InvalidAlbumPath=Target Album path is invalid"
 				break
 			end
-					
+
 			-- renaming: renaming dstFilename must contain at least one metadata placeholder
 			if propertyTable.renameDstFile and not PSDialogs.validateMetadataPlaceholder(nil, propertyTable.dstFilename) then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/RenamePatternInvalid=Rename Photos: Missing placeholders or unbalanced { }!"
@@ -354,7 +354,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
 				propertyTable.exifTranslate = true
 			end
-			
+
 			-- if no translation is activated then set exifTranslate to off
 			if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
 				propertyTable.exifTranslate = false
@@ -378,7 +378,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 				propertyTable.locationTagField4 = iif(propertyTable.locationTagField3, propertyTable.locationTagField4, false)
 				propertyTable.locationTagField5 = iif(propertyTable.locationTagField4, propertyTable.locationTagField5, false)
 
-				propertyTable.locationTagTemplate =	
+				propertyTable.locationTagTemplate =
 					table.concat(	{ iif(propertyTable.locationTagField1, propertyTable.locationTagField1, nil),
 									  iif(propertyTable.locationTagField2, propertyTable.locationTagField2, nil),
 									  iif(propertyTable.locationTagField3, propertyTable.locationTagField3, nil),
@@ -397,19 +397,19 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			if not propertyTable.exifXlatFaceRegions 	then propertyTable.PS2LrFaces = false end
 			if not propertyTable.exifXlatLabel 		then propertyTable.PS2LrLabel = false end
 			if not propertyTable.exifXlatRating 		then propertyTable.PS2LrRating = false end
-			
+
 			-- exclusive or: rating download or rating tag download
-			if propertyTable.ratingDownload and propertyTable.PS2LrRating then 
+			if propertyTable.ratingDownload and propertyTable.PS2LrRating then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/RatingOrRatingTag=You may either download the native rating or the translated rating tag from Photo Server."
 				break
 			end
-			
+
 			-- location tag download (blue pin): only possible if location download is enabled
 			if not propertyTable.locationDownload then  propertyTable.locationTagDownload = false end
 		end
-   
+
 	until true
-	
+
 	if message then
 		propertyTable.hasError = true
 		propertyTable.hasNoError = false
@@ -429,7 +429,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			propertyTable.LR_cantExportBecause = nil
 		end
 	end
-	
+
 end
 
 -------------------------------------------------------------------------------
@@ -443,7 +443,7 @@ function PSDialogs.addObservers( propertyTable )
     	propertyTable:addObserver( 'LR_tokens', PSDialogs.updateDialogStatus )
     	propertyTable:addObserver( 'LR_format', PSDialogs.updateDialogStatus )
     	propertyTable:addObserver( 'LR_DNG_previewSize', PSDialogs.updateDialogStatus )
-    
+
     	propertyTable:addObserver( 'psVersion', PSDialogs.updateDialogStatus )
     	propertyTable:addObserver( 'proto', PSDialogs.updateDialogStatus )
     	propertyTable:addObserver( 'servername', PSDialogs.updateDialogStatus )
@@ -454,7 +454,7 @@ function PSDialogs.addObservers( propertyTable )
     	propertyTable:addObserver( 'personalPSOwner', PSDialogs.updateDialogStatus )
     	propertyTable:addObserver( 'thumbGenerate', PSDialogs.updateDialogStatus )
 	end
-	
+
 	-- ###############  Export/Publish or Collection Settings ##########################
 
 	propertyTable:addObserver( 'srcRoot', PSDialogs.updateDialogStatus )
@@ -480,7 +480,7 @@ function PSDialogs.addObservers( propertyTable )
     	propertyTable:addObserver( 'locationDownload', PSDialogs.updateDialogStatus )
     	propertyTable:addObserver( 'ratingDownload', PSDialogs.updateDialogStatus )
     	propertyTable:addObserver( 'PS2LrRating', PSDialogs.updateDialogStatus )
-	end	
+	end
 
 	PSDialogs.updateDialogStatus( propertyTable )
 end
@@ -490,19 +490,19 @@ end
 -------------------------------------------------------------------------------
 -- photoStatLrView(f, propertyTable)
 function PSDialogs.photoStatLrSmallView(f, propertyTable)
-	return 
-		f:view { 
+	return
+		f:view {
       		f:picture {
     			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
     			width		= 160,
     			height		= 115,
     			alignment	= 'right',
     		},
-    
+
     		f:static_text {
     			title 			= iif(LrLocalization.currentLanguage() == 'en', '', LOC "$$$/PSUpload/TranslationBy=translated by: get your name here"),
     			alignment		= 'left	',
-    			size			= 'mini', 
+    			size			= 'mini',
     			fill_horizontal = 1,
     		},
 		}
@@ -512,18 +512,18 @@ end
 -- photoStatLrView(f, propertyTable)
 function PSDialogs.photoStatLrView(f, propertyTable)
 	return
-		f:view { 
+		f:view {
       		f:picture {
     			value		= _PLUGIN:resourceId( "PhotoStatLr-large.png" ),
     			width		= 230,
     			height		= 165,
     			alignment	= 'right',
     		},
-    
+
     		f:static_text {
     			title 			= iif(LrLocalization.currentLanguage() == 'en', '', LOC "$$$/PSUpload/TranslationBy=translated by: get your name here"),
     			alignment		= 'right',
-    			size			= 'mini', 
+    			size			= 'mini',
     			fill_horizontal = 1,
     		},
 		}
@@ -540,25 +540,25 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 
     		f:column {
     			fill_horizontal = 1,
-    
+
 				f:row {
 					f:static_text {
     					title 			= "S: We got our money's worth tonight.\nW: But we paid nothing.\nS: That's what we got!\n",
-    					font			= '<system/bold>', 
+    					font			= '<system/bold>',
 					},
 				},
-				
+
 				f:row {
 					f:static_text {
     					title 			= LOC "$$$/PSUpload/Dialogs/Header/WorthIt=Martin: Well, if you disagree with Mr. S\nand find this software helpful,\nI would be most happy if you donate to a good cause.\nHere are my favourite charity projects:\n"
 					},
 				},
-				
+
 				f:row {
 					f:static_text {
     					title 			= LOC "$$$/PSUpload/Dialogs/Header/PhotoStatLrDonation=Photo StatLr's donation website\n",
     					tooltip			= 'Click to open in Browser',
-    					font			= '<system/bold>', 
+    					font			= '<system/bold>',
         				alignment		= 'center',
 		    			fill_horizontal = 1,
         				mouse_down		= function()
@@ -566,7 +566,7 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
         				end,
 					},
 				},
-				
+
 				f:row {
 					f:static_text {
         				title 			= LOC "$$$/PSUpload/Dialogs/Header/Donate=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
@@ -574,32 +574,32 @@ function PSDialogs.photoStatLrHeaderView(f, propertyTable)
 		    			fill_horizontal = 1,
 					},
 				},
-				
+
 				f:row {
         			f:push_button {
         				title 			= "Double or nothing, next week's show?",
         				tooltip 		= LOC "$$$/PSUpload/Dialogs/Header/Donate=Let me know about your donation, I'll double it (max. 10 Euros)!\n",
         				alignment 		= 'center',
-    					font			= '<system/bold>', 
+    					font			= '<system/bold>',
         				fill_horizontal = 1,
         				action 			= function()
        						LrHttp.openUrlInBrowser(ifnil(prefs.feedbackUrl, PSUpdate.defaultFeedbackUrl))
         				end,
-        			},   			
-				
+        			},
+
 				},
-				
+
     		},
-    		
-			f:spacer { 
-    			fill_horizontal = 0.1,				
+
+			f:spacer {
+    			fill_horizontal = 0.1,
 			},
-			
+
     		f:column {
     			fill_horizontal = 1,
     			alignment	= 'right',
-    			PSDialogs.photoStatLrView(f, propertyTable),	
-    		}, 
+    			PSDialogs.photoStatLrView(f, propertyTable),
+    		},
 		}
 end
 
@@ -607,7 +607,7 @@ end
 -- collectionHeaderView(f, propertyTable, isDefaultCollection, defCollectionName)
 function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection, defCollectionName)
 	local dialogCaptionText
-	
+
 	if isDefaultCollection then
 		dialogCaptionText = LOC "$$$/PSUpload/CollectionSettings/Header/Default=This is the Default Collection for this Service:\nSettings of this Collection will be the default\nfor all new collections within in this Service!"
 	elseif defCollectionName then
@@ -615,32 +615,32 @@ function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection, d
 	else
 		dialogCaptionText = ""
 	end
-	
-	return 
+
+	return
 		f:view {
     		f:row {
     			fill_hoizontal = 1,
-    			
+
     			f:column {
     				PSDialogs.photoStatLrSmallView(f, propertyTable),
     				fill_hoizontal = 0.4,
     			},
-    			
+
     			f:column {
     				fill_hoizontal = 0.6,
     				f:row {
             			f:static_text {
             				title 		= "Why would he want to remember this?\n\n",
             				alignment 	= 'center',
-        					font		= '<system/bold>', 
+        					font		= '<system/bold>',
             			},
             		},
-            		
+
     				f:row {
             			f:static_text {
             				title 		= dialogCaptionText,
             				text_color	= iif(isDefaultCollection, LrColor("red"), LrColor("black")),
-        					font		= iif(defCollectionName, '<system/small>', '<system>'), 
+        					font		= iif(defCollectionName, '<system/small>', '<system>'),
             				alignment	= 'left',
             			},
     				},
@@ -648,30 +648,30 @@ function PSDialogs.collectionHeaderView(f, propertyTable, isDefaultCollection, d
     		},
     	}
 end
-	
+
 -------------------------------------------------------------------------------
 -- missingParamsHeaderView(f, propertyTable, operation)
 function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
-	return 
+	return
 		f:view {
     		f:row {
     			fill_hoizontal = 1,
-    			
+
     			f:column {
     				PSDialogs.photoStatLrSmallView(f, propertyTable),
     				fill_hoizontal = 0.4,
     			},
-    			
+
     			f:column {
     				fill_hoizontal = 0.6,
     				f:row {
             			f:static_text {
             				title 		= "If you had half a mind, you wouldn't be here!\n\n",
             				alignment 	= 'left',
-        					font		= '<system/bold>', 
+        					font		= '<system/bold>',
             			},
             		},
-            		
+
     				f:row {
             			f:static_text {
             				title = LOC "$$$/PSUpload/MissingParams/Header/EnterMissing=Please enter missing parameters for:\n\n",
@@ -683,7 +683,7 @@ function PSDialogs.missingParamsHeaderView(f, propertyTable, operation)
             			f:static_text {
             				title = operation,
             				alignment = 'left',
-        					font		= '<system/bold>', 
+        					font		= '<system/bold>',
             			},
     				},
     			},
@@ -701,7 +701,7 @@ function PSDialogs.converterToolsView(f, propertyTable)
 
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ConverterDescription=Enter the paths of 'ImageMagick convert' and 'dcraw'.\nRequired, if you want to generate thumbs locally or upload videos.\n", 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConverterDescription=Enter the paths of 'ImageMagick convert' and 'dcraw'.\nRequired, if you want to generate thumbs locally or upload videos.\n",
     			},
     		},
 
@@ -810,20 +810,20 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
         f:group_box {
    			title	= 'Exiftool',
 			fill_horizontal = 1,
-    			
+
     		f:row {
     			f:static_text {
-    				title			= LOC "$$$/PSUpload/PluginDialog/exiftoolDesc=Enter the path where 'exiftool' is installed.\nRequired, if you want to use metadata translations (face regions, color labels, ratings).\n" 
+    				title			= LOC "$$$/PSUpload/PluginDialog/exiftoolDesc=Enter the path where 'exiftool' is installed.\nRequired, if you want to use metadata translations (face regions, color labels, ratings).\n"
     			},
     		},
-    
+
     		f:row {
     			f:static_text {
     				title 			= "exiftool:",
     				alignment 		= 'right',
     				width 			= share 'labelWidth',
     			},
-    
+
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
@@ -842,7 +842,7 @@ function PSDialogs.exiftoolProgView(f, propertyTable)
     				action 			= function()
     					propertyTable.exiftoolprog = PSExiftoolAPI.defaultInstallPath
     				end,
-    			},   			
+    			},
 
     			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgSearch=Search",
@@ -876,20 +876,20 @@ function PSDialogs.videoConvSettingsView(f, propertyTable)
         f:group_box {
 			title	= "FFmpeg",
 			fill_horizontal = 1,
-			
+
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoConvSettingsDescription=Enter the path where the 'ffmpeg' program is installed.\nEnter the filename of the video conversion presets file (must be a JSON file in the plugin dir).\n", 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/VideoConvSettingsDescription=Enter the path where the 'ffmpeg' program is installed.\nEnter the filename of the video conversion presets file (must be a JSON file in the plugin dir).\n",
     			},
     		},
-    
+
     		f:row {
     			f:static_text {
     				title 			= "ffmpeg:",
     				alignment 		= 'right',
     				width 			= share 'labelWidth',
     			},
-    
+
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
@@ -904,7 +904,7 @@ function PSDialogs.videoConvSettingsView(f, propertyTable)
     				alignment 		= 'right',
     				width 			= share 'labelWidth',
     			},
-    
+
     			f:edit_field {
     				truncation 		= 'middle',
     				immediate 		= true,
@@ -913,7 +913,7 @@ function PSDialogs.videoConvSettingsView(f, propertyTable)
     				validate 		= PSDialogs.validatePluginFile,
     			},
     		},
-    		f:row {   			
+    		f:row {
      			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ProgDefault=Default",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ProgDefaultTT=Set to Default.",
@@ -958,16 +958,16 @@ function PSDialogs.convertPhotosView(f, propertyTable)
 
     		f:row {
     			f:static_text {
-    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n", 
+    				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertPhotosDescription=If you are upgrading from PhotoStation Upload to Photo StatLr and you intend to use\nthe download options of Photo StatLr,then you have to convert the photos of\nthose Published Collections that should be configured with the download options.\nYou can convert all photos here, or you can do it for individual Published Collections\nvia publish mode 'Convert'.\n",
     				alignment 		= 'center',
 					fill_horizontal = 1,
     			},
     		},
 
-    		f:row {   			
-	
-				f: spacer {	fill_horizontal = 1,}, 
-				
+    		f:row {
+
+				f: spacer {	fill_horizontal = 1,},
+
      			f:push_button {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ConvertAll=Convert all photos",
     				tooltip 		= LOC "$$$/PSUpload/PluginDialog/ConvertAllTT=Convert all published photos to new format.",
@@ -976,12 +976,12 @@ function PSDialogs.convertPhotosView(f, propertyTable)
     				action 			= function ()
     								propertyTable.convertAllPhotos = true
     								LrDialogs.message('Photo StatLr', 'Conversion will start after closing the Plugin Manager dialog.', 'info')
-    								
-    				end,
-    			},   			
 
-				f: spacer {	fill_horizontal = 1,}, 
-				
+    				end,
+    			},
+
+				f: spacer {	fill_horizontal = 1,},
+
 			},
 		}
 end
@@ -993,7 +993,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         { title	= 'http',   value 	= 'http' },
 		{ title	= 'https',	value 	= 'https' },
 	}
-	
+
 	local timeoutItems = {
 		{ title	= '10s',	value 	= 10 },
 		{ title	= '20s',	value 	= 20 },
@@ -1017,7 +1017,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         { title	= 'Photos 1.0',			value 	= 70 },
         { title	= 'Photos 1.1',			value 	= 71 },
 	}
-	
+
 	local fileTimestampItems = {
         { title	= 'Photo Capture Date/Time', 							value = 'capture' },
         { title	= 'Upload Date/Time', 									value = 'upload' },
@@ -1028,21 +1028,21 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         f:group_box {
         	fill_horizontal = 1,
         	title = LOC "$$$/PSUpload/ExportDialog/TargetPS=Photo Server",
-        
+
         	f:row {
 				f:static_text {
 					title 			= LOC "$$$/PSUpload/ExportDialog/PSVersion=Version:",
 					alignment 		= 'right',
         			width 			= share 'labelWidth',
 				},
-				
+
         		f:popup_menu {
         			tooltip			= LOC "$$$/PSUpload/ExportDialog/PSVersionListTT=Photo Server Version",
         			items 			= versionItems,
         			value 			= bind 'psVersion',
         		},
-        
-        	}, 
+
+        	},
 
         	f:row {
         		f:radio_button {
@@ -1052,14 +1052,14 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			value 			= bind 'useSecondAddress',
         			checked_value	= false,
         		},
-        
+
         		f:popup_menu {
         			tooltip			= LOC "$$$/PSUpload/ExportDialog/ProtocolTT=Protocol",
         			items 			= protocolItems,
         			value 			= bind 'proto',
         			enabled 		= negativeOfKey 'useSecondAddress',
         		},
-        
+
         		f:edit_field {
         			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServernameTT=Enter the IP address or hostname of Photo Server.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
@@ -1069,7 +1069,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			value 			= bind 'servername',
         			enabled 		= negativeOfKey 'useSecondAddress',
         		},
-        
+
 				f:static_text {
 					title 			= bind 'psPath',
         			truncation 		= 'middle',
@@ -1078,16 +1078,16 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			fill_horizontal = 0.2,
         			enabled 		= negativeOfKey 'useSecondAddress',
         		},
-        
+
         		f:row {
         			alignment 		= 'right',
         			fill_horizontal = 0.5,
-        
+
         			f:static_text {
         				title 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeout=Timeout:",
         				alignment 	= 'right',
         			},
-        
+
         			f:popup_menu {
         				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nUse higher value (> 40s), if you experience problems due to disks in standby mode",
         				items 			= timeoutItems,
@@ -1097,8 +1097,8 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         				enabled 		= negativeOfKey 'useSecondAddress',
         			},
         		},
-        	}, 
-        	
+        	},
+
         	f:row {
         		f:radio_button {
         			title 			= LOC "$$$/PSUpload/ExportDialog/Servername2=2nd Server Address:",
@@ -1107,14 +1107,14 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			value 			= bind 'useSecondAddress',
         			checked_value 	= true,
         		},
-        
+
         		f:popup_menu {
         			tooltip 		= LOC "$$$/PSUpload/ExportDialog/ProtocolTT=Protocol",
         			items			= protocolItems,
         			value 			= bind 'proto2',
         			enabled 		= bind 'useSecondAddress',
         		},
-        
+
         		f:edit_field {
         			tooltip 		= LOC "$$$/PSUpload/ExportDialog/Servername2TT=Enter the secondary IP address or hostname.\nNon-standard port may be appended as :port",
         			truncation 		= 'middle',
@@ -1124,7 +1124,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			value 			= bind 'servername2',
         			enabled 		= bind 'useSecondAddress',
         		},
-        
+
 				f:static_text {
 					title 			= bind 'psPath',
         			truncation 		= 'middle',
@@ -1133,16 +1133,16 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			fill_horizontal = 0.2,
         			enabled 		= bind 'useSecondAddress',
         		},
-        
+
         		f:row {
         			alignment 		= 'right',
         			fill_horizontal = 0.5,
-        
+
         			f:static_text {
         				title 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeout=Timeout:",
         				alignment 	= 'right',
         			},
-        
+
         			f:popup_menu {
         				tooltip 		= LOC "$$$/PSUpload/ExportDialog/ServerTimeoutTT=HTTP(S) connect timeout, recommended value: 10s\nUse higher value (> 40s), if you experience problems due to disks in standby mode",
         				items 			= timeoutItems,
@@ -1189,7 +1189,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					alignment 		= 'right',
 					width 			= share 'labelWidth'
 				},
-	
+
 				f:edit_field {
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/UsernameTT=Enter the username for Photo Server access.",
 					truncation 		= 'middle',
@@ -1202,7 +1202,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					title 			= LOC "$$$/PSUpload/ExportDialog/Password=Password:",
 					alignment 		= 'right',
 				},
-	
+
 				f:password_field {
 					tooltip 		= LOC "$$$/PSUpload/ExportDialog/PasswordOptTT=Enter the password for Photo Server access.\nLeave this field blank, if you don't want to store the password.\nYou will be prompted for the password later.",
 					truncation 		= 'middle',
@@ -1220,7 +1220,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					alignment 		= 'right',
 					width 			= share 'labelWidth'
 				},
-	
+
     			f:popup_menu {
     				tooltip 		= LOC "$$$/PSUpload/ExportDialog/DstFileTimestampTT=Choose the file timestamp for the uploaded photo/video",
     				items 			= fileTimestampItems,
@@ -1246,14 +1246,14 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 		{ title	= '90%',	value 	= 90 },
 		{ title	= '100%',	value 	= 100 },
 	}
-	
+
 	local thumbSharpnessItems = {
 		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/None=None",		value 	= 'None' },
 		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/Low=Low",		value 	= 'LOW' },
 		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/Medium=Medium",	value 	= 'MED' },
 		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/High=High",		value 	= 'HIGH' },
 	}
-	
+
 	return
 		f:group_box {
 			title 			= LOC "$$$/PSUpload/ExportDialog/Thumbnails=Thumbnail Options",
@@ -1290,7 +1290,7 @@ function PSDialogs.thumbnailOptionsView(f, propertyTable)
 						visible 		= bind 'thumbGenerate',
 					},
 				},
-				
+
 				f:row {
 					alignment 		= 'right',
 					fill_horizontal = 1,
@@ -1346,17 +1346,17 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 		{ title	= 'None',			value 	= 'None' },
 		{ title	= 'Mobile/240',		value 	= 'MOBILE' },
 	}
-	
+
 	local medResAddVideoItems	= tableShallowCopy(lowResAddVideoItems)
 	table.insert(medResAddVideoItems,
 		{ title	= 'Low/360',		value 	= 'LOW' })
-	
+
 	local highResAddVideoItems	= tableShallowCopy(medResAddVideoItems)
 	table.insert(highResAddVideoItems,
 		{ title	= 'Medium/720',		value 	= 'MEDIUM' })
 
 	local ultraResAddVideoItems	= tableShallowCopy(highResAddVideoItems)
-	table.insert(ultraResAddVideoItems, 
+	table.insert(ultraResAddVideoItems,
 		{ title	= 'High/1080',		value 	= 'HIGH' })
 
 	local videoConvQualityItems = {}
@@ -1368,14 +1368,14 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 		local action = LrDialogs.confirm("Video Conversion", 'Booo!!\n' .. "Invalid video presets file", "Go to Logfile", "Never mind")
 		if action == "ok" then
 			LrShell.revealInShell(getLogFilename())
-		end	
+		end
 	else
 		for key, val in ipairs(convOptions) do
 			table.insert(videoConvQualityItems,	{ title	= val.title,	value 	= key })
 		end
-	end	
+	end
 
-	
+
 	local addVideoConvQualityItems 	= tableShallowCopy(videoConvQualityItems)
 	table.insert(addVideoConvQualityItems, 1, { title	= 'None',	value 	= -1 })
 
@@ -1389,19 +1389,19 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 
 				f:row {
 					fill_horizontal = 1,
-					
+
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgConv=Convert video:",
 						alignment 		= 'right',
 					},
-						
+
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgConvTT=When to convert the original video",
 						items 			= orgVideoForceConvItems,
 						alignment 		= 'left',
 						value 			= bind 'orgVideoForceConv',
 					},
-				},					
+				},
 
 				f:row {
 					fill_horizontal = 1,
@@ -1410,14 +1410,14 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoOrgQuality=Quality:",
 						alignment 		= 'right',
 					},
-						
+
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoOrgQualityTT=Video quality for converted original video",
 						items 			= videoConvQualityItems,
 						alignment 		= 'left',
 						value 			= bind 'orgVideoQuality',
 					},
-				},					
+				},
 
 				f:checkbox {
 					fill_horizontal = 1,
@@ -1428,7 +1428,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 				},
 
 				f:separator { fill_vertical = 1, visible = bind(checkAddVideoSupport) },
-				
+
 				f:row {
 					fill_horizontal = 1,
 
@@ -1437,7 +1437,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						alignment 		= 'right',
 						visible			= bind(checkAddVideoSupport)
 					},
-						
+
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoAddQualityTT=Video quality for additional video",
 						items 			= addVideoConvQualityItems,
@@ -1448,22 +1448,22 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 					},
 				},
 			},
-				
+
 			f:separator { fill_horizontal = 0.75, visible = bind(checkAddVideoSelected) },
-			
+
 			f:row {
 				fill_horizontal = 1,
-				
+
 				f:row {
 					alignment = 'left',
 					fill_horizontal = 1,
-	
+
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoUltra=Ultra:",
 						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
-						
+
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoUltraTT=Generate additional video for Ultra-Hi-Res (2160p) videos",
 						items 			= ultraResAddVideoItems,
@@ -1472,7 +1472,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						fill_horizontal = 1,
 						value 			= bind 'addVideoUltra',
 					},
-				},					
+				},
 
 				f:row {
 					alignment = 'left',
@@ -1483,7 +1483,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
-						
+
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoHighTT=Generate additional video for Hi-Res (1080p) videos",
 						items 			= highResAddVideoItems,
@@ -1492,18 +1492,18 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						fill_horizontal = 1,
 						value 			= bind 'addVideoHigh',
 					},
-				},					
-	
+				},
+
 				f:row {
 					alignment 			= 'right',
 					fill_horizontal 	= 1,
-	
+
 					f:static_text {
 						title 			= LOC "$$$/PSUpload/ExportDialog/VideoMed=Medium:",
 						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
-						
+
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoMedTT=Generate additional video for Medium-Res (720p) videos",
 						items 			= medResAddVideoItems,
@@ -1512,8 +1512,8 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						fill_horizontal = 1,
 						value 			= bind 'addVideoMed',
 					},
-				},					
-	
+				},
+
 				f:row {
 					alignment 			= 'right',
 					fill_horizontal 	= 1,
@@ -1523,7 +1523,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						visible			= bind(checkAddVideoSelected),
 						alignment 		= 'right',
 					},
-						
+
 					f:popup_menu {
 						tooltip 		= LOC "$$$/PSUpload/ExportDialog/VideoLowTT=Generate additional video for Low-Res (360p) videos",
 						items 			= lowResAddVideoItems,
@@ -1532,7 +1532,7 @@ function PSDialogs.videoOptionsView(f, propertyTable)
 						fill_horizontal = 1,
 						value 			= bind 'addVideoLow',
 					},
-				},					
+				},
 			},
 		}
 
@@ -1542,7 +1542,7 @@ end
 -- dstRootView(f, propertyTable)
 --
 function PSDialogs.dstRootView(f, propertyTable, isAskForMissingParams)
-	return 
+	return
 		f:row {
 --			fill_horizontal = 1,
 
@@ -1591,7 +1591,7 @@ end
 -- dstRootForSetView(f, propertyTable)
 --
 function PSDialogs.dstRootForSetView(f, propertyTable)
-	return 
+	return
 		f:row {
 --			fill_horizontal = 1,
 
@@ -1622,7 +1622,7 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 			title 			= LOC "$$$/PSUpload/ExportDialog/TargetAlbum=Target Album and Upload Method",
 			fill_horizontal = 1,
 
-			PSDialogs.dstRootView(f, propertyTable), 
+			PSDialogs.dstRootView(f, propertyTable),
 
 			f:row {
 
@@ -1663,12 +1663,12 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 					fill_horizontal = 1,
 					value 			= bind 'sortPhotos',
 					enabled 		= negativeOfKey 'copyTree',
-				},	
+				},
 			}),
 		},
-		
-	} 
-end	
+
+	}
+end
 
 -------------------------------------------------------------------------------
 -- photoNamingView(f, propertyTable)
@@ -1725,7 +1725,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 		{ title	= 'Location',		value 	= '{LrFM:location}' },
 	}
 	local locationTagSepItems	= { ' ', '-', '_', ':', ';', '/', '|',',', '.', '+', '#' }
-	
+
 	return	f:group_box {
 		fill_horizontal = 1,
 		title = LOC "$$$/PSUpload/ExportDialog/UploadOpt=Metadata Upload Options /Translations (To Photo Server)",
@@ -1764,7 +1764,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 			},
 
 		},
-		
+
     	f:row {
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/KeywordUpload=Keywords (always)",
@@ -1773,7 +1773,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			enabled 		= false,
 				visible			= bind(checkTagSupport),
     		},
-    
+
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegions=Faces",
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Server person tags\n(Useful for Photo Station version < 6.5)",
@@ -1781,7 +1781,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			value 			= bind 'exifXlatFaceRegions',
 				visible			= bind(checkPersonSupport),
     		},
-    	
+
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateLabel=Color Label Tag",
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateLabelTT=Translate Lr color label (red, green, ...) to Photo Server '+color' general tag",
@@ -1789,7 +1789,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			value 			= bind 'exifXlatLabel',
 				visible			= bind(checkTagSupport),
     		},
-    
+
     		f:checkbox {
     			title 			= LOC "$$$/PSUpload/ExportDialog/TranslateRating=Rating Tag",
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateRatingTT=Translate Lr rating (*stars*) to Photo Server '***' general tag\n(Useful for Photo Station version < 6.5)",
@@ -1798,9 +1798,9 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
 				visible			= bind(checkTagSupport),
     		},
     	},
-    	
+
     	f:separator { fill_horizontal = 1 },
-    	
+
     	f:row {
 			fill_horizontal = 1,
 
@@ -1895,7 +1895,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
    				fill_horizontal = 1,
 			},
 		},
-		
+
 		conditionalItem(propertyTable.isCollection, f:separator { fill_horizontal = 1 }),
 
 		conditionalItem(propertyTable.isCollection, f:row {
@@ -2000,9 +2000,9 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				visible			= bind (checkTagSupport),
 			},
 		},
-		
+
 		f:separator { fill_horizontal = 1 },
-		
+
 		f:row {
 			f:checkbox {
 				title 			= LOC "$$$/PSUpload/CollectionSettings/CommentsDownload=Private Comments",
@@ -2043,7 +2043,7 @@ function PSDialogs.publishModeView(f, propertyTable, isAskForMissingParams)
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptMove=MovePhotos: Move photos in Photo Server (for photos moved in Lr or changed target album).",	value 	= 'MovePhotos' },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/PublishModeOptConv=Convert: Convert collection to current version.",												value 	= 'Convert' },
 	}
-	
+
 	if isAskForMissingParams then
 		table.remove(publishModeItems, 1)
 	end
@@ -2077,7 +2077,7 @@ function PSDialogs.downloadModeView(f, propertyTable, isAskForMissingParams)
 		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptEnabled=Yes (enabled)",	value 	= 'Yes' },
 		{ title	= LOC "$$$/PSUpload/Dialogs/ListBox/OptDisabled=No (disabled)",	value 	= 'No'  },
 	}
-	
+
 	if isAskForMissingParams then
 		table.remove(downloadModeItems, 1)
 	end
@@ -2115,12 +2115,12 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptDebug=Debug",			value 	= 4 },
 		{ title	= LOC "$$$/PSUpload/CollectionSettings/LoglevelOptXDebug=X-Debug",		value 	= 5 },
 	}
-	
+
 	if isAskForMissingParams then
 		table.remove(loglevelItems, 1)
 	end
 
-	return 
+	return
 		f:row {
 			fill_horizontal = 1,
 			f:static_text {
@@ -2131,13 +2131,13 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 
 			f:popup_menu {
 				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LoglevelTT=The level of log details",
-				items 			= loglevelItems,		
-				fill_horizontal = 0, 
+				items 			= loglevelItems,
+				fill_horizontal = 0,
 				value 			= bind 'logLevel',
 			},
-			
+
 			f:spacer { fill_horizontal = 1,	},
-			
+
 			f:push_button {
 				title 			= LOC "$$$/PSUpload/DialogsFooter/Logfile=Show Logfile",
 				tooltip 		= LOC "$$$/PSUpload/DialogsFooter/LogfileTT=Show Photo StatLr Logfile in Explorer/Finder.",
@@ -2146,6 +2146,6 @@ function PSDialogs.loglevelView(f, propertyTable, isAskForMissingParams)
 				action 			= function()
 					LrShell.revealInShell(getLogFilename())
 				end,
-			},    		
+			},
     	}
 end

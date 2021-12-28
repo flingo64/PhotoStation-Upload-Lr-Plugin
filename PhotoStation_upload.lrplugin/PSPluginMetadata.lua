@@ -23,7 +23,7 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
 return {
 	schemaVersion = 17,
-	
+
 	metadataFieldsForPhotos = {
 		{
 			id = 'sharedAlbums',
