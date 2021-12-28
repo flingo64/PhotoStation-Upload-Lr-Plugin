@@ -656,15 +656,32 @@ publishServiceProvider.supportsCustomSortOrder = true
  -- is set to "User Order." Your plug-in should ensure that the photos are displayed
  -- in the designated sequence on the service.
 function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSettings, info, remoteIdSequence )
+	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
-	writeLogfile(3, "imposeSortOrderOnPublishedCollection: starting\n")
 
 	-- get publishedCollections:
 	--   remoteCollectionId is the only collectionId we have here, so it must be equal to localCollectionId to retrieve the publishedCollection!!!
-	local publishedCollection = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
-	local albumPath = PSLrUtilities.getCollectionUploadPath(publishedCollection)
+	local publishedCollection 	= LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(info.remoteCollectionId)
+	local albumPath 			= PSLrUtilities.getCollectionUploadPath(publishedCollection)
 
-	-- make sure logfile is opened
+	-- get collectionSettings to check if we need to open a session at all
+	local collectionSettings 	= 		publishedCollection
+									and publishedCollection:type() == 'LrPublishedCollection'
+									and publishedCollection:getCollectionInfoSummary().collectionSettings
+
+	-- do not sort if not supported or not configured or is Tree Mirror or Target Album is dynamic
+	if		not PHOTOSERVER_API.supports (publishSettings.psVersion, (PHOTOSERVER_ALBUM_SORT))
+		or	not publishSettings.sortPhotos
+	then
+		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Sorting of photos not supported or not configured --> done.\n")
+		return false
+	elseif collectionSettings.copyTree then
+		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Cannot sort photos in 'Tree Copy' collection --> done.\n")
+		return false
+	elseif PSLrUtilities.isDynamicAlbumPath(collectionSettings.dstRoot) then
+		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Cannot sort photos in collection with dynamic destination album --> done.\n")
+		return false
+	end
 
 	-- open session: initialize environment, get missing params and login
 	local sessionSuccess, reason = openSession(publishSettings, publishedCollection, 'ImposeSortOrderOnPublishedCollection')
@@ -673,15 +690,6 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 			showFinalMessage("Photo StatLr: Sort Photos in Album failed!", reason, "critical")
 		end
 		closeLogfile(publishSettings)
-		return false
-	end
-
-	-- do not sort if not configured or is Tree Mirror or Target Album is dynamic
-	if not publishSettings.sortPhotos or publishSettings.copyTree then
-		writeLogfile(3, "imposeSortOrderOnPublishedCollection: nothing to sort, done.\n")
-		return false
-	elseif PSLrUtilities.isDynamicAlbumPath(publishSettings.dstRoot) then
-		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Cannot sort photo: target album is dynamic!\n")
 		return false
 	end
 
