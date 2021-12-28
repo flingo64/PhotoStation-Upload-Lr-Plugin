@@ -557,7 +557,6 @@ local function batchUploadMetadata(functionContext, deferredMetadataUploads, exp
 		progressScope:setCaption(LrPathUtils.leafName(srcPhoto:getRawMetadata("path")))
 
 		while not photoThere and maxWait > 0 do
-			local dstAlbum 			= ifnil(string.match(dstFilename , '(.*)/[^/]+'), '/')
 			local psPhoto = photoServer.Photo.new(photoServer, dstFilename, isVideo, 'photo', not PHOTOSERVER_USE_CACHE)
 			if not psPhoto then
 				LrTasks.sleep(1)
@@ -1046,7 +1045,6 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				skipPhoto = false
 			elseif publishMode == 'CheckExisting' then
 				-- check if photo already in Photo Server
-				local dstAlbum = ifnil(string.match(publishedPhotoId , '(.*)/[^/]+'), '/')
 				local psPhoto, errorCode = exportParams.photoServer.Photo.new(exportParams.photoServer, publishedPhotoId,
 																		srcPhoto:getRawMetadata('isVideo'), 'photo', PHOTOSERVER_USE_CACHE)
 				if psPhoto then
