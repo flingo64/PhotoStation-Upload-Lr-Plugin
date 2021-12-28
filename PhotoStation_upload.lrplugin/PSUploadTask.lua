@@ -1052,14 +1052,12 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1
 					PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
-				elseif not errorCode then
-					-- do not acknowledge, so it will be left as "need copy"
-					nNeedCopy = nNeedCopy + 1
-					writeLogfile(2, 'CheckExisting: Upload required for "' .. srcPhoto:getRawMetadata('path') .. '" to "' .. newPublishedPhotoId .. '"\n')
 				else -- error
+					nNeedCopy = nNeedCopy + 1
 					table.insert( failures, srcPath )
 					rendition:uploadFailed("Check existing photo failed")
-					break
+					writeLogfile(2, string.format("CheckExisting: Upload required for '%s' to '%s' (errorCode: '%s')\n",
+												srcPhoto:getRawMetadata('path'), newPublishedPhotoId, ifnil(errorCode, '<nil>')))
 				end
 			elseif string.find('Export,Publish,Metadata', publishMode, 1, true) then
 
