@@ -69,9 +69,9 @@ exportServiceProvider.exportPresetFields = {
 		-- Photo Server parameters
 		{ key = 'proto', 			default = 'http' },	-- transport protocol for Photo Server upload
 		{ key = 'servername', 		default = '' },		-- name/address of the Photo Server, may include ':port' extension
+		{ key = 'psPath', 			default = '/photo/' },		-- Standard or Personal Photo Server path
 		{ key = 'serverTimeout', 	default = 10 },		-- http timeout
 		{ key = 'serverUrl', 		default = '' },		-- proto + servername
-		{ key = 'psPath', 			default = '/photo/' },		-- Standard or Personal Photo Server path
 		{ key = 'psUrl', 			default = '' },		-- serverUrl + Photo Server path (used for synopsis)
 		{ key = 'usePersonalPS', 	default = false },	-- upload to Personal Photo Server
 		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Server to upload to
@@ -132,6 +132,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'useSecondAddress',		default = false },		-- specify a secondoray (external) server address
 		{ key = 'proto2', 				default = 'https' },	-- transport protocol for secondary Photo Server upload
 		{ key = 'servername2', 			default = '' },			-- name/address of the secondary Photo Server, may include ':port' extension
+		{ key = 'psPath2', 				default = '/photo/' },	-- Standard or Personal Photo Server path
 		{ key = 'serverTimeout2',	 	default = 10 },			-- http timeout
 
 		{ key = 'publishMode', 			default = 'Publish' },	-- publish operation mode: Normal, CheckExisting, ...

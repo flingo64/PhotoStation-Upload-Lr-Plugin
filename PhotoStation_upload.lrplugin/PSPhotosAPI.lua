@@ -690,13 +690,25 @@ end
 -- getFolderUrl(h, folderPath)
 --	returns the URL of an folder in Photos
 --	URL of a photo in Photos is:
---		http(s)://<PS-Server>/?launchApp=SYNO.Foto.AppInstance#/shared_space/folder/<folderId>
+--		http(s)://<PS-Server><psPath>#/shared_space/folder/<folderId>
 --    or:
---		http(s)://<PS-Server>/?launchApp=SYNO.Foto.AppInstance#/personal_space/folder/<folderId>
+--		http(s)://<PS-Server><psPath>#/personal_space/folder/<folderId>
+-- 	  where <psPath> is:
+--		'/?launchApp=SYNO.Foto.AppInstance' or
+--		/<aliasPath>/
 function Photos.getAlbumUrl(h, folderPath)
-	local folderUrl = h.serverUrl .. "/?launchApp=SYNO.Foto.AppInstance#/" ..
-					 iif(h.userid == 0, "shared", "personal") .. "_space/folder/" ..
-					 h:getFolderId(normalizeDirname(folderPath))
+	local folderId	= h:getFolderId(normalizeDirname(folderPath))
+
+	if not folderId then
+		writeLogfile(1, string.format("getAlbumUrl(server='%s', userid='%s', folderPath='%s'): folderId '%s' returns nil\n",
+							h.serverUrl, h.userid, folderPath, ifnil(folderId, '<nil>')))
+		return ''
+	end
+
+	local aliasPath = string.match(h.serverUrl, 'http[s]*://[^/]+(/.*)')
+	local folderUrl = 	h.serverUrl ..
+						iif(aliasPath, "/", "/?launchApp=SYNO.Foto.AppInstance") .. "#/" ..
+						iif(h.userid == 0, "shared", "personal") .. "_space/folder/" .. folderId
 
 	 writeLogfile(3, string.format("getAlbumUrl(server='%s', userid='%s', path='%s') returns %s\n", h.serverUrl, h.userid, folderPath, folderUrl))
 
@@ -707,20 +719,27 @@ end
 -- getPhotoUrl(h, photoPath, isVideo)
 --	returns the URL of a photo/video in Photos
 --	URL of a photo in Photos is:
---		http(s)://<PS-Server>/?launchApp=SYNO.Foto.AppInstance#/shared_space/folder/<folderId>/item_<photoId>
+--		http(s)://<PS-Server><psPath>#/shared_space/folder/<folderId>/item_<photoId>
 --    or:
---		http(s)://<PS-Server>/?launchApp=SYNO.Foto.AppInstance#/personal_space/folder/<folderId>/item_<photoId>
+--		http(s)://<PS-Server><psPath>#/personal_space/folder/<folderId>/item_<photoId>
+-- 	  where <psPath> is:
+--		'/?launchApp=SYNO.Foto.AppInstance' or
+--		/<aliasPath>/
 function Photos.getPhotoUrl(h, photoPath, isVideo)
 	local folderId	= h:getFolderId(normalizeDirname(LrPathUtils.parent(photoPath)))
 	local itemId 	= h:getPhotoId(photoPath, isVideo)
+
 	if not folderId or not itemId then
 		writeLogfile(1, string.format("getPhotoUrl(server='%s', userid='%s', path='%s'): folderId '%s', itemId '%s' returns nil\n",
 							h.serverUrl, h.userid, photoPath, ifnil(folderId, '<nil>'), ifnil(itemId, '<nil>')))
 		return ''
 	end
 
-	local photoUrl = h.serverUrl .. "/?launchApp=SYNO.Foto.AppInstance#/" ..
-					 iif(h.userid == 0, "shared", "personal") .. "_space/folder/" .. folderId .. "/item_" .. itemId
+	local aliasPath = string.match(h.serverUrl, 'http[s]*://[^/]+(/.*)')
+	local photoUrl = 	h.serverUrl ..
+						iif(aliasPath, "/", "/?launchApp=SYNO.Foto.AppInstance") .. "#/" ..
+						iif(h.userid == 0, "shared", "personal") .. "_space/folder/" .. folderId .. "/item_" .. itemId
+						-- .. "?_k=" .. h.hhid
 	writeLogfile(3, string.format("getPhotoUrl(server='%s', userid='%s', path='%s') returns %s\n", h.serverUrl, h.userid, photoPath, photoUrl))
 
 	return photoUrl
@@ -737,13 +756,12 @@ function Photos.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- basedir(area, owner)
-function Photos.basedir (area, owner)
-	if area == 'personal' then
-		return '/?launchApp=SYNO.Foto.AppInstance#/personal_space/'
-	else
-		return '/?launchApp=SYNO.Foto.AppInstance#/shared_space/'
-	end
+-- basedir(serverUrl, area, owner)
+function Photos.basedir (serverUrl, area, owner)
+	local aliasPath = string.match(serverUrl, 'http[s]*://[^/]+(/.*)')
+
+	return	iif(aliasPath, "/#", "/?launchApp=SYNO.Foto.AppInstance#") ..
+			iif(area == 'personal', "/personal_space/", "/shared_space/")
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -1612,15 +1630,16 @@ end
 
 function PhotosPhoto:updateMetadata()
 	local metadataChanges = self.changes and self.changes.metadata
-	local photoParams = {}
-
+	writeTableLogfile(4,"updateMetadata", metadataChanges, true)
 	if not metadataChanges then return true end
+
+	local photoParams = {}
 
 	for key, value in pairs(metadataChanges) do
 		table.insert(photoParams, { attribute =  key, value = value })
 	end
 
-	if #metadataChanges == 0 then
+	if #photoParams == 0 then
 		return true
 	end
 

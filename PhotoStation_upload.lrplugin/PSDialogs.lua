@@ -325,8 +325,11 @@ function PSDialogs.updateDialogStatus( propertyTable )
 			-- Publish Service Provider end ---------------------
 
 			propertyTable.serverUrl = propertyTable.proto .. "://" .. propertyTable.servername
-			propertyTable.psPath 	= PHOTOSERVER_API[propertyTable.psVersion].API.basedir(iif(propertyTable.usePersonalPS, 'personal', 'shared'), propertyTable.personalPSOwner)
+			propertyTable.psPath 	= PHOTOSERVER_API[propertyTable.psVersion].API.basedir(propertyTable.serverUrl, iif(propertyTable.usePersonalPS, 'personal', 'shared'), propertyTable.personalPSOwner)
 			propertyTable.psUrl		= propertyTable.serverUrl .. propertyTable.psPath
+
+			local serverUrl2		= propertyTable.proto2 .. "://" .. propertyTable.servername2
+			propertyTable.psPath2 	= PHOTOSERVER_API[propertyTable.psVersion].API.basedir(serverUrl2, iif(propertyTable.usePersonalPS, 'personal', 'shared'), propertyTable.personalPSOwner)
 		end
 
 		-- ###############  Export or Collection Settings ##########################
@@ -1126,7 +1129,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         		},
 
 				f:static_text {
-					title 			= bind 'psPath',
+					title 			= bind 'psPath2',
         			truncation 		= 'middle',
 					width_in_chars	= 20,
         			immediate 		= true,

@@ -378,8 +378,8 @@ function PhotoStation.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- basedir(area, owner)
-function PhotoStation.basedir (area, owner)
+-- basedir(serverUrl, area, owner)
+function PhotoStation.basedir (serverUrl, area, owner)
 	if area == 'personal' then
 		return "/~" .. ifnil(owner, "unknown") .. "/photo/"
 	else
