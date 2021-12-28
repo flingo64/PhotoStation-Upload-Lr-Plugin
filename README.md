@@ -28,7 +28,6 @@ Photo StatLr also supports the Lightroom "Get Comments" and "Get Rating" feature
 Besides that Photo StatLr can do a real two-way synchronization of various metadata, including title, description/caption, tags/keywords, color label, rating, person tags/faces regions and GPS info. 
 
 ## Synology Photo Station and Synology Photos
----------------------------------
 This plugin supports Synology Photo Station and Synology Photos. Some of the plugin features are not supported on both systems. Throughout this document we use the term 'Photo Station' (for historical reasons), even if  the description applies to both systems. If there is a restriction to Photo Station, it will be marked with an asterisk (*).
 
 # Requirements

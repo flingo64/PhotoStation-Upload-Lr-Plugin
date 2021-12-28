@@ -414,7 +414,8 @@ end
 
 -- writeLogfile: always open, write, close, otherwise output will get lost in case of unexpected errors
 function writeLogfile (level, msg)
-	if level <= ifnil(loglevel, 2) then
+	-- if loglevel not yet set or set to 'AskMeLater(9999)', assume loglevel TRACE(3)
+	if level <= iif(ifnil(loglevel, 3) == 9999, 3, ifnil(loglevel, 3)) then
 		local logfile = io.open(getLogFilename(), "a")
 		if logfile then
 			logfile:write(LrDate.formatMediumTime(LrDate.currentTime()) .. ", " .. ifnil(loglevelname[level], tostring(level)) .. ": " .. msg)
