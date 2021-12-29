@@ -16,6 +16,7 @@ Photos object:
 	- getPhotoInfoFromList
 
 	- supports
+	- validateServername
 	- basedir
 	- getErrorMsg
 
@@ -716,12 +717,7 @@ end
 -- getFolderUrl(h, folderPath)
 --	returns the URL of an folder in Photos
 --	URL of a photo in Photos is:
---		http(s)://<PS-Server><psPath>#/shared_space/folder/<folderId>
---    or:
---		http(s)://<PS-Server><psPath>#/personal_space/folder/<folderId>
--- 	  where <psPath> is:
---		'/?launchApp=SYNO.Foto.AppInstance' or
---		/<aliasPath>/
+--		http(s)://<psServer>[:<psPort>][/<aliasPath>]<basedir>/folder/<folderId>
 function Photos.getAlbumUrl(h, folderPath)
 	local folderId	= h:getFolderId(normalizeDirname(folderPath))
 
@@ -731,12 +727,10 @@ function Photos.getAlbumUrl(h, folderPath)
 		return ''
 	end
 
-	local aliasPath = string.match(h.serverUrl, 'http[s]*://[^/]+(/.*)')
 	local folderUrl = 	h.serverUrl ..
-						iif(aliasPath, "/", "/?launchApp=SYNO.Foto.AppInstance") .. "#/" ..
-						iif(h.userid == 0, "shared", "personal") .. "_space/folder/" .. folderId
-
-	 writeLogfile(3, string.format("getAlbumUrl(server='%s', userid='%s', path='%s') returns %s\n", h.serverUrl, h.userid, folderPath, folderUrl))
+						Photos.basedir(h.serverUrl, iif(h.userid == 0, "shared", "personal"), h.userid) ..
+						"folder/" .. folderId
+	writeLogfile(3, string.format("getAlbumUrl(server='%s', userid='%s', path='%s') returns %s\n", h.serverUrl, h.userid, folderPath, folderUrl))
 
 	return folderUrl
 end
@@ -745,12 +739,7 @@ end
 -- getPhotoUrl(h, photoPath, isVideo)
 --	returns the URL of a photo/video in Photos
 --	URL of a photo in Photos is:
---		http(s)://<PS-Server><psPath>#/shared_space/folder/<folderId>/item_<photoId>
---    or:
---		http(s)://<PS-Server><psPath>#/personal_space/folder/<folderId>/item_<photoId>
--- 	  where <psPath> is:
---		'/?launchApp=SYNO.Foto.AppInstance' or
---		/<aliasPath>/
+--		http(s)://<psServer>[:<psPort>][/<aliasPath>]<basedir>/folder/<folderId>/item_<photoId>
 function Photos.getPhotoUrl(h, photoPath, isVideo)
 	local folderId	= h:getFolderId(normalizeDirname(LrPathUtils.parent(photoPath)))
 	local itemId 	= h:getPhotoId(photoPath, isVideo)
@@ -761,11 +750,9 @@ function Photos.getPhotoUrl(h, photoPath, isVideo)
 		return ''
 	end
 
-	local aliasPath = string.match(h.serverUrl, 'http[s]*://[^/]+(/.*)')
 	local photoUrl = 	h.serverUrl ..
-						iif(aliasPath, "/", "/?launchApp=SYNO.Foto.AppInstance") .. "#/" ..
-						iif(h.userid == 0, "shared", "personal") .. "_space/folder/" .. folderId .. "/item_" .. itemId
-						-- .. "?_k=" .. h.hhid
+						Photos.basedir(h.serverUrl, iif(h.userid == 0, "shared", "personal"), h.userid) ..
+						"folder/" .. folderId .. "/item_" .. itemId
 	writeLogfile(3, string.format("getPhotoUrl(server='%s', userid='%s', path='%s') returns %s\n", h.serverUrl, h.userid, photoPath, photoUrl))
 
 	return photoUrl
@@ -783,10 +770,23 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- basedir(serverUrl, area, owner)
+-- returns the basedir for the API calls.
+-- This depends on whether the API is called via standard (DSM) port (5000/5001)
+-- or via an alias port or alias path as defined in Login Portal configuration
+-- The basedir looks like:
+--		<API_prefix>#/[shared|personal]_space/
+-- 	  where <API_prefix> is:
+--		'/?launchApp=SYNO.Foto.AppInstance' - if <psPort> is a standard port (5000, 5001) or
+--		'/'									- if <psPort> is a non-standard/alternative port configured in 'Login Portal'
+--		'/'									- if <psPort> is not given and an aliasPath is given as configured in 'Login Portal'
 function Photos.basedir (serverUrl, area, owner)
-	local aliasPath = string.match(serverUrl, 'http[s]*://[^/]+(/.*)')
+	local port		= string.match(serverUrl, 'http[s]*://[^:]+:(%d+)$')
+	local aliasPath = string.match(serverUrl, 'http[s]*://[^/]+(/[^%?]+)$')
 
-	return	iif(aliasPath, "/#", "/?launchApp=SYNO.Foto.AppInstance#") ..
+	writeLogfile(4, string.format("Photos.basedir('%s', '%s'): port='%s' aliasPath='%s'\n", 
+						serverUrl, area, ifnil(port, '<nil>'), ifnil(aliasPath, '<nil>')))
+
+	return	iif(port and (port == '5000' or port == '5001'), "/?launchApp=SYNO.Foto.AppInstance#", "/#") ..
 			iif(area == 'personal', "/personal_space/", "/shared_space/")
 end
 
