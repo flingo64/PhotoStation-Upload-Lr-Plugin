@@ -1055,7 +1055,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 	local timeout = math.floor(fileSize / 1250000)
 	if timeout < 30 then timeout = 30 end
 
-	local respBody, respHeaders
+	local respBody, respHeaders, contentTableStr, funcAndParams
 	-- TODO: MacOS code
 	-- MacOS issue: LrHttp.post() doesn't seem to work with callback
 	if not WIN_ENV then
@@ -1126,13 +1126,14 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 				contentType	= 'image/jpeg',
 			}, nil),
 		}
-		writeLogfile(4, string.format("Photos_uploadPictureFiles('%s', '%s', '%s'): calling LrHttp.postMultipart()\n", srcFilename, dstDir, dstFilename))
-    	respBody, respHeaders = LrHttp.postMultipart(h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path, contentTable, postHeaders, timeout, nil, false)
+		contentTableStr = JSON:encode(contentTable)
+		funcAndParams = string.format("Photos_uploadPictureFiles('%s', '%s', '%s', '%s')", srcFilename, dstDir, dstFilename, contentTableStr)
+		writeLogfile(4, string.format("%s: calling LrHttp.postMultipart()\n", funcAndParams))
+		respBody, respHeaders = LrHttp.postMultipart(h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path, contentTable, postHeaders, timeout, nil, false)
      	-- postFile:close()
 	end
 
 	local success, errorMsg = true, nil
-	local funcAndParams = string.format("Photos.Photos_uploadPictureFiles('%s', '%s', '%s')", srcFilename, dstDir, dstFilename)
 
 	if not respBody then
 		if respHeaders then
@@ -1162,6 +1163,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 		return success, errorMsg
 	end
 
+	writeLogfile(3, string.format("%s returns '%s', '%s'\n", funcAndParams, success, respArray.data.id))
 	return success, respArray.data.id
 end
 
