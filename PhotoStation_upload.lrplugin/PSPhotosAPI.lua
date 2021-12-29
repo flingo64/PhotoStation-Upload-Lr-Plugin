@@ -66,10 +66,11 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 --------------------------------------------------------------------------------
 
 -- Lightroom API
-local LrFileUtils = import 'LrFileUtils'
-local LrPathUtils = import 'LrPathUtils'
-local LrHttp = import 'LrHttp'
-local LrDate = import 'LrDate'
+local LrFileUtils 	= import 'LrFileUtils'
+local LrPathUtils 	= import 'LrPathUtils'
+local LrHttp 		= import 'LrHttp'
+local LrDate 		= import 'LrDate'
+local LrTasks		= import 'LrTasks'
 
 -- #####################################################################################################
 -- ########################## PhotoStation object ######################################################
@@ -395,11 +396,14 @@ end
 -- #####################################################################################################
 -- ###################################### pathIdCache ##################################################
 -- #####################################################################################################
--- The path id cache holds ids of folders and items (photo/video) as used by the PhotosAPI
+-- The path id cache holds ids of folders and items (photo/video) as used by the PhotosAPI.
+-- Items are case-insensitive in Photos, so we store and comparethem lowercase
+-- to have a unique representation and to find any lowercase/uppercase variation of an item name
 -- layout:
 --		pathIdCache
 --			cache[userid] (0 for Team Folders)
---				[path] = { id, type, addinfo (only for items), validUntil }
+--					[itemPath] = 	{ id, type, validUntil, addinfo } or
+--					[folderPath] =	{ id, type, validUntil, lastSubfolderScanValidUntil, lastItemScanValidUntil }
 --			lastCleanup[userid]
 local pathIdCache = {
 	cache 			= {},
@@ -411,6 +415,25 @@ local pathIdCache = {
 	},
 }
 
+---------------------------------------------------------------------------------------------------------
+-- pathIdCachePathname: normalize pathnames for the cache:
+--		- make sure a path starts with a '/'
+-- 		- items (files) are case-insensitive in Photos, so we store them in lowercase
+local function pathIdCachePathname(path, type)
+	local cachePath
+	if path and string.sub(path, 1, 1) ~= "/" then
+		cachePath = "/" .. path
+	else
+		cachePath = path
+	end
+
+	if type == 'item' then
+		local folderPath = ifnil(LrPathUtils.parent(cachePath), '/')
+		local filename = string.lower(LrPathUtils.leafName(cachePath))
+		cachePath = LrPathUtils.child(folderPath, filename)
+	end
+	return cachePath
+end
 ---------------------------------------------------------------------------------------------------------
 -- pathIdCacheInitialize: remove all entries from cache
 local function pathIdCacheInitialize(userid)
@@ -470,6 +493,7 @@ local function pathIdCacheAddEntry(userid, path, id, type, addinfo)
 	if not pathIdCache.cache[userid] then pathIdCache.cache[userid] = {} end
 	local user_pathIdCache = pathIdCache.cache[userid]
 
+	path = pathIdCachePathname(path, type)
 	if not user_pathIdCache[path] then  user_pathIdCache[path] = {} end
 	local entry = user_pathIdCache[path]
 
@@ -500,9 +524,10 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- pathIdCacheDeleteEntry(userid, path)
 --	delete a path from the pathIdCache: must be called whenever a remote folder or item was deleted
-local function pathIdCacheDeleteEntry(userid, path)
-	writeLogfile(3, string.format("pathIdCacheDeleteEntry(user='%s', path='%s')\n", userid, path))
-	if path and string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
+local function pathIdCacheDeleteEntry(userid, path, type)
+	writeLogfile(3, string.format("pathIdCacheDeleteEntry(user='%s', path='%s', type='%s')\n", userid, path, type))
+
+	path = pathIdCachePathname(path, type)
 
 	if path ~= '/' and pathIdCache.cache[userid] and pathIdCache.cache[userid][path] then
 		pathIdCache.cache[userid][path] = nil
@@ -517,7 +542,8 @@ end
 --  if wantsInfo (only for items), then info element must be available, otherwise the id is sufficient
 local function pathIdCacheGetEntry(userid, path, type, wantsInfo)
 	pathIdCacheCleanup(userid)
-	cacheEntry = pathIdCache.cache[userid] and pathIdCache.cache[userid][path]
+	path 		= pathIdCachePathname(path, type)
+	cacheEntry	= pathIdCache.cache[userid] and pathIdCache.cache[userid][path]
 
 	-- if entry was not found then check whether it's really not there or just not yet cached
 	if not cacheEntry then
@@ -579,7 +605,7 @@ function Photos.getFolderId(h, path, doCreate)
 
 	if string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
 
-	local cachedPathInfo, reason = pathIdCacheGetEntry(h.userid, path)
+	local cachedPathInfo, reason = pathIdCacheGetEntry(h.userid, path, 'folder')
 	local folderId
 	if cachedPathInfo then
 		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') returns '%d' from cache\n", h.userid, path, cachedPathInfo.id))
@@ -603,7 +629,7 @@ function Photos.getFolderId(h, path, doCreate)
 		end
 
 		-- try it once more
-		cachedPathInfo, reason = pathIdCacheGetEntry(h.userid, path)
+		cachedPathInfo, reason = pathIdCacheGetEntry(h.userid, path, 'folder')
 		if cachedPathInfo then folderId = cachedPathInfo.id	end
 	end
 
@@ -629,7 +655,7 @@ function Photos.getPhotoId(h, path, wantsInfo)
 
 	if string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
 
-	local cachedPathInfo, reason  = pathIdCacheGetEntry(h.userid, path, wantsInfo)
+	local cachedPathInfo, reason  = pathIdCacheGetEntry(h.userid, path, 'item', wantsInfo)
 	if cachedPathInfo then
 		writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') returns id '%d' from cache\n", h.userid, path, cachedPathInfo.id))
 		return cachedPathInfo.id, cachedPathInfo.addinfo
@@ -655,7 +681,7 @@ function Photos.getPhotoId(h, path, wantsInfo)
 	end
 
 	-- try it once more
-	cachedPathInfo, reason  = pathIdCacheGetEntry(h.userid, path, wantsInfo)
+	cachedPathInfo, reason  = pathIdCacheGetEntry(h.userid, path, 'item', wantsInfo)
 	if cachedPathInfo then
 		writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') returns id '%s' (after cache update)\n", h.userid, path, cachedPathInfo.id))
 		return cachedPathInfo.id, cachedPathInfo.addinfo
@@ -957,14 +983,14 @@ local function Photos_deleteFolder (h, folderPath)
 		return true
 	end
 
+	pathIdCacheDeleteEntry(h.userid, folderPath, 'folder')
+
 	local apiParams = {
 		id		= "[" .. folderId  .. "]",
 		api		= "SYNO.FotoTeam.Browse.Folder",
 		method	="delete",
 		version=1
 	}
-
-	pathIdCacheDeleteEntry(h.userid, folderPath)
 
 	local respArray, errorCode = Photos_API(h, apiParams)
 
@@ -1145,16 +1171,26 @@ end
 function Photos.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, photo_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
 	dstFilePath = dstDir .. "/" .. dstFilename
 
-	if (not Photos.getPhotoId(h, dstFilePath) or Photos.deletePhoto(h, dstFilePath)) then
-		local success, photoId = Photos_uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'image/jpeg', photo_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
-		if success then
-			-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
-			pathIdCacheAddEntry(h.userid, dstFilePath, photoId, 'item', nil)
+	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
+	if oldPhotoId then
+		if not	Photos.deletePhoto(h, dstFilePath, nil, oldPhotoId) then return false end
+
+		-- HACK: if new filename is not upper/lowercase identical to old filename
+		-- 		then we have to wait some time until Photos has deleted the old entry
+		--		otherwise we will have to re-index to recover the new file ... :-(
+		if dstFilename ~= oldPhotoInfo.filename then
+			writeLogfile(3, string.format("uploadPhotoFiles('%s') waiting 3 seconds after deleting old file '%s' with different upper/lowercase spelling...\n", dstFilePath, oldPhotoInfo.filename))
+			LrTasks.sleep(3)
 		end
-		return success
-	else
-		return false
 	end
+
+	local success, photoId = Photos_uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'image/jpeg', photo_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
+	if success then
+		-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
+		pathIdCacheAddEntry(h.userid, dstFilePath, photoId, 'item', nil)
+	end
+
+	return success
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -1167,16 +1203,27 @@ function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumb
 										thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 										vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
 	dstFilePath = dstDir .. "/" .. dstFilename
-	if (not Photos.getPhotoId(h, dstFilePath) or Photos.deletePhoto(h, dstFilePath)) then
-		local success, videoId = Photos_uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'video/mp4', video_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
-		if success then
-			-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
-			pathIdCacheAddEntry(h.userid, dstFilePath, videoId, 'item', nil)
+
+	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
+	if oldPhotoId then
+		if not	Photos.deletePhoto(h, dstFilePath, nil, oldPhotoId) then return false end
+
+		-- HACK: if new filename is not upper/lowercase identical to old filename
+		-- 		then we have to wait some time until Photos has deleted the old entry
+		--		otherwise we will have to re-index to recover the new file ... :-(
+		if dstFilename ~= oldPhotoInfo.filename then
+			writeLogfile(3, string.format("uploadVideoFiles('%s') waiting 5 seconds after deleting old file '%s' with different upper/lowercase spelling...\n", dstFilePath, oldPhotoInfo.filename))
+			LrTasks.sleep(5)
 		end
-		return success
-	else
-		return false
 	end
+
+	local success, videoId = Photos_uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'video/mp4', video_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
+	if success then
+		-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
+		pathIdCacheAddEntry(h.userid, dstFilePath, videoId, 'item', nil)
+	end
+
+	return success
 end
 
 -- #####################################################################################################
@@ -1249,11 +1296,11 @@ function Photos.movePhoto(h, srcPhotoPath, dstFolder, isVideo)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- deletePhoto (h, path, isVideo)
-function Photos.deletePhoto (h, path, isVideo)
-	local photoId = h:getPhotoId(path)
+-- deletePhoto (h, path[, isVideo[, optPhotoId]])
+function Photos.deletePhoto (h, path, isVideo, optPhotoId)
+	local photoId = optPhotoId or h:getPhotoId(path)
 	if not photoId then
-		writeLogfile(3, string.format('deletePhoto(%s): does not exist, returns OK\n', path))
+		writeLogfile(3, string.format("deletePhoto('%s', '%s'): does not exist, returns OK\n", path, ifnil(optPhotoId, '<nil>')))
 		return true
 	end
 
@@ -1264,13 +1311,13 @@ function Photos.deletePhoto (h, path, isVideo)
 		version	= 1
 	}
 
-	pathIdCacheDeleteEntry(h.userid, path)
+	pathIdCacheDeleteEntry(h.userid, path, 'item')
 
 	local respArray, errorCode = Photos_API(h,apiParams)
 
 	if not respArray then return nil, errorCode end
 
-	writeLogfile(3, string.format('deletePhoto(%s) returns OK (errorCode was %d)\n', path, ifnil(errorCode, 0)))
+	writeLogfile(3, string.format("deletePhoto('%s', '%s') returns OK (errorCode was %d)\n", path, ifnil(optPhotoId, '<nil>'), ifnil(errorCode, 0)))
 	return respArray.success, errorCode
 end
 
