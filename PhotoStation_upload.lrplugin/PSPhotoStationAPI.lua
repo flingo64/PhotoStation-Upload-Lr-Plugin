@@ -378,6 +378,23 @@ function PhotoStation.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- validateServername(view, servername)
+-- a valid servername looks like
+-- 		<name_or_ip> or 
+-- 		<name_or_ip>:<psPort>
+function PhotoStation.validateServername (view, servername)
+	local colon			= string.match(servername, '[^:/]+(:)')
+	local port			= string.match(servername, '[^:]+:(%d+)$')
+	local slash			= string.match(servername, '(/)')
+
+	writeLogfile(5, string.format("PhotoStation.validateServername('%s'): port '%s'\n", servername, ifnil(port, '<nil>')))
+
+	return	(not colon and not port and not slash)
+		or	(	 colon and 	   port and not slash),
+		servername
+end
+
+---------------------------------------------------------------------------------------------------------
 -- basedir(serverUrl, area, owner)
 function PhotoStation.basedir (serverUrl, area, owner)
 	if area == 'personal' then

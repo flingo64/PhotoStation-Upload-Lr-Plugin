@@ -769,6 +769,24 @@ function Photos.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- validateServername(view, servername)
+-- a valid servername looks like
+-- 		<name_or_ip>:<psPort> or
+-- 		<name_or_ip>/<aliasPath>
+function Photos.validateServername (view, servername)
+	local colon			= string.match(servername, '[^:]+(:)')
+	local port			= string.match(servername, '[^:]+:(%d+)$')
+	local slash 		= string.match(servername, '[^/]+(/)')
+	local aliasPath 	= string.match(servername, '[^/]+/([^%?]+)$')
+
+	writeLogfile(5, string.format("Photos.validateServername('%s'): port '%s' aliasPath '%s'\n", servername, ifnil(port, '<nil>'), ifnil(aliasPath, '<nil>')))
+
+	return	(	 colon and 	   port and not slash and not aliasPath)
+		or	(not colon and not port and		slash and 	  aliasPath),
+		servername
+end
+
+---------------------------------------------------------------------------------------------------------
 -- basedir(serverUrl, area, owner)
 -- returns the basedir for the API calls.
 -- This depends on whether the API is called via standard (DSM) port (5000/5001)

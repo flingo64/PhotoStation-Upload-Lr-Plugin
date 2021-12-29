@@ -5,7 +5,6 @@ This file is part of Photo StatLr - Lightroom plugin.
 Copyright(c) 2021, Martin Messmer
 
 Dialogs and validations for Photo StatLr
-	- validatePort
 	- validateDirectory
 	- validateProgram
 	- validatePSUploadProgPath
@@ -184,16 +183,6 @@ function PSDialogs.validateSeperator( view, value )
 	end
 
  	return true, value
-end
-
--------------------------------------------------------------------------------
--- validatePort: check if a string is numeric
-function PSDialogs.validatePort( view, value )
-	if string.match(value, '(%d+)') ~= value then
-		return false, value
-	end
-
-	return true, value
 end
 
 -------------------------------------------------------------------------------
@@ -1071,6 +1060,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
         			fill_horizontal = 0.8,
         			value 			= bind 'servername',
         			enabled 		= negativeOfKey 'useSecondAddress',
+					validate		= PHOTOSERVER_API[propertyTable.psVersion].API.validateServername
         		},
 
 				f:static_text {
@@ -1126,6 +1116,7 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					width_in_chars	= 18,
         			value 			= bind 'servername2',
         			enabled 		= bind 'useSecondAddress',
+					validate		= PHOTOSERVER_API[propertyTable.psVersion].API.validateServername
         		},
 
 				f:static_text {
