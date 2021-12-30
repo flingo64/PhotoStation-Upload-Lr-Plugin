@@ -81,6 +81,15 @@ PSDialogs = {}
 
 
 --============================ complex key binding checks ===================================================
+local checkPersonalAreaOwner = {
+	keys 		= { 'psVersion',  'usePersonalPS' },
+	operation 	= function( binder, values, fromTable )
+		writeLogfile(3, string.format("checkPersonalAreaOwner('%s', '%s')\n", values.psVersion, values.usePersonalPS))
+		return 	PHOTOSERVER_API.supports(values.psVersion, PHOTOSERVER_PERSONALAREA_XUPLOAD)
+				and values.usePersonalPS
+	end,
+}
+
 local checkAddVideoSupport = {
 	key			= 'psVersion',
 	transform 	= function( value, fromTable )
@@ -282,7 +291,7 @@ function PSDialogs.updateDialogStatus( propertyTable )
 				break
 			end
 
-			if propertyTable.usePersonalPS and (propertyTable.personalPSOwner == "" or propertyTable.personalPSOwner == nil ) then
+			if propertyTable.usePersonalPS and PHOTOSERVER_API.supports(propertyTable.psVersion, PHOTOSERVER_PERSONALAREA_XUPLOAD) and ifnil(propertyTable.personalPSOwner, '') == '' then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Space to upload to"
 				break
 			end
@@ -1172,8 +1181,8 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					immediate 		= true,
 					fill_horizontal = 1,
 					value 			= bind 'personalPSOwner',
-					enabled 		= bind 'usePersonalPS',
-					visible 		= bind 'usePersonalPS',
+					enabled 		= bind(checkPersonalAreaOwner),
+					visible 		= bind(checkPersonalAreaOwner)
 				},
 			},
 

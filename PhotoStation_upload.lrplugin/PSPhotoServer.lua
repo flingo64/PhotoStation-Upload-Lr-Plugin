@@ -58,6 +58,10 @@ PHOTOSERVER_UPLOAD_VIDEO_ADD		= "'UPLOAD_VIDEO_ADDITIONAL'"
 -- album management capabilities  --
 PHOTOSERVER_ALBUM_SORT	            = "'ALBUM_SORT'"
 
+-- photo area capabilities  --
+PHOTOSERVER_PERSONALAREA             = "'PERONALAREA'"           -- support for personal area
+PHOTOSERVER_PERSONALAREA_XUPLOAD     = "'PERONALAREA_XUPLOAD'"   -- support for upload to personal area of different user
+
 -- shared album support  --
 PHOTOSERVER_SHAREDALBUM	            = "'SHAREDALBUM'"
 PHOTOSERVER_SHAREDALBUM_ADVANCED	= "'SHAREDALBUM_ADVANCED'"
@@ -84,6 +88,7 @@ PHOTOSERVER_API = {
                                     PHOTOSERVER_UPLOAD_THUMB_XL ..
                                     PHOTOSERVER_UPLOAD_THUMB_B .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
                                     PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD ..
+                                    PHOTOSERVER_PERSONALAREA .. PHOTOSERVER_PERSONALAREA_XUPLOAD ..
                                     PHOTOSERVER_ALBUM_SORT ..
                                     PHOTOSERVER_SHAREDALBUM
             },
@@ -121,7 +126,8 @@ PHOTOSERVER_API[70] =  {
                 API 	        =   Photos,
                 capabilities    =   PHOTOSERVER_METADATA_DESCRIPTION ..
                                     PHOTOSERVER_METADATA_TAG ..
-                                    PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S
+                                    PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
+                                    PHOTOSERVER_PERSONALAREA
 }
 
 PHOTOSERVER_API[71] =  {
@@ -136,5 +142,3 @@ PHOTOSERVER_API[71] =  {
 function PHOTOSERVER_API.supports (version, capabilityType)
 	return (string.find(PHOTOSERVER_API[version].capabilities, capabilityType) and true) or false
 end
-
-
