@@ -1,5 +1,27 @@
 Photo StatLr Changelog
 ======================
+Version 7.1.0
+-------------
+### New features:
+- All PhotoServers:
+  - Export/Publish Service dialog: 
+    - Added PhotoSever-specific validation of servername
+    - Visibility of 'Owner of Personal Area' is now PhotoServer-specific:Photos does not support uploading to the personal area of a different user
+- Synology Photos:
+  - Added support for Photos API access via alternative port or alias path (as configured in DSM -> Control Panel -> Login Portal -> Applications)
+### Changes:
+  - Readme: Updated description and screenshot of Export/Publish Service dialog
+- Less logging (up to TRACE) during initialization, if Loglevel is set to 'Ask me later'
+- Sort Photos: avoid Login to Photo Server, if sorting is not possible or required
+### Bugfixes:
+- All PhotoServers:
+  - Fixed an issue where publishing w/ mode 'CheckExisting' would stop after detecting a photo or its folder being missing on the photo server
+- Photos: 
+  - Filenames (not folder names) are now handles case-insensitive due to Photos's file handling strategy
+  - Published Collection Settings: Location Tag settings are no longer visible
+  - Fixed an issue where publishing w/ mode 'MetadataUpload' would not upload modified caption/description or rating
+  - Various bugfixes concerning the internal cache
+
 Version 7.0.0
 -------------
 This is the first alpha release that supports both Synology Photo Station and Synology Photos (DSM7). While the PhotoStation support has been tested quite thoroughly, support for Synology Photos is quite fresh and might not have been tested in all common scenarios. So, the aplha attribute mostly refers to the Synology Photos support. 
