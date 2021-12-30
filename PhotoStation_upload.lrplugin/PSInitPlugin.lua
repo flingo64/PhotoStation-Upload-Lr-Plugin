@@ -45,7 +45,7 @@ if not prefs.convertprog or prefs.convertprog == '' then
 	end
 end
 
--- dcraw program path: required for thumb generation and video handling
+-- dcraw program path: required for thumb generation from photos in RAW format
 if not prefs.dcrawprog or prefs.dcrawprog == '' then
 	-- backward compatibility: check if Synology Uploader path is set
 	if prefs.PSUploaderPath then
