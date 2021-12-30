@@ -1,14 +1,14 @@
 # Photo StatLr (Lightroom plugin)
 
 Version 7.1.0<br>
-__[Notes for migrating from Photo Station to Photos](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
+__[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
-__[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
-__[Important note for updating to V3.6.x and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v3.6.0)__<br>
+__[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
+__[Important note for updating to V3.6.x and above]releases/tag/v3.6.0)__<br>
 
-[Changelog](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/CHANGELOG.md)<br>
-[Releases](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases)<br>
-[FAQs](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/tree/master/Documentation)<br>
+[Changelog](CHANGELOG.md)<br>
+[Releases](releases)<br>
+[FAQs](Documentation)<br>
 
 Forum threads: 
 - [English Synology forum](https://community.synology.com/enu/forum/17/post/80082)
@@ -16,7 +16,7 @@ Forum threads:
 
 [Support Page](https://messmer-online.de/index.php/software/11-photo-statlr)<br>
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
-[Get involved: Let Photo StatLr speak your language](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/30-Contributions-How%20to%20contribute%20a%20translation%20for%20Photo%20StatLr.md)<br>
+[Get involved: Let Photo StatLr speak your language](Documentation/30-Contributions-How%20to%20contribute%20a%20translation%20for%20Photo%20StatLr.md)<br>
  
 Copyright(c) 2015-2021, Martin Messmer<br>
 
@@ -62,9 +62,9 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 - In Lightroom:
 	*File* --\> *Plugin Manager* --\> *Add*: Enter the path to the directory 
 		"PhotoStation_upload.lrplugin" 
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/01-Install-Plugin.jpg)
+![](Screenshots-Windows/01-Install-Plugin.jpg)
  - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required converters and tools are correct.
- ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/03-Install_OK.jpg)
+ ![](Screenshots-Windows/03-Install_OK.jpg)
 
 # Description
 
@@ -99,7 +99,7 @@ The Export dialog includes settings for:
             	- <IP-Address_or_Hostname>[:\<port\>]
         	- Photos:
             	- <IP-Address_or_Hostname>:5000|5001 for access via Standard DSM ports or
-            	- <IP-Address_or_Hostname>:<alternative_port> for access via an alternative port as defined in DSM->Control Panel->Login Portal->Applications
+            	- <IP-Address_or_Hostname>:<alternative_port> for access via an alternative port as defined in DSM->Control Panel->Login Portal->Applications or
             	- <IP-Address_or_Hostname>/<alternative_path> for access via an alternative path as defined in DSM->Control Panel->Login Portal->Applications
     	- Timeout
 	- Photo Area: 
@@ -108,7 +108,7 @@ The Export dialog includes settings for:
 2. Target Album within the target Photo Server, Upload method, Renaming options
 3. Quality parameters for thumbs and additional videos
 4. Metadata Upload options
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/05-Export_Tree_StandardPS.jpg)
+![](Screenshots-Windows/05-Export_Tree_StandardPS.jpg)
 
 ### Publish Service Dialog
 The Publish Service dialog on the other hand includes settings for:
@@ -117,11 +117,11 @@ The Publish Service dialog on the other hand includes settings for:
 2. -- No -- Configured in Published Collections
 3. Quality parameters for thumbs and additional videos
 4. -- No -- Configured in Published Collections
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/10-Publish-Services.jpg)
+![](Screenshots-Windows/10-Publish-Services.jpg)
 
 ### Collection Settings
 The Album settings ( b) ) are not stored within the Publish settings but within the Published Collections settings. Therefore, you don't need to define a different Publish Service for each Published Collection you want to publish. In most cases you will only have one Publish Service definition and a bunch of Published Collections below it. An additional Publish Service definition is only required, if you want to upload to a different Photo Station or if you want to use different upload quality settings.<br>
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/11-Publish-Collection.jpg)
+![](Screenshots-Windows/11-Publish-Collection.jpg)
 
 ## Export Funtionality
 - Upload to the __Standard Photo Station__ or to a __Personal Photo Station__ (in Photos: __Shared Space__ or __Personal Space__)<br>
@@ -161,7 +161,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	  - {LrCC:path ^Yearly Collections}
 	  - {LrCC:name}
 	  - {LrPC:name}<br>
-  To learn more about the use of metadata placeholders and how they work, take a look at the [Metadata Placeholdes FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/03-Publish%20and%20Export-How%20to%20use%20metadata%20placeholders%20in%20Target%20Album%20or%20Rename%20Photos%20To%20definitions.md) 
+  To learn more about the use of metadata placeholders and how they work, take a look at the [Metadata Placeholdes FAQ](Documentation/03-Publish%20and%20Export-How%20to%20use%20metadata%20placeholders%20in%20Target%20Album%20or%20Rename%20Photos%20To%20definitions.md) 
 
 - __Rename photos__ in target album using __metadata placehoders__:<br>
      Rename photos to a unique naming schema in the target album 
@@ -181,7 +181,7 @@ This eases the consistent definition of the Export/Publish settings for both acc
 	- Translation of __Location Tags (country, city, etc.)__ to a single Photo Station Location tag* (via additional Metadata Upload pass)<br>
 
 - Upload of __original or processed videos__ and accompanying videos* with a lower resolution__<br>
-For more information on video processing with Photo StatLr read the [Video upload and conversion FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/04-Publish%20and%20Export-Video%20upload%20and%20conversion%20with%20Photo%20StatLr.md) 
+For more information on video processing with Photo StatLr read the [Video upload and conversion FAQ](Documentation/04-Publish%20and%20Export-Video%20upload%20and%20conversion%20with%20Photo%20StatLr.md) 
 
 - Upload of __video metadata__ including title*, description, keywords, rating, label and GPS info* (both from Lr or video header) 
 
@@ -198,7 +198,7 @@ For more information on video processing with Photo StatLr read the [Video uploa
 		- __Rotate-270__	--\> for videos that need 90 degree counterclockwise rotation
 	  Meta-rotated videos may be soft-rotated (by adding the rotation flag in the uploaded mp4-video) or hard-rotated.<br>
 	  Please note, that if you use meta-rotation, the (soft- or hard-) rotated video will be uploaded as MP4 video, instead of the original video, which may have a different format/coding (e.g. .mov/mjpeg).<br>
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/09-Video-Meta-to-Hard-Rotation.jpg)
+![](Screenshots-Windows/09-Video-Meta-to-Hard-Rotation.jpg)
 
 - Configuration of __custom video conversion presets__ to define your prefered video quality, conversion methods and/or GPU accelaration to be used by the ffmpeg converter
 
@@ -209,7 +209,7 @@ For more information on video processing with Photo StatLr read the [Video uploa
 
 ## Publish Functionality
 
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/12-Publish-Action.jpg)
+![](Screenshots-Windows/12-Publish-Action.jpg)
 
 - All Export functions are also supported in Publish mode
 
@@ -242,7 +242,7 @@ For more information on video processing with Photo StatLr read the [Video uploa
 	  This mode is used to convert photos in a an old-style (e.g. \<5.0.0) Published Collection to Published Collection which supports comments and ratings (v.5.0.0 and above)<br>
 	- __Ask me later__:<br>
 	  This is not a publish mode itself but let's you postpone the publish mode decision to the point in time where the actual publish action is started (e.g. when you click the "Publish" button)<br>
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/13-AskMeLater.jpg)
+![](Screenshots-Windows/13-AskMeLater.jpg)
 
 - Impose __sort order of photos in Lr Published Collections__ * in Photo Station:<br>
 	Sort order is only supported on Published Collections w/ Custom Sort Order when uploaded as Flat Copy 
@@ -266,17 +266,17 @@ For more information on video processing with Photo StatLr read the [Video uploa
   As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums.<br>
   You may define whether a Shared Album should be public (default) or private (using __keyword synonym 'private'__)<br>
   You may define a __password__ for a public Shared Album (using __keyword synonym 'password:\<AlbumPassword\>'__) (requires Photo Station 6.6 or above)<br>
-  For more infos please read the [Shared Albums FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/06-Publish-Managing%20Photo%20Station%20Shared%20Albums%20in%20Lightroom%20via%20Photo%20StatLr.md).
-![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/14-ManageSharedAlbums.jpg)
+  For more infos please read the [Shared Albums FAQ](Documentation/06-Publish-Managing%20Photo%20Station%20Shared%20Albums%20in%20Lightroom%20via%20Photo%20StatLr.md).
+![](Screenshots-Windows/14-ManageSharedAlbums.jpg)
   
 ## Download / Sync Functionality:
 - Support for download of __Comments__
 	- Download of private and public comments* from Photo Station
 	- Lr plugin metadata for comments: __search and filter__ photos with comments<br>
 	- __Metadata Tagsets__ to view comments in the Metadata panel<br>
-	For more infos please read the [Comments FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/08-Publish-Some%20comments%20on%20comments.md).
+	For more infos please read the [Comments FAQ](Documentation/08-Publish-Some%20comments%20on%20comments.md).
 
-  ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/15-Comment-Metadata.jpg)
+  ![](Screenshots-Windows/15-Comment-Metadata.jpg)
 
 - __Download and two-way sync of various metadata__ for photos and videos:
 	- title*, description/caption
@@ -298,7 +298,7 @@ For more information on video processing with Photo StatLr read the [Video uploa
 	  This is not a download mode itself but let's you postpone the download mode decision to the point in time where the actual download action is started (e.g. after a publish action or when you click the "Refresh Comments" button).
 	  This mode is useful if you do not want to download metadata after every publish action, but only occasionally.<br>
 
-- For more detail, please read the [Metadata Two-way Sync FAQ](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/07-Publish-Some%20words%20on%20the%20two%20way%20sync%20of%20metadata.md)
+- For more detail, please read the [Metadata Two-way Sync FAQ](Documentation/07-Publish-Some%20words%20on%20the%20two%20way%20sync%20of%20metadata.md)
 
 ## Additional Funtionality
 - __Checks for updates__ in background when Exporting, Publishing or opening the Plugin section in the Plugin Manager no more than once per day.
