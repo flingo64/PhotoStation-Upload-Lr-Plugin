@@ -560,8 +560,8 @@ local function pathIdCacheGetEntry(userid, path, type, wantsInfo)
 				 or
 					(
 							type == 'item'
-						and pathIdCache.cache[userid][parentFolder].lastSubfolderScanValidUntil
-						and pathIdCache.cache[userid][parentFolder].lastSubfolderScanValidUntil > LrDate.currentTime()
+						and pathIdCache.cache[userid][parentFolder].lastItemScanValidUntil
+						and pathIdCache.cache[userid][parentFolder].lastItemScanValidUntil > LrDate.currentTime()
 					)
 				)
 		then
