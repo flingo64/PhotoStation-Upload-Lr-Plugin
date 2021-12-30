@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.0.0<br>
+Version 7.1.0<br>
 __[Notes for migrating from Photo Station to Photos](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/releases/tag/v5.0.0)__<br>
@@ -90,17 +90,33 @@ Due to the different handling of exporting and publishing in Lightroom the Expor
 ### Export Dialog
 The Export dialog includes settings for:
 
-a) the target Photo Station (server, login, Standard/Personal Photo Station)<br>
-b) target Album within the target Photo Station and Upload method<br>
-c) quality parameters for thumbs and additional videos<br>
+1. Target Photo Server and Photo Area:
+	- Server Version: Photo Station or Photos
+	- Server Address: 
+    	- Protocol: http or https
+    	- Servername:
+        	- Photo Station:
+            	- <IP-Address_or_Hostname>[:\<port\>]
+        	- Photos:
+            	- <IP-Address_or_Hostname>:5000|5001 for access via Standard DSM ports or
+            	- <IP-Address_or_Hostname>:<alternative_port> for access via an alternative port as defined in DSM->Control Panel->Login Portal->Applications
+            	- <IP-Address_or_Hostname>/<alternative_path> for access via an alternative path as defined in DSM->Control Panel->Login Portal->Applications
+    	- Timeout
+	- Photo Area: 
+    	- 'Shared Space'/'Std Photo Station' or 
+    	- 'Personal Space'/'Personal Photo Station'
+2. Target Album within the target Photo Server, Upload method, Renaming options
+3. Quality parameters for thumbs and additional videos
+4. Metadata Upload options
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/05-Export_Tree_StandardPS.jpg)
 
 ### Publish Service Dialog
 The Publish Service dialog on the other hand includes settings for:
 
-a) the target Photo Station (server, login, Standard/Personal Photo Station)<br>
-b) -- no --<br>
-c) quality parameters for thumbs and additional videos<br>
+1. Target Photo Server and Photo Area
+2. -- No -- Configured in Published Collections
+3. Quality parameters for thumbs and additional videos
+4. -- No -- Configured in Published Collections
 ![](https://github.com/flingo64/PhotoStation-Upload-Lr-Plugin/blob/master/Screenshots-Windows/10-Publish-Services.jpg)
 
 ### Collection Settings
