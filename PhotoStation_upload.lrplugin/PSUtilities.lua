@@ -828,9 +828,8 @@ function openSession(exportParams, publishedCollection, operation)
 
 	-- exiftool: required if Export/Publish and exif translation was selected, or if downloading faces
 	local retcode, reason
-	if 	exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON)
-	and not exportParams.exifTool
-	and (	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
+	if 	not exportParams.exifTool
+	and (	(operation == 'ProcessRenderedPhotos' and string.find('Export,Publish', exportParams.publishMode, 1, true) and exportParams.exifTranslate)
 		 or	(string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.PS2LrFaces)
 		)
 	then
