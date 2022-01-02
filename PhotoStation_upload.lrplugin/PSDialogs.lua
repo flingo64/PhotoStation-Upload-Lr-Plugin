@@ -84,7 +84,6 @@ PSDialogs = {}
 local checkPersonalAreaOwner = {
 	keys 		= { 'psVersion',  'usePersonalPS' },
 	operation 	= function( binder, values, fromTable )
-		writeLogfile(3, string.format("checkPersonalAreaOwner('%s', '%s')\n", values.psVersion, values.usePersonalPS))
 		return 	PHOTOSERVER_API.supports(values.psVersion, PHOTOSERVER_PERSONALAREA_XUPLOAD)
 				and values.usePersonalPS
 	end,
