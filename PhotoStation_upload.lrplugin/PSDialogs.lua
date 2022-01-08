@@ -350,15 +350,8 @@ function PSDialogs.updateDialogStatus( propertyTable )
 
 			-- Exif translation start -------------------
 
-			-- if at least one translation is activated then set exifTranslate
-			if propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating then
-				propertyTable.exifTranslate = true
-			end
-
-			-- if no translation is activated then set exifTranslate to off
-			if not (propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating) then
-				propertyTable.exifTranslate = false
-			end
+			-- if at least one translation is activated then set exifTranslate and make sure exiftoolprog is set
+			propertyTable.exifTranslate = propertyTable.exifXlatFaceRegions or propertyTable.exifXlatLabel or propertyTable.exifXlatRating
 
 			if propertyTable.exifTranslate and not PSDialogs.validateProgram(nil, prefs.exiftoolprog) then
 				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterExiftool=Missing or wrong exiftool path. Fix it in Plugin Manager settings section."

@@ -89,10 +89,10 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'sortPhotos',		default = false },	-- sort photos in Photo Server acc. to collection sort order
 
 		-- upload options / exif translation parameters
-		{ key = 'exifTranslate', 		default = false },	-- make exif translations: requires exiftool
 		{ key = 'exifXlatFaceRegions',	default = false },	-- translate Lr/Picasa face regions to PS face regions
 		{ key = 'exifXlatLabel', 		default = false },	-- translate Lr label (red, green, ...) to PS keyword
 		{ key = 'exifXlatRating', 		default = false},	-- translate Lr star rating (XMP:rating) to PS keywords
+		{ key = 'exifTranslate', 		default = false },	-- set if any of the above translations is set: requires exiftool
 
 		{ key = 'xlatLocationTags',		default = false},					-- translate Lr location tags to single PS locaton tag
 		{ key = 'locationTagSeperator',	default = '-' },					-- output seperator for locaton tags

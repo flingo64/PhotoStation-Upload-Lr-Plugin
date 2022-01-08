@@ -755,11 +755,14 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.dstFilename			= collectionSettings.dstFilename
     	exportParams.RAWandJPG 				= collectionSettings.RAWandJPG
     	exportParams.sortPhotos 			= exportParams.photoServer:supports(PHOTOSERVER_ALBUM_SORT)			and collectionSettings.sortPhotos
-    	exportParams.exifTranslate 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifTranslate
+
     	exportParams.exifXlatFaceRegions 	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON)	and collectionSettings.exifXlatFaceRegions
     	exportParams.exifXlatLabel 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifXlatLabel
     	exportParams.exifXlatRating 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifXlatRating
-    	exportParams.xlatLocationTags		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_LOCATION)	and collectionSettings.xlatLocationTags
+    	-- set exifTranslate, if any of the above translations is set: this will force exiftool to be started
+		exportParams.exifTranslate 			= exportParams.exifXlatFaceRegions or exportParams.exifXlatLabel or exportParams.exifXlatRating
+
+		exportParams.xlatLocationTags		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_LOCATION)	and collectionSettings.xlatLocationTags
     	exportParams.locationTagSeperator	= collectionSettings.locationTagSeperator
     	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
 
@@ -787,12 +790,6 @@ function openSession(exportParams, publishedCollection, operation)
 			-- avoid prompt for PublishMode if operation is not ProcessRenderedPhotos
 			exportParams.publishMode 	= 'Publish'
 		end
-	end
-
-	if not exportParams.exifTranslate then
-    	exportParams.exifXlatFaceRegions 	= false
-    	exportParams.exifXlatLabel 			= false
-    	exportParams.exifXlatRating 		= false
 	end
 
 	-- Get missing settings, if not stored in preset.
