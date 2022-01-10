@@ -755,14 +755,10 @@ function openSession(exportParams, publishedCollection, operation)
     	exportParams.dstFilename			= collectionSettings.dstFilename
     	exportParams.RAWandJPG 				= collectionSettings.RAWandJPG
     	exportParams.sortPhotos 			= exportParams.photoServer:supports(PHOTOSERVER_ALBUM_SORT)			and collectionSettings.sortPhotos
-
-    	exportParams.exifXlatFaceRegions 	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON)	and collectionSettings.exifXlatFaceRegions
-    	exportParams.exifXlatLabel 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifXlatLabel
-    	exportParams.exifXlatRating 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and collectionSettings.exifXlatRating
-    	-- set exifTranslate, if any of the above translations is set: this will force exiftool to be started
-		exportParams.exifTranslate 			= exportParams.exifXlatFaceRegions or exportParams.exifXlatLabel or exportParams.exifXlatRating
-
-		exportParams.xlatLocationTags		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_LOCATION)	and collectionSettings.xlatLocationTags
+    	exportParams.exifXlatFaceRegions 	= collectionSettings.exifXlatFaceRegions
+    	exportParams.exifXlatLabel 			= collectionSettings.exifXlatLabel
+    	exportParams.exifXlatRating 		= collectionSettings.exifXlatRating
+		exportParams.xlatLocationTags		= collectionSettings.xlatLocationTags
     	exportParams.locationTagSeperator	= collectionSettings.locationTagSeperator
     	exportParams.locationTagTemplate	= collectionSettings.locationTagTemplate
 
@@ -791,6 +787,14 @@ function openSession(exportParams, publishedCollection, operation)
 			exportParams.publishMode 	= 'Publish'
 		end
 	end
+
+	-- check all version-dependent export settings against photo server capabilities
+	exportParams.xlatLocationTags		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_LOCATION)	and exportParams.xlatLocationTags
+	exportParams.exifXlatFaceRegions 	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON)	and exportParams.exifXlatFaceRegions
+	exportParams.exifXlatLabel 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and exportParams.exifXlatLabel
+	exportParams.exifXlatRating 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and exportParams.exifXlatRating
+	-- set exifTranslate, if any of the above translations is set: this will force exiftool to be started
+	exportParams.exifTranslate 			= exportParams.exifXlatFaceRegions or exportParams.exifXlatLabel or exportParams.exifXlatRating
 
 	-- Get missing settings, if not stored in preset.
 	if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
