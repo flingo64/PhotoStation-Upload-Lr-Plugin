@@ -1518,7 +1518,7 @@ PhotosPhoto_mt = { __index = PhotosPhoto }
 function PhotosPhoto.new(photoServer, photoPath, isVideo, infoTypeList, useCache)
 	local photoInfo
 
-	writeLogfile(3, string.format("PhotosPhoto:new(%s, %s, %s, %s) starting\n", photoPath, isVideo, infoTypeList, useCache))
+	if photoPath then writeLogfile(3, string.format("PhotosPhoto:new(%s, %s, %s, %s) starting\n", photoPath, isVideo, infoTypeList, useCache)) end
 
 	if not photoServer  then
 		-- called from PhotoStation.new()
