@@ -1,5 +1,17 @@
 Photo StatLr Changelog
 ======================
+Version 7.1.1
+-------------
+### Bugfixes:
+- All PhotoServers:
+  - Fixed issue #55
+  - Make sure exiftool is started only if an exif translation (faces, color label, rating label) is configured and supported
+### Changes:
+- Photos:
+  - Added error messages for Synology error codes 100 - 150 and 400 - 411
+  - Reduced Syno.API.Info query from 'all' to 'SYNO.API.,SYNO.Foto.,SYNO.FotoTeam.'
+  - Removed unused parameters from Login API call
+
 Version 7.1.0
 -------------
 ### New features:
