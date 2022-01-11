@@ -128,6 +128,7 @@ PHOTOSERVER_API[70] =  {
                                     PHOTOSERVER_METADATA_TAG ..
                                     PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
                                     PHOTOSERVER_PERSONALAREA
+--                                    .. PHOTOSERVER_SHAREDALBUM .. PHOTOSERVER_SHAREDALBUM_ADVANCED
 }
 
 PHOTOSERVER_API[71] =  {
