@@ -85,10 +85,9 @@ Photos_mt = { __index = Photos }
 local PSAPIerrorMsgs = {
 	[0]		= 'No error',
 	-- plugin error codes
-	[1]		= 'error_folder_not_exist',
-	-- Photos API error codes
-	[641]	= 'error_file_exist',
---[[
+	[1]	  = 'error_folder_not_exist',
+
+	-- Common SYNO API error codes
 	[100] = 'Unknown error',
     [101] = 'No parameter of API, method or version',		-- PS 6.6: no such directory
     [102] = 'The requested API does not exist',
@@ -97,17 +96,34 @@ local PSAPIerrorMsgs = {
     [105] = 'The logged in session does not have permission',
     [106] = 'Session timeout',
     [107] = 'Session interrupted by duplicate login',
+	[108] = 'Failed to upload the file',
+	[109] = 'The network connection is unstable or the system is busy',
+	[110] = 'The network connection is unstable or the system is busy',
+	[111] = 'The network connection is unstable or the system is busy',
+	[112] = 'Preserve for other purpose',
+	[113] = 'Preserve for other purpose',
+	[114] = 'Lost parameters for this API',
+	[115] = 'Not allowed to upload a file',
+	[116] = 'Not allowed to perform for a demo site',
+	[117] = 'The network connection is unstable or the system is busy',
+	[118] = 'The network connection is unstable or the system is busy',
+	[119] = 'Invalid session',
+	[150] = 'Request source IP does not match the login IP',
 
-    -- SYNO.Photos.Info (401-405)
-
-    -- SYNO.Photos.Auth (406-415)
-	[406] = 'Photos_AUTH_LOGIN_NOPRIVILEGE',
-	[407] = 'Photos_AUTH_LOGIN_ERROR',
-	[408] = 'Photos_AUTH_LOGIN_DISABLE_ACCOUNT',
-	[409] = 'Photos_AUTH_LOGIN_GUEST_ERROR',
-	[410] = 'Photos_AUTH_LOGIN_MAX_TRIES',
-
-    -- SYNO.PhotoStaion.Album (416-425)
+    -- SYNO.API.Auth
+	[400] = 'No such account or incorrect password',
+	[401] = 'Disabled account',
+	[402] = 'Denied permission',
+	[403] = '2-factor authentication code required',
+	[404] = 'Failed to authenticate 2-factor authentication code',
+	[406] = 'Enforce to authenticate with 2-factor authentication code',
+	[407] = 'Blocked IP source',
+	[408] = 'Expired password cannot change',
+	[409] = 'Expired password',
+	[410] = 'Password must be changed',
+	[411] = 'Account is locked',
+--[[
+    -- SYNO.PhotoStation.Album (416-425)
 	[416] = 'Photos_ALBUM_PASSWORD_ERROR',
 	[417] = 'Photos_ALBUM_NO_ACCESS_RIGHT',
 	[418] = 'Photos_ALBUM_NO_UPLOAD_RIGHT',
@@ -241,6 +257,8 @@ local PSAPIerrorMsgs = {
 	[582] = 'Photos_PHOTO_AREA_TAG_NOT_ENABLED',
 	[583] = 'Photos_PHOTO_AREA_TAG_DELETE_FAIL',
 ]]
+	-- Photos API error codes
+	[641]	= 'File exists',
 
     -- Lr HTTP errors
 	[1001]  = 'Http error: no response body, no response header',
@@ -801,9 +819,6 @@ function Photos.basedir (serverUrl, area, owner)
 	local port		= string.match(serverUrl, 'http[s]*://[^:]+:(%d+)$')
 	local aliasPath = string.match(serverUrl, 'http[s]*://[^/]+(/[^%?]+)$')
 
-	writeLogfile(4, string.format("Photos.basedir('%s', '%s'): port='%s' aliasPath='%s'\n", 
-						serverUrl, area, ifnil(port, '<nil>'), ifnil(aliasPath, '<nil>')))
-
 	return	iif(port and (port == '5000' or port == '5001'), "/?launchApp=SYNO.Foto.AppInstance#", "/#") ..
 			iif(area == 'personal', "/personal_space/", "/shared_space/")
 end
@@ -851,7 +866,7 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 
 	-- get all API paths via 'SYNO.API.Info'
 	local apiParams = {
-		query	= 'all',
+		query	= 'SYNO.API.,SYNO.Foto.,SYNO.FotoTeam.',
 		api		= 'SYNO.API.Info',
 		method	= 'query',
 		version	= '1'
@@ -880,17 +895,14 @@ function Photos.login(h, username, password)
 		api 				= "SYNO.API.Auth",
 		version 			= "7",
 		method 				= "login",
-		session 			= "webui",
+ 		session 			= "Photo StatLr",
 		account				= urlencode(username),
 		passwd				= urlencode(password),
-		logintype			= "local",
+--		logintype			= "local",
 		hhid 				= h.hhid,
 		enable_syno_token 	= "yes",
-		launchApp 			=  "SYNO.Foto.Sharing.AppInstance",
-		app_name 			=  "SYNO.Foto.Sharing.AppInstance",
-		action 				= "external_login",
-		folderId			= "1",
-		alias 				= "photo",
+--		format				= "cookie",
+--		format				= "sid",
 	}
 	local respArray, errorCode = Photos_API(h, apiParams)
 
