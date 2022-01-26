@@ -2,7 +2,7 @@
 
 PSPluginTagsetComments.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2021, Martin Messmer
+Copyright(c) 2015-2022, Martin Messmer
 
 Summary information for Photo StatLr
 
