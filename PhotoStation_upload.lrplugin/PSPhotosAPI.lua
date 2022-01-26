@@ -895,7 +895,7 @@ function Photos.login(h, username, password)
 		api 				= "SYNO.API.Auth",
 		version 			= "7",
 		method 				= "login",
- 		session 			= "Photo StatLr",
+		session 			= "webui",
 		account				= urlencode(username),
 		passwd				= urlencode(password),
 --		logintype			= "local",
