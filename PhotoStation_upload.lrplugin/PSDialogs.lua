@@ -290,9 +290,17 @@ function PSDialogs.updateDialogStatus( propertyTable )
 				break
 			end
 
-			if propertyTable.usePersonalPS and PHOTOSERVER_API.supports(propertyTable.psVersion, PHOTOSERVER_PERSONALAREA_XUPLOAD) and ifnil(propertyTable.personalPSOwner, '') == '' then
-				message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Space to upload to"
-				break
+			if propertyTable.usePersonalPS then
+				-- if PhotoServer supports uploading to Personal Area of a different owner, then the owner must be given
+				if PHOTOSERVER_API.supports(propertyTable.psVersion, PHOTOSERVER_PERSONALAREA_XUPLOAD) then
+					if ifnil(propertyTable.personalPSOwner, '') == '' then
+						message = LOC "$$$/PSUpload/Dialogs/Messages/EnterPersPSUser=Enter the owner of the Personal Space to upload to"
+						break
+					end
+				-- PhotoServer does not support uploading to Personal Area of a different owner: set personal owner to login username
+				else
+					propertyTable.personalPSOwner = propertyTable.username
+				end
 			end
 
 			-- Check file format: PSD not supported by Photo Station, DNG only supported w/ embedded full-size jpg preview
