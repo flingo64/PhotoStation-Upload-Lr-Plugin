@@ -258,6 +258,7 @@ local PSAPIerrorMsgs = {
 	[583] = 'Photos_PHOTO_AREA_TAG_DELETE_FAIL',
 ]]
 	-- Photos API error codes
+	[620]	= 'File format not supported',
 	[641]	= 'File exists',
 
     -- Lr HTTP errors
@@ -1184,7 +1185,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 		errorMsg = Photos.getErrorMsg(1003)
 	elseif not respArray.success then
 		success = false
-		errorMsg = respArray.err_msg
+		errorMsg = Photos.getErrorMsg(respArray.error.code)
 	end
 
 	if not success then
