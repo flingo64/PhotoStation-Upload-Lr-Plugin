@@ -997,7 +997,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			-- check if dstRoot or dstFilename contains missing required metadata ('?') (which means: skip photo)
    			skipPhoto = iif(string.find(dstRoot, '?', 1, true) or string.find(dstFilename, '?', 1, true), true, false)
 
-			writeLogfile(4, string.format("  sanitized dstRoot: %s, dstFilename %s\n", dstRoot, dstFilename))
+			writeLogfile(4, string.format("  sanitized dstRoot: '%s', dstFilename '%s'\n", dstRoot, dstFilename))
 
 			local localPath, newPublishedPhotoId
 
@@ -1132,7 +1132,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					if publishedCollection then
 						PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
 					end
-					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' done\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' done\n") end
 				end
 			end
 

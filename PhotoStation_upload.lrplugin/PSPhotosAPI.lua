@@ -687,7 +687,6 @@ function Photos.getPhotoId(h, path, wantsInfo)
 	local parentFolder	= LrPathUtils.parent(path)
 	local folderId 		= Photos.getFolderId(h, parentFolder, false)
 
-	local id, photoInfo
 	local itemList, errorCode = pathIdCache.listFunction.item(h, parentFolder, folderId)
 	if not itemList then
 		writeLogfile(1, string.format("getPhotoId(userid:%s, path:'%s') listFunction('%s') returned <nil>\n", h.userid, path, parentFolder))
@@ -1201,7 +1200,7 @@ end
 -- uploadPhotoFiles
 -- upload photo plus its thumbnails (if configured)
 function Photos.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, photo_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
-	dstFilePath = dstDir .. "/" .. dstFilename
+	dstFilePath = LrPathUtils.child(dstDir, dstFilename)
 
 	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
 	if oldPhotoId then
@@ -1234,7 +1233,7 @@ end
 function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, video_Filename, title_Filename,
 										thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 										vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
-	dstFilePath = dstDir .. "/" .. dstFilename
+	dstFilePath = LrPathUtils.child(dstDir, dstFilename)
 
 	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
 	if oldPhotoId then
