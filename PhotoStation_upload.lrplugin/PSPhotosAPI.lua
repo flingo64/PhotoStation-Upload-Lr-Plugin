@@ -759,7 +759,9 @@ end
 --	URL of a photo in Photos is:
 --		http(s)://<psServer>[:<psPort>][/<aliasPath>]<basedir>/folder/<folderId>/item_<photoId>
 function Photos.getPhotoUrl(h, photoPath, isVideo)
-	local folderId	= h:getFolderId(normalizeDirname(LrPathUtils.parent(photoPath)))
+	writeLogfile(3, string.format("getPhotoUrlgetPhotoUrl(server='%s', userid='%s', path='%s')",
+				h.serverUrl, h.userid, photoPath))
+	local folderId	= h:getFolderId(ifnil(normalizeDirname(LrPathUtils.parent(photoPath)),'/'))
 	local itemId 	= h:getPhotoId(photoPath, isVideo)
 
 	if not folderId or not itemId then
