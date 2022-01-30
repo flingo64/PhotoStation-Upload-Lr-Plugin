@@ -1085,16 +1085,14 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 	local timeout = math.floor(fileSize / 1250000)
 	if timeout < 30 then timeout = 30 end
 
+	local targetFolderId = Photos.getFolderId(h, dstDir)
+	if not targetFolderId then
+		local errorMsg = "Photos_uploadPictureFiles: cannot get folderId of '" .. dstDir .."'!"
+		writeLogfile(3, errorMsg .. "\n")
+		return false, errorMsg
+	end
+
 	local respBody, respHeaders, contentTableStr, funcAndParams
-	-- TODO: MacOS code
-	-- MacOS issue: LrHttp.post() doesn't seem to work with callback
-	if not WIN_ENV then
-		-- remember: LrFileUtils.readFile() can't handle huge files, e.g videos > 2GB, at least on Windows
- 		-- respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, LrFileUtils.readFile(srcFilename), postHeaders, 'POST', timeout, fileSize)
-	else
-    	-- use callback function returning 10MB chunks to feed LrHttp.post()
-    	-- local postFile = io.open(srcFilename, "rb")
-    	-- if not postFile then return false, "Cannot open " .. srcFilename ..' for reading' end
 		local synoAPI = iif(h.userid ~= 0, 'SYNO.Foto.Upload.Item', 'SYNO.FotoTeam.Upload.Item')
 		local contentTable =  {
 			{
@@ -1114,8 +1112,8 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 				fileName	= dstFilename,
 				filePath	= srcFilename,
 				contentType	= mimeType,
---				value		= function () return postFile:read(10000000) end,
---				totalSize	= fileSize
+--			value		= function () return postFile:read(10000000) end,
+--			totalSize	= fileSize
 			},
 			{
 				name	= 'duplicate',
@@ -1161,10 +1159,8 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 		writeLogfile(4, string.format("%s: calling LrHttp.postMultipart()\n", funcAndParams))
 		respBody, respHeaders = LrHttp.postMultipart(h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path, contentTable, postHeaders, timeout, nil, false)
      	-- postFile:close()
-	end
 
 	local success, errorMsg = true, nil
-
 	if not respBody then
 		if respHeaders then
 			errorMsg = 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' ..
