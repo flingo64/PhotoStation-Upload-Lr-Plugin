@@ -1,5 +1,17 @@
 Photo StatLr Changelog
 ======================
+Version 7.2.0
+-------------
+### Bugfixes:
+- Photos:
+  - Fixed an upload exception for MacOS: in fact, uploading was disabled by mistake for MacOS since 7.0.0, now it is enabled
+- Fixed issue #56 (Login error 402), which was introduced in Version 7.1.1</br>
+  - Use the correct username in cache when uploading to Personal Area
+  - Log the correct Photos error code / error message when upload failed
+  - Fixed an exception when uploading photos to root folder
+  - Fixed a cache logging issue when uploading to the personal area
+    - Fixed an exception when 'Show Photo in Photo Server' was called for a photo in the root folder
+
 Version 7.1.1
 -------------
 ### Bugfixes:
