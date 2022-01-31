@@ -18,7 +18,7 @@ Forum threads:
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
 [Get involved: Let Photo StatLr speak your language](Documentation/30-Contributions-How%20to%20contribute%20a%20translation%20for%20Photo%20StatLr.md)<br>
  
-Copyright(c) 2015-2021, Martin Messmer<br>
+Copyright(c) 2015-2022, Martin Messmer<br>
 
 ## Overview
 Photo StatLr is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service and an Export target called "Photo StatLr" to the "Publish Services" panel / "Export" dialog. 
@@ -47,8 +47,9 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 	Photos 1.0, 1.1
 * For local thumbnail generation and for video upload, we need the following tools (not included, check the links under [Credits](#credits)). Alternatively, you may use the Synology Photo Station Uploader, which includes the required components:
 	- ImageMagick/convert(.exe) 7.x
-	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
 	- ffmpeg/ffmpeg(.exe) 4.x
+* When uploading RAW (original) photos with locally generated thumbnails:
+	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
 * For metadata translations (e.g Lr/Picasa face regions, ratings and color labels):
 	- exiftool: Version 11.x (tested) and later should be fine
 	
