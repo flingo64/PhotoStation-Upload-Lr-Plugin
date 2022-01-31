@@ -1125,7 +1125,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						)
 					)
 				then
-					if string.find('Export,Publish', publishMode, 1, true) then	writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. dstDir .. "/" .. dstFilename .. "' failed!!!\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then	writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' failed!!!\n") end
 					table.insert( failures, srcPath )
 					rendition:uploadFailed("Upload failed")
 				else
