@@ -878,6 +878,7 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 	if not respArray then return nil, errorCode end
 
 	h.serverCapabilities = PHOTOSERVER_API[version].capabilities
+	h.thumbs 			 = PHOTOSERVER_API[version].thumbs
 	h.Photo 	= PhotosPhoto.new()
 
 	writeLogfile(3, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d) returns\n%s\n",
@@ -1134,21 +1135,21 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 				name	= 'target_folder_id',
 				value	= Photos.getFolderId(h, dstDir)
 			},
-			iif(thumbGenerate,
+			iif(thumbGenerate and thmb_XL_Filename ~= '',
 			{
 				name		= 'thumb_xl',
 				fileName	= 'thumb_xl',
 				filePath	= thmb_XL_Filename,
 				contentType	= 'image/jpeg',
 			}, nil),
-			iif(thumbGenerate,
+			iif(thumbGenerate and thmb_M_Filename ~= '',
 			{
 				name		= 'thumb_m',
 				fileName	= 'thumb_m',
 				filePath	= thmb_M_Filename,
 				contentType	= 'image/jpeg',
 			}, nil),
-			iif(thumbGenerate,
+			iif(thumbGenerate and thmb_S_Filename ~= '',
 			{
 				name		= 'thumb_sm',
 				fileName	= 'thumb_sm',

@@ -58,16 +58,79 @@ require "PSSharedAlbumMgmt"
 PSUploadTask = {}
 
 -----------------
+-- getDirAndBasename(photoPath)
+local function getDirAndBasename(photoPath)
+	local picDir = LrPathUtils.parent(photoPath)
+	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(photoPath)))
 
+	return picDir, picBasename
+end
 
------------------ thumbnail conversion presets
+-----------------
+-- getTitleFilename(photoPath, photoServer)
+local function getTitleFilename(photoPath, photoServer)
+	if photoServer:supports(PHOTOSERVER_UPLOAD_TITLE) then
+		local picDir, picBasename = getDirAndBasename(photoPath)
+		return LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt'))
+	end
+	return nil
+end
 
-local thumbSharpening = {
-	None 	= 	'',
-	LOW 	= 	'-unsharp 0.5x0.5+0.5+0.008',
-	MED 	= 	'-unsharp 0.5x0.5+1.25+0.0',
-	HIGH 	= 	'-unsharp 0.5x0.5+2.0+0.0',
-}
+-----------------
+-- getThumbSettings(photoPath, photoServer, doLargeThumbs, thumbQuality, thumbSharpness)
+-- get thumb settings for a photo based on photoServer and export params
+local function getThumbSettings(photoPath, photoServer, doLargeThumbs, thumbQuality, thumbSharpness)
+	if not photoServer.thumbs then return nil end
+
+	local picDir, picBasename = getDirAndBasename(photoPath)
+	local picExt = 'jpg'
+
+	local thumbSharpening = {
+		None 	= 	'',
+		LOW 	= 	'-unsharp 0.5x0.5+0.5+0.008',
+		MED 	= 	'-unsharp 0.5x0.5+1.25+0.0',
+		HIGH 	= 	'-unsharp 0.5x0.5+2.0+0.0',
+	}
+
+	local thumbSettings = {
+		quality		= tostring(thumbQuality),
+		sharpening	= thumbSharpening[thumbSharpness],
+
+		XL_Dim		= '0x0',
+		XL_Filename	= '',
+		L_Dim		= '0x0',
+		L_Filename	= '',
+		M_Dim		= '0x0',
+		M_Filename	= '',
+		B_Dim		= '0x0',
+		B_Filename	= '',
+		S_Dim		= '0x0',
+		S_Filename	= ''
+	}
+
+	if photoServer.thumbs.XL then
+		thumbSettings.XL_Dim		= photoServer.thumbs.XL .. 'x' .. photoServer.thumbs.XL ..'>' .. iif(doLargeThumbs, '^', '')
+		thumbSettings.XL_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
+	end
+	if photoServer.thumbs.L then
+		thumbSettings.L_Dim			= photoServer.thumbs.L .. 'x' .. photoServer.thumbs.L ..'>' .. iif(doLargeThumbs, '^', '')
+		thumbSettings.L_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_L', picExt))
+	end
+	if photoServer.thumbs.M then
+		thumbSettings.M_Dim			= photoServer.thumbs.M .. 'x' .. photoServer.thumbs.M ..'>' .. iif(doLargeThumbs, '^', '')
+		thumbSettings.M_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
+	end
+	if photoServer.thumbs.B then
+		thumbSettings.B_Dim			= photoServer.thumbs.B .. 'x' .. photoServer.thumbs.B ..'>' .. iif(doLargeThumbs, '^', '')
+		thumbSettings.B_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
+	end
+	if photoServer.thumbs.S then
+		thumbSettings.S_Dim			= photoServer.thumbs.S .. 'x' .. photoServer.thumbs.S ..'>' .. iif(doLargeThumbs, '^', '')
+		thumbSettings.S_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
+	end
+
+	return thumbSettings
+end
 
 -----------------
 -- uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams)
@@ -79,41 +142,34 @@ local thumbSharpening = {
 ]]
 local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exportParams)
 	local photoServer = exportParams.photoServer
-	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedPhotoPath)))
-	local picExt = 'jpg'
-	local picDir = LrPathUtils.parent(renderedPhotoPath)
 
-	local thmb_XL_Filename	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_XL), LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_XL', picExt)), '')
-	local thmb_L_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_L),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
-	local thmb_M_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_M),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_M', picExt)), '')
-	local thmb_B_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_B),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt)), '')
-	local thmb_S_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_S),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt)), '')
-	local title_Filename  	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_TITLE)
-							  and string.match(exportParams.LR_embeddedMetadataOption, 'all.*') and ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '',
-																					 LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
 	local dstFileTimestamp = iif(ifnil(exportParams.uploadTimestamp, 'capture') == 'capture',
 								 PSLrUtilities.getDateTimeOriginal(srcPhoto),
 								 LrDate.timeToPosixDate(LrDate.currentTime()))
 	local exifXlatLabelCmd = iif(exportParams.exifXlatLabel and not string.find('none,grey', string.lower(srcPhoto:getRawMetadata('colorNameForLabel'))), "-XMP:Subject+=" .. '+' .. srcPhoto:getRawMetadata('colorNameForLabel'), nil)
 	local retcode
 
-	-- generate thumbs
-	if exportParams.thumbGenerate and (
-			( not exportParams.largeThumbs and not exportParams.converter:convertPicConcurrent(renderedPhotoPath, srcPhoto, exportParams.LR_format,
-								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness],
-								'1280x1280>', thmb_XL_Filename,
-								'800x800>',    thmb_L_Filename,
-								'640x640>',    thmb_B_Filename,
-								'320x320>',    thmb_M_Filename,
-								'120x120>',    thmb_S_Filename) )
-		or ( exportParams.largeThumbs and not exportParams.converter:convertPicConcurrent(renderedPhotoPath, srcPhoto, exportParams.LR_format,
-								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness],
-								'1280x1280>^', thmb_XL_Filename,
-								'800x800>^',   thmb_L_Filename,
-								'640x640>^',   thmb_B_Filename,
-								'320x320>^',   thmb_M_Filename,
-								'120x120>^',   thmb_S_Filename) )
-	)
+	-- get title_Filename if required
+	local title_Filename =
+					ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= ''
+				and string.match(exportParams.LR_embeddedMetadataOption, 'all.*')
+				and	getTitleFilename(renderedPhotoPath, photoServer)
+
+	-- get thumb settings if required
+	local thumbSettings =
+					photoServer:supports(PHOTOSERVER_UPLOAD_THUMBS)
+				and exportParams.thumbGenerate
+				and getThumbSettings(renderedPhotoPath, photoServer, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness)
+
+	-- generate thumbs if required
+	if (thumbSettings and not exportParams.converter:convertPicConcurrent(renderedPhotoPath, srcPhoto, exportParams.LR_format,
+								'-flatten -quality '.. thumbSettings.quality .. ' -auto-orient '.. thumbSettings.sharpening,
+								thumbSettings.XL_Dim, thumbSettings.XL_Filename,
+								thumbSettings.L_Dim,  thumbSettings.L_Filename,
+								thumbSettings.B_Dim,  thumbSettings.B_Filename,
+								thumbSettings.M_Dim,  thumbSettings.M_Filename,
+								thumbSettings.S_Dim,  thumbSettings.S_Filename)
+		)
 
 	-- if photo has a title: generate a title file
 	or (title_Filename and not exportParams.converter.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
@@ -127,7 +183,7 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 
 	-- upload thumbnails and original file
 	or not exportParams.photoServer:uploadPhotoFiles(dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate,
-												renderedPhotoPath, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
+												renderedPhotoPath, title_Filename, thumbSettings.XL_Filename, thumbSettings.L_Filename, thumbSettings.B_Filename, thumbSettings.M_Filename, thumbSettings.S_Filename)
 	then
 		signalSemaphore("PhotoServer", dstFilename)
 		retcode = false
@@ -136,17 +192,83 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 		retcode = true
 	end
 
-	if exportParams.thumbGenerate then
-		if thmb_S_Filename ~= ''	then LrFileUtils.delete(thmb_S_Filename) end
-		if thmb_B_Filename ~= '' 	then LrFileUtils.delete(thmb_B_Filename) end
-		if thmb_M_Filename ~= '' 	then LrFileUtils.delete(thmb_M_Filename) end
-		if thmb_L_Filename ~= '' 	then LrFileUtils.delete(thmb_L_Filename) end
-		if thmb_XL_Filename ~= ''	then LrFileUtils.delete(thmb_XL_Filename) end
+	if thumbSettings then
+		if thumbSettings.XL_Filename ~= ''	then LrFileUtils.delete(thumbSettings.XL_Filename) end
+		if thumbSettings.L_Filename ~= '' 	then LrFileUtils.delete(thumbSettings.L_Filename) end
+		if thumbSettings.M_Filename ~= '' 	then LrFileUtils.delete(thumbSettings.M_Filename) end
+		if thumbSettings.B_Filename ~= '' 	then LrFileUtils.delete(thumbSettings.B_Filename) end
+		if thumbSettings.S_Filename ~= ''	then LrFileUtils.delete(thumbSettings.S_Filename) end
 	end
 	if title_Filename then LrFileUtils.delete(title_Filename) end
 	-- orig photo will be deleted in main loop
 
 	return retcode
+end
+
+-- getVideoSettings(videoPath, vinfo, photoServer, converter, orgVideoForceConv, addVideoQuality, addVideoUltra, addVideoHigh, addVideoMed, addVideoLow)
+-- get additional video settings for a photo based on photoServer and export params
+local function getVideoSettings(videoPath, vinfo, photoServer, converter, orgVideoForceConv, addVideoQuality, addVideoUltra, addVideoHigh, addVideoMed, addVideoLow)
+	local picDir, picBasename 	= getDirAndBasename(videoPath)
+	local vidExtOrg 			= LrPathUtils.extension(videoPath)
+	local vidExt 				= 'mp4'
+
+	local videoSettings = {
+		MOB_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MOB', vidExt)), 	--  240p
+		LOW_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt)),	--  360p
+		MED_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MED', vidExt)),	--  720p
+		HIGH_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt)),	-- 1080p
+	}
+
+	videoSettings.convParams = {
+		ULTRA =  	{ height = 2160,	type = 'HIGH',		filename = videoSettings.HIGH_Filename },
+		HIGH =  	{ height = 1080,	type = 'HIGH',		filename = videoSettings.HIGH_Filename },
+		MEDIUM = 	{ height = 720, 	type = 'MEDIUM',	filename = videoSettings.MED_Filename },
+		LOW =		{ height = 360, 	type = 'LOW',		filename = videoSettings.LOW_Filename },
+		MOBILE =	{ height = 240,		type = 'MOBILE',	filename = videoSettings.MOB_Filename },
+	}
+
+	--  user selected additional video resolutions based on original video resolution
+	local addVideoResolution = {
+		ULTRA = 	iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and addVideoQuality > 0, addVideoUltra, 'None'),
+		HIGH = 		iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and addVideoQuality > 0, addVideoHigh, 'None'),
+		MEDIUM = 	iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and addVideoQuality > 0, addVideoMed, 'None'),
+		LOW = 		iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and addVideoQuality > 0, addVideoLow, 'None'),
+		MOBILE = 	'None',
+	}
+
+	-- get the right conversion settings (depending on Height)
+	_, videoSettings.convKeyOrig = converter:getConvertKey(tonumber(vinfo.height))
+	videoSettings.Replace_Filename = videoSettings.convParams[videoSettings.convKeyOrig].filename
+	videoSettings.convKeyAdd = addVideoResolution[videoSettings.convKeyOrig]
+	if videoSettings.convKeyAdd ~= 'None' then
+		videoSettings.Add_Filename = videoSettings.convParams[videoSettings.convKeyAdd].filename
+	end
+
+	-- replace original video if:
+	--		- srcVideo is to be rotated (meta or hard)
+	-- 		- srcVideo is mp4, but not h264 (PS would try to open, but does only support h264)
+	--		- srcVideo is mp4, but has no audio stream (PS would ignore it)
+	--		- exportParams.orgVideoForceConv was set
+	if tonumber(vinfo.rotation) > 0
+	or tonumber(vinfo.mrotation) > 0
+	or (converter.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264')
+	or vinfo.aFormat == nil
+	or orgVideoForceConv then
+		videoSettings.replaceOrgVideo = true
+		videoSettings.Orig_Filename = videoSettings.Replace_Filename
+	else
+		videoSettings.replaceOrgVideo = false
+		videoSettings.Orig_Filename = videoPath
+	end
+
+	-- Additional MP4 in orig dimension if video is not MP4
+	-- Non-MP4 will not be opened by PS, so it's safe to upload the original version plus an additional MP4
+	if not converter.videoIsNativePSFormat(vidExtOrg) and not videoSettings.replaceOrgVideo then
+	else
+		videoSettings.addOrigAsMp4 = true
+	end
+
+	return videoSettings
 end
 
 -----------------
@@ -160,50 +282,9 @@ end
 ]]
 local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, vinfo)
 	local photoServer = exportParams.photoServer
-	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(renderedVideoPath)))
-	local vidExtOrg = LrPathUtils.extension(renderedVideoPath)
-	local picDir = LrPathUtils.parent(renderedVideoPath)
+	local picDir, picBasename = getDirAndBasename(renderedVideoPath)
 	local picExt = 'jpg'
-	local vidExt = 'mp4'
 	local thmb_ORG_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename, picExt))
-
-	local thmb_XL_Filename	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_XL), LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_XL', picExt)), '')
-	local thmb_L_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_L),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_L', picExt)), '')
-	local thmb_M_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_M),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_M', picExt)), '')
-	local thmb_B_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_B),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt)), '')
-	local thmb_S_Filename 	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_THUMB_S),  LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt)), '')
-	local title_Filename  	= iif(photoServer:supports(PHOTOSERVER_UPLOAD_TITLE)
-							  and string.match(exportParams.LR_embeddedMetadataOption, 'all.*') and ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= '',
-																					 LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt')), nil)
-	local vid_MOB_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MOB', vidExt)) 	--  240p
-	local vid_LOW_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt))	--  360p
-	local vid_MED_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MED', vidExt))	--  720p
-	local vid_HIGH_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt))	-- 1080p
-
-	local convParams = {
-		ULTRA =  	{ height = 2160,	type = 'HIGH',		filename = vid_HIGH_Filename },
-		HIGH =  	{ height = 1080,	type = 'HIGH',		filename = vid_HIGH_Filename },
-		MEDIUM = 	{ height = 720, 	type = 'MEDIUM',	filename = vid_MED_Filename },
-		LOW =		{ height = 360, 	type = 'LOW',		filename = vid_LOW_Filename },
-		MOBILE =	{ height = 240,		type = 'MOBILE',	filename = vid_MOB_Filename },
-	}
-
-	writeLogfile(3, string.format("uploadVideo: addVideoQuality is %d\n", exportParams.addVideoQuality))
-
-	--  user selected additional video resolutions based on original video resolution
-	local addVideoResolution = {
-		ULTRA = 	iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and exportParams.addVideoQuality > 0, exportParams.addVideoUltra, 'None'),
-		HIGH = 		iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and exportParams.addVideoQuality > 0, exportParams.addVideoHigh, 'None'),
-		MEDIUM = 	iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and exportParams.addVideoQuality > 0, exportParams.addVideoMed, 'None'),
-		LOW = 		iif(photoServer:supports(PHOTOSERVER_UPLOAD_VIDEO_ADD) and exportParams.addVideoQuality > 0, exportParams.addVideoLow, 'None'),
-		MOBILE = 	'None',
-	}
-
-	local retcode
-	local convKeyOrig, convKeyAdd
-	local vid_Orig_Filename, vid_Replace_Filename, vid_Add_Filename
-
-	writeLogfile(3, string.format("uploadVideo: %s\n", renderedVideoPath))
 
 	-- upload file timestamp: PS uses the file timestamp as capture date for videos
 	local dstFileTimestamp
@@ -215,67 +296,45 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		dstFileTimestamp = LrDate.timeToPosixDate(LrDate.currentTime())
 	end
 
-	-- get the right conversion settings (depending on Height)
-	_, convKeyOrig = exportParams.converter:getConvertKey(tonumber(vinfo.height))
-	vid_Replace_Filename = convParams[convKeyOrig].filename
-	convKeyAdd = addVideoResolution[convKeyOrig]
-	if convKeyAdd ~= 'None' then
-		vid_Add_Filename = convParams[convKeyAdd].filename
-	end
+	-- get title_Filename if required
+	local title_Filename =
+					ifnil(srcPhoto:getFormattedMetadata("title"), '') ~= ''
+				and string.match(exportParams.LR_embeddedMetadataOption, 'all.*')
+				and	getTitleFilename(renderedVideoPath, photoServer)
 
-	-- replace original video if:
-	--		- srcVideo is to be rotated (meta or hard)
-	-- 		- srcVideo is mp4, but not h264 (PS would try to open, but does only support h264)
-	--		- srcVideo is mp4, but has no audio stream (PS would ignore it)
-	--		- exportParams.orgVideoForceConv was set
-	local replaceOrgVideo = false
-	if tonumber(vinfo.rotation) > 0
-	or tonumber(vinfo.mrotation) > 0
-	or (exportParams.converter.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264')
-	or vinfo.aFormat == nil
-	or exportParams.orgVideoForceConv then
-		replaceOrgVideo = true
-		vid_Orig_Filename = vid_Replace_Filename
-	else
-		vid_Orig_Filename = renderedVideoPath
-	end
+	-- get thumb settings if required
+	local thumbSettings =
+					photoServer:supports(PHOTOSERVER_UPLOAD_THUMBS)
+				and exportParams.thumbGenerate
+				and getThumbSettings(renderedVideoPath, photoServer, exportParams.largeThumbs, exportParams.thumbQuality, exportParams.thumbSharpness)
 
-	-- Additional MP4 in orig dimension if video is not MP4
-	-- Non-MP4 will not be opened by PS, so it's safe to upload the original version plus an additional MP4
-	local addOrigAsMp4 = false
-	if not exportParams.converter.videoIsNativePSFormat(vidExtOrg) and not replaceOrgVideo then
-		addOrigAsMp4 = true
-	end
+	local videoSettings =
+			getVideoSettings(renderedVideoPath, vinfo, photoServer, exportParams.converter,
+							exportParams.orgVideoForceConv, exportParams.addVideoQuality,
+							exportParams.addVideoUltra, exportParams.addVideoHigh, exportParams.addVideoMed, exportParams.addVideoLow)
 
-	if exportParams.thumbGenerate and (
-		-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
-		not exportParams.converter:ffmpegGetThumbFromVideo (renderedVideoPath, vinfo, thmb_ORG_Filename)
+	-- generate thumbs if required
+	if (thumbSettings
+		and (
+			-- generate first thumb from video, rotation has to be done regardless of the hardRotate setting
+			not exportParams.converter:ffmpegGetThumbFromVideo (renderedVideoPath, vinfo, thmb_ORG_Filename)
 
-		-- generate all other thumb from first thumb
-		or ( not exportParams.largeThumbs and not exportParams.converter:convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
---								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB',
-								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness],
-								'1280x1280>', thmb_XL_Filename,
-								'800x800>',    thmb_L_Filename,
-								'640x640>',    thmb_B_Filename,
-								'320x320>',    thmb_M_Filename,
-								'120x120>',    thmb_S_Filename) )
-
-		or ( exportParams.largeThumbs and not exportParams.converter:convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
---								'-strip -flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient -colorspace RGB -unsharp 0.5x0.5+1.25+0.0 -colorspace sRGB',
-								'-flatten -quality '.. tostring(exportParams.thumbQuality) .. ' -auto-orient '.. thumbSharpening[exportParams.thumbSharpness],
-								'1280x1280>^', thmb_XL_Filename,
-								'800x800>^',   thmb_L_Filename,
-								'640x640>^',   thmb_B_Filename,
-								'320x320>^',   thmb_M_Filename,
-								'120x120>^',   thmb_S_Filename) )
-	)
+			-- generate all other thumb from first thumb
+			or not exportParams.converter:convertPicConcurrent(thmb_ORG_Filename, srcPhoto, exportParams.LR_format,
+								'-flatten -quality '.. thumbSettings.quality .. ' -auto-orient '.. thumbSettings.sharpening,
+								thumbSettings.XL_Dim, thumbSettings.XL_Filename,
+								thumbSettings.L_Dim,  thumbSettings.L_Filename,
+								thumbSettings.B_Dim,  thumbSettings.B_Filename,
+								thumbSettings.M_Dim,  thumbSettings.M_Filename,
+								thumbSettings.S_Dim,  thumbSettings.S_Filename)
+			)
+		)
 
 	-- generate mp4 in original size if srcVideo is not already mp4/h264 or if video is rotated
-	or ((replaceOrgVideo or addOrigAsMp4) and not exportParams.converter:convertVideo(renderedVideoPath, vinfo, vinfo.height, exportParams.hardRotate, exportParams.orgVideoQuality, vid_Replace_Filename))
+	or ((videoSettings.replaceOrgVideo or videoSettings.addOrigAsMp4) and not exportParams.converter:convertVideo(renderedVideoPath, vinfo, vinfo.height, exportParams.hardRotate, exportParams.orgVideoQuality, videoSettings.Replace_Filename))
 
 	-- generate additional video, if requested
-	or ((convKeyAdd ~= 'None') and not exportParams.converter:convertVideo(renderedVideoPath, vinfo, convParams[convKeyAdd].height, exportParams.hardRotate, exportParams.addVideoQuality, vid_Add_Filename))
+	or ((videoSettings.convKeyAdd ~= 'None') and not exportParams.converter:convertVideo(renderedVideoPath, vinfo, videoSettings.convParams[videoSettings.convKeyAdd].height, exportParams.hardRotate, exportParams.addVideoQuality, videoSettings.Add_Filename))
 
 	-- if photo has a title: generate a title file
 	or (title_Filename and not exportParams.converter.writeTitleFile(title_Filename, srcPhoto:getFormattedMetadata("title")))
@@ -285,8 +344,8 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 
 	-- upload thumbnails, original video and replacement/additional videos
 	or not exportParams.photoServer:uploadVideoFiles(dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate,
-			vid_Orig_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
-			vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
+			videoSettings.Orig_Filename, title_Filename, thumbSettings.XL_Filename, thumbSettings.L_Filename, thumbSettings.B_Filename, thumbSettings.M_Filename, thumbSettings.S_Filename,
+			videoSettings.Add_Filename, videoSettings.Replace_Filename, videoSettings.convParams, videoSettings.convKeyOrig, videoSettings.convKeyAdd, videoSettings.addOrigAsMp4)
 	then
 		signalSemaphore("PhotoServer", dstFilename)
 		retcode = false
@@ -295,17 +354,17 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 		retcode = true
 	end
 
-	if exportParams.thumbGenerate then
+	if thumbSettings then
     	LrFileUtils.delete(thmb_ORG_Filename)
-		if thmb_S_Filename ~= ''	then LrFileUtils.delete(thmb_S_Filename) end
-		if thmb_B_Filename ~= '' 	then LrFileUtils.delete(thmb_B_Filename) end
-		if thmb_M_Filename ~= '' 	then LrFileUtils.delete(thmb_M_Filename) end
-		if thmb_L_Filename ~= '' 	then LrFileUtils.delete(thmb_L_Filename) end
-		if thmb_XL_Filename ~= ''	then LrFileUtils.delete(thmb_XL_Filename) end
+		if thumbSettings.XL_Filename ~= ''	then LrFileUtils.delete(thumbSettings.XL_Filename) end
+		if thumbSettings.L_Filename ~= '' 	then LrFileUtils.delete(thumbSettings.L_Filename) end
+		if thumbSettings.M_Filename ~= '' 	then LrFileUtils.delete(thumbSettings.M_Filename) end
+		if thumbSettings.B_Filename ~= '' 	then LrFileUtils.delete(thumbSettings.B_Filename) end
+		if thumbSettings.S_Filename ~= ''	then LrFileUtils.delete(thumbSettings.S_Filename) end
 	end
 	if title_Filename then LrFileUtils.delete(title_Filename) end
-	if (replaceOrgVideo or addOrigAsMp4) then LrFileUtils.delete(vid_Replace_Filename) end
-	if vid_Add_Filename then LrFileUtils.delete(vid_Add_Filename) end
+	if (videoSettings.replaceOrgVideo or videoSettings.addOrigAsMp4) then LrFileUtils.delete(videoSettings.Replace_Filename) end
+	if videoSettings.Add_Filename then LrFileUtils.delete(videoSettings.Add_Filename) end
 	-- orig video will be deleted in main loop
 
 	return retcode

@@ -362,6 +362,7 @@ function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeo
 
 	h.Photo 	= PhotoStationPhoto.new()
 	h.serverCapabilities = PHOTOSERVER_API[version].capabilities
+	h.thumbs 			 = PHOTOSERVER_API[version].thumbs
 
 	writeLogfile(3, 'PhotoStation.new() returns:\n' .. JSON:encode(h) .."\n")
 

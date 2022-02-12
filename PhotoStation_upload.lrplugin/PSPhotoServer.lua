@@ -47,11 +47,7 @@ PHOTOSERVER_METADATA_COMMENT_PRIV	= "'META_COMMENT_PRIV'"     -- comments in pri
 PHOTOSERVER_METADATA_COMMENT_PUB	= "'META_COMMENT_PUB'"      -- comments in public/shared view
 
 -- list of uploadable photo items  --
-PHOTOSERVER_UPLOAD_THUMB_XL 		= "'UPLOAD_THUMB_XL'"
-PHOTOSERVER_UPLOAD_THUMB_L			= "'UPLOAD_THUMB_L'"
-PHOTOSERVER_UPLOAD_THUMB_B			= "'UPLOAD_THUMB_B'"
-PHOTOSERVER_UPLOAD_THUMB_M			= "'UPLOAD_THUMB_M'"
-PHOTOSERVER_UPLOAD_THUMB_S			= "'UPLOAD_THUMB_S'"
+PHOTOSERVER_UPLOAD_THUMBS 		    = "'UPLOAD_THUMBS'"
 PHOTOSERVER_UPLOAD_TITLE			= "'UPLOAD_TITLE_FILE'"
 PHOTOSERVER_UPLOAD_VIDEO_ADD		= "'UPLOAD_VIDEO_ADDITIONAL'"
 
@@ -59,8 +55,8 @@ PHOTOSERVER_UPLOAD_VIDEO_ADD		= "'UPLOAD_VIDEO_ADDITIONAL'"
 PHOTOSERVER_ALBUM_SORT	            = "'ALBUM_SORT'"
 
 -- photo area capabilities  --
-PHOTOSERVER_PERSONALAREA             = "'PERONALAREA'"           -- support for personal area
-PHOTOSERVER_PERSONALAREA_XUPLOAD     = "'PERONALAREA_XUPLOAD'"   -- support for upload to personal area of different user
+PHOTOSERVER_PERSONALAREA             = "'PERSONALAREA'"           -- support for personal area
+PHOTOSERVER_PERSONALAREA_XUPLOAD     = "'PERDONALAREA_XUPLOAD'"   -- support for upload to personal area of different user
 
 -- shared album support  --
 PHOTOSERVER_SHAREDALBUM	            = "'SHAREDALBUM'"
@@ -76,9 +72,15 @@ PHOTOSERVER_API[50] =  {
     capabilities    =   PHOTOSERVER_METADATA_TITLE .. PHOTOSERVER_METADATA_DESCRIPTION .. PHOTOSERVER_METADATA_GPS ..
                         PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION .. PHOTOSERVER_METADATA_PERSON ..
                         PHOTOSERVER_METADATA_COMMENT_PRIV .. PHOTOSERVER_METADATA_COMMENT_PUB ..
-                        PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_L ..
-                        PHOTOSERVER_UPLOAD_THUMB_B .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
-                        PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD
+                        PHOTOSERVER_UPLOAD_THUMBS ..
+                        PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD,
+    thumbs    = {
+        XL          =   "1280",
+        L           =   "800",
+        B           =   "640",
+        M           =   "320",
+        S           =   "120",
+    }
 }
 
 PHOTOSERVER_API[60] =  {
@@ -87,25 +89,32 @@ PHOTOSERVER_API[60] =  {
     capabilities    =   PHOTOSERVER_METADATA_TITLE .. PHOTOSERVER_METADATA_DESCRIPTION .. PHOTOSERVER_METADATA_GPS ..
                         PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION .. PHOTOSERVER_METADATA_PERSON ..
                         PHOTOSERVER_METADATA_COMMENT_PRIV .. PHOTOSERVER_METADATA_COMMENT_PUB ..
-                        PHOTOSERVER_UPLOAD_THUMB_XL ..
-                        PHOTOSERVER_UPLOAD_THUMB_B .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
+                        PHOTOSERVER_UPLOAD_THUMBS ..
                         PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD ..
                         PHOTOSERVER_PERSONALAREA .. PHOTOSERVER_PERSONALAREA_XUPLOAD ..
                         PHOTOSERVER_ALBUM_SORT ..
-                        PHOTOSERVER_SHAREDALBUM
+                        PHOTOSERVER_SHAREDALBUM,
+    thumbs    = {
+        XL          =   "1280",
+        B           =   "640",
+        M           =   "320",
+        S           =   "120",
+    }
 }
 
 PHOTOSERVER_API[65] =  {
     name	        =   'Photo Station 6.5',
     API 	        =   PhotoStation,
     capabilities    =   PHOTOSERVER_API[60].capabilities ..
-                        PHOTOSERVER_METADATA_RATING
+                        PHOTOSERVER_METADATA_RATING,
+    thumbs          =   PHOTOSERVER_API[60].thumbs
 }
 
 PHOTOSERVER_API[66] =  {
     name	        =   'Photo Station 6.6',
     API 	        =   PhotoStation,
-    capabilities    =   PHOTOSERVER_API[65].capabilities
+    capabilities    =   PHOTOSERVER_API[65].capabilities,
+    thumbs          =   PHOTOSERVER_API[60].thumbs
 }
 
 PHOTOSERVER_API[67] =  {
@@ -113,13 +122,15 @@ PHOTOSERVER_API[67] =  {
     API 	        =   PhotoStation,
     capabilities    =   PHOTOSERVER_API[66].capabilities ..
                         PHOTOSERVER_METADATA_LABEL_PUB ..
-                        PHOTOSERVER_SHAREDALBUM_ADVANCED
+                        PHOTOSERVER_SHAREDALBUM_ADVANCED,
+    thumbs          =   PHOTOSERVER_API[60].thumbs
 }
 
 PHOTOSERVER_API[68] =  {
     name	        =   'Photo Station 6.8',
     API 	        =   PhotoStation,
-    capabilities    =   PHOTOSERVER_API[67].capabilities
+    capabilities    =   PHOTOSERVER_API[67].capabilities,
+    thumbs          =   PHOTOSERVER_API[60].thumbs
 }
 
 PHOTOSERVER_API[70] =  {
@@ -127,16 +138,22 @@ PHOTOSERVER_API[70] =  {
     API 	        =   Photos,
     capabilities    =   PHOTOSERVER_METADATA_DESCRIPTION ..
                         PHOTOSERVER_METADATA_TAG ..
-                        PHOTOSERVER_UPLOAD_THUMB_XL .. PHOTOSERVER_UPLOAD_THUMB_M .. PHOTOSERVER_UPLOAD_THUMB_S ..
-                        PHOTOSERVER_PERSONALAREA
+                        PHOTOSERVER_UPLOAD_THUMBS ..
+                        PHOTOSERVER_PERSONALAREA,
 --                      .. PHOTOSERVER_SHAREDALBUM .. PHOTOSERVER_SHAREDALBUM_ADVANCED
+    thumbs          = {
+        XL          =   "1280",
+        M           =   "320",
+        S           =   "240",
+    }
 }
 
 PHOTOSERVER_API[71] =  {
     name	        =   'Photos 1.1',
     API 	        =   Photos,
     capabilities    =   PHOTOSERVER_API[70].capabilities ..
-                        PHOTOSERVER_METADATA_RATING
+                        PHOTOSERVER_METADATA_RATING,
+    thumbs          =   PHOTOSERVER_API[70].thumbs
 }
 
 ---------------------------------------------------------------------------------------------------------
