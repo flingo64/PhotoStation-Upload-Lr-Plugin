@@ -259,9 +259,11 @@ local PSAPIerrorMsgs = {
 ]]
 	-- Photos API error codes
 	[620]	= 'File format not supported',
-	[641]	= 'File exists',
+	[641]	= 'Folder or file already exists',
 
-    -- Lr HTTP errors
+	[803]	= 'No permission to create folder or file',
+
+	-- Lr HTTP errors
 	[1001]  = 'Http error: no response body, no response header',
 	[1002]  = 'Http error: no response data, no errorcode in response header',
 	[1003]  = 'Http error: No JSON response data',
@@ -607,7 +609,7 @@ end
 local Photos_createFolder
 
 ---------------------------------------------------------------------------------------------------------
--- Photos.getFolderId(h, folderPath, doCreate)
+-- Photos.getFolderId(h, path, doCreate)
 --	returns the id of a given folderPath (w/o leading/trailing '/')
 -- the folder is searched recursively in the pathIdCache until itself or one of its parents is found
 -- if the folder is found return its id,
@@ -630,41 +632,57 @@ function Photos.getFolderId(h, path, doCreate)
 	if cachedPathInfo then
 		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') returns '%d' from cache\n", h.userid, path, cachedPathInfo.id))
 		return cachedPathInfo.id
-	elseif reason == 'notFound' then
+	elseif reason == 'notFound' and not doCreate then
 		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') returns <nil>\n", h.userid, path))
-	else
-		-- path was not yet cached, or cache entry is outdated: see if we can find it on the server
-		local parentFolder = LrPathUtils.parent(path)
-		local parentFolderId =  Photos.getFolderId(h, parentFolder, doCreate)
+		return nil
+	end
 
+	-- path was not yet cached or or cache entry is outdated or not found but doCreate is set: see if we can find it or create it in the parentFolder
+	local parentFolder 		= LrPathUtils.parent(path)
+	local parentFolderId	= Photos.getFolderId(h, parentFolder, doCreate)
+	local additionalActions	= ''
+
+	if reason == 'notCached' then
+		-- update cache w/ folders of parentFolder and see if can find the path thereafter in the cache
 		local subfolderList = pathIdCache.listFunction.folder(h, parentFolder, parentFolderId)
 		if not subfolderList then
 			writeLogfile(1, string.format("getFolderId(userid:%s, path:'%s') listFunction('%s') returned <nil>\n", h.userid, path, parentFolder))
 			return nil
 		end
 
-		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') listFunction found %d subfolders in '%s'\n", h.userid, path, #subfolderList, parentFolder))
+		writeLogfile(4, string.format("getFolderId(userid:%s, path:'%s') listFunction found %d subfolders in '%s'\n", h.userid, path, #subfolderList, parentFolder))
 		for i = 1, #subfolderList do
 			pathIdCacheAddEntry(h.userid, subfolderList[i].name, subfolderList[i].id, "folder")
 		end
 
 		-- try it once more
+		additionalActions = 'cache update'
 		cachedPathInfo, reason = pathIdCacheGetEntry(h.userid, path, 'folder')
-		if cachedPathInfo then folderId = cachedPathInfo.id	end
+		folderId = cachedPathInfo and cachedPathInfo.id
 	end
 
-	local errorCode = 0
 	if not folderId and doCreate then
-		local parentFolder = LrPathUtils.parent(path)
-		local folderLeaf = LrPathUtils.leafName(path)
-		folderId, errorCode = Photos_createFolder(h, parentFolder, folderLeaf)
-		if folderId then
-			pathIdCacheAddEntry(h.userid, path, folderId, "folder")
+		-- cache update didn't help, try to create the folder in parentFolder
+		local actionString
+		if not parentFolderId then
+			actionString = 'missing parent folder'
+		else
+			local folderLeaf = LrPathUtils.leafName(path)
+			local errorCode
+			folderId, errorCode = Photos_createFolder(h, parentFolder, parentFolderId, folderLeaf)
+			if folderId then
+				pathIdCacheAddEntry(h.userid, path, folderId, "folder")
+				actionString = 'successful folder creation'
+			else
+				actionString = string.format("failed folder creation: %d - %s", errorCode, Photos.getErrorMsg(errorCode))
+			end
 		end
+		additionalActions = additionalActions .. iif (additionalActions ~= '', ' and ', '') .. actionString
 	end
 
-	writeLogfile(3, string.format("getFolderId(userid:%s, path '%s') returns '%s' (after cache update)\n", h.userid, path, ifnil(folderId, '<nil>')))
-	return folderId, errorCode
+	writeLogfile(iif(folderId, 3, 1), string.format("getFolderId(userid:%s, path '%s') returns '%s' (after %s)\n", h.userid, path, ifnil(folderId, '<nil>'), additionalActions))
+	return folderId
+
 end
 
 ---------------------------------------------------------------------------------------------------------
@@ -940,27 +958,30 @@ end
 -- #####################################################################################################
 
 ---------------------------------------------------------------------------------------------------------
--- Photos_createFolder (h, parentDir, newDir)
+-- Photos_createFolder (h, parentDir, parentDirId, newDir)
 -- parentDir must exit
 -- newDir may or may not exist, will be created
-function Photos_createFolder (h, parentDir, newDir)
-	writeLogfile(3, string.format("Photos_createFolder('%s', '%s') ...\n", parentDir, newDir))
+function Photos_createFolder (h, parentDir, parentDirId, newDir)
+	writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s') ...\n", parentDir, ifnil(parentDirId, '<nil>'), newDir))
 	local apiParams = {
 		api 				= "SYNO.FotoTeam.Browse.Folder",
 		version 			= "1",
 		method 				= "create",
-		target_id			= Photos.getFolderId(h, parentDir),
+		target_id			= parentDirId or Photos.getFolderId(h, parentDir),
 		name				= '"' .. newDir .. '"'
 	}
 	local respArray, errorCode = Photos_API(h, apiParams)
 
-	if not respArray and Photos.getErrorMsg(errorCode) == 'error_file_exist' then
+	if not respArray and errorCode == 641 then
+		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): folder already exists, returning folderId from cache\n", parentDir, ifnil(parentDirId, '<nil>'), newDir))
 		return Photos.getFolderId(h, LrPathUtils.child(parentDir, newDir))
+	elseif not respArray then
+		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): return <nil>, %s\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, errorCode))
+		return nil, errorCode
 	end
 
-	if not respArray then return false, errorCode end
 	local folderId = respArray.data.folder.id
-	writeLogfile(3, string.format("Photos_createFolder('%s', '%s') returns %d\n", parentDir, newDir, folderId))
+	writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s') returns %d\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, folderId))
 
 	return folderId
 end
@@ -1133,7 +1154,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 			},
 			{
 				name	= 'target_folder_id',
-				value	= Photos.getFolderId(h, dstDir)
+				value	= targetFolderId
 			},
 			iif(thumbGenerate and thmb_XL_Filename ~= '',
 			{
