@@ -1,5 +1,18 @@
 Photo StatLr Changelog
 ======================
+Version 7.2.1
+-------------
+### Bugfixes:
+- Photos:
+  - Fixed issue #59, where folders containing an '&' (ampersand) could not be created correctly or were not created at all
+### Changes
+- All PhotoSevers:
+  - Thumbnail sizes are now Photo Server specific
+- Photos:
+  - Large thumbs: generate THUMB_M in same size as Photos upload does
+  - Optimized CreateTree() / getFolderId(): stop descending when parentFolder could not be created
+  - Added error message for error code 803: "No permission to create folder or file"
+
 Version 7.2.0
 -------------
 ### Bugfixes:
