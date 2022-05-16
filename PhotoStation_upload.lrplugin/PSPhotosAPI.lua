@@ -968,7 +968,7 @@ function Photos_createFolder (h, parentDir, parentDirId, newDir)
 		version 			= "1",
 		method 				= "create",
 		target_id			= parentDirId or Photos.getFolderId(h, parentDir),
-		name				= '"' .. newDir .. '"'
+		name				= '"' .. urlencode(newDir) .. '"'
 	}
 	local respArray, errorCode = Photos_API(h, apiParams)
 
