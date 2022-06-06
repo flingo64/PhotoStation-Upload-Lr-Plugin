@@ -183,7 +183,12 @@ local function uploadPhoto(renderedPhotoPath, srcPhoto, dstDir, dstFilename, exp
 
 	-- upload thumbnails and original file
 	or not exportParams.photoServer:uploadPhotoFiles(dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate,
-												renderedPhotoPath, title_Filename, thumbSettings.XL_Filename, thumbSettings.L_Filename, thumbSettings.B_Filename, thumbSettings.M_Filename, thumbSettings.S_Filename)
+												renderedPhotoPath, title_Filename,
+												thumbSettings and thumbSettings.XL_Filename,
+												thumbSettings and thumbSettings.L_Filename,
+												thumbSettings and thumbSettings.B_Filename,
+												thumbSettings and thumbSettings.M_Filename,
+												thumbSettings and thumbSettings.S_Filename)
 	then
 		signalSemaphore("PhotoServer", dstFilename)
 		retcode = false
