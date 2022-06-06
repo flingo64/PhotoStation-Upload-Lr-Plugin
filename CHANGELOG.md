@@ -1,5 +1,11 @@
 Photo StatLr Changelog
 ======================
+Version 7.2.2
+-------------
+### Bugfixes:
+- All PhotoServers:
+  - Fixed issue #60, where uploading of photos failed, if thumb generation was disabled
+
 Version 7.2.1
 -------------
 ### Bugfixes:
