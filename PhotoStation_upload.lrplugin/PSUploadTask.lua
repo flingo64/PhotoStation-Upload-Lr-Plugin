@@ -349,7 +349,12 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 
 	-- upload thumbnails, original video and replacement/additional videos
 	or not exportParams.photoServer:uploadVideoFiles(dstDir, dstFilename, dstFileTimestamp, exportParams.thumbGenerate,
-			videoSettings.Orig_Filename, title_Filename, thumbSettings.XL_Filename, thumbSettings.L_Filename, thumbSettings.B_Filename, thumbSettings.M_Filename, thumbSettings.S_Filename,
+			videoSettings.Orig_Filename, title_Filename,
+			thumbSettings and thumbSettings.XL_Filename,
+			thumbSettings and thumbSettings.L_Filename,
+			thumbSettings and thumbSettings.B_Filename,
+			thumbSettings and thumbSettings.M_Filename,
+			thumbSettings and thumbSettings.S_Filename,
 			videoSettings.Add_Filename, videoSettings.Replace_Filename, videoSettings.convParams, videoSettings.convKeyOrig, videoSettings.convKeyAdd, videoSettings.addOrigAsMp4)
 	then
 		signalSemaphore("PhotoServer", dstFilename)
