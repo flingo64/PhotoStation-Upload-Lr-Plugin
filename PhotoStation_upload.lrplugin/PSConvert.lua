@@ -213,7 +213,7 @@ function PSConvert.new(includeVideos)
 		or 	not PSDialogs.validateProgram(nil, dcrawprog)
 		or 	(includeVideos and not PSDialogs.validateProgram(nil, ffmpegprog))
 	then
-		writeLogfile(1, string.format("PSConvert.new: one or more missing tools: convert: '%s', dcraw '%s', ffmpeg: '%s'\n", convertprog, dcrawprog, iif(includeVideos, 'not required', ffmpegprog)))
+		writeLogfile(1, string.format("PSConvert.new: one or more tools not configured or missing: convert: '%s', dcraw '%s', ffmpeg: '%s'\n", convertprog, dcrawprog, iif(includeVideos, ffmpegprog, 'not required')))
 		return nil
 	end
 
