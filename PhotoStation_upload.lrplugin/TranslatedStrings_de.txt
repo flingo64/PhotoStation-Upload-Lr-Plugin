@@ -43,7 +43,7 @@
 "$$$/PSUpload/DefaultCollectionName/Collection=Standardsammlung"
 "$$$/PSUpload/Dialogs/Header/Donate=Nenn mir Deine Spende und ich verdoppel sie (max. 10 Euro)!^n"
 "$$$/PSUpload/Dialogs/Header/PhotoStatLrDonation=Photo StatLr's Spenden Blog^n"
-"$$$/PSUpload/Dialogs/Header/WorthIt=Martin: Wenn Du das anders als Mr. S siehst^nund das Plugin gut gebrauchen kannst,^nwürde ich sehr freuen, wenn Du für einen guten Zweck spendest.^nHier sind einige Ideen:^n"
+"$$$/PSUpload/Dialogs/Header/WorthIt=Martin: Wenn Du das anders als Mr. S siehst^nund das Plugin gut gebrauchen kannst,^nwürde ich mich sehr freuen, wenn Du für einen guten Zweck spendest.^nHier sind einige Ideen:^n"
 "$$$/PSUpload/Dialogs/ListBox/High=Viel"
 "$$$/PSUpload/Dialogs/ListBox/Low=Wenig"
 "$$$/PSUpload/Dialogs/ListBox/Medium=Mittel"
