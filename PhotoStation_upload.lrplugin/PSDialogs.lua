@@ -64,6 +64,7 @@ local LrView 		= import 'LrView'
 
 require "PSUtilities"
 require "PSUpdate"
+require "PSPhotoServer"
 
 local bind 				= LrView.bind
 local conditionalItem 	= LrView.conditionalItem
@@ -1008,16 +1009,13 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 		{ title	= '100s',	value 	= 100 },
 	}
 
-	local versionItems = {
-        { title	= 'Photo Station 5',   	value 	= 50 },
-        { title	= 'Photo Station 6',   	value 	= 60 },
-        { title	= 'Photo Station 6.5', 	value 	= 65 },
-        { title	= 'Photo Station 6.6', 	value 	= 66 },
-        { title	= 'Photo Station 6.7', 	value 	= 67 },
-        { title	= 'Photo Station 6.8',	value 	= 68 },
-        { title	= 'Photos 1.0',			value 	= 70 },
-        { title	= 'Photos 1.1',			value 	= 71 },
-	}
+	local versionItems = {}
+    for key, entry in pairs(PHOTOSERVER_API) do
+        if isNumber(key) then
+            table.insert(versionItems, { title = entry.name, value = key })
+        end
+    end
+    table.sort(versionItems, function (a, b) return (a.value < b.value) end)
 
 	local fileTimestampItems = {
         { title	= 'Photo Capture Date/Time', 							value = 'capture' },
