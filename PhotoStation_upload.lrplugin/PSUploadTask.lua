@@ -1126,7 +1126,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					table.insert( failures, srcPath )
 					rendition:uploadFailed("Check existing photo failed")
 					writeLogfile(2, string.format("CheckExisting: Upload required for '%s' to '%s' (%s)\n",
-												srcPhoto:getRawMetadata('path'), newPublishedPhotoId, iif(errorCode == nil, '', exportParams.photoServer.getErrorMsg(errorCode))))
+												srcPhoto:getRawMetadata('path'), newPublishedPhotoId, exportParams.photoServer.getErrorMsg(errorCode)))
 				end
 			elseif string.find('Export,Publish,Metadata', publishMode, 1, true) then
 

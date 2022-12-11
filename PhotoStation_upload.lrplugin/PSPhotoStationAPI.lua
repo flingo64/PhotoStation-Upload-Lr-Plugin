@@ -268,6 +268,7 @@ local PSAPIerrorMsgs = {
 	[1001]  = 'Http error: no response body, no response header',
 	[1002]  = 'Http error: no response data, no errorcode in response header',
 	[1003]  = 'Http error: No JSON response data',
+	[12002] = 'Http error: requestTimeout',
 	[12007] = 'Http error: cannotFindHost',
 	[12029] = 'Http error: cannotConnectToHost',
 	[12038] = 'Http error: serverCertificateHasUnknownRoot',
@@ -1364,9 +1365,12 @@ end
 -- getErrorMsg(errorCode)
 -- translates errorCode to ErrorMsg
 function PhotoStation.getErrorMsg(errorCode)
+	if errorCode == nil then
+		return string.format("No ErrorCode")
+	end
 	if PSAPIerrorMsgs[errorCode] == nil then
 		-- we don't have a documented  message for that code
-		return string.format("ErrorCode: %d", errorCode)
+		return string.format("Unknown ErrorCode: %d", errorCode)
 	end
 	return PSAPIerrorMsgs[errorCode]
 end
