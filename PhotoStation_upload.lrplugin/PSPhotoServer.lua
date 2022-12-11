@@ -156,6 +156,20 @@ PHOTOSERVER_API[71] =  {
     thumbs          =   PHOTOSERVER_API[70].thumbs
 }
 
+PHOTOSERVER_API[72] =  {
+    name	        =   'Photos 1.2',
+    API 	        =   Photos,
+    capabilities    =   PHOTOSERVER_API[71],
+    thumbs          =   PHOTOSERVER_API[70].thumbs
+}
+
+PHOTOSERVER_API[73] =  {
+    name	        =   'Photos 1.3',
+    API 	        =   Photos,
+    capabilities    =   PHOTOSERVER_API[71],
+    thumbs          =   PHOTOSERVER_API[70].thumbs
+}
+
 ---------------------------------------------------------------------------------------------------------
 -- supports(h, metadataType)
 function PHOTOSERVER_API.supports (version, capabilityType)
