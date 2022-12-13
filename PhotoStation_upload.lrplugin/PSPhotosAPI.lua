@@ -267,6 +267,7 @@ local PSAPIerrorMsgs = {
 	[1001]  = 'Http error: no response body, no response header',
 	[1002]  = 'Http error: no response data, no errorcode in response header',
 	[1003]  = 'Http error: No JSON response data',
+	[12002] = 'Http error: requestTimeout',
 	[12007] = 'Http error: cannotFindHost',
 	[12029] = 'Http error: cannotConnectToHost: check TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
 	[12038] = 'Http error: serverCertificateHasUnknownRoot',
@@ -511,7 +512,7 @@ end
 --  type is either 'folder' or 'item'
 -- addinfo is only valid for items, it contains additional item info (metadata, tags, ...)
 local function pathIdCacheAddEntry(userid, path, id, type, addinfo)
-	writeLogfile(3, string.format("pathIdCacheAddEntry(user='%s', path='%s', '%s', id=%d)\n", userid, path, type, id))
+	writeLogfile(5, string.format("pathIdCacheAddEntry(user='%s', path='%s', '%s', id=%d)\n", userid, path, type, id))
 	if not pathIdCache.cache[userid] then pathIdCache.cache[userid] = {} end
 	local user_pathIdCache = pathIdCache.cache[userid]
 
@@ -847,9 +848,12 @@ end
 -- getErrorMsg(errorCode)
 -- translates errorCode to ErrorMsg
 function Photos.getErrorMsg(errorCode)
+	if errorCode == nil then
+		return string.format("No ErrorCode")
+	end
 	if PSAPIerrorMsgs[errorCode] == nil then
 		-- we don't have a documented  message for that code
-		return string.format("ErrorCode: %d", errorCode)
+		return string.format("Unknown ErrorCode: %d", errorCode)
 	end
 	return PSAPIerrorMsgs[errorCode]
 end
@@ -1442,7 +1446,7 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- Photos_createTag (h, type, name)
--- create a new tagId/tagString mapping of or given type: desc, people, geo
+-- create a new tagId/tagString mapping of given type: desc, people, geo
 local function Photos_createTag(h, type, name)
 	-- TODO: evaluate type
 	writeLogfile(3, string.format("Photos_createTag('%s', '%s') ...\n", type, name))
