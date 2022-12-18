@@ -1077,7 +1077,7 @@ function Photos.deleteEmptyAlbumAndParents(h, folderPath)
     	then
    			writeLogfile(3, string.format('deleteEmptyAlbumAndParents(%s) - was not empty: not deleted.\n', currentFolderPath))
     		return nDeletedFolders
-		elseif not Photos_deleteFolder (currentFolderPath) then
+		elseif not Photos_deleteFolder (h, currentFolderPath) then
 			writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) - was empty: delete failed!\n', currentFolderPath))
 		else
 			writeLogfile(2, string.format('deleteEmptyAlbumAndParents(%s) - was empty: deleted.\n', currentFolderPath))
@@ -1630,6 +1630,9 @@ function PhotosPhoto:getType()
 	return self.type
 end
 
+-- -------------- set functions: prepare metadata  in internal structure, psuh out to Photo Server via updateMetadata()
+
+-- setDescription(): set the description/caption
 function PhotosPhoto:setDescription(description)
 	if not self.changes then self.changes = {} end
 	if not self.changes.metadata then self.changes.metadata = {} end
@@ -1638,6 +1641,7 @@ function PhotosPhoto:setDescription(description)
 	return true
 end
 
+-- setGPS(): set the GPS coords - not yet supported
 function PhotosPhoto:setGPS(gps)
 	if not self.changes then self.changes = {} end
 	if not self.changes.metadata then self.changes.metadata = {} end
@@ -1658,6 +1662,7 @@ function PhotosPhoto:setGPS(gps)
 	return true
 end
 
+-- setRating(): set the GPS coords - not yet supported
 function PhotosPhoto:setRating(rating)
 	if not self.changes then self.changes = {} end
 	if not self.changes.metadata then self.changes.metadata = {} end
