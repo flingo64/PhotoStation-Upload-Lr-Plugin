@@ -531,6 +531,103 @@ function PSLrUtilities.getPublishServiceByName(publishServiceName)
 	return nil
 end
 
+-- ###########################################################
+-- Lr Keyword cache
+-- ###########################################################
+
+--------------------------------------------------------------------------------------------
+-- keywordCache = {
+--     keywordName1 = {
+--         keywordPath11 = keywordObject,
+--         keywordPath12 = keywordObject
+--     },
+--     keywordName2 = {
+--         keywordPath21 = keywordObject,
+--         keywordPath22 = keywordObject
+--     }
+-- }
+
+local keywordCache =  {}
+
+--------------------------------------------------------------------------------------------
+-- keywordCacheClear()
+function PSLrUtilities.keywordCacheClear()
+    keywordCache = {}
+end
+--------------------------------------------------------------------------------------------
+-- keywordCacheAdd(keywordName, keywordPath, keywordObject)
+-- keywordCacheAdd(keywordName, keywordPath, keywordObject)
+function PSLrUtilities.keywordCacheAdd(keywordName, keywordPath, keywordObject)
+    keywordHierarchy = split(keywordPath, '|')
+    keywordName = keywordHierarchy[#keywordHierarchy]
+
+    if keywordCache[keywordName] == nil then
+        keywordCache[keywordName] = {}
+    end
+
+    keywordCache[keywordName][keywordPath] = keywordObject
+end
+
+--------------------------------------------------------------------------------------------
+-- keywordCacheFind(keywordName, keywordPath)
+function PSLrUtilities.keywordCacheFind(keywordName, keywordPath)
+    keywordNameEntry = keywordCache[keywordName]
+
+    if keywordNameEntry == nil then
+        writeLogfile(5, string.format("keywordCacheFind('%s'/'%s') not found\n", keywordName, ifnil(keywordPath, '')))
+        return nil
+    end
+
+    -- if path was given, return object matching the path else return object of first path
+    if keywordPath then
+        writeLogfile(5, string.format("keywordCacheFind('%s'/'%s') found %s keyword\n", keywordName, keywordPath, iif(keywordNameEntry[keywordPath], 'a', 'no')))
+        return keywordNameEntry[keywordPath]
+    else
+        for path, object in pairs(keywordNameEntry) do
+            writeLogfile(5, string.format("keywordCacheFind('%s') found keyword at %s\n", keywordName, path))
+            return object
+        end
+    end
+end
+
+--------------------------------------------------------------------------------------------
+-- keywordCacheCreate()
+--   create a cache of all Lr Keywords, do a width-first ordering
+function PSLrUtilities.keywordCacheCreate()
+	local catalog = LrApplication.activeCatalog()
+    -- build a list of lists for the width-first search: start with highest keyword list
+    local keywordListList = {}
+    table.insert(keywordListList, {folder = '', list = catalog:getKeywords()})
+    listIndex = 0
+
+    PSLrUtilities.keywordCacheClear()
+
+    while true do
+        listIndex = listIndex + 1
+        if listIndex > #keywordListList then
+            writeTableLogfile(5, "keywordCache", keywordCache)
+            return
+        end
+        local keywordFolder = keywordListList[listIndex].folder
+        local keywordList = keywordListList[listIndex].list
+        for _, keyword in pairs(keywordList) do
+            local keywordName = keyword:getName()
+            local keywordPath = keywordFolder .. keywordName
+            PSLrUtilities.keywordCacheAdd(keywordName, keywordPath, keyword)
+            writeLogfile(5, string.format("keywordCacheCreate(): adding: '%s'/'%s'\n", keywordName, keywordPath))
+
+            local keywordChildren = keyword:getChildren()
+            if keywordChildren and #keywordChildren > 0 then
+                table.insert(keywordListList, { folder = keywordFolder .. keywordName .. '|', list = keywordChildren})
+            end
+        end
+
+        -- just to be sure to not recurse infinitely
+        if listIndex > 10000 then return end
+    end
+
+end
+
 --------------------------------------------------------------------------------------------
 -- getKeywordByPath(keywordPath, createIfMissing, includeOnExport)
 --   returns the LrKeyword id of the given keyword path, create path if createIfMissing is set
@@ -833,22 +930,63 @@ function PSLrUtilities.removePhotoKeyword(srcPhoto, keywordId)
 end
 
 --------------------------------------------------------------------------------------------
--- createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath)
+-- createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, pubServiceName)
 -- create (if not existing) a keyword hierarchy and add it to a photo.
 -- keyword hierarchies look like: '{parentKeyword|}keyword
-function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath)
+-- if no hierarchy is given (flat keyword): 
+--      check if keyword exist anywhere and return it, 
+--      else create a keyword under the Publish Collection's keyword hierarchy
+function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, pubServiceName)
 	local catalog = LrApplication.activeCatalog()
 	local keywordHierarchy = split(keywordPath, '|')
+    local keywordName = keywordHierarchy[#keywordHierarchy]
 	local keyword, parentKeyword = nil, nil
+
+    -- ignore empty keywords (e.g. person tags w/o name)
+    if keywordPath == '' then return end
 
 	writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s')\n", srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->')))
 
-	for i = 1, #keywordHierarchy do
-		writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s'): add '%s'\n",
-									srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->'), keywordHierarchy[i]))
-		keyword = catalog:createKeyword(keywordHierarchy[i], {}, true, parentKeyword, true)
-		parentKeyword = keyword
-	end
+    -- if this is a flat keyword: check if it exists anywhere in the catalog's keyword hierarchy
+    -- if so: return it else create it under the Published Collections 
+    if #keywordHierarchy == 1 then
+        keyword = PSLrUtilities.keywordCacheFind(keywordName)
+        -- if keyword name wasn't found anywhere, then create it under the Published Collection's keyword path
+        if keyword == nil then
+            keywordHierarchy = {"Photo StatLr", "Imported Tags", pubServiceName, keywordName}
+            keywordPath = table.concat(keywordHierarchy, '|')
+        end
+
+    -- if a keywordPath was given, look for exact this path
+    else
+        keyword = PSLrUtilities.keywordCacheFind(keywordName,keywordPath)
+    end
+
+    if not keyword then
+        writeLogfile(4, string.format("createAndAddPhotoKeywordHierarchy('%s', new keywordPath: '%s')\n",
+                            srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->')))
+        for i = 1, #keywordHierarchy do
+            local keywordNameCurrent = keywordHierarchy[i]
+            local keywordPathCurrent = table.concat({unpack(keywordHierarchy, 1, i)}, '|')
+            -- only leaf objects get the IncludeOnExport flag
+            local keywordIncludeOnExport = iif(i == #keywordHierarchy, true, false)
+            keyword = PSLrUtilities.keywordCacheFind(keywordNameCurrent, keywordPathCurrent)
+            if keyword == nil then
+                writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s'): add '%s'\n",
+                                            srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->'), keywordNameCurrent))
+               keyword = catalog:createKeyword(keywordNameCurrent, {}, keywordIncludeOnExport, parentKeyword, true)
+                if keyword then
+                    PSLrUtilities.keywordCacheAdd(keywordNameCurrent, keywordPathCurrent, keyword)
+                end
+            end
+            if keyword == nil then
+                writeLogfile(1, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s'): could not add '%s to '%s'\n",
+                                            srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->'), keywordNameCurrent, keywordPathCurrent))
+                return
+            end
+            parentKeyword = keyword
+        end
+    end
 
 	srcPhoto:addKeyword(keyword)
 end
