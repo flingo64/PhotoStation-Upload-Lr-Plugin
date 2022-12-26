@@ -1384,9 +1384,10 @@ local Photos_getTagIds
 
 -- the tagIdCache holds the list of tag name / tag id mappings
 local tagIdCache = {
-	['desc']	= {},
-	['people']	= {},
-	['geo']		= {},
+	['desc']	= {}, -- general tags
+	['person']	= {}, -- person tags
+	['people']	= {}, -- person with face region tags
+	['geo']		= {}, -- GPS coords tags
 }
 
 ---------------------------------------------------------------------------------------------------------
@@ -1450,8 +1451,14 @@ end
 local function Photos_createTag(h, type, name)
 	-- TODO: evaluate type
 	writeLogfile(3, string.format("Photos_createTag('%s', '%s') ...\n", type, name))
+    local api
+    if type == 'person' then
+        api = "SYNO.FotoTeam.Browse.Person"
+    else
+        api	= "SYNO.FotoTeam.Browse.GeneralTag"
+    end
 	local apiParams = {
-		api 				= "SYNO.FotoTeam.Browse.GeneralTag",
+		api 				= api,
 		version 			= "1",
 		method 				= "create",
 		name				= '"' .. urlencode(name) ..'"'
@@ -1460,7 +1467,7 @@ local function Photos_createTag(h, type, name)
 
 	if not respArray then return false, errorCode end
 
-	writeLogfile(3, string.format("Photos_createTag('%s') returns id %d \n", name, respArray.data.tag.id))
+	writeLogfile(3, string.format("Photos_createTag('%s', '%s') returns id %d \n", type, name, respArray.data.tag.id))
 	return respArray.data.tag.id
 end
 
@@ -1607,6 +1614,7 @@ function PhotosPhoto:getRating()
 	return self.additional and self.additional.rating
 end
 
+-- getTags(): get all general and person tags: treat person tags as general tags due to missing face region support in Photos
 function PhotosPhoto:getTags()
 	local tagList
 	if self.additional and self.additional.tag then
@@ -1616,10 +1624,23 @@ function PhotosPhoto:getTags()
 			tag.id 	 	= self.additional.tag[i].id
 			tag.name 	= self.additional.tag[i].name
 			tag.type 	= self.additional.tag[i].type or 'desc'
-			tagList[i]	= tag
+			table.insert(tagList, tag)
 		end
 	end
-	return tagList
+
+    -- Get person tags also 
+    if self.additional and self.additional.person then
+		tagList = tagList or {}
+		for i = 1, #self.additional.person do
+			tag = {}
+			tag.id 	 	= self.additional.person[i].id
+			tag.name 	= self.additional.person[i].name
+			tag.type 	= self.additional.person[i].type or 'desc'
+			table.insert(tagList, tag)
+		end
+	end
+
+    return tagList
 end
 
 function PhotosPhoto:getTitle()
@@ -1630,7 +1651,7 @@ function PhotosPhoto:getType()
 	return self.type
 end
 
--- -------------- set functions: prepare metadata  in internal structure, psuh out to Photo Server via updateMetadata()
+-- -------------- set functions: prepare metadata  in internal structure, will be pushed out to Photo Server via updateMetadata()
 
 -- setDescription(): set the description/caption
 function PhotosPhoto:setDescription(description)
@@ -1681,6 +1702,7 @@ function PhotosPhoto:setTitle(title)
 	return true
 end
 
+-- -------------- add/remove tag functions: prepare tag lists in internal structure, will be pushed out to Photo Server via updateTags()
 function PhotosPhoto:addTags(tags, type)
 	if not self.changes then self.changes = {} end
 	if not self.changes.tags_add then self.changes.tags_add = {} end
@@ -1709,6 +1731,7 @@ function PhotosPhoto:removeTags(tags, type)
 	return true
 end
 
+-- -------------- show changed modified metadata and keywords
 function PhotosPhoto:showUpdates()
 	local metadataChanges	= self.changes.metadata
 	local tagsAdd 			= self.changes.tags_add
@@ -1736,6 +1759,7 @@ function PhotosPhoto:showUpdates()
 	return changesList
 end
 
+-- -------------- apply modified metadata
 function PhotosPhoto:updateMetadata()
 	local metadataChanges = self.changes and self.changes.metadata
 	writeTableLogfile(4,"updateMetadata", metadataChanges, true)
@@ -1754,6 +1778,7 @@ function PhotosPhoto:updateMetadata()
 	return self.photoServer:editPhoto(self.photoPath, photoParams)
 end
 
+-- -------------- apply modified keywords
 function PhotosPhoto:updateTags()
 	local tagsAdd 		= self.changes and self.changes.tags_add
 	local tagsRemove 	= self.changes and self.changes.tags_remove
