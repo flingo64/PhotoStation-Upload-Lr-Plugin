@@ -775,7 +775,7 @@ function openSession(exportParams, publishedCollection, operation)
         	exportParams.locationDownload 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_GPS) 			and collectionSettings.locationDownload
         	exportParams.locationTagDownload	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_GPS) 			and collectionSettings.locationTagDownload
         	exportParams.ratingDownload	 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_RATING) 		and collectionSettings.ratingDownload
-        	exportParams.PS2LrFaces	 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON) 		and collectionSettings.PS2LrFaces
+        	exportParams.PS2LrFaces	 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_FACE) 		and collectionSettings.PS2LrFaces
         	exportParams.PS2LrLabel	 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG) 			and collectionSettings.PS2LrLabel
         	exportParams.PS2LrRating	 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG) 			and collectionSettings.PS2LrRating
     	end
@@ -790,7 +790,7 @@ function openSession(exportParams, publishedCollection, operation)
 
 	-- check all version-dependent export settings against photo server capabilities
 	exportParams.xlatLocationTags		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_LOCATION)	and exportParams.xlatLocationTags
-	exportParams.exifXlatFaceRegions 	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_PERSON)	and exportParams.exifXlatFaceRegions
+	exportParams.exifXlatFaceRegions 	= exportParams.photoServer:supports(PHOTOSERVER_METADATA_FACE)	and exportParams.exifXlatFaceRegions
 	exportParams.exifXlatLabel 			= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and exportParams.exifXlatLabel
 	exportParams.exifXlatRating 		= exportParams.photoServer:supports(PHOTOSERVER_METADATA_TAG)		and exportParams.exifXlatRating
 	-- set exifTranslate, if any of the above translations is set: this will force exiftool to be started

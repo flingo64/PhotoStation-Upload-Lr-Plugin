@@ -155,10 +155,10 @@ local checkLocationSelected = {
 	end,
 }
 
-local checkPersonSupport = {
+local checkFaceSupport = {
 	key			= 'psVersion',
 	transform 	= function( value, fromTable )
-		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_PERSON)
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_METADATA_FACE)
 	end,
 }
 
@@ -1780,7 +1780,7 @@ function PSDialogs.uploadOptionsView(f, propertyTable)
     			tooltip 		= LOC "$$$/PSUpload/ExportDialog/TranslateFaceRegionsTT=Translate Lr face regions to Photo Server person tags\n(Useful for Photo Station version < 6.5)",
     			fill_horizontal = 1,
     			value 			= bind 'exifXlatFaceRegions',
-				visible			= bind(checkPersonSupport),
+				visible			= bind(checkFaceSupport),
     		},
 
     		f:checkbox {
@@ -1982,7 +1982,7 @@ function PSDialogs.downloadOptionsView(f, propertyTable)
 				tooltip 		= LOC "$$$/PSUpload/CollectionSettings/PSTranslateFacesTT=Download and translate Photo Server People Tags to Lightroom Faces\nNote: Faces will be written to original photo and photo metadata must be re-loaded into Lr\n!!! Make sure, you configured 'Automatically write changes into XMP, otherwise\nyou will loose you Lr changes when re-loading faces metadata!!!'",
 				value 			= bind 'PS2LrFaces',
 				enabled 		= bind 'exifXlatFaceRegions',
-				visible			= bind (checkPersonSupport),
+				visible			= bind (checkFaceSupport),
 			},
 
 			f:checkbox {

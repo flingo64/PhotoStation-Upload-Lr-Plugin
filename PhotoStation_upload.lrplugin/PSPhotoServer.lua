@@ -42,7 +42,7 @@ PHOTOSERVER_METADATA_LABEL_PUB		= "'META_LABEL_PUB'"        -- color labels in p
 PHOTOSERVER_METADATA_GPS			= "'META_GPS'"              -- GPS coords
 PHOTOSERVER_METADATA_TAG			= "'META_TAG'"              -- generic/description tag/keyword
 PHOTOSERVER_METADATA_LOCATION		= "'META_LOCATION'"         -- location tag (reverse geocoded address)
-PHOTOSERVER_METADATA_PERSON			= "'META_PERSON'"           -- person/people/face region
+PHOTOSERVER_METADATA_FACE			= "'META_FACE'"             -- face region
 PHOTOSERVER_METADATA_COMMENT_PRIV	= "'META_COMMENT_PRIV'"     -- comments in private/logged-in view
 PHOTOSERVER_METADATA_COMMENT_PUB	= "'META_COMMENT_PUB'"      -- comments in public/shared view
 
@@ -70,7 +70,7 @@ PHOTOSERVER_API[50] =  {
     name	        =   'Photo Station 5',
     API 	        =   PhotoStation,
     capabilities    =   PHOTOSERVER_METADATA_TITLE .. PHOTOSERVER_METADATA_DESCRIPTION .. PHOTOSERVER_METADATA_GPS ..
-                        PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION .. PHOTOSERVER_METADATA_PERSON ..
+                        PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION .. PHOTOSERVER_METADATA_FACE ..
                         PHOTOSERVER_METADATA_COMMENT_PRIV .. PHOTOSERVER_METADATA_COMMENT_PUB ..
                         PHOTOSERVER_UPLOAD_THUMBS ..
                         PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD,
@@ -87,7 +87,7 @@ PHOTOSERVER_API[60] =  {
     name	        =   'Photo Station 6',
     API 	        =   PhotoStation,
     capabilities    =   PHOTOSERVER_METADATA_TITLE .. PHOTOSERVER_METADATA_DESCRIPTION .. PHOTOSERVER_METADATA_GPS ..
-                        PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION .. PHOTOSERVER_METADATA_PERSON ..
+                        PHOTOSERVER_METADATA_TAG .. PHOTOSERVER_METADATA_LOCATION .. PHOTOSERVER_METADATA_FACE ..
                         PHOTOSERVER_METADATA_COMMENT_PRIV .. PHOTOSERVER_METADATA_COMMENT_PUB ..
                         PHOTOSERVER_UPLOAD_THUMBS ..
                         PHOTOSERVER_UPLOAD_TITLE .. PHOTOSERVER_UPLOAD_VIDEO_ADD ..
