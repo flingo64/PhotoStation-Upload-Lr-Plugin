@@ -277,18 +277,30 @@ function findInStringTable(inputTable, string, isPattern)
 end
 
 --------------------------------------------------------------------------------------------
--- getTableExtract(inputTable, tableField, filterAttr, filterPattern)
+-- getTableExtract(inputTable, tableField, filterAttr, filterPatternList)
 --  returns a table extract consisting of:
 --   - the elements 'tableField' or the whole structure
---   - all elements matching filteAttr / filterPattern or all
-function getTableExtract(inputTable, tableField, filterAttr, filterPattern)
-	if not inputTable then return nil end
+--   - all elements with filterAttr matching any of the patterns in filterPatternList (csv) or all
+function getTableExtract(inputTable, tableField, filterAttr, filterPatternList)
+    if not inputTable then return nil end
 
 	local j, tableExtract = 1, {}
-
+    local patternMatched = false
 	for i = 1, #inputTable do
-		if not filterAttr or string.match(inputTable[i][filterAttr], filterPattern) then
-			if tableField then
+		if not filterAttr then
+            patternMatched = true
+        else
+            local patternArray = split(filterPatternList, ',')
+            for _, pattern in ipairs(patternArray) do
+                if string.match(inputTable[i][filterAttr], pattern) then
+                    patternMatched = true
+                    break
+                end
+            end
+        end
+        
+        if patternMatched then
+            if tableField then
 				tableExtract[j] = inputTable[i][tableField]
 			else
 				tableExtract[j] = inputTable[i]
