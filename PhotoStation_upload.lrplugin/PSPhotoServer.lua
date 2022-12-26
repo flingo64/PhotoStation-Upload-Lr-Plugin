@@ -40,9 +40,9 @@ PHOTOSERVER_METADATA_RATING			= "'META_RATING'"           -- rating
 PHOTOSERVER_METADATA_LABEL_PRIV 	= "'META_LABEL_PRIV'"       -- color labels in private/logged-in view
 PHOTOSERVER_METADATA_LABEL_PUB		= "'META_LABEL_PUB'"        -- color labels in public/shared view
 PHOTOSERVER_METADATA_GPS			= "'META_GPS'"              -- GPS coords
-PHOTOSERVER_METADATA_TAG			= "'META_TAG'"              -- generic/description tag/keyword
+PHOTOSERVER_METADATA_TAG			= "'META_TAG'"              -- generic/description or person (w/o face region) tag/keyword
 PHOTOSERVER_METADATA_LOCATION		= "'META_LOCATION'"         -- location tag (reverse geocoded address)
-PHOTOSERVER_METADATA_FACE			= "'META_FACE'"             -- face region
+PHOTOSERVER_METADATA_FACE			= "'META_FACE'"             -- person tag w/ face region
 PHOTOSERVER_METADATA_COMMENT_PRIV	= "'META_COMMENT_PRIV'"     -- comments in private/logged-in view
 PHOTOSERVER_METADATA_COMMENT_PUB	= "'META_COMMENT_PUB'"      -- comments in public/shared view
 
