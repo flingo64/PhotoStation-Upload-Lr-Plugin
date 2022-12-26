@@ -1635,7 +1635,7 @@ function PhotosPhoto:getTags()
 			tag = {}
 			tag.id 	 	= self.additional.person[i].id
 			tag.name 	= self.additional.person[i].name
-			tag.type 	= self.additional.person[i].type or 'desc'
+			tag.type 	= self.additional.person[i].type or 'person'
 			table.insert(tagList, tag)
 		end
 	end

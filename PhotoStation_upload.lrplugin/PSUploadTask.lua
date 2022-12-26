@@ -401,7 +401,7 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 		return false
 	end
 	local psPhotoTags 		= psPhoto:getTags()
-	local keywordsPS 		= getTableExtract(psPhotoTags, nil, 'type', 'desc')
+	local keywordsPS 		= getTableExtract(psPhotoTags, nil, 'type', 'desc,person')
 	local facesPS 			= getTableExtract(psPhotoTags, nil, 'type', 'people')
 	local locationsPS		= getTableExtract(psPhotoTags, nil, 'type', 'geo')
 	local LrExportMetadata	= (    exportParams.LR_embeddedMetadataOption and string.match(exportParams.LR_embeddedMetadataOption, 'all.*')) or

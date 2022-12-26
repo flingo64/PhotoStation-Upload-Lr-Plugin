@@ -1112,7 +1112,7 @@ publishServiceProvider.titleForPhotoRating = LOC "$$$/PSUpload/TitleForPhotoRati
 function publishServiceProvider.getRatingsFromPublishedCollection( publishSettings, arrayOfPhotoInfo, ratingCallback )
 	-- get the belonging Published Collection by evaluating the first photo
 	local nPhotos =  #arrayOfPhotoInfo
-	local publishedCollection, publishedCollectionName
+	local publishedCollection, publishedCollectionName, publishServiceName
 	local nProcessed 		= 0
 	local nChanges 			= 0
 	local nRejectedChanges	= 0
@@ -1180,7 +1180,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 	end
 
 	publishedCollectionName = publishedCollection:getName()
-	writeLogfile(2, string.format("Get ratings for %d photos in collection %s.\n", nPhotos, publishedCollectionName))
+	publishServiceName      = publishedCollection:getService():getName()
+    writeLogfile(2, string.format("Get ratings for %d photos in collection %s (%s).\n", nPhotos, publishedCollectionName, publishServiceName))
 
 	local reloadPhotos = {}
 	local startTime = LrDate.currentTime()
@@ -1190,6 +1191,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 								{ 	title = LOC( "$$$/PSUpload/Progress/GetRatingsFromPublishedCollection=Downloading ratings/metadata for ^1 photos in collection ^[^2^]", nPhotos, publishedCollection:getName()),
 --							 		functionContext = context
 							 	})
+    if publishSettings.tagsDownload then
+        PSLrUtilities.keywordCacheCreate()
+    end
+
 	for i, photoInfo in ipairs( arrayOfPhotoInfo ) do
 		if progressScope:isCanceled() then break end
 
@@ -1204,10 +1209,10 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }		-- GPS data from photo or from location tag (second best)
 		local ratingTagPS, 	ratingTagChanged
 		local labelPS,		labelChanged
-		local tagsPS, 		tagsChanged = {}
+		local tagsPS, tagNamesPS, tagsChanged = {}, {}
 		local facesPS, 		facesChanged = {}
 		local origPhotoDimension
-		local keywordNamesAdd, keywordNamesRemove, keywordsRemove
+		local keywordsAdd, keywordsRemove, keywordNamesAdd, keywordNamesRemove
 		local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove
 		local resultText = ''
 		local changesRejected, changesFailed = '', ''
@@ -1275,9 +1280,15 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         				elseif publishSettings.PS2LrRating and photoTag.type == 'desc' and string.match(photoTag.name, ratingTagPattern) then
     						ratingTagPS = math.min(string.len(photoTag.name), 5)
 
-    					-- any other general tag is taken as-is
-    					elseif publishSettings.tagsDownload and photoTag.type == 'desc' and not string.match(photoTag.name, colorLabelTagPattern) and not string.match(photoTag.name, ratingTagPattern) then
-    						table.insert(tagsPS, photoTag.name)
+    					-- any other general or person tag is taken as-is
+    					elseif publishSettings.tagsDownload
+                                and string.find('desc,person', photoTag.type)
+                                and not string.match(photoTag.name, colorLabelTagPattern)
+                                and not string.match(photoTag.name, ratingTagPattern)
+                                and photoTag.name ~= ''
+                        then
+    						table.insert(tagsPS, { name = photoTag.name, type = photoTag.type})
+    						table.insert(tagNamesPS, photoTag.name)
 
     					-- gps coords belonging to a location tag
     					elseif publishSettings.locationTagDownload and photoTag.type == 'geo' and (photoTag.additional.info.lat or photoTag.additional.info.lng) then
@@ -1431,25 +1442,33 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
     		------------------------------------------------------------------------------------------------------
     		if publishSettings.tagsDownload then
     			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
-				local keywordsExported = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
+				local keywordNamesExported = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
+				-- transform keywordNamesExported into a list of objects {name, type}, so it can be table-compared with tagsPS based on the name
+                local keywordsExported = {}
+                if #keywordNamesExported > 0 then
+                    for key, value in ipairs(keywordNamesExported) do
+                        keywordsExported[key] = { name = value, type = "unknown" }
+                    end
+                end
 
     			-- get delta lists: which keywords were added and removed
-    			keywordNamesAdd 	= getTableDiff(tagsPS, keywordsExported)
-    			keywordNamesRemove  = getTableDiff(keywordsExported, tagsPS)
+    			keywordsAdd 	        = getTableDiff(tagsPS, keywordsExported, 'name')
+    			keywordNamesAdd	        = getTableDiff(tagNamesPS, keywordNamesExported)
+    			keywordNamesRemove  = getTableDiff(keywordNamesExported, tagNamesPS)
 
     			-- get list of keyword objects to be removed: only leaf keywords can be removed, cannot remove synonyms or parent keywords
-   				keywordsRemove 	= PSLrUtilities.getPhotoKeywordObjects(srcPhoto, keywordNamesRemove)
+                keywordsRemove 	= PSLrUtilities.getPhotoKeywordObjects(srcPhoto, keywordNamesRemove)
 
     			-- allow update of keywords only if keyword were added or changed, not if keywords were removed
     			-- compare w/ effectively removed keywords
-    			if (#keywordNamesAdd > 0) and (#keywordNamesAdd >= #keywordsRemove) then
+    			if (#keywordsAdd > 0) and (#keywordsAdd >= #keywordsRemove) then
     				tagsChanged = true
-    				nChanges = nChanges + #keywordNamesAdd + #keywordNamesRemove
-    				if #keywordNamesAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, "','")) end
+    				nChanges = nChanges + #keywordsAdd + #keywordsRemove
+    				if #keywordsAdd > 0 then resultText = resultText ..  string.format(" tags to add: '%s',", table.concat(keywordNamesAdd, "','")) end
     				if #keywordNamesRemove > 0 then resultText = resultText ..  string.format(" tags to remove: '%s',", table.concat(keywordNamesRemove, "','")) end
     				writeLogfile(3, string.format("Get ratings/metadata: %s - tags to add: '%s', tags to remove: '%s'\n",
     										photoInfo.remoteId, table.concat(keywordNamesAdd, "','"), table.concat(keywordNamesRemove, "','")))
-				elseif #keywordNamesAdd < #keywordsRemove then
+				elseif #keywordsAdd < #keywordsRemove then
         			resultText = resultText ..  string.format(" keywords %s removal ignored,", table.concat(keywordNamesRemove, "','"))
         			writeLogfile(3, string.format("Get ratings/metadata: %s - keywords %s were removed in PS, setting photo to edited (removal rejected).\n",
       											photoInfo.remoteId, table.concat(keywordNamesRemove, "','")))
@@ -1537,23 +1556,23 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         				if ratingChanged		then srcPhoto:setRawMetadata('rating', ratingPS) end
         				if ratingTagChanged		then srcPhoto:setRawMetadata('rating', ratingTagPS) end
         				if tagsChanged then
-    						for i = 1, #keywordNamesAdd do PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordNamesAdd[i])	end
+    						for i = 1, #keywordsAdd do PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordsAdd[i].name, keywordsAdd[i].type, publishServiceName)	end
     						for i = 1, #keywordsRemove 	do srcPhoto:removeKeyword(keywordsRemove[i])	end
         				end
         				if needRepublish 		then photoInfo.publishedPhoto:setEditedFlag(true) end
-        			end,
-        			{timeout=5}
+                    end,
+                   {timeout=5}
         		)
 
    				writeLogfile(3, string.format("Get ratings/metadata: %s - changes done.\n", photoInfo.remoteId))
 				-- if keywords were updated: check if resulting Lr keyword list matches PS keyword list (might be different due to parent keywords)
 				if tagsChanged then
-        			-- get all exported keywords including parent keywords and synonnyms, excluding those that are to be exported
+        			-- get all exported keywords including parent keywords and synonnyms, excluding those that are not to be exported
     				local keywordsForExport = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
 
         			-- get delta lists: which keywords need to be added or removed in PS
-        			local keywordNamesNeedRemoveinPS	= getTableDiff(tagsPS, keywordsForExport)
-        			local keywordNamesNeedAddinPS 	 	= getTableDiff(keywordsForExport, tagsPS)
+        			local keywordNamesNeedRemoveinPS	= getTableDiff(tagNamesPS, keywordsForExport)
+        			local keywordNamesNeedAddinPS 	 	= getTableDiff(keywordsForExport, tagNamesPS)
         			if #keywordNamesNeedRemoveinPS > 0 or #keywordNamesNeedAddinPS > 0 then
 	    				writeLogfile(3, string.format("Get ratings/metadata: %s - must sync keywords to PS, add: '%s', remove '%s'\n",
 	    												photoInfo.remoteId,
