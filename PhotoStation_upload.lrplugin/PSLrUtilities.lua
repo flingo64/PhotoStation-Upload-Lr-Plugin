@@ -930,13 +930,13 @@ function PSLrUtilities.removePhotoKeyword(srcPhoto, keywordId)
 end
 
 --------------------------------------------------------------------------------------------
--- createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, pubServiceName)
+-- createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, keywordType, pubServiceName)
 -- create (if not existing) a keyword hierarchy and add it to a photo.
 -- keyword hierarchies look like: '{parentKeyword|}keyword
 -- if no hierarchy is given (flat keyword): 
 --      check if keyword exist anywhere and return it, 
 --      else create a keyword under the Publish Collection's keyword hierarchy
-function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, pubServiceName)
+function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, keywordType, pubServiceName)
 	local catalog = LrApplication.activeCatalog()
 	local keywordHierarchy = split(keywordPath, '|')
     local keywordName = keywordHierarchy[#keywordHierarchy]
@@ -945,7 +945,7 @@ function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, 
     -- ignore empty keywords (e.g. person tags w/o name)
     if keywordPath == '' then return end
 
-	writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s')\n", srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->')))
+	writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s', '%s')\n", srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->'), keywordType))
 
     -- if this is a flat keyword: check if it exists anywhere in the catalog's keyword hierarchy
     -- if so: return it else create it under the Published Collections 
@@ -974,7 +974,12 @@ function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, 
             if keyword == nil then
                 writeLogfile(3, string.format("createAndAddPhotoKeywordHierarchy('%s', '%s'): add '%s'\n",
                                             srcPhoto:getFormattedMetadata('fileName'), table.concat(keywordHierarchy, '->'), keywordNameCurrent))
-               keyword = catalog:createKeyword(keywordNameCurrent, {}, keywordIncludeOnExport, parentKeyword, true)
+                keyword = catalog:createKeyword(keywordNameCurrent, {}, keywordIncludeOnExport, parentKeyword, true)
+
+                -- Changing keyword type to person does not work in Lr6, maybe in later versions ...
+                if keywordType == 'person' then
+                    keyword:setAttributes({keywordType = 'person'})
+                end
                 if keyword then
                     PSLrUtilities.keywordCacheAdd(keywordNameCurrent, keywordPathCurrent, keyword)
                 end
