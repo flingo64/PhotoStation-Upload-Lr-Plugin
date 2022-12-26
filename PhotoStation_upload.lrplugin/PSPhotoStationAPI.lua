@@ -9,7 +9,6 @@ Photo Station object:
 	- login
 	- logout
 
-	- getTags
 	- createTag
 
 	- getPhotoExifs
@@ -435,9 +434,9 @@ end
 -- ########################## tag management ###########################################################
 
 ---------------------------------------------------------------------------------------------------------
--- getTags (h, type)
+-- PhotoStation_getTagList (h, type)
 -- get table of tagId/tagString mappings for given type: desc, people, geo
-function PhotoStation.getTags(h, type)
+function PhotoStation_getTagList(h, type)
 	local formData = 'method=list&' ..
 					 'version=1&' ..
 					 'type=' .. type .. '&' ..
@@ -1354,7 +1353,7 @@ local tagMapping = {
 -- tagMappingUpdate(h, type)
 local function tagMappingUpdate(h, type)
 	writeLogfile(3, string.format('tagMappingUpdate(%s).\n', type))
-	tagMapping[type] = PhotoStation.getTags(h, type)
+	tagMapping[type] = PhotoStation_getTagList(h, type)
 	return tagMapping[type]
 end
 
