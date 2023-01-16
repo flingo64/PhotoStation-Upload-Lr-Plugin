@@ -1,5 +1,21 @@
 Photo StatLr Changelog
 ======================
+Version 7.3.0
+-------------
+### New Featues:
+- Synlogy Photos :
+  - added official support for Photos 1.2 and 1.3
+  - added support for downloading person tags (w/o support for face regions): if the 'Donwload Keyword/Tags' option is enabled, person tags will also be downloaded as local Lr keywords. For more info see document [07-Publish-Some words on the two way sync of metadata.md](Documentation/07-Publish-Some%20words%20on%20the%20two%20way%20sync%20of%20metadata.md)
+
+### Changes:
+- All PhotoServers:
+  - CheckExisting: on failure show error message instead of error code
+
+### Bugfixes:
+- All PhotoServers:
+  - Fixed an misleading error message when ffmpeg is required, but not configured or missing
+  - Fixed issue #68: exception 'PSPhotosAPI.lua 852: bad argument ...' 
+  
 Version 7.2.3
 -------------
 ### Bugfixes:

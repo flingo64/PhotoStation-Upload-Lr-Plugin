@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.2.3<br>
+Version 7.3.0<br>
 __[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
@@ -18,8 +18,6 @@ Forum threads:
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
 [Get involved: Let Photo StatLr speak your language](Documentation/30-Contributions-How%20to%20contribute%20a%20translation%20for%20Photo%20StatLr.md)<br>
  
-Copyright(c) 2015-2022, Martin Messmer<br>
-
 ## Overview
 Photo StatLr is a Lightroom Publish and Export Service Provider Plugin. It adds a new Publish Service and an Export target called "Photo StatLr" to the "Publish Services" panel / "Export" dialog. 
 Both the Publish service as well as the Export service enable the export of photos and videos from Lightroom directly to a Synology Photo Station or Synology Photos. It will not only upload the selected photos/videos but also create 
@@ -64,7 +62,9 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 	*File* --\> *Plugin Manager* --\> *Add*: Enter the path to the directory 
 		"PhotoStation_upload.lrplugin" 
 ![](Screenshots-Windows/01-Install-Plugin.jpg)
- - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required converters and tools are correct.
+ - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required converters and tools are correct.\
+ Note for MacOS: please use the real path of the tools, not a symbolic link! To find out the realpath of the convert tool for example, you may use the following command:\
+  `which convert | xargs realpath {}`
  ![](Screenshots-Windows/03-Install_OK.jpg)
 
 # Description
@@ -329,7 +329,7 @@ Face regions can't be downloaded for cropped photos, since Lr won't accept the f
 tbd.
 
 # Copyright
-Copyright(c) 2015 - 2021, Martin Messmer
+Copyright(c) 2015-2023, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
