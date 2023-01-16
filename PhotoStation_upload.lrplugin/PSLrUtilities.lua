@@ -2,7 +2,7 @@
 
 PSLrUtilities.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2015-2022, Martin Messmer
+Copyright(c) 2015-2023, Martin Messmer
 
 Lightroom utilities:
 	- printError
