@@ -555,10 +555,10 @@ function PSLrUtilities.keywordCacheClear()
     keywordCache = {}
 end
 --------------------------------------------------------------------------------------------
--- keywordCacheAdd(keywordName, keywordPath, keywordObject)
-function PSLrUtilities.keywordCacheAdd(keywordName, keywordPath, keywordObject)
+-- keywordCacheAdd(keywordPath, keywordObject)
+function PSLrUtilities.keywordCacheAdd(keywordPath, keywordObject)
     local keywordHierarchy = split(keywordPath, '|') or {}
-    keywordName = keywordHierarchy[#keywordHierarchy]
+    local keywordName = keywordHierarchy[#keywordHierarchy]
 
     if keywordCache[keywordName] == nil then
         keywordCache[keywordName] = {}
@@ -612,7 +612,7 @@ function PSLrUtilities.keywordCacheCreate()
         for _, keyword in pairs(keywordList) do
             local keywordName = keyword:getName()
             local keywordPath = keywordFolder .. keywordName
-            PSLrUtilities.keywordCacheAdd(keywordName, keywordPath, keyword)
+            PSLrUtilities.keywordCacheAdd(keywordPath, keyword)
             writeLogfile(5, string.format("keywordCacheCreate(): adding: '%s'/'%s'\n", keywordName, keywordPath))
 
             local keywordChildren = keyword:getChildren()
@@ -980,7 +980,7 @@ function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, 
                     keyword:setAttributes({keywordType = 'person'})
                 end
                 if keyword then
-                    PSLrUtilities.keywordCacheAdd(keywordNameCurrent, keywordPathCurrent, keyword)
+                    PSLrUtilities.keywordCacheAdd(keywordPathCurrent, keyword)
                 end
             end
             if keyword == nil then
