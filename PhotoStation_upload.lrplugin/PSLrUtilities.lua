@@ -557,7 +557,7 @@ end
 --------------------------------------------------------------------------------------------
 -- keywordCacheAdd(keywordName, keywordPath, keywordObject)
 function PSLrUtilities.keywordCacheAdd(keywordName, keywordPath, keywordObject)
-    local keywordHierarchy = split(keywordPath, '|')
+    local keywordHierarchy = split(keywordPath, '|') or {}
     keywordName = keywordHierarchy[#keywordHierarchy]
 
     if keywordCache[keywordName] == nil then
