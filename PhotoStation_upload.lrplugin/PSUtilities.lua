@@ -934,7 +934,7 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 		f:spacer {	height = 10, },
 		conditionalItem(needPublishMode, PSDialogs.publishModeView(f, exportParams, isAskForMissingParams)),
 		f:spacer {	height = 10, },
-		conditionalItem(needDownloadMode, PSDialogs.downloadOptionsView(f, exportParams, isAskForMissingParams)),
+		conditionalItem(needDownloadMode, PSDialogs.downloadOptionsView(f, exportParams)),
 		f:spacer {	height = 10, },
 		conditionalItem(needLoglevel, 	 PSDialogs.loglevelView(f, exportParams, isAskForMissingParams)),
 	}
