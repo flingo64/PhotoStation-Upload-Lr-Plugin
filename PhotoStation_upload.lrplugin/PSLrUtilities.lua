@@ -415,7 +415,7 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
     			pathLevel = tonumber(pathLevel)
 
     			local pathDirnames = split(normalizeDirname(srcPhotoPath), '/')
-    			local pathLevelString = iif(pathDirnames and pathLevel < #pathDirnames and ifnil(pathDirnames[pathLevel], '') ~= '', pathDirnames[pathLevel], '')
+    			local pathLevelString = iif(pathDirnames and pathLevel < #pathDirnames and ifnil(pathDirnames[pathLevel], '') ~= '', pathDirnames and pathDirnames[pathLevel], '')
     			local pathLevelExtracted = pathLevelString
     			if pathLevelString == '' then
     				pathLevelExtracted = ifnil(dataDefault, '')
@@ -556,9 +556,8 @@ function PSLrUtilities.keywordCacheClear()
 end
 --------------------------------------------------------------------------------------------
 -- keywordCacheAdd(keywordName, keywordPath, keywordObject)
--- keywordCacheAdd(keywordName, keywordPath, keywordObject)
 function PSLrUtilities.keywordCacheAdd(keywordName, keywordPath, keywordObject)
-    keywordHierarchy = split(keywordPath, '|')
+    local keywordHierarchy = split(keywordPath, '|')
     keywordName = keywordHierarchy[#keywordHierarchy]
 
     if keywordCache[keywordName] == nil then
@@ -571,7 +570,7 @@ end
 --------------------------------------------------------------------------------------------
 -- keywordCacheFind(keywordName, keywordPath)
 function PSLrUtilities.keywordCacheFind(keywordName, keywordPath)
-    keywordNameEntry = keywordCache[keywordName]
+    local keywordNameEntry = keywordCache[keywordName]
 
     if keywordNameEntry == nil then
         writeLogfile(5, string.format("keywordCacheFind('%s'/'%s') not found\n", keywordName, ifnil(keywordPath, '')))
@@ -598,7 +597,7 @@ function PSLrUtilities.keywordCacheCreate()
     -- build a list of lists for the width-first search: start with highest keyword list
     local keywordListList = {}
     table.insert(keywordListList, {folder = '', list = catalog:getKeywords()})
-    listIndex = 0
+    local listIndex = 0
 
     PSLrUtilities.keywordCacheClear()
 
@@ -618,7 +617,7 @@ function PSLrUtilities.keywordCacheCreate()
 
             local keywordChildren = keyword:getChildren()
             if keywordChildren and #keywordChildren > 0 then
-                table.insert(keywordListList, { folder = keywordFolder .. keywordName .. '|', list = keywordChildren})
+                table.insert(keywordListList, { folder = keywordPath .. '|', list = keywordChildren})
             end
         end
 
@@ -633,7 +632,7 @@ end
 --   returns the LrKeyword id of the given keyword path, create path if createIfMissing is set
 function PSLrUtilities.getKeywordByPath(keywordPath, createIfMissing, includeOnExport)
 	local catalog = LrApplication.activeCatalog()
-	local keywordHierarchy = split(keywordPath, '|')
+	local keywordHierarchy = split(keywordPath, '|') or {}
 	local keyword, parentKeyword, checkKeywords = nil, nil, catalog:getKeywords()
 
 	for i = 1, #keywordHierarchy do
@@ -938,7 +937,7 @@ end
 --      else create a keyword under the Publish Collection's keyword hierarchy
 function PSLrUtilities.createAndAddPhotoKeywordHierarchy(srcPhoto, keywordPath, keywordType, pubServiceName)
 	local catalog = LrApplication.activeCatalog()
-	local keywordHierarchy = split(keywordPath, '|')
+	local keywordHierarchy = split(keywordPath, '|') or {}
     local keywordName = keywordHierarchy[#keywordHierarchy]
 	local keyword, parentKeyword = nil, nil
 

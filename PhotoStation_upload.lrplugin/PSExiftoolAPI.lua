@@ -103,7 +103,7 @@ local function executeCmds(h)
 			local resultStrings
 --			resultStrings = LrFileUtils.readFile(h.etLogFile) -- won't work, because file is still opened by exiftool
 			local logfile = io.input (h.etLogFile)
-			resultStrings = logfile:read("*a")
+			resultStrings = logfile and logfile:read("*a")
 			io.close(logfile)
 			if resultStrings then
 --				writeLogfile(4, "executeCmds(): got response file contents:\n" .. resultStrings .. "\n")
@@ -112,7 +112,7 @@ local function executeCmds(h)
 		end
 		now = LrDate.currentTime()
 	end
-	writeLogfile(3, string.format("executeCmds(%s, cmd %d) took %d secs, got:\n%s\n", h.etLogFile, h.cmdNumber, now - startTime, ifnil(cmdResult, '<Nil>', cmdResult)))
+	writeLogfile(3, string.format("executeCmds(%s, cmd %d) took %d secs, got:\n%s\n", h.etLogFile, h.cmdNumber, now - startTime, ifnil(cmdResult, '<Nil>')))
 	return cmdResult
 end
 
@@ -131,7 +131,7 @@ function PSExiftoolAPI.new(exportParams)
 	end
 
 	-- the commandFile and logFile must be unique for each exiftool listener
-	h.etCommandFile = LrPathUtils.child(tmpdir, "ExiftoolCmds-" .. tostring(LrDate.currentTime()) .. ".txt")
+	h.etCommandFile = LrPathUtils.child(TMPDIR, "ExiftoolCmds-" .. tostring(LrDate.currentTime()) .. ".txt")
 	h.etLogFile = LrPathUtils.replaceExtension(h.etCommandFile, "log")
 	h.etErrLogFile = LrPathUtils.replaceExtension(h.etCommandFile, "error.log")
 

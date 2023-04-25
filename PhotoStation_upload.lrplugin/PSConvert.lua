@@ -320,8 +320,8 @@ end
 function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, exportParams)
 	local srcVideoName = srcPhoto:getRawMetadata('path')
 	local picBasename = LrPathUtils.removeExtension(LrPathUtils.leafName(srcVideoName))
-	local outfile1 =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
-	local outfile2 =  LrPathUtils.child(tmpdir, LrPathUtils.addExtension(picBasename .. '_ffmpeg-2', 'txt'))
+	local outfile1 =  LrPathUtils.child(TMPDIR, LrPathUtils.addExtension(picBasename .. '_ffmpeg', 'txt'))
+	local outfile2 =  LrPathUtils.child(TMPDIR, LrPathUtils.addExtension(picBasename .. '_ffmpeg-2', 'txt'))
 	-- LrTask.execute() will call cmd.exe /c cmdline, so we need additional outer quotes
 	local cmdline1 = cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. srcVideoName .. '" 2> "' .. outfile1 .. '"' .. cmdlineQuote()
 	local cmdline2 = iif(renderedVideoFilename, cmdlineQuote() .. '"' .. h.ffmpeg .. '" -i "' .. ifnil(renderedVideoFilename, 'nil') .. '" 2> "' .. outfile2 .. '"' .. cmdlineQuote(), nil)

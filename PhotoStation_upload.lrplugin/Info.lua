@@ -39,20 +39,20 @@ of it requires the prior written permission of Adobe.
 
 
 ------------------------------------------------------------------------------]]
-plugin_major = 7
-plugin_minor = 3
-plugin_rev = 0
-plugin_build = 20230116
+local plugin_major = 7
+local plugin_minor = 3
+local plugin_rev = 0
+local plugin_build = 20230116
 
-pluginVersion = plugin_major .. '.' .. plugin_minor .. '.' ..plugin_rev .. '.' .. plugin_build
-plugin_TkId = 'de.messmer-online.lightroom.export.photostation_upload'
+PLUGIN_VERSION = plugin_major .. '.' .. plugin_minor .. '.' ..plugin_rev .. '.' .. plugin_build
+PLUGIN_TKID = 'de.messmer-online.lightroom.export.photostation_upload'
 
 return {
 
 	LrSdkVersion = 5.0,
 	LrSdkMinimumVersion = 4.0, -- minimum SDK version required by this plug-in
 
-	LrToolkitIdentifier = plugin_TkId,
+	LrToolkitIdentifier = PLUGIN_TKID,
 
 	LrPluginName = "Photo StatLr",
 

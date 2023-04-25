@@ -689,7 +689,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 		if reason ~= 'cancel' then
 			showFinalMessage("Photo StatLr: Sort Photos in Album failed!", reason, "critical")
 		end
-		closeLogfile(publishSettings)
+		closeLogfile()
 		return false
 	end
 
@@ -697,7 +697,7 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 
 	showFinalMessage("Photo StatLr: Sort Photos in Album done", "Sort Photos in Album done.", "info")
 
-	closeLogfile(publishSettings)
+	closeLogfile()
 
 	return true
 end
@@ -1206,11 +1206,11 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 		local titlePS,		titleChanged
 		local captionPS, 	captionChanged
 		local ratingPS, 	ratingChanged
-		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }		-- GPS data from photo or from location tag (second best)
+		local gpsPS,		gpsChanged = { latitude = 0, longitude = 0, }, nil		-- GPS data from photo or from location tag (second best)
 		local ratingTagPS, 	ratingTagChanged
 		local labelPS,		labelChanged
-		local tagsPS, tagNamesPS, tagsChanged = {}, {}
-		local facesPS, 		facesChanged = {}
+		local tagsPS, tagNamesPS, tagsChanged = {}, {}, nil
+		local facesPS, 		facesChanged = {}, nil
 		local origPhotoDimension
 		local keywordsAdd, keywordsRemove, keywordNamesAdd, keywordNamesRemove
 		local facesAdd, facesRemove, faceNamesAdd, faceNamesRemove

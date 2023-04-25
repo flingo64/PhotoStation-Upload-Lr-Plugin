@@ -566,11 +566,11 @@ end
 local function pathIdCacheGetEntry(userid, path, type, wantsInfo)
 	pathIdCacheCleanup(userid)
 	path 		= pathIdCachePathname(path, type)
-	cacheEntry	= pathIdCache.cache[userid] and pathIdCache.cache[userid][path]
+	local cacheEntry	= pathIdCache.cache[userid] and pathIdCache.cache[userid][path]
 
 	-- if entry was not found then check whether it's really not there or just not yet cached
 	if not cacheEntry then
-		parentFolder = ifnil(LrPathUtils.parent(path), '/')
+		local parentFolder = ifnil(LrPathUtils.parent(path), '/')
 		if 		pathIdCache.cache[userid]
 			and pathIdCache.cache[userid][parentFolder]
 			and (
@@ -1225,7 +1225,7 @@ end
 -- uploadPhotoFiles
 -- upload photo plus its thumbnails (if configured)
 function Photos.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, photo_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
-	dstFilePath = LrPathUtils.child(dstDir, dstFilename)
+	local dstFilePath = LrPathUtils.child(dstDir, dstFilename)
 
 	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
 	if oldPhotoId then
@@ -1258,7 +1258,7 @@ end
 function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, video_Filename, title_Filename,
 										thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 										vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
-	dstFilePath = LrPathUtils.child(dstDir, dstFilename)
+	local dstFilePath = LrPathUtils.child(dstDir, dstFilename)
 
 	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
 	if oldPhotoId then
@@ -1620,7 +1620,7 @@ function PhotosPhoto:getTags()
 	if self.additional and self.additional.tag then
 		tagList = {}
 		for i = 1, #self.additional.tag do
-			tag = {}
+			local tag = {}
 			tag.id 	 	= self.additional.tag[i].id
 			tag.name 	= self.additional.tag[i].name
 			tag.type 	= self.additional.tag[i].type or 'desc'
@@ -1632,7 +1632,7 @@ function PhotosPhoto:getTags()
     if self.additional and self.additional.person then
 		tagList = tagList or {}
 		for i = 1, #self.additional.person do
-			tag = {}
+			local tag = {}
 			tag.id 	 	= self.additional.person[i].id
 			tag.name 	= self.additional.person[i].name
 			tag.type 	= self.additional.person[i].type or 'person'

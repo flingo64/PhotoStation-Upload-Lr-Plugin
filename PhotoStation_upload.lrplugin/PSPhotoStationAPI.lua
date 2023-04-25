@@ -697,9 +697,9 @@ function PhotoStation.sortAlbumPhotos (h, albumPath, sortedPhotos)
 					 'offset=0&' ..
 					 'limit='.. #sortedPhotos .. '&' ..
 					 'id=' .. PhotoStation.getAlbumId(h, albumPath)
-	local i, photoPath, item_ids = {}
+	local item_ids = {}
 
-	for i, photoPath in ipairs(sortedPhotos) do
+	for i, _ in ipairs(sortedPhotos) do
 		if i == 1 then
 			item_ids = PhotoStation.getPhotoId(h, sortedPhotos[i])
 		else
@@ -1144,6 +1144,8 @@ function PhotoStation.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dst
 	local retcode,reason
 
 	local thisPhoto = dstDir .. '/' .. dstFilename
+	local lastPhoto
+	
 	if thisPhoto ~= lastPhoto then
 		if position ~= 'FIRST' then
 			writeLogfile(1, string.format("uploadPictureFile(%s) to (%s - %s - %s) interrupts upload of %s\n",
@@ -1524,7 +1526,7 @@ function PhotoStation.getAlbumUrl(h, albumPath)
 	local subDirPath = ''
 	local subDirUrl  = ''
 
-	local albumDirname = split(albumPath, '/')
+	local albumDirname = split(albumPath, '/') or {}
 
 	albumUrl = h.serverUrl .. h.psAlbumRoot
 
@@ -1797,8 +1799,6 @@ function PhotoStation.createSharedAlbumAdvanced(h, sharedAlbumParams, useExistin
 
 		sharedAlbumInfo = PhotoStation.getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 		if not sharedAlbumInfo then return nil, 555 end
-
-		isNewSharedAlbum = true
 	end
 
 	sharedAlbumAttributes.is_shared = sharedAlbumParams.isPublic

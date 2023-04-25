@@ -93,7 +93,7 @@ require "PSPhotoServer"
 --============================================================================--
 JSON = assert(loadfile (LrPathUtils.child(_PLUGIN.path, 'JSON.lua')))()
 
-tmpdir = LrPathUtils.getStandardFilePath("temp")
+TMPDIR = LrPathUtils.getStandardFilePath("temp")
 
 ----------------------- JSON helper --------------------------------------------------------------
 -- Overwrite JSON.assert() to redirect output to logfile
@@ -388,7 +388,7 @@ local loglevelname = {
 
 -- getLogFilename: return the filename of the logfile
 function getLogFilename()
-	return LrPathUtils.child(tmpdir, "PhotoStatLr.log")
+	return LrPathUtils.child(TMPDIR, "PhotoStatLr.log")
 end
 
 -- getLogLogLevel: return the current loglevel
@@ -549,34 +549,6 @@ function closeLogfile()
 end
 
 ---------------------- semaphore operations -----------------------------------------
---[[
-function waitSemaphore(semaName, info)
-	local semaphoreFn = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(semaName, 'sema'))
-
-	while LrFileUtils.exists(semaphoreFn) do
-		writeLogfile(3, info .. ": waiting for semaphore " .. semaName .. "\n")
-		-- make sure we are not waiting forever for an orphaned semaphore file
-		local fileAttr = LrFileUtils.fileAttributes(semaphoreFn)
-		if fileAttr and fileAttr.fileCreationDate and (fileAttr.fileCreationDate < LrDate.currentTime() - 300) then
-			writeLogfile(3, info .. ": removing orphanded semaphore " .. semaName .. "\n")
-			signalSemaphore(semaName)
-		else
-			LrTasks.sleep(1)
-		end
-	end
-
-	local semaphoreFile = io.open(semaphoreFn, "w")
-	semaphoreFile:write(LrDate.formatMediumTime(LrDate.currentTime()))
-	io.close (semaphoreFile)
-	return true
-end
-
-function signalSemaphore(semaName)
-	local semaphoreFn = LrPathUtils.child(tmpdir, LrPathUtils.addExtension(semaName, 'sema'))
-
-	LrFileUtils.delete(semaphoreFn)
-end
-]]
 
 local semaphores = {}
 
@@ -987,7 +959,7 @@ function showFinalMessage (title, message, msgType)
 	local updateAvail = false
 	local updateNotice
 
-	if ifnil(prefs.updateAvailable, '') ~= '' and ifnil(prefs.updateAvailable, '') ~= pluginVersion then
+	if ifnil(prefs.updateAvailable, '') ~= '' and ifnil(prefs.updateAvailable, '') ~= PLUGIN_VERSION then
 		updateNotice = 'This is a very moving moment: Version ' .. prefs.updateAvailable .. ' is available!\n'
 		updateAvail = true
 	end

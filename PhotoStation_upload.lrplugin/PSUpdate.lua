@@ -37,6 +37,34 @@ local LrSystemInfo 		= import 'LrSystemInfo'
 require "Info"
 require "PSUtilities"
 
+
+--============================================================================--
+local function sendCheckUpdate(checkUpdateRequest)
+	local postHeaders = {
+		{
+			field = 'Content-Type', value = 'application/x-www-form-urlencoded' ,
+		},
+	}
+
+--	writeLogfile(4, "sendCheckUpdate: LrHttp.post(" .. PSUpdate.updateCheckUrl .. "-->" .. checkUpdateRequest .. ")\n")
+	local respBody, respHeaders = LrHttp.post(PSUpdate.updateCheckUrl, checkUpdateRequest, postHeaders, 'POST', 5, string.len(checkUpdateRequest))
+
+	if not respBody then
+		if respHeaders then
+			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) ..
+										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
+										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
+			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' ..
+					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
+		else
+			writeLogfile(3, 'LrHttp failed, no Infos!\n')
+			return false, 'Unknown error on http request"'
+		end
+	end
+
+	return true, respBody
+end
+
 --============================================================================--
 
 PSUpdate = {}
@@ -55,10 +83,10 @@ function PSUpdate.checkForUpdate()
 	local lang = LrLocalization.currentLanguage()
 	local uid = prefs.uid
 
-	writeLogfile(2, string.format("Environment: plugin: %s Lr: %s OS: %s Lang: %s\n", pluginVersion, lrVersion, osVersion, lang))
+	writeLogfile(2, string.format("Environment: plugin: %s Lr: %s OS: %s Lang: %s\n", PLUGIN_VERSION, lrVersion, osVersion, lang))
 
 	-- reset update status, if current version matches last available update version
-	if pluginVersion == prefs.updateAvailable then
+	if PLUGIN_VERSION == prefs.updateAvailable then
 		writeLogfile(3, "CheckForUpdate: resetting Update status\n")
 		prefs.updateAvailable = ''
 		prefs.downloadUrl = ''
@@ -98,12 +126,12 @@ function PSUpdate.checkForUpdate()
 		return true
 	end
 
-	local checkUpdateRequest = 'pluginversion=' .. urlencode(pluginVersion) ..
+	local checkUpdateRequest = 'PLUGIN_VERSION=' .. urlencode(PLUGIN_VERSION) ..
 					'&osversion=' .. urlencode(osVersion) ..
 					'&lrversion=' .. urlencode(lrVersion) ..
 					'&lang=' .. urlencode(lang) ..
 					'&uid=' .. urlencode(uid) ..
-					'&sec=' .. LrMD5.digest(lrVersion .. pluginVersion .. osVersion .. lang .. uid .. plugin_TkId)
+					'&sec=' .. LrMD5.digest(lrVersion .. PLUGIN_VERSION .. osVersion .. lang .. uid .. PLUGIN_TKID)
 
 --	writeLogfile(2, 'CheckForUpdate: ' .. checkUpdateRequest)
 
@@ -124,7 +152,7 @@ function PSUpdate.checkForUpdate()
 	if uid == '0' then
 		uid = newUid
 	end
-	local checksum = LrMD5.digest(uid .. plugin_TkId)
+	local checksum = LrMD5.digest(uid .. PLUGIN_TKID)
 
 	writeLogfile(4, "  got back: uid= " .. ifnil(newUid, '<Nil>') ..
 								", res= " .. ifnil(res, '<Nil>') ..
@@ -170,30 +198,4 @@ function PSUpdate.checkForUpdate()
 	prefs.feedbackUrl = ifnil(feedbackUrl, PSUpdate.defaultFeedbackUrl)
 
 	return true
-end
-
-function sendCheckUpdate(checkUpdateRequest)
-	local postHeaders = {
-		{
-			field = 'Content-Type', value = 'application/x-www-form-urlencoded' ,
-		},
-	}
-
---	writeLogfile(4, "sendCheckUpdate: LrHttp.post(" .. PSUpdate.updateCheckUrl .. "-->" .. checkUpdateRequest .. ")\n")
-	local respBody, respHeaders = LrHttp.post(PSUpdate.updateCheckUrl, checkUpdateRequest, postHeaders, 'POST', 5, string.len(checkUpdateRequest))
-
-	if not respBody then
-		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) ..
-										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
-										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
-			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' ..
-					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
-		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
-			return false, 'Unknown error on http request"'
-		end
-	end
-
-	return true, respBody
 end

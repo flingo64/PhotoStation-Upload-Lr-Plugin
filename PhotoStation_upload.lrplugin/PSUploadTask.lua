@@ -290,6 +290,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	local picDir, picBasename = getDirAndBasename(renderedVideoPath)
 	local picExt = 'jpg'
 	local thmb_ORG_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename, picExt))
+	local retcode
 
 	-- upload file timestamp: PS uses the file timestamp as capture date for videos
 	local dstFileTimestamp
@@ -483,7 +484,7 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 	end
 
 	-- check keywords ------------------------------------------------------------------------
-	local keywordsLr, keywordsAdd, keywordsRemove = {}
+	local keywordsLr, keywordsAdd, keywordsRemove = {}, nil, nil
 	if photoServer:supports(PHOTOSERVER_METADATA_TAG) then
 		local keywordNamesLr =trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
 		if keywordNamesLr then
@@ -550,6 +551,7 @@ local function uploadMetadata(srcPhoto, vinfo, dstPath, exportParams)
 		return true
 	end
 
+	local retcode
 	-- publish changes
 	if (not waitSemaphore("PhotoServer", dstPath)
 		or (metadataChanged > 0	and not psPhoto:updateMetadata())
@@ -1172,7 +1174,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 				end
 
 				if (publishMode == 'Metadata'
-					and (	not	uploadMetadata(srcPhoto, vinfo, publishedPhotoId, exportParams, vinfo)
+					and (	not	uploadMetadata(srcPhoto, vinfo, publishedPhotoId, exportParams)
 						 or not ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier))
 					)
 				or (string.find('Export,Publish', publishMode, 1, true) and srcPhoto:getRawMetadata("isVideo")
