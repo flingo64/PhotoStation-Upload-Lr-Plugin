@@ -356,13 +356,13 @@ local function Photos_getPersonalRootFolderId (h)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- Photos_listAlbumSubfolders: returns all subfolders in a given folder
+-- Photos_listFolderSubfolders: returns all subfolders in a given folder
 -- returns
 --		subfolderList:	table of subfolder infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-local function Photos_listAlbumSubfolders(h, folderPath, folderId)
+local function Photos_listFolderSubfolders(h, folderPath, folderId)
 	local apiParams = {
-			id				= folderId or Photos.getFolderId(h, folderPath),
+			id				= folderId or h:getFolderId(folderPath, false),
 			additional		= "[]",
 			sort_direction	= "asc",
 			offset			= 0,
@@ -375,19 +375,20 @@ local function Photos_listAlbumSubfolders(h, folderPath, folderId)
 
 	if not respArray then return nil, errorCode end
 
-	writeTableLogfile(3, string.format("Photos_listAlbumSubfolders('%s') returns %d items\n", folderPath, #respArray.data.list))
+	writeLogfile(3, string.format("Photos_listFolderSubfolders('%s') returns %d items\n", folderPath, #respArray.data.list))
+	writeTableLogfile(5, string.format("Photos_listFolderSubfolders('%s'):\n", folderPath), respArray.data.list)
 	return respArray.data.list
 end
 
 ---------------------------------------------------------------------------------------------------------
--- Photos_listAlbumItems: returns all items (photos/videos) in a given folder
+-- Photos_listIFolderItems: returns all items (photos/videos) in a given folder
 -- returns
 --		itemList:		table of item infos, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-local function Photos_listAlbumItems(h, folderPath, folderId)
-	local realFolderId = folderId or Photos.getFolderId(h, folderPath)
+local function Photos_listIFolderItems(h, folderPath, folderId)
+	local realFolderId = folderId or h:getFolderId(folderPath, false)
 	if not realFolderId	then
-		writeTableLogfile(1, string.format("Photos_listAlbumItems('%s') could not get folderId, returns <nil>\n", folderPath))
+		writeTableLogfile(1, string.format("Photos_listIFolderItems('%s') could not get folderId, returns <nil>\n", folderPath))
 		return nil, 1
 	end
 	local apiParams = {
@@ -409,10 +410,8 @@ local function Photos_listAlbumItems(h, folderPath, folderId)
 
 	if not respArray then return nil, errorCode end
 
-	-- no need to set the lastScan timestamp for the folder's cacheIdPath entry here,
-	-- because Photos_listAlbumSubfolders() will also be called before
-
-	writeTableLogfile(3, string.format("Photos_listAlbumItems('%s', '%s') returns %d items\n", folderPath, ifnil(folderId, '<nil>'), #respArray.data.list))
+	writeLogfile(3, string.format("Photos_listIFolderItems('%s', '%s') returns %d items\n", folderPath, ifnil(folderId, '<nil>'), #respArray.data.list))
+	writeTableLogfile(5, string.format("Photos_listIFolderItems('%s', '%s'):\n", folderPath, ifnil(folderId, '<nil>')),respArray.data.list)
 	return respArray.data.list
 end
 
@@ -420,29 +419,35 @@ end
 -- ###################################### pathIdCache ##################################################
 -- #####################################################################################################
 -- The path id cache holds ids of folders and items (photo/video) as used by the PhotosAPI.
--- Items are case-insensitive in Photos, so we store and comparethem lowercase
+-- Items are case-insensitive in Photos, so we store and compare them lowercase
 -- to have a unique representation and to find any lowercase/uppercase variation of an item name
 -- layout:
---		pathIdCache
---			cache[userid] (0 for Team Folders)
---					[itemPath] = 	{ id, type, validUntil, addinfo } or
---					[folderPath] =	{ id, type, validUntil, lastSubfolderScanValidUntil, lastItemScanValidUntil }
---			lastCleanup[userid]
+--		pathIdCache = {
+--          timeout,
+--          listSubfolders
+--          listItems
+-- 
+--			cache[userid] (0 for Team Folders) = {
+--                  folder[folderPath] = {
+--                      id
+--					    item[itemName] = { id, type, addinfo }
+--                      itemsValidUntil,
+--					    subfolder[folderName] = { id, type }
+--                      subfoldersValidUntil,
+--			        }
+--          }
 local pathIdCache = {
-	cache 			= {},
-	lastCleanup		= {},
 	timeout			= 300,
-	listFunction	= {
-		folder		= Photos_listAlbumSubfolders,
-		item		= Photos_listAlbumItems
-	},
+	listSubfolders  = Photos_listFolderSubfolders,
+	listItems		= Photos_listIFolderItems,
+	cache 			= {}
 }
 
 ---------------------------------------------------------------------------------------------------------
--- pathIdCachePathname: normalize pathnames for the cache:
+-- pathIdCacheNormalizePathname: normalize pathnames for the cache:
 --		- make sure a path starts with a '/'
 -- 		- items (files) are case-insensitive in Photos, so we store them in lowercase
-local function pathIdCachePathname(path, type)
+local function pathIdCacheNormalizePathname(path, type)
 	local cachePath
 	if path and string.sub(path, 1, 1) ~= "/" then
 		cachePath = "/" .. path
@@ -459,150 +464,216 @@ local function pathIdCachePathname(path, type)
 end
 ---------------------------------------------------------------------------------------------------------
 -- pathIdCacheInitialize: remove all entries from cache
-local function pathIdCacheInitialize(userid)
+local function pathIdCacheInitialize(h)
+    userid = h.userid
 	writeLogfile(3, string.format("pathIdCacheInitialize(user='%s')\n", userid))
 	pathIdCache.cache[userid] = {}
-	pathIdCache.lastCleanup[userid] = LrDate.timeFromComponents(2000, 1, 1, 0, 0, 0, 'local')
-	return true
-end
-
----------------------------------------------------------------------------------------------------------
--- pathIdCacheCleanup: remove old entries from id cache
-local function pathIdCacheCleanup(userid)
---	writeLogfile(5, string.format("pathIdCacheCleanup(user='%s')\n", userid))
-	local user_pathIdCache = pathIdCache.cache[userid]
-
-	if not user_pathIdCache then return true end
-
-	-- no need to cleanup last cleanup was just now
-	if pathIdCache.lastCleanup[userid] == LrDate.currentTime() then return true end
-
-	for key, entry in pairs(user_pathIdCache) do
-		if (entry.validUntil < LrDate.currentTime()) then
-			writeLogfile(3, string.format("pathIdCacheCleanup(user:%s); removing path '%s'\n", userid, key))
-			user_pathIdCache[key] = nil
-		end
-	end
-
-	pathIdCache.lastCleanup[userid] = LrDate.currentTime()
-	return true
-end
-
----------------------------------------------------------------------------------------------------------
--- pathIdCacheInvalidateFolder(userid, path, type)
---	age out a folder's scan result for the given subelement type ('item' or 'folder')
-local function pathIdCacheInvalidateFolder(userid, path, type)
-	writeLogfile(3, string.format("pathIdCacheInvalidateFolder(user='%s', path='%s', '%s')\n", userid, path, type))
-	if path and string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
-
-	if pathIdCache.cache[userid] and pathIdCache.cache[userid][path] then
-		if type == 'folder' then
-			pathIdCache.cache[userid][path].lastSubfolderScanValidUntil = LrDate.currentTime() - 1
-		else
-			pathIdCache.cache[userid][path].lastItemScanValidUntil = LrDate.currentTime() - 1
-		end
-	end
+    pathIdCache.cache[userid].folder = {}
 
 	return true
 end
 
 ---------------------------------------------------------------------------------------------------------
--- pathIdCacheAddEntry(userid, path, id, type, addinfo)
---	add a path to the pathIdCache
---  type is either 'folder' or 'item'
--- addinfo is only valid for items, it contains additional item info (metadata, tags, ...)
-local function pathIdCacheAddEntry(userid, path, id, type, addinfo)
-	writeLogfile(5, string.format("pathIdCacheAddEntry(user='%s', path='%s', '%s', id=%d)\n", userid, path, type, id))
-	if not pathIdCache.cache[userid] then pathIdCache.cache[userid] = {} end
-	local user_pathIdCache = pathIdCache.cache[userid]
-
-	path = pathIdCachePathname(path, type)
-	if not user_pathIdCache[path] then  user_pathIdCache[path] = {} end
-	local entry = user_pathIdCache[path]
-
-	entry.id 		= id
-	entry.type 		= type
-	entry.addinfo 	= addinfo
-
-	-- root folder has unlimited validity, all other use the cache-specific timeout
-	entry.validUntil 	= iif(path == '/',
-								LrDate.timeFromComponents(2050, 12, 31, 23, 59, 50, 'local'),
-								LrDate.currentTime() + pathIdCache.timeout)
-
-	if path ~= '/' then
-		-- set the lastScan timestamp for the parent folder's cacheIdPath entry
-		local parentFolder = ifnil(LrPathUtils.parent(path), '/')
-		if pathIdCache.cache[userid][parentFolder] then
-			if type == 'folder' then
-				pathIdCache.cache[userid][parentFolder].lastSubfolderScanValidUntil = LrDate.currentTime() + pathIdCache.timeout
-			else
-				pathIdCache.cache[userid][parentFolder].lastItemScanValidUntil = LrDate.currentTime() + pathIdCache.timeout
-			end
-		end
-	end
-
-	return true
-end
-
----------------------------------------------------------------------------------------------------------
--- pathIdCacheDeleteEntry(userid, path)
---	delete a path from the pathIdCache: must be called whenever a remote folder or item was deleted
-local function pathIdCacheDeleteEntry(userid, path, type)
-	writeLogfile(3, string.format("pathIdCacheDeleteEntry(user='%s', path='%s', type='%s')\n", userid, path, type))
-
-	path = pathIdCachePathname(path, type)
-
-	if path ~= '/' and pathIdCache.cache[userid] and pathIdCache.cache[userid][path] then
-		pathIdCache.cache[userid][path] = nil
-	end
-
-	return true
-end
-
----------------------------------------------------------------------------------------------------------
--- pathIdCacheGetEntry(userid, path, type, wantsInfo)
+-- pathIdCacheGetEntry(h, path, type, wantsInfo)
 --	get pathIdCache entry for the given user/path/type
---  if wantsInfo (only for items), then info element must be available, otherwise the id is sufficient
-local function pathIdCacheGetEntry(userid, path, type, wantsInfo)
-	pathIdCacheCleanup(userid)
-	path 		= pathIdCachePathname(path, type)
-	local cacheEntry	= pathIdCache.cache[userid] and pathIdCache.cache[userid][path]
+--  if wantsInfo (only for items), then info element must be available also, otherwise the id is sufficient
+--  If the path is not found in the cache immediately, the function will 
+--  recursively add all missing parent folders and finally 
+--  add all items or subfolders (depending on search type) of its immediate parent folder 
+--  returns:
+--      cache object    including id, if path was found (may involve a cache update)
+--   or nil             if path was not found, even after cache update (folder/item does not exist)
+local function pathIdCacheGetEntry(h, path, type, wantsInfo)
+    userid  = h.userid
+    path    = pathIdCacheNormalizePathname(path, type)
+	writeLogfile(5, string.format("pathIdCacheGetEntry(userid:%s, path:'%s', '%s', wantsInfo:%s)...\n", userid, path, type, wantsInfo))
 
-	-- if entry was not found then check whether it's really not there or just not yet cached
-	if not cacheEntry then
-		local parentFolder = ifnil(LrPathUtils.parent(path), '/')
-		if 		pathIdCache.cache[userid]
-			and pathIdCache.cache[userid][parentFolder]
-			and (
-					(
-							type == 'folder'
-						and pathIdCache.cache[userid][parentFolder].lastSubfolderScanValidUntil
-						and pathIdCache.cache[userid][parentFolder].lastSubfolderScanValidUntil > LrDate.currentTime()
-				 	)
-				 or
-					(
-							type == 'item'
-						and pathIdCache.cache[userid][parentFolder].lastItemScanValidUntil
-						and pathIdCache.cache[userid][parentFolder].lastItemScanValidUntil > LrDate.currentTime()
-					)
-				)
-		then
-			writeLogfile(4, string.format("pathIdCacheGetEntry(user='%s', path='%s', '%s') returns 'notFound'\n", userid, path, type))
-			return nil, 'notFound'
+    -- check if typ is valid
+    if not string.find('folder,item', type) then return nil end
+
+    -- chek if root folder was given
+    local folderCache   = pathIdCache.cache[userid].folder
+    if type == 'folder' and path == '/' then
+        -- no need to check validity
+        return { id = folderCache and folderCache[path].id, type = 'folder' }
+    end
+
+    -- Check for the given path in the cache object of its parent folder
+    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
+    local leafName      = LrPathUtils.leafName(path)
+
+    if not  folderCache[parentFolder]
+    or (
+            type == 'folder'
+        and (
+                not folderCache[parentFolder].subfoldersValidUntil
+            or      folderCache[parentFolder].subfoldersValidUntil < LrDate.currentTime()
+            or not  folderCache[parentFolder].subfolder
+        )
+    ) or (
+            type == 'item'
+        and (
+                not folderCache[parentFolder].itemsValidUntil
+            or      folderCache[parentFolder].itemsValidUntil < LrDate.currentTime()
+            or not  folderCache[parentFolder].item
+            or (        wantsInfo
+                and     folderCache[parentFolder].item[leafName]
+                and not folderCache[parentFolder].item[leafName].addinfo
+            )
+        )
+    ) then
+        -- path was not yet cached or cache entry is outdated: update subfolder list of parentFolder
+        writeLogfile(4, string.format("pathIdCacheGetEntry(userid:%s, path:'%s'): cache update required ... \n", userid, path))
+        local parentFolderId = folderCache[parentFolder] and folderCache[parentFolder].id
+        if not parentFolderId then
+            local cachedParentFolderObject = pathIdCacheGetEntry(h, parentFolder, 'folder', nil)
+            parentFolderId = cachedParentFolderObject and cachedParentFolderObject.id
+        end
+        if not parentFolderId then
+            return nil
+        end
+
+        if type == 'folder' then
+            local subfolderList, errorCode  = pathIdCache.listSubfolders(h, parentFolder, parentFolderId)
+            if not subfolderList then
+                writeLogfile(1, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listSubfolders('%s') returned <nil> (%d)\n", userid, path, parentFolder, errorCode))
+                return nil
+            end
+
+            writeLogfile(4, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listSubfolders found %d subfolders in '%s'\n", userid, path, #subfolderList, parentFolder))
+            folderCache[parentFolder].subfolder = {}
+            for i = 1, #subfolderList do
+                folderCache[parentFolder].subfolder[LrPathUtils.leafName(subfolderList[i].name)] = {
+                    id  = subfolderList[i].id,
+                    type    = 'folder'
+                }
+                folderCache[subfolderList[i].name] = { id = subfolderList[i].id }
+            end
+            folderCache[parentFolder].subfoldersValidUntil = LrDate.currentTime() + pathIdCache.timeout
+
+        elseif type == 'item' then
+            local itemList, errorCode = pathIdCache.listItems(h, parentFolder, parentFolderId)
+            if not itemList then
+                writeLogfile(1, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listItems('%s') returned <nil> (%d)\n", userid, path, parentFolder, errorCode))
+                return nil
+            end
+
+            writeLogfile(3, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listItems('%s') found %d items\n", userid, path, parentFolder, #itemList))
+            folderCache[parentFolder].item = {}
+            for i = 1, #itemList do
+                folderCache[parentFolder].item[string.lower(itemList[i].filename)] = {
+                    id      = itemList[i].id,
+                    type    = 'item',
+                    addinfo = itemList[i]
+                }
+            end
+            folderCache[parentFolder].itemsValidUntil = LrDate.currentTime() + pathIdCache.timeout
+        end
+    end
+
+    if type == 'folder' then
+        return folderCache[parentFolder].subfolder[leafName]
+    else
+        return folderCache[parentFolder].item[leafName]
+    end
+end
+
+---------------------------------------------------------------------------------------------------------
+-- pathIdCacheAddEntry(h, path, id, type, addinfo)
+--	add a single item or folder path to the pathIdCache
+--  This function must be called, whenever the plugin creates a folder or an item,
+--  We can assume that the entry for the parentFolder already exists.
+--  This function will not change the validity time for the parentFolder
+--  addinfo is only valid for items, it contains additional item info (metadata, tags, ...)
+local function pathIdCacheAddEntry(h, path, id, type, addinfo)
+    userid = h.userid
+	path = pathIdCacheNormalizePathname(path, type)
+	writeLogfile(3, string.format("pathIdCacheAddEntry(user='%s', path='%s', '%s', id=%d)\n", userid, path, type, id))
+	if not pathIdCache.cache[userid] then pathIdCacheInitialize(h) end
+	local folderCache = pathIdCache.cache[userid].folder
+
+    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
+    local leafName      = LrPathUtils.leafName(path)
+
+    if  type == 'folder' then
+        -- folder: generate the folder entry w/o subfolders or items
+         folderCache[path] = {
+            id      = id
+        }
+
+        -- add folder entry to parentFolder if this is not the root folder
+        if path ~= '/' then
+            if not folderCache[parentFolder].subfolder then
+                folderCache[parentFolder].subfolder = {}
+            end
+            folderCache[parentFolder].subfolder[leafName] = {
+                id = id,
+                type = 'folder'
+            }
+        end
+    elseif type == 'item' then
+        -- add item entry to parentFolder
+        if not folderCache[parentFolder].item then
+            folderCache[parentFolder].item = {}
+        end
+        folderCache[parentFolder].item[leafName] = {
+            id      = id,
+            type    = 'item',
+            addinfo = addinfo
+        }
+    else
+        writeLogfile(1, string.format("pathIdCacheAddEntry(user='%s', path='%s', '%s', id=%d) --> invalid type!\n", userid, path, type, id))
+    end
+end
+
+---------------------------------------------------------------------------------------------------------
+-- pathIdCacheRemoveEntry(h, path, type)
+--	delete a folder or item from the pathIdCache
+--  This function must be called whenever a remote folder or item was deleted
+--  This function will not change the validity time for the parentFolder
+local function pathIdCacheRemoveEntry(h, path, type)
+    userid = h.userid
+	path = pathIdCacheNormalizePathname(path, type)
+	writeLogfile(3, string.format("pathIdCacheRemoveEntry(user='%s', path='%s', type='%s')\n", userid, path, type))
+	local folderCache = pathIdCache.cache[userid] and pathIdCache.cache[userid].folder
+
+    if not folderCache then return end
+
+    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
+    local leafName      = LrPathUtils.leafName(path)
+
+    if type == 'folder' then
+        if path ~= '/' and folderCache[path] then
+		    folderCache[path] = nil
+            folderCache[parentFolder].subfolder[leafName] = nil
+        end
+    elseif type == 'item' then
+        folderCache[parentFolder].item[leafName] = nil
+    else
+        writeLogfile(1, string.format("pathIdCacheRemoveEntry(user='%s', path='%s', '%s') --> invalid type!\n", userid, path, type))
+	end
+end
+
+---------------------------------------------------------------------------------------------------------
+-- pathIdCacheInvalidateFolder(h, path, type)
+--	age out a folder's scan result for the given subelement type ('item' or 'folder')
+local function pathIdCacheInvalidateFolder(h, path, type)
+    userid = h.userid
+	path = pathIdCacheNormalizePathname(path, type)
+    writeLogfile(3, string.format("pathIdCacheInvalidateFolder(user='%s', path='%s', '%s')\n", userid, path, type))
+	
+	if pathIdCache.cache[userid] and pathIdCache.cache[userid].folder and pathIdCache.cache[userid].folder[path] then
+        local cachedFolder = pathIdCache.cache[userid].folder[path]
+		if type == 'folder' then
+			cachedFolder.subfolder = nil
+			cachedFolder.subfoldersValidUntil = nil
 		else
-			writeLogfile(4, string.format("pathIdCacheGetEntry(user='%s', path='%s', '%s') returns 'notCached'\n", userid, path, type))
-			return nil, 'notCached'
+			cachedFolder.item = nil
+			cachedFolder.itemsValidUntil = nil
 		end
 	end
-
-	if wantsInfo and not cacheEntry.addinfo then
-		writeLogfile(4, string.format("pathIdCacheGetEntry(user='%s', path='%s'): required addinfo missing, returns 'notCached'\n", userid, path))
-		return nil, 'notCached'
-	end
-
-	writeLogfile(4, string.format("pathIdCacheGetEntry(user='%s', path='%s') returns entry '%s'\n", userid, path, ifnil(cacheEntry and cacheEntry.id, '<nil>')))
-	return cacheEntry
 end
+
 
 -- #####################################################################################################
 -- ######################## Photo and Folder Id Mgmt / pathIdCache #####################################
@@ -611,137 +682,72 @@ local Photos_createFolder
 
 ---------------------------------------------------------------------------------------------------------
 -- Photos.getFolderId(h, path, doCreate)
---	returns the id of a given folderPath (w/o leading/trailing '/')
--- the folder is searched recursively in the pathIdCache until itself or one of its parents is found
--- if the folder is found return its id,
--- else if folder is / (root) return not found
--- elseif parent is found (recursively) in cache,
--- 			call the cache's folder listFunction to get all its childs into the cache
---	 		if the requested folder is one of its childs,
---			then return its id
--- 			elseif doCreate is set then Photos_createFolder, add to cache and return its id
---      	else return nil (not found)
---	else recurse one level
-
+--  returns the id for a given folderPath in Photos.
+--  The folder is searched in the pathIdCache
+--  If the folder is found return its id,
+--  else if doCreate is set: create (recursively) the folder and return its id
 function Photos.getFolderId(h, path, doCreate)
+    path = pathIdCacheNormalizePathname(path, 'folder')
 	writeLogfile(5, string.format("getFolderId(userid:%s, path:'%s') ...\n", h.userid, path))
 
-	if string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
-
-	local cachedPathInfo, reason = pathIdCacheGetEntry(h.userid, path, 'folder')
+	local cachedPathInfo = pathIdCacheGetEntry(h, path, 'folder', nil)
 	local folderId
 	if cachedPathInfo then
 		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') returns '%d' from cache\n", h.userid, path, cachedPathInfo.id))
 		return cachedPathInfo.id
-	elseif reason == 'notFound' and not doCreate then
+    end
+	
+    if not doCreate then
 		writeLogfile(3, string.format("getFolderId(userid:%s, path:'%s') returns <nil>\n", h.userid, path))
 		return nil
 	end
 
-	-- path was not yet cached or or cache entry is outdated or not found but doCreate is set: see if we can find it or create it in the parentFolder
-	local parentFolder 		= LrPathUtils.parent(path)
-	local parentFolderId	= Photos.getFolderId(h, parentFolder, doCreate)
-	local additionalActions	= ''
+    -- folder does not exist but doCreate was set
+    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
+    local leafName      = LrPathUtils.leafName(path)
+    local errorCode
+    folderId, errorCode = Photos_createFolder(h, parentFolder, h:getFolderId(parentFolder, doCreate), leafName)
+    -- Photos_createFolder() will add the folderPath to the pathIdCache
 
-	if reason == 'notCached' then
-		-- update cache w/ folders of parentFolder and see if can find the path thereafter in the cache
-		local subfolderList = pathIdCache.listFunction.folder(h, parentFolder, parentFolderId)
-		if not subfolderList then
-			writeLogfile(1, string.format("getFolderId(userid:%s, path:'%s') listFunction('%s') returned <nil>\n", h.userid, path, parentFolder))
-			return nil
-		end
-
-		writeLogfile(4, string.format("getFolderId(userid:%s, path:'%s') listFunction found %d subfolders in '%s'\n", h.userid, path, #subfolderList, parentFolder))
-		for i = 1, #subfolderList do
-			pathIdCacheAddEntry(h.userid, subfolderList[i].name, subfolderList[i].id, "folder")
-		end
-
-		-- try it once more
-		additionalActions = 'cache update'
-		cachedPathInfo, reason = pathIdCacheGetEntry(h.userid, path, 'folder')
-		folderId = cachedPathInfo and cachedPathInfo.id
-	end
-
-	if not folderId and doCreate then
-		-- cache update didn't help, try to create the folder in parentFolder
-		local actionString
-		if not parentFolderId then
-			actionString = 'missing parent folder'
-		else
-			local folderLeaf = LrPathUtils.leafName(path)
-			local errorCode
-			folderId, errorCode = Photos_createFolder(h, parentFolder, parentFolderId, folderLeaf)
-			if folderId then
-				pathIdCacheAddEntry(h.userid, path, folderId, "folder")
-				actionString = 'successful folder creation'
-			else
-				actionString = string.format("failed folder creation: %d - %s", errorCode, Photos.getErrorMsg(errorCode))
-			end
-		end
-		additionalActions = additionalActions .. iif (additionalActions ~= '', ' and ', '') .. actionString
-	end
-
-	writeLogfile(iif(folderId, 3, 1), string.format("getFolderId(userid:%s, path '%s') returns '%s' (after %s)\n", h.userid, path, ifnil(folderId, '<nil>'), additionalActions))
+    writeLogfile(iif(folderId, 3, 1), string.format("getFolderId(userid:%s, path '%s') returns '%s' (after creating folder)\n", h.userid, path, ifnil(folderId, '<nil>')))
 	return folderId
 
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoId(h, path, wantsInfo)
--- 	returns the id and - if wantsInfo -additional info of a given item (photo/video) path (w/o leading/trailing '/') in Photos
-function Photos.getPhotoId(h, path, wantsInfo)
+-- getPhotoId(h, path, isVideo, wantsInfo)
+-- 	returns the id and - if wantsInfo - additional info for a given item (photo/video) path in Photos
+--  The fitem is searched in the pathIdCache
+function Photos.getPhotoId(h, path, isVideo, wantsInfo)
+    path = pathIdCacheNormalizePathname(path, 'item')
 	writeLogfile(5, string.format("getPhotoId(userid:%s, path:'%s') ...\n", h.userid, path))
 
-	if string.sub(path, 1, 1) ~= "/" then path = "/" .. path end
-
-	local cachedPathInfo, reason  = pathIdCacheGetEntry(h.userid, path, 'item', wantsInfo)
+	local cachedPathInfo = pathIdCacheGetEntry(h, path, 'item', wantsInfo)
 	if cachedPathInfo then
 		writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') returns id '%d' from cache\n", h.userid, path, cachedPathInfo.id))
 		return cachedPathInfo.id, cachedPathInfo.addinfo
-	elseif reason == 'notFound' then
-		writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') returns <nil>\n", h.userid, path))
-		return nil
 	end
 
-	-- path was not yet cached, or cache entry is outdated: see if we can find it on the server
-	local parentFolder	= LrPathUtils.parent(path)
-	local folderId 		= Photos.getFolderId(h, parentFolder, false)
-
-	local itemList, errorCode = pathIdCache.listFunction.item(h, parentFolder, folderId)
-	if not itemList then
-		writeLogfile(1, string.format("getPhotoId(userid:%s, path:'%s') listFunction('%s') returned <nil>\n", h.userid, path, parentFolder))
-		return nil, errorCode
-	end
-
-	writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') listFunction found %d items in '%s'\n", h.userid, path, #itemList, parentFolder))
-	for i = 1, #itemList do
-		pathIdCacheAddEntry(h.userid, LrPathUtils.child(parentFolder, itemList[i].filename), itemList[i].id, 'item', itemList[i])
-	end
-
-	-- try it once more
-	cachedPathInfo, reason  = pathIdCacheGetEntry(h.userid, path, 'item', wantsInfo)
-	if cachedPathInfo then
-		writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') returns id '%s' (after cache update)\n", h.userid, path, cachedPathInfo.id))
-		return cachedPathInfo.id, cachedPathInfo.addinfo
-	else
-		writeLogfile(3, string.format("getPhotoId(userid:%s, path:'%s') returns <nil> (after cache update)\n", h.userid, path))
-		return nil
-	end
+    return nil
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getPhotoInfoFromList(h, folderType, folderPath, photoPath, useCache)
+-- getPhotoInfoFromList(h, albumType, albumName, dstFilename, isVideo, useCache)
 -- return photo infos for a photo in a given folder list (folder, shared album or public shared album)
 -- returns:
 -- 		photoInfos				if remote photo was found
 -- 		nil,					if remote photo was not found
 -- 		nil,		errorCode	on error
---getPhotoInfoFromList('album', normalizeDirname(LrPathUtils.parent(photoPath)), photoPath, useCache)
-function Photos.getPhotoInfoFromList(h, folderType, folderPath, photoPath, useCache)
-	if not useCache then pathIdCacheInvalidateFolder(h.userid, folderPath, 'item') end
+function Photos.getPhotoInfoFromList(h, folderType, folderPath, photoPath, isVideo, useCache)
+    if folderType ~= 'album' then
+		writeLogfile(1, string.format("getPhotoInfoFromList('%s', '%s', '%s', useCache %s); invalid folderType!\n", folderType, folderPath, photoPath, useCache))
+        return nil
+    end
 
-	-- get photo id plus addinfo
-	local photoId, addinfo = Photos.getPhotoId(h, photoPath, true)
+	if not useCache then pathIdCacheInvalidateFolder(h, folderPath, 'item') end
+
+    -- get photo id plus addinfo
+	local photoId, addinfo = h:getPhotoId(photoPath, isVideo, true)
 	if not photoId then
 		writeLogfile(3, string.format("getPhotoInfoFromList('%s', '%s', '%s', useCache %s) found no infos.\n", folderType, folderPath, photoPath, useCache))
 		return nil, addinfo
@@ -756,7 +762,7 @@ end
 --	URL of a photo in Photos is:
 --		http(s)://<psServer>[:<psPort>][/<aliasPath>]<basedir>/folder/<folderId>
 function Photos.getAlbumUrl(h, folderPath)
-	local folderId	= h:getFolderId(normalizeDirname(folderPath))
+	local folderId	= h:getFolderId(folderPath, false)
 
 	if not folderId then
 		writeLogfile(1, string.format("getAlbumUrl(server='%s', userid='%s', folderPath='%s'): folderId '%s' returns nil\n",
@@ -780,8 +786,8 @@ end
 function Photos.getPhotoUrl(h, photoPath, isVideo)
 	writeLogfile(3, string.format("getPhotoUrlgetPhotoUrl(server='%s', userid='%s', path='%s')",
 				h.serverUrl, h.userid, photoPath))
-	local folderId	= h:getFolderId(ifnil(normalizeDirname(LrPathUtils.parent(photoPath)),'/'))
-	local itemId 	= h:getPhotoId(photoPath, isVideo)
+	local folderId	= h:getFolderId(ifnil(LrPathUtils.parent(photoPath),'/'), false)
+	local itemId 	= h:getPhotoId(photoPath, isVideo, false)
 
 	if not folderId or not itemId then
 		writeLogfile(1, string.format("getPhotoUrl(server='%s', userid='%s', path='%s'): folderId '%s', itemId '%s' returns nil\n",
@@ -875,7 +881,7 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 	else
 		h.userid		= 0
 	end
-	pathIdCacheInitialize(h.userid)
+	pathIdCacheInitialize(h)
 
 	h.psWebAPI 		= 	'/webapi/'
 	h.hhid			= 	'9252' -- TODO: use random id
@@ -945,7 +951,7 @@ function Photos.login(h, username, password)
 	if not rootFolderId then return false, errorCode end
 
 	-- initialize folderId cache w/ root folder
-	pathIdCacheAddEntry(h.userid, "/", rootFolderId, "folder")
+	pathIdCacheAddEntry(h, "/", rootFolderId, "folder", nil)
 
 	return respArray.success
 end
@@ -971,20 +977,23 @@ function Photos_createFolder (h, parentDir, parentDirId, newDir)
 		api 				= "SYNO.FotoTeam.Browse.Folder",
 		version 			= "1",
 		method 				= "create",
-		target_id			= parentDirId or Photos.getFolderId(h, parentDir),
+		target_id			= parentDirId or h:getFolderId(parentDir, false),
 		name				= '"' .. urlencode(newDir) .. '"'
 	}
 	local respArray, errorCode = Photos_API(h, apiParams)
 
 	if not respArray and errorCode == 641 then
 		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): folder already exists, returning folderId from cache\n", parentDir, ifnil(parentDirId, '<nil>'), newDir))
-		return Photos.getFolderId(h, LrPathUtils.child(parentDir, newDir))
+		return h:getFolderId(LrPathUtils.child(parentDir, newDir), false)
 	elseif not respArray then
 		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): return <nil>, %s\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, errorCode))
 		return nil, errorCode
 	end
 
 	local folderId = respArray.data.folder.id
+
+    pathIdCacheAddEntry(h, LrPathUtils.child(parentDir, newDir), folderId, "folder", nil)
+
 	writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s') returns %d\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, folderId))
 
 	return folderId
@@ -1023,7 +1032,7 @@ function Photos.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 	local dstDir = normalizeDirname(dstRoot .."/" .. dstDirRel)
 
 	writeLogfile(4,"  createTree: dstDir is: " .. dstDir .. "\n")
-	local folderId, errorCode = Photos.getFolderId(h, dstDir, true)
+	local folderId, errorCode = h:getFolderId(dstDir, true)
 
 	if folderId then
 		return dstDir
@@ -1035,13 +1044,11 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- Photos_deleteFolder(h, folderPath)
 local function Photos_deleteFolder (h, folderPath)
-	local folderId = h:getFolderId(folderPath)
+	local folderId = h:getFolderId(folderPath, false)
 	if not folderId then
 		writeLogfile(3, string.format('Photos_deleteFolder(%s): does not exist, returns OK\n', folderPath))
 		return true
 	end
-
-	pathIdCacheDeleteEntry(h.userid, folderPath, 'folder')
 
 	local apiParams = {
 		id		= "[" .. folderId  .. "]",
@@ -1054,13 +1061,16 @@ local function Photos_deleteFolder (h, folderPath)
 
 	if not respArray then return false, errorCode end
 
-	writeLogfile(3, string.format('Photos_deleteFolder(%s) returns OK\n', folderPath))
+    pathIdCacheRemoveEntry(h, folderPath, 'folder')
+
+    writeLogfile(3, string.format('Photos_deleteFolder(%s) returns OK\n', folderPath))
 	return respArray.success, errorCode
 end
 
 ---------------------------------------------------------------------------------------------------------
 -- deleteEmptyAlbumAndParents(h, folderPath)
 -- delete an folder and all its parents as long as they are empty
+-- Do not use the pathIdCache.
 -- return count of deleted folders
 function Photos.deleteEmptyAlbumAndParents(h, folderPath)
 	local nDeletedFolders = 0
@@ -1068,8 +1078,8 @@ function Photos.deleteEmptyAlbumAndParents(h, folderPath)
 
 	currentFolderPath = folderPath
 	while currentFolderPath do
-		local photoInfos =  Photos_listAlbumItems(h, currentFolderPath)
-		local subfolders =  Photos_listAlbumSubfolders(h, currentFolderPath)
+		local photoInfos =  Photos_listIFolderItems(h, currentFolderPath)
+		local subfolders =  Photos_listFolderSubfolders(h, currentFolderPath)
 
     	-- if not empty, we are ready
     	if 		(photoInfos and #photoInfos > 0)
@@ -1113,7 +1123,7 @@ local function Photos_uploadPictureFiles(h, dstDir, dstFilename, srcDateTime, mi
 	local timeout = math.floor(fileSize / 1250000)
 	if timeout < 30 then timeout = 30 end
 
-	local targetFolderId = Photos.getFolderId(h, dstDir)
+	local targetFolderId = h:getFolderId(dstDir, false)
 	if not targetFolderId then
 		local errorMsg = "Photos_uploadPictureFiles: cannot get folderId of '" .. dstDir .."'!"
 		writeLogfile(3, errorMsg .. "\n")
@@ -1227,8 +1237,8 @@ end
 function Photos.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, photo_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
 	local dstFilePath = LrPathUtils.child(dstDir, dstFilename)
 
-	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
-	if oldPhotoId then
+	local oldPhotoId, oldPhotoInfo = h:getPhotoId(dstFilePath, false, true)
+	if oldPhotoId and oldPhotoInfo then
 		if not	Photos.deletePhoto(h, dstFilePath, nil, oldPhotoId) then return false end
 
 		-- HACK: if new filename is not upper/lowercase identical to old filename
@@ -1243,7 +1253,7 @@ function Photos.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumb
 	local success, photoId = Photos_uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'image/jpeg', photo_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
 	if success then
 		-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
-		pathIdCacheAddEntry(h.userid, dstFilePath, photoId, 'item', nil)
+		pathIdCacheAddEntry(h, dstFilePath, photoId, 'item', nil)
 	end
 
 	return success
@@ -1260,8 +1270,8 @@ function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumb
 										vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
 	local dstFilePath = LrPathUtils.child(dstDir, dstFilename)
 
-	local oldPhotoId, oldPhotoInfo = Photos.getPhotoId(h, dstFilePath, true)
-	if oldPhotoId then
+	local oldPhotoId, oldPhotoInfo = h:getPhotoId(dstFilePath, true, true)
+	if oldPhotoId and oldPhotoInfo then
 		if not	Photos.deletePhoto(h, dstFilePath, nil, oldPhotoId) then return false end
 
 		-- HACK: if new filename is not upper/lowercase identical to old filename
@@ -1276,7 +1286,7 @@ function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumb
 	local success, videoId = Photos_uploadPictureFiles(h, dstDir, dstFilename, dstFileTimestamp, 'video/mp4', video_Filename, thumbGenerate, thmb_XL_Filename, thmb_M_Filename, thmb_S_Filename)
 	if success then
 		-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
-		pathIdCacheAddEntry(h.userid, dstFilePath, videoId, 'item', nil)
+		pathIdCacheAddEntry(h, dstFilePath, videoId, 'item', nil)
 	end
 
 	return success
@@ -1291,7 +1301,7 @@ end
 -- edit specific metadata field of a photo
 function Photos.editPhoto(h, photoPath, attrValPairs)
 	writeLogfile(3, string.format("Photos.editPhoto('%s', %d items) ...\n", photoPath, #attrValPairs))
-	local photoId = h:getPhotoId(photoPath)
+	local photoId = h:getPhotoId(photoPath, nil, false)
 	local apiParams = {
 		api 				= "SYNO.FotoTeam.Browse.Item",
 		version 			= iif(h.serverVersion == 70, "1", "2"),
@@ -1308,7 +1318,7 @@ function Photos.editPhoto(h, photoPath, attrValPairs)
 	local respArray, errorCode = Photos_API(h,apiParams)
 
 	-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
-	pathIdCacheAddEntry(h.userid, photoPath, photoId, 'item', nil)
+	pathIdCacheAddEntry(h, photoPath, photoId, 'item', nil)
 
 	if not respArray then return nil, errorCode end
 
@@ -1319,13 +1329,13 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- movePhoto (h, srcFilename, dstFolder, isVideo)
 function Photos.movePhoto(h, srcPhotoPath, dstFolder, isVideo)
-	local photoId = h:getPhotoId(srcPhotoPath, isVideo)
+	local photoId = h:getPhotoId(srcPhotoPath, isVideo, false)
 	if not photoId then
 		writeLogfile(3, string.format('movePhoto(%s): does not exist, returns false\n', srcPhotoPath))
 		return false
 	end
-	local srcFolderId = h:getFolderId(normalizeDirname(LrPathUtils.parent(srcPhotoPath)))
-	local dstFolderId = h:getFolderId(normalizeDirname(dstFolder))
+	local srcFolderId = h:getFolderId(LrPathUtils.parent(srcPhotoPath), false)
+	local dstFolderId = h:getFolderId(dstFolder, false)
 	if not dstFolderId then
 		writeLogfile(3, string.format('movePhoto(%s): does not exist, returns false\n', srcPhotoPath))
 		return false
@@ -1347,6 +1357,9 @@ function Photos.movePhoto(h, srcPhotoPath, dstFolder, isVideo)
 
 	if not respArray then return nil, errorCode end
 
+    pathIdCacheRemoveEntry(h, srcPhotoPath, 'item')
+    pathIdCacheAddEntry(h, LrPathUtils.child(dstFolder, LrPathUtils.leafName(srcPhotoPath)), photoId, 'item', nil)
+
 	writeLogfile(3, string.format('movePhoto(%s, %s) returns OK\n', srcPhotoPath, dstFolder))
 	return respArray.success, errorCode
 end
@@ -1354,7 +1367,7 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- deletePhoto (h, path[, isVideo[, optPhotoId]])
 function Photos.deletePhoto (h, path, isVideo, optPhotoId)
-	local photoId = optPhotoId or h:getPhotoId(path)
+	local photoId = optPhotoId or h:getPhotoId(path, isVideo, false)
 	if not photoId then
 		writeLogfile(3, string.format("deletePhoto('%s', '%s'): does not exist, returns OK\n", path, ifnil(optPhotoId, '<nil>')))
 		return true
@@ -1367,7 +1380,7 @@ function Photos.deletePhoto (h, path, isVideo, optPhotoId)
 		version	= 1
 	}
 
-	pathIdCacheDeleteEntry(h.userid, path, 'item')
+	pathIdCacheRemoveEntry(h, path, 'item')
 
 	local respArray, errorCode = Photos_API(h,apiParams)
 
@@ -1477,7 +1490,7 @@ end
 local function Photos_addPhotoTag(h, photoPath, type, tagId, addinfo)
 	-- TODO: evaluate type
 	writeLogfile(4, string.format("Photos_addPhotoTag('%s', '%s') ...\n", photoPath, tagId))
-	local photoId = h:getPhotoId(photoPath)
+	local photoId = h:getPhotoId(photoPath, nil, false)
 	local apiParams = {
 		api 				= "SYNO.FotoTeam.Browse.Item",
 		version 			= "1",
@@ -1489,7 +1502,7 @@ local function Photos_addPhotoTag(h, photoPath, type, tagId, addinfo)
 	local respArray, errorCode = Photos_API(h,apiParams)
 
 	-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
-	pathIdCacheAddEntry(h.userid, photoPath, photoId, 'item', nil)
+	pathIdCacheAddEntry(h, photoPath, photoId, 'item', nil)
 
 	if not respArray then return nil, errorCode end
 
@@ -1503,7 +1516,7 @@ end
 function Photos.removePhotoTag(h, photoPath, tagType, tagId)
 	-- TODO: evaluate type
 	writeLogfile(4, string.format("removePhotoTag('%s', '%s') ...\n", photoPath, tagId))
-	local photoId = h:getPhotoId(photoPath)
+	local photoId = h:getPhotoId(photoPath, nil, false)
 	local apiParams = {
 		api 				= "SYNO.FotoTeam.Browse.Item",
 		version 			= "1",
@@ -1515,7 +1528,7 @@ function Photos.removePhotoTag(h, photoPath, tagType, tagId)
 	local respArray, errorCode = Photos_API(h,apiParams)
 
 	-- add the id w/o photoInfo to the cache, so getPhotoId() can return the id from cache, but will need to re-scan the album if photoInfo is required
-	pathIdCacheAddEntry(h.userid, photoPath, photoId, 'item', nil)
+	pathIdCacheAddEntry(h, photoPath, photoId, 'item', nil)
 
 	if not respArray then return nil, errorCode end
 
@@ -1564,12 +1577,12 @@ function PhotosPhoto.new(photoServer, photoPath, isVideo, infoTypeList, useCache
 	if photoPath then writeLogfile(3, string.format("PhotosPhoto:new(%s, %s, %s, %s) starting\n", photoPath, isVideo, infoTypeList, useCache)) end
 
 	if not photoServer  then
-		-- called from PhotoStation.new()
+		-- called from Photos.new()
 		return setmetatable({}, PhotosPhoto_mt)
 	end
 
 	if string.find(infoTypeList, 'photo') then
-		local photoInfoFromList, errorCode = photoServer:getPhotoInfoFromList('album', normalizeDirname(LrPathUtils.parent(photoPath)), photoPath, useCache)
+		local photoInfoFromList, errorCode = photoServer:getPhotoInfoFromList('album', pathIdCacheNormalizePathname(LrPathUtils.parent(photoPath)), photoPath, nil, useCache)
 		if photoInfoFromList then
 			photoInfo = tableDeepCopy(photoInfoFromList)
 		else
