@@ -1,5 +1,17 @@
 Photo StatLr Changelog
 ======================
+Version 7.3.1
+-------------
+### Changes:
+- Photos:
+  - Redesign of the Path/Id Cache used to cache ids for folders and items.
+### Bugfixes:
+- All PhotoServers:
+  - MovePhotos: wait 5 seconds before checking/deleting empty folders on PhotoServer
+- Photos:
+  - Fixed a bug where repeated uploading of photos/videos would not remove the old file version first, but generate a second copy of the photo/video in the Photos target folder. 
+  This would happen if the upload session took longer than 5 minutes and the old item id was uncached after the cache timeout of 5 minutes.
+
 Version 7.3.0
 -------------
 ### New Featues:
