@@ -775,6 +775,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 		if progressScope:isCanceled() then break end
 
 		if success then
+			writeLogfile(3,"--------------------------------------------------------------------\n")
 			writeLogfile(3, "MovePhotos: next photo: " .. pathOrMessage .. "\n")
 
 			local srcPhoto = rendition.photo
@@ -851,14 +852,14 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 
 					if not dstDir
 					or not exportParams.photoServer:movePhoto(publishedPhotoId, dstDir, srcPhoto:getRawMetadata('isVideo')) then
-						writeLogfile(1, 'MovePhotos: Cannot move remote photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
+						writeLogfile(1, "MovePhotos: Move photo from '" .. publishedPhotoId .. "' to '" .. newPublishedPhotoId .. "' failed!\n")
 						skipPhoto = true
 					else
-						writeLogfile(2, 'MovePhotos: Moved photo from ' .. publishedPhotoId .. ' to ' .. newPublishedPhotoId .. '.\n')
+						writeLogfile(2, "MovePhotos: Move photo from '" .. publishedPhotoId .. "' to '" .. newPublishedPhotoId .. "' done.\n")
 						albumsForCheckEmpty = PSUtilities.noteFolder(albumsForCheckEmpty, publishedPhotoId)
 					end
 				else
-						writeLogfile(2, 'MovePhotos: No need to move photo "'  .. newPublishedPhotoId .. '".\n')
+						writeLogfile(2, "MovePhotos: No need to move photo '"  .. newPublishedPhotoId .. "'\n")
 				end
 				if not skipPhoto then
 					ackRendition(rendition, newPublishedPhotoId, publishedCollection.localIdentifier)
@@ -870,7 +871,11 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 		end
 	end
 
-	local nDeletedAlbums = PSUtilities.deleteAllEmptyFolders(exportParams, albumsForCheckEmpty)
+	if albumsForCheckEmpty then
+		-- give PhotoServer some time to recover
+		LrTasks.sleep(5)
+		PSUtilities.deleteAllEmptyFolders(exportParams, albumsForCheckEmpty)
+	end
 
 -- 	progressScope:done()
 
@@ -892,7 +897,7 @@ function PSUploadTask.updateExportSettings(exportParams)
 	-- check for updates once a day
 	LrTasks.startAsyncTaskWithoutErrorHandler(PSUpdate.checkForUpdate, "PSUploadCheckForUpdate")
 
-	writeLogfile(3, "updateExportSettings: done\n" )
+	writeLogfile(3, "updateExportSettings: done.\n" )
 end
 
 --------------------------------------------------------------------------------
@@ -1029,6 +1034,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 		if progressScope:isCanceled() then break end
 
 		if success then
+			writeLogfile(3,"--------------------------------------------------------------------\n")
 			writeLogfile(3, "Next photo: " .. pathOrMessage .. "\n")
 
 			local srcPhoto 			= rendition.photo
@@ -1196,14 +1202,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						)
 					)
 				then
-					if string.find('Export,Publish', publishMode, 1, true) then	writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' failed!!!\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then	writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' failed!\n") end
 					table.insert( failures, srcPath )
 					rendition:uploadFailed("Upload failed")
 				else
 					if publishedCollection then
 						PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
 					end
-					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' done\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' done.\n") end
 				end
 			end
 
