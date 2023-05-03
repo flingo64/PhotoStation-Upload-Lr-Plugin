@@ -676,7 +676,9 @@ function PSLrUtilities.getKeywordByPath(keywordPath, createIfMissing, includeOnE
 	end
 
 	writeLogfile(4, string.format("getKeywordByPath('%s', create: %s, include: %s) returns keyword id %d\n",
+---@diagnostic disable-next-line: need-check-nil
 									keywordPath, tostring(ifnil(createIfMissing, '<nil>')), tostring(ifnil(includeOnExport, '<nil>')), keyword.localIdentifier))
+---@diagnostic disable-next-line: need-check-nil
 	return keyword.localIdentifier, keyword
 end
 
@@ -1227,8 +1229,10 @@ function PSLrUtilities.convertAllPhotos(functionContext)
 	for i = 1, #allPublishedCollections do
 		if progressScope:isCanceled() then break end
 
+		---@diagnostic disable-next-line: need-check-nil
 		progressScope:setCaption(allPublishedCollections[i]:getName())
 
+		---@diagnostic disable-next-line: need-check-nil
 		local nPhotos, nProcessed, nConverted = PSLrUtilities.convertCollection(functionContext, allPublishedCollections[i])
 
 		nPhotosTotal  	= nPhotosTotal 		+ nPhotos
