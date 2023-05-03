@@ -349,17 +349,17 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
     			-- remove shared album plugin metadata from all belonging photos
     			local srcPhotos = PSLrUtilities.getKeywordPhotos(sharedAlbum.keywordId)
 
-    			for i = 1, #srcPhotos do
-    				local srcPhoto = srcPhotos[i]
+    			for j = 1, #srcPhotos do
+    				local srcPhoto = srcPhotos[j]
     				local sharedAlbums = PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
         			if sharedAlbums then
         				local numOldSharedAlbumsPS = #sharedAlbums
 
-        				for j = #sharedAlbums, 1, -1 do
-        					if string.match(sharedAlbums[j],  '%d+:(.+)')  == sharedAlbum.sharedAlbumName then
+        				for k = #sharedAlbums, 1, -1 do
+        					if string.match(sharedAlbums[k],  '%d+:(.+)')  == sharedAlbum.sharedAlbumName then
     							writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: srcPhoto %s, removing Shared Album '%s' from Plugin Metadata\n",
-    								srcPhoto:getFormattedMetadata('fileName'), sharedAlbums[j]))
-        						table.remove(sharedAlbums, j);
+    								srcPhoto:getFormattedMetadata('fileName'), sharedAlbums[k]))
+        						table.remove(sharedAlbums, k);
         					end
         				end
         				-- if number of shared albums has changed: update src photo plugin metadata
@@ -764,9 +764,9 @@ local function getColorLabelsFromPublishService(functionContext, publishServiceN
 		if photoSharedAlbums then
 
    			writeLogfile(4, string.format("Get color labels: %s - found %d Shared Albums\n", photoInfo.remoteId, #photoSharedAlbums))
-			for i = 1, #photoSharedAlbums do
+			for j = 1, #photoSharedAlbums do
 				-- download color label from this shared album only if the shared album is public
-				local sharedAlbumName = string.match(photoSharedAlbums[i], '%d+:(.+)')
+				local sharedAlbumName = string.match(photoSharedAlbums[j], '%d+:(.+)')
 				local psSharedPhotoId 		= publishSettings.photoServer:getPhotoId(photoInfo.remoteId, srcPhoto:getRawMetadata('isVideo'))
 
 				if publishSettings.photoServer:isSharedAlbumPublic(sharedAlbumName)
