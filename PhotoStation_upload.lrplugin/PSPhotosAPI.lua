@@ -465,7 +465,7 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- pathIdCacheInitialize: remove all entries from cache
 local function pathIdCacheInitialize(h)
-    userid = h.userid
+    local userid = h.userid
 	writeLogfile(3, string.format("pathIdCacheInitialize(user='%s')\n", userid))
 	pathIdCache.cache[userid] = {}
     pathIdCache.cache[userid].folder = {}
@@ -484,7 +484,7 @@ end
 --      cache object    including id, if path was found (may involve a cache update)
 --   or nil             if path was not found, even after cache update (folder/item does not exist)
 local function pathIdCacheGetEntry(h, path, type, wantsInfo)
-    userid  = h.userid
+    local userid  = h.userid
     path    = pathIdCacheNormalizePathname(path, type)
 	writeLogfile(5, string.format("pathIdCacheGetEntry(userid:%s, path:'%s', '%s', wantsInfo:%s)...\n", userid, path, type, wantsInfo))
 
@@ -586,7 +586,7 @@ end
 --  This function will not change the validity time for the parentFolder
 --  addinfo is only valid for items, it contains additional item info (metadata, tags, ...)
 local function pathIdCacheAddEntry(h, path, id, type, addinfo)
-    userid = h.userid
+    local userid = h.userid
 	path = pathIdCacheNormalizePathname(path, type)
 	writeLogfile(3, string.format("pathIdCacheAddEntry(user='%s', path='%s', '%s', id=%d)\n", userid, path, type, id))
 	if not pathIdCache.cache[userid] then pathIdCacheInitialize(h) end
@@ -632,7 +632,7 @@ end
 --  This function must be called whenever a remote folder or item was deleted
 --  This function will not change the validity time for the parentFolder
 local function pathIdCacheRemoveEntry(h, path, type)
-    userid = h.userid
+    local userid = h.userid
 	path = pathIdCacheNormalizePathname(path, type)
 	writeLogfile(3, string.format("pathIdCacheRemoveEntry(user='%s', path='%s', type='%s')\n", userid, path, type))
 	local folderCache = pathIdCache.cache[userid] and pathIdCache.cache[userid].folder
@@ -658,7 +658,7 @@ end
 -- pathIdCacheInvalidateFolder(h, path, type)
 --	age out a folder's scan result for the given subelement type ('item' or 'folder')
 local function pathIdCacheInvalidateFolder(h, path, type)
-    userid = h.userid
+    local userid = h.userid
 	path = pathIdCacheNormalizePathname(path, type)
     writeLogfile(3, string.format("pathIdCacheInvalidateFolder(user='%s', path='%s', '%s')\n", userid, path, type))
 	
