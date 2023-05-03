@@ -672,7 +672,7 @@ function PSLrUtilities.getKeywordByPath(keywordPath, createIfMissing, includeOnE
 		end
 
 		parentKeyword = keyword
-		checkKeywords = keyword:getChildren()
+		checkKeywords = keyword and keyword:getChildren()
 	end
 
 	writeLogfile(4, string.format("getKeywordByPath('%s', create: %s, include: %s) returns keyword id %d\n",

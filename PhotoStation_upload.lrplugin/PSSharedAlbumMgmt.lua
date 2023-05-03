@@ -176,7 +176,7 @@ end
 function PSSharedAlbumMgmt.getPublishServiceSharedAlbums(pubServiceName)
 	local sharedAlbumParamsList					= {}
 	local pubService 							= PSLrUtilities.getPublishServiceByName(pubServiceName)
-	local pubServiceSettings 					= pubService:getPublishSettings()
+	local pubServiceSettings 					= pubService and pubService:getPublishSettings()
 	local pubServiceSharedAlbumPath 			= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(pubServiceName, nil)
 	local _, pubServiceSharedAlbumRootKeyword	= PSLrUtilities.getKeywordByPath(pubServiceSharedAlbumPath)
 
@@ -201,7 +201,7 @@ function PSSharedAlbumMgmt.getPhotoSharedAlbums(srcPhoto, pubServiceName)
 	local sharedAlbumParamsList 	= {}
 	local numSharedAlbumKeywords 	= 0
 	local pubService 				= PSLrUtilities.getPublishServiceByName(pubServiceName)
-	local pubServiceSettings 		= pubService:getPublishSettings()
+	local pubServiceSettings 		= pubService and pubService:getPublishSettings()
 	local pubServiceSharedAlbumPath 			= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(pubServiceName, nil)
 	local _, pubServiceSharedAlbumRootKeyword	= PSLrUtilities.getKeywordByPath(pubServiceSharedAlbumPath)
 
@@ -387,7 +387,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
     			local sharedAlbumKeywordPath 				= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName)
     			sharedAlbum.keywordId, shareAlbumKeyword	= PSLrUtilities.getKeywordByPath(sharedAlbumKeywordPath, createIfMissing, includeOnExport)
     			-- TODO: set keyword attributes
-    			local keywordAttributes = shareAlbumKeyword:getAttributes()
+    			local keywordAttributes = shareAlbumKeyword and shareAlbumKeyword:getAttributes()
 	   			writeTableLogfile(2, "PSSharedAlbumMgmt.writeSharedAlbumsToLr: keywordAttributes", keywordAttributes, true)
     		end
 
@@ -456,7 +456,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 				or 	not	activePublishing.publishSettings
 				or 	not	activePublishing.publishSettings.photoServer then
     	    	-- open session: initialize environment, get missing params and login
-				publishSettings					= publishService:getPublishSettings()
+				publishSettings					= publishService and publishService:getPublishSettings()
             	local sessionSuccess, reason	= openSession(publishSettings, nil, 'ManageSharedAlbums')
             	if not sessionSuccess then
             		if reason ~= 'cancel' then
@@ -708,7 +708,7 @@ end
 -- getColorLabelsFromPublishService(functionContext, publishServiceName, arrayOfPhotoInfo)
 local function getColorLabelsFromPublishService(functionContext, publishServiceName, arrayOfPhotoInfo)
 	local publishService = PSLrUtilities.getPublishServiceByName(publishServiceName)
-	local publishSettings = publishService:getPublishSettings()
+	local publishSettings = publishService and publishService:getPublishSettings()
 	local nPhotos =  #arrayOfPhotoInfo
 	local nProcessed 	= 0
 	local nColorLabels	= 0

@@ -147,7 +147,8 @@ function split(inputstr, sep)
 
     if sep == nil then sep = "%s" end
 
-    local t={} ; i=1
+    local t={}
+    local i=1
     for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
             t[i] = str
             i = i + 1
@@ -795,7 +796,8 @@ function openSession(exportParams, publishedCollection, operation)
 	if not exportParams.photoServerLoggedIn then
 		if 	exportParams.publishMode ~= 'CheckMoved'
 		and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
-			exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
+			local errorCode
+            exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
 			if not exportParams.photoServerLoggedIn then
 				local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
 										iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space"),
