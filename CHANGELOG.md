@@ -1,5 +1,17 @@
 Photo StatLr Changelog
 ======================
+Version 7.3.2
+-------------
+### Changes:
+- Photos:
+  - More flexible Server-URL parsing:
+    - allow servername w/o port or path
+    - allow servername w/ port and path
+    - support for launchApp path (?launchApp=SYNO.Foto.AppInstance#)
+### Bugfixes:
+- Photos:
+  - Fixed an issue (#72) where uploading failed for large videos, because the rendering of the video would take so much time so that the Photos session timed out meanwhile.
+
 Version 7.3.1
 -------------
 ### Changes:

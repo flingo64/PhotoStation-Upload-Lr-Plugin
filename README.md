@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.3.1<br>
+Version 7.3.2<br>
 __[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
@@ -99,9 +99,11 @@ The Export dialog includes settings for:
         	- Photo Station:
             	- <IP-Address_or_Hostname>[:\<port\>]
         	- Photos:
-            	- <IP-Address_or_Hostname>:5000|5001 for access via Standard DSM ports or
-            	- <IP-Address_or_Hostname>:<alternative_port> for access via an alternative port as defined in DSM->Control Panel->Login Portal->Applications or
-            	- <IP-Address_or_Hostname>/<alternative_path> for access via an alternative path as defined in DSM->Control Panel->Login Portal->Applications
+            	-  `<IP-Address_or_Hostname>:5000|5001` for access via launchApp path on standard DSM ports or
+            	- `<IP-Address_or_Hostname>:<alternative_port>` for access via an alternative port as defined in DSM->Control Panel->Login Portal->Applications or
+            	- `<IP-Address_or_Hostname>/<alternative_path>` for access via an alternative path as defined in DSM->Control Panel->Login Portal->Applications or
+            	- `<IP-Address_or_Hostname>:<port>/<path>` for access via an alternative path on a non-standard port
+            	- `<IP-Address_or_Hostname>:<port>/?launchApp=SYNO.Foto.AppInstance#` for acces via launchApp path on non-standard ports
     	- Timeout
 	- Photo Area: 
     	- 'Shared Space'/'Std Photo Station' or 
