@@ -326,16 +326,19 @@ end
 -- ########################## session management #######################################################
 ---------------------------------------------------------------------------------------------------------
 -- new: set serverUrl, loginPath and uploadPath
-function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version)
+function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password)
 	local h = {} -- the handle
 	local apiInfo = {}
 	local psPath = iif(usePersonalPS, "/~" .. ifnil(personalPSOwner, "unknown") .. "/photo/", "/photo/")
 
-	writeLogfile(4, "PhotoStation.new(PhotoStationUrl=" .. serverUrl .. psPath .. ", Timeout=" .. serverTimeout .. ")\n")
+	writeLogfile(4, string.format("PhotoStation.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=%s)\n",
+                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password))
 
 	h.serverUrl 	= serverUrl
 	h.serverTimeout = serverTimeout
 	h.serverVersion	= version
+    h.username	    = username
+    h.password	    = password
 
 	h.psAlbumRoot	= psPath .. '#!Albums'
 	h.psWebAPI 		= psPath .. 'webapi/'
@@ -407,14 +410,14 @@ end
 
 
 ---------------------------------------------------------------------------------------------------------
--- login(h, username, passowrd)
+-- login(h)
 -- does, what it says
-function PhotoStation.login(h, username, password)
+function PhotoStation.login(h)
 	local formData = 'method=login&' ..
 					 'version=1&' ..
 --					 'enable_syno_token=true&' ..
-					 'username=' .. urlencode(username) .. '&' ..
-					 'password=' .. urlencode(password)
+					 'username=' .. urlencode(h.username) .. '&' ..
+					 'password=' .. urlencode(h.password)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Auth', formData)
 

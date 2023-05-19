@@ -261,7 +261,7 @@ local PSAPIerrorMsgs = {
 	[620]	= 'File format not supported',
 	[641]	= 'Folder or file already exists',
 
-	[803]	= 'No permission to create folder or file',
+	[803]	= 'No permission to use this function (probably a session timeout)',
 
 	-- Lr HTTP errors
 	[1001]  = 'Http error: no response body, no response header',
@@ -356,42 +356,22 @@ local function Photos_getPersonalRootFolderId (h)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- Photos_listFolderSubfolders: returns all subfolders in a given folder
+-- Photos_listFolderElements(h, folderPath, folderId, elementType)
+-- returns all items (photos/videos) or subfolders of a given folder
 -- returns
---		subfolderList:	table of subfolder infos, if success, otherwise nil
+--		itemList/subfolderList: table of item infos / subfolders, if success, otherwise nil
 --		errorcode:		errorcode, if not success
-local function Photos_listFolderSubfolders(h, folderPath, folderId)
-	local apiParams = {
-			id				= folderId or h:getFolderId(folderPath, false),
-			additional		= "[]",
-			sort_direction	= "asc",
-			offset			= 0,
-			limit			= 2000,
-			api				= "SYNO.FotoTeam.Browse.Folder",
-			method			= "list",
-			version			= 1
-	}
-	local respArray, errorCode = Photos_API(h, apiParams)
-
-	if not respArray then return nil, errorCode end
-
-	writeLogfile(3, string.format("Photos_listFolderSubfolders('%s') returns %d items\n", folderPath, #respArray.data.list))
-	writeTableLogfile(5, string.format("Photos_listFolderSubfolders('%s'):\n", folderPath), respArray.data.list)
-	return respArray.data.list
-end
-
----------------------------------------------------------------------------------------------------------
--- Photos_listIFolderItems: returns all items (photos/videos) in a given folder
--- returns
---		itemList:		table of item infos, if success, otherwise nil
---		errorcode:		errorcode, if not success
-local function Photos_listIFolderItems(h, folderPath, folderId)
+local function Photos_listFolderElements(h, folderPath, folderId, elementType)
+    local functionName = iif(elementType == 'item', 'Photos_listFolderItems', 'Photos_listFolderSubfolders')
 	local realFolderId = folderId or h:getFolderId(folderPath, false)
 	if not realFolderId	then
-		writeTableLogfile(1, string.format("Photos_listIFolderItems('%s') could not get folderId, returns <nil>\n", folderPath))
+		writeTableLogfile(1, string.format("%s('%s') could not get folderId, returning <nil>\n", functionName, folderPath))
 		return nil, 1
 	end
-	local apiParams = {
+	local apiParams
+
+    if elementType == 'item' then
+        apiParams= {
 			folder_id		= realFolderId,
 			additional		= iif(h.serverVersion == 70,
 -- 								'["description","tag","exif","resolution","orientation","gps","video_meta","video_convert","thumbnail","address","geocoding_id","rating","person"]',
@@ -404,15 +384,57 @@ local function Photos_listIFolderItems(h, folderPath, folderId)
 			api				= "SYNO.FotoTeam.Browse.Item",
 			method			= "list",
 			version			= iif(h.serverVersion == 70, 1, 2)
-	}
+	    }
+    else
+        apiParams = {
+			id				= realFolderId,
+			additional		= "[]",
+			sort_direction	= "asc",
+			offset			= 0,
+			limit			= 2000,
+			api				= "SYNO.FotoTeam.Browse.Folder",
+			method			= "list",
+			version			= 1
+	    }
+    end
 
-	local respArray, errorCode = Photos_API(h, apiParams)
+	local respArray, errorCode, tryCount = nil, nil, 0
 
-	if not respArray then return nil, errorCode end
+    while tryCount < 2 do
+        respArray, errorCode = Photos_API(h, apiParams)
+        -- check if session is still active
+        if not respArray and errorCode == 803 then
+            writeLogfile(3, string.format("%s('%s', '%s') returns error 803, trying again after re-login\n", functionName, folderPath, ifnil(folderId, '<nil>')))
+            h:login()
+            tryCount = tryCount + 1
+        elseif not respArray then
+            return nil, errorCode
+        else
+            writeLogfile(3, string.format("%s('%s', '%s') returns %d items\n", functionName, folderPath, ifnil(folderId, '<nil>'), #respArray.data.list))
+            writeTableLogfile(5, string.format("functionName('%s', '%s'):\n", functionName, folderPath, ifnil(folderId, '<nil>')),respArray.data.list)
+            return respArray.data.list
+        end
+    end
 
-	writeLogfile(3, string.format("Photos_listIFolderItems('%s', '%s') returns %d items\n", folderPath, ifnil(folderId, '<nil>'), #respArray.data.list))
-	writeTableLogfile(5, string.format("Photos_listIFolderItems('%s', '%s'):\n", folderPath, ifnil(folderId, '<nil>')),respArray.data.list)
-	return respArray.data.list
+    return nil, errorCode
+end
+
+---------------------------------------------------------------------------------------------------------
+-- Photos_listFolderSubfolders: returns all subfolders of a given folder
+-- returns
+--		subfolderList:	table of subfolder infos, if success, otherwise nil
+--		errorcode:		errorcode, if not success
+local function Photos_listFolderSubfolders(h, folderPath, folderId)
+    return Photos_listFolderElements(h, folderPath, folderId, 'folder')
+end
+
+---------------------------------------------------------------------------------------------------------
+-- Photos_listFolderItems: returns all items (photos/videos) of a given folder
+-- returns
+--		itemList:		table of item infos, if success, otherwise nil
+--		errorcode:		errorcode, if not success
+local function Photos_listFolderItems(h, folderPath, folderId)
+    return Photos_listFolderElements(h, folderPath, folderId, 'item')
 end
 
 -- #####################################################################################################
@@ -439,7 +461,7 @@ end
 local pathIdCache = {
 	timeout			= 300,
 	listSubfolders  = Photos_listFolderSubfolders,
-	listItems		= Photos_listIFolderItems,
+	listItems		= Photos_listFolderItems,
 	cache 			= {}
 }
 
@@ -536,7 +558,7 @@ local function pathIdCacheGetEntry(h, path, type, wantsInfo)
         if type == 'folder' then
             local subfolderList, errorCode  = pathIdCache.listSubfolders(h, parentFolder, parentFolderId)
             if not subfolderList then
-                writeLogfile(1, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listSubfolders('%s') returned <nil> (%d)\n", userid, path, parentFolder, errorCode))
+                writeLogfile(1, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listSubfolders('%s') returned <nil> (%s)\n", userid, path, parentFolder, Photos.getErrorMsg(errorCode)))
                 return nil
             end
 
@@ -554,11 +576,11 @@ local function pathIdCacheGetEntry(h, path, type, wantsInfo)
         elseif type == 'item' then
             local itemList, errorCode = pathIdCache.listItems(h, parentFolder, parentFolderId)
             if not itemList then
-                writeLogfile(1, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listItems('%s') returned <nil> (%d)\n", userid, path, parentFolder, errorCode))
+                writeLogfile(1, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listItems('%s') returned <nil> (%s)\n", userid, path, parentFolder, Photos.getErrorMsg(errorCode)))
                 return nil
             end
 
-            writeLogfile(3, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listItems('%s') found %d items\n", userid, path, parentFolder, #itemList))
+            writeLogfile(4, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listItems('%s') found %d items\n", userid, path, parentFolder, #itemList))
             folderCache[parentFolder].item = {}
             for i = 1, #itemList do
                 folderCache[parentFolder].item[string.lower(itemList[i].filename)] = {
@@ -784,7 +806,7 @@ end
 --	URL of a photo in Photos is:
 --		http(s)://<psServer>[:<psPort>][/<aliasPath>]<basedir>/folder/<folderId>/item_<photoId>
 function Photos.getPhotoUrl(h, photoPath, isVideo)
-	writeLogfile(3, string.format("getPhotoUrlgetPhotoUrl(server='%s', userid='%s', path='%s')",
+	writeLogfile(3, string.format("getPhotoUrl(server='%s', userid='%s', path='%s'\n)",
 				h.serverUrl, h.userid, photoPath))
 	local folderId	= h:getFolderId(ifnil(LrPathUtils.parent(photoPath),'/'), false)
 	local itemId 	= h:getPhotoId(photoPath, isVideo, false)
@@ -820,14 +842,18 @@ end
 -- 		<name_or_ip>/<aliasPath>
 function Photos.validateServername (view, servername)
 	local colon			= string.match(servername, '[^:]+(:)')
-	local port			= string.match(servername, '[^:]+:(%d+)$')
+	local port			=    string.match(servername, '[^:]+:(%d+)$')
+                          or string.match(servername, '[^:]+:(%d+)/.+$')
 	local slash 		= string.match(servername, '[^/]+(/)')
-	local aliasPath 	= string.match(servername, '[^/]+/([^%?]+)$')
+	local aliasPath 	= string.match(servername, '[^/]+/([^%?/]+)$')
+    local launchAppPath = string.match(servername, '[^/]+/(%?launchApp=SYNO.Foto.AppInstance#)$')
 
-	writeLogfile(5, string.format("Photos.validateServername('%s'): port '%s' aliasPath '%s'\n", servername, ifnil(port, '<nil>'), ifnil(aliasPath, '<nil>')))
+	writeLogfile(5, string.format("Photos.validateServername('%s'): port '%s' aliasPath '%s' launchAppPath '%s'\n", servername, ifnil(port, '<nil>'), ifnil(aliasPath, '<nil>'), ifnil(launchAppPath, '<nil>')))
 
-	return	(	 colon and 	   port and not slash and not aliasPath)
-		or	(not colon and not port and		slash and 	  aliasPath),
+	return	(    (colon and  port) and     slash and     (aliasPath or launchAppPath))
+        or  (    (colon and	 port) and not slash and not (aliasPath or launchAppPath))
+		or	(not (colon or   port) and	   slash and     (aliasPath or launchAppPath))
+        or  (not (colon or   port) and not slash and not (aliasPath or launchAppPath)),
 		servername
 end
 
@@ -837,16 +863,20 @@ end
 -- This depends on whether the API is called via standard (DSM) port (5000/5001)
 -- or via an alias port or alias path as defined in Login Portal configuration
 -- The basedir looks like:
---		<API_prefix>#/[shared|personal]_space/
+--		<API_prefix>/[shared|personal]_space/
 -- 	  where <API_prefix> is:
---		'/?launchApp=SYNO.Foto.AppInstance' - if <psPort> is a standard port (5000, 5001) or
---		'/'									- if <psPort> is a non-standard/alternative port configured in 'Login Portal'
---		'/'									- if <psPort> is not given and an aliasPath is given as configured in 'Login Portal'
+--		'/?launchApp=SYNO.Foto.AppInstance#'    - if <psPort> is a standard port (5000, 5001) or
+--		'/#'									- if <psPort> is a non-standard/alternative port configured in 'Login Portal'
+--		'/#'									- if <psPort> is not given and an aliasPath is given as configured in 'Login Portal'
 function Photos.basedir (serverUrl, area, owner)
-	local port		= string.match(serverUrl, 'http[s]*://[^:]+:(%d+)$')
-	local aliasPath = string.match(serverUrl, 'http[s]*://[^/]+(/[^%?]+)$')
+	local port		    = string.match(serverUrl, 'http[s]*://[^:]+:(%d+)')
+    local launchAppPath = string.match(serverUrl, 'http[s]*://[^/]+/(%?launchApp=SYNO.Foto.AppInstance#)$')
 
-	return	iif(port and (port == '5000' or port == '5001'), "/?launchApp=SYNO.Foto.AppInstance#", "/#") ..
+	return	iif(launchAppPath,
+                "",
+                iif(port and (port == '5000' or port == '5001'),
+                    "/?launchApp=SYNO.Foto.AppInstance#",
+                    "/#")) ..
 			iif(area == 'personal', "/personal_space/", "/shared_space/")
 end
 
@@ -866,15 +896,18 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- Photos.new: initialize a Photos API object
-function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version)
+function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password)
 	local h = {} -- the handle
 	local apiInfo = {}
 
-	writeLogfile(4, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d)\n", serverUrl, usePersonalPS, personalPSOwner, serverTimeout))
+	writeLogfile(4, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=%s)\n", 
+                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password))
 
 	h.serverUrl 	= serverUrl
 	h.serverTimeout = serverTimeout
 	h.serverVersion	= version
+    h.username	    = username
+    h.password	    = password
 
 	if usePersonalPS then
 		h.userid 		= personalPSOwner
@@ -919,16 +952,16 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 end
 
 ---------------------------------------------------------------------------------------------------------
--- login(h, username, passowrd)
+-- login(h)
 -- does, what it says
-function Photos.login(h, username, password)
+function Photos.login(h)
 	local apiParams = {
 		api 				= "SYNO.API.Auth",
 		version 			= "7",
 		method 				= "login",
 		session 			= "webui",
-		account				= urlencode(username),
-		passwd				= urlencode(password),
+		account				= urlencode(h.username),
+		passwd				= urlencode(h.password),
 --		logintype			= "local",
 		hhid 				= h.hhid,
 		enable_syno_token 	= "yes",
@@ -986,7 +1019,7 @@ function Photos_createFolder (h, parentDir, parentDirId, newDir)
 		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): folder already exists, returning folderId from cache\n", parentDir, ifnil(parentDirId, '<nil>'), newDir))
 		return h:getFolderId(LrPathUtils.child(parentDir, newDir), false)
 	elseif not respArray then
-		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): return <nil>, %s\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, errorCode))
+		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): return <nil>, %s\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, Photos.getErrorMsg(errorCode)))
 		return nil, errorCode
 	end
 
@@ -1078,7 +1111,7 @@ function Photos.deleteEmptyAlbumAndParents(h, folderPath)
 
 	currentFolderPath = folderPath
 	while currentFolderPath do
-		local photoInfos =  Photos_listIFolderItems(h, currentFolderPath)
+		local photoInfos =  Photos_listFolderItems(h, currentFolderPath)
 		local subfolders =  Photos_listFolderSubfolders(h, currentFolderPath)
 
     	-- if not empty, we are ready

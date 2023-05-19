@@ -711,7 +711,7 @@ function openSession(exportParams, publishedCollection, operation)
 	if not exportParams.photoServer then
 		local errorCode
 		exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner,
-																exportParams.serverTimeout, exportParams.psVersion)
+																exportParams.serverTimeout, exportParams.psVersion, exportParams.username, exportParams.password)
 		if not exportParams.photoServer then
 			local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
 			iif(exportParams.usePersonalPS, "Personal ", "Global "),
@@ -797,7 +797,7 @@ function openSession(exportParams, publishedCollection, operation)
 		if 	exportParams.publishMode ~= 'CheckMoved'
 		and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
 			local errorCode
-            exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login(exportParams.username, exportParams.password)
+            exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login()
 			if not exportParams.photoServerLoggedIn then
 				local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
 										iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space"),
