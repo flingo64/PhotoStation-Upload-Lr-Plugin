@@ -51,13 +51,13 @@ local function sendCheckUpdate(checkUpdateRequest)
 
 	if not respBody then
 		if respHeaders then
-			writeLogfile(3, "LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) ..
+			writeLogfile(4, "sendCheckUpdate: LrHttp failed\n  errorCode: " .. 	trim(ifnil(respHeaders["error"].errorCode, '<Nil>')) ..
 										 "\n  name: " .. 		trim(ifnil(respHeaders["error"].name, '<Nil>')) ..
 										 "\n  nativeCode: " .. 	trim(ifnil(respHeaders["error"].nativeCode, '<Nil>')) .. "\n")
 			return false, 'Error "' .. ifnil(respHeaders["error"].errorCode, 'Unknown') .. '" on http request:\n' ..
 					trim(ifnil(respHeaders["error"].name, 'Unknown error description'))
 		else
-			writeLogfile(3, 'LrHttp failed, no Infos!\n')
+			writeLogfile(3, 'sendCheckUpdate: LrHttp failed, no Infos!\n')
 			return false, 'Unknown error on http request"'
 		end
 	end
@@ -115,25 +115,25 @@ function PSUpdate.checkForUpdate()
 	end
 
 	-- TestAndSet semaphore
-	if (prefs.activeCheck > LrDate.currentTime() - 60)  then
+	if (prefs.activeCheck > LrDate.currentTime() - 60) then
 		return true
 	end
 	prefs.activeCheck = LrDate.currentTime()
 
 	-- Only check once per day
---	if LrDate.currentTime() < (tonumber(prefs.lastCheck) + 10) then
+    -- if LrDate.currentTime() < (tonumber(prefs.lastCheck) + 10) then
 	if LrDate.currentTime() < (tonumber(prefs.lastCheck) + 86400) then
 		return true
 	end
 
-	local checkUpdateRequest = 'PLUGIN_VERSION=' .. urlencode(PLUGIN_VERSION) ..
+	local checkUpdateRequest = 'pluginversion=' .. urlencode(PLUGIN_VERSION) ..
 					'&osversion=' .. urlencode(osVersion) ..
 					'&lrversion=' .. urlencode(lrVersion) ..
 					'&lang=' .. urlencode(lang) ..
 					'&uid=' .. urlencode(uid) ..
 					'&sec=' .. LrMD5.digest(lrVersion .. PLUGIN_VERSION .. osVersion .. lang .. uid .. PLUGIN_TKID)
 
---	writeLogfile(2, 'CheckForUpdate: ' .. checkUpdateRequest)
+--	writeLogfile(4, 'CheckForUpdate: ' .. checkUpdateRequest .. '\n')
 
 	local result, response = sendCheckUpdate(checkUpdateRequest)
 
@@ -154,7 +154,7 @@ function PSUpdate.checkForUpdate()
 	end
 	local checksum = LrMD5.digest(uid .. PLUGIN_TKID)
 
-	writeLogfile(4, "  got back: uid= " .. ifnil(newUid, '<Nil>') ..
+	writeLogfile(4, "CheckForUpdate got back: uid= " .. ifnil(newUid, '<Nil>') ..
 								", res= " .. ifnil(res, '<Nil>') ..
 								", sec= " .. ifnil(sec, '<Nil>') ..
 								", checksum(local)= " .. checksum ..
@@ -178,14 +178,14 @@ function PSUpdate.checkForUpdate()
 	prefs.lastCheck = LrDate.currentTime()
 
 	if newUid then
-		writeLogfile(4, "  got newUid: " .. newUid .. "\n")
+		writeLogfile(4, "CheckForUpdate got newUid: " .. newUid .. "\n")
 		prefs.uid = newUid
 	end
 
 	if latestVersion then
 		prefs.updateAvailable = latestVersion
 		prefs.downloadUrl = ifnil(downloadUrl, 'unknown URL')
-		writeLogfile(2, string.format("  update available: %s\n\t\tdownloadUrl %s\n\t\tsupportUrl:  %s\n\t\tfeedbackUrl: %s\n",
+		writeLogfile(2, string.format("CheckForUpdate: update available: %s\n\t\tdownloadUrl %s\n\t\tsupportUrl:  %s\n\t\tfeedbackUrl: %s\n",
 									prefs.updateAvailable, prefs.downloadUrl, prefs.supportUrl, prefs.feedbackUrl))
 	else
 		if 	prefs.updateAvailable ~= '' then
