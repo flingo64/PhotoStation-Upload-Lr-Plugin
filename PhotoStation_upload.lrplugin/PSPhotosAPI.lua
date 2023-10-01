@@ -38,6 +38,7 @@ Photos object:
     - getSharedAlbumId
     - createSharedAlbum
     - createAndAddPhotosToSharedAlbum
+    - removePhotosFromSharedAlbum
 
 Photos Photo object:
 	- new
@@ -1850,6 +1851,29 @@ local function Photos_addPhotosToAlbum(h, albumId, photoIds)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- Photos_removePhotosFromAlbum(h, albumId, photoIds)
+-- add photos to an Album
+local function Photos_removePhotosFromAlbum(h, albumId, photoIds)
+	writeLogfile(3, string.format('Photos_removePhotosFromAlbum(%d, %d photos):\n', albumId, #photoIds))
+
+	local itemList = table.concat(photoIds, ',')
+
+    local apiParams= {
+        api				= "SYNO.Foto.Browse.NormalAlbum",
+        method			= "delete_item",
+        version			= 1,
+        id			    = albumId,
+        item            = '[' .. itemList ..']',
+    }
+
+	local respArray, errorCode = Photos_API(h,apiParams)
+    if not respArray then return nil, errorCode end
+
+	writeLogfile(3, string.format("Photos_removePhotosFromAlbum(%d, %d photos) returns OK\n", albumId, #photoIds))
+	return true
+end
+
+---------------------------------------------------------------------------------------------------------
 -- createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
 -- create a Shared Album and add a list of photos to it
 -- returns success and share-link (if public)
@@ -1870,6 +1894,25 @@ function Photos.createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
 
 	return Photos_addPhotosToAlbum(h, albumId, photoIds), albumInfo
 end
+
+---------------------------------------------------------------------------------------------------------
+-- Photos.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
+-- remove photos from Shared Album
+function Photos.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
+	local albumId, _ = Photos_getAlbumInfo(h, 'shared', sharedAlbumName, true)
+	if not albumId then
+		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s): album not found!\n', sharedAlbumName))
+		return false, 555
+	end
+
+	local photoIds = {}
+	for i = 1, #photos do
+		photoIds[i] = Photos.getPhotoId(h, photos[i].dstFilename, photos[i].isVideo, false)
+	end
+
+	return Photos_removePhotosFromAlbum(h, albumId, photoIds)
+end
+
 
 -- #####################################################################################################
 -- ########################## Photo object #############################################################

@@ -658,7 +658,7 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 			-- end
 		end
 
-		if #sharedAlbumUpdate.removePhotos > 0 then exportParams.photoServer:removePhotosFromSharedAlbumIfExists(sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
+		if #sharedAlbumUpdate.removePhotos > 0 then exportParams.photoServer:removePhotosFromSharedAlbum(sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
 		writeLogfile(2, string.format('Shared Album "%s": added %d photos, removed %d photos.\n',
 										sharedAlbumUpdate.sharedAlbumName, #sharedAlbumUpdate.addPhotos, #sharedAlbumUpdate.removePhotos))
 		nProcessed = nProcessed + 1

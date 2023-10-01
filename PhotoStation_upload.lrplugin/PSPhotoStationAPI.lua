@@ -30,7 +30,6 @@ Photo Station object:
 	- createSharedAlbum
 	- editSharedAlbum
 	- addPhotosToSharedAlbum
-	- removePhotosFromSharedAlbum
 	- renameSharedAlbum
 	- deleteSharedAlbum
 
@@ -856,19 +855,11 @@ function PhotoStation.addPhotosToSharedAlbum(h, sharedAlbumName, photos)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
+-- PhotoStation_removePhotosFromSharedAlbum(h, albumId, photoIds)
 -- remove photos from Shared Album
-function PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
-	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
-	if not albumId then
-		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s): album not found!\n', sharedAlbumName))
-		return false, 555
-	end
+local function PhotoStation_removePhotosFromSharedAlbum(h, albumId, photoIds)
+	writeLogfile(3, string.format('PhotoStation_removePhotosFromSharedAlbum(%d):...\n', albumId))
 
-	local photoIds = {}
-	for i = 1, #photos do
-		photoIds[i] = PhotoStation.getPhotoId(h, photos[i].dstFilename, photos[i].isVideo)
-	end
 	local itemList = table.concat(photoIds, ',')
 	local formData = 'method=remove_items&' ..
 				 'version=1&' ..
@@ -879,7 +870,7 @@ function PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
 
 	if not respArray then return false, errorCode end
 
-	writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos) returns OK.\n', sharedAlbumName, #photos))
+	writeLogfile(3, string.format('PhotoStation_removePhotosFromSharedAlbum(%d, %d photos) returns OK.\n', albumId, #photoIds))
 	return true
 end
 
@@ -1860,26 +1851,20 @@ end
 -- removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
 -- remove a list of photos from a Shared Album
 -- ignore error if Shared Album doesn't exist
-function PhotoStation.removePhotosFromSharedAlbumIfExists(h, sharedAlbumName, photos)
-	local sharedAlbumInfo = sharedAlbumsCacheFind(h, sharedAlbumName)
+function PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
+	local albumId  = PhotoStation.getSharedAlbumId(h, sharedAlbumName)
 
-	if not sharedAlbumInfo then
+	if not albumId then
 		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album not found, returning OK.\n', sharedAlbumName, #photos))
 		return true
 	end
 
-	local success, errorCode = PhotoStation.removePhotosFromSharedAlbum(h, sharedAlbumName, photos)
-
-	if not success and errorCode == 555 then
-		-- shared album was deleted, mapping wasn't up to date
-		sharedAlbumsCacheUpdate(h)
-		writeLogfile(3, string.format('removePhotosFromSharedAlbum(%s, %d photos): Shared album already deleted, returning OK.\n', sharedAlbumName, #photos))
-		return true
+	local photoIds = {}
+	for i = 1, #photos do
+		photoIds[i] = Photos.getPhotoId(h, photos[i].dstFilename, photos[i].isVideo, false)
 	end
 
-	if not success then return false end
-
-	return true
+    return PhotoStation_removePhotosFromSharedAlbum(h, albumId, photoIds)
 end
 
 ---------------------------------------------------------------------------------------------------------
