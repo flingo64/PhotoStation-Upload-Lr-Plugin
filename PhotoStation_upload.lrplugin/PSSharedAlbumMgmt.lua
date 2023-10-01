@@ -651,33 +651,11 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 		progressScope:setCaption(sharedAlbumUpdate.sharedAlbumName)
 
 		if #sharedAlbumUpdate.addPhotos > 0 then
-			local success, sharedAlbumInfo = exportParams.photoServer:createAndAddPhotosToSharedAlbum(sharedAlbumParams, sharedAlbumUpdate.addPhotos)
-			if success then
-				PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, exportParams)
---[[
-        		local firstServerUrl 	= exportParams.proto .. "://" .. exportParams.servername
-        		local secondServerUrl	= iif(ifnil(exportParams.servername2, '') ~= '', exportParams.proto2 .. "://" .. exportParams.servername2, nil)
-        		writeLogfile(4, string.format("updateSharedAlbum: firstServer: %s secondServer %s\n", firstServerUrl, ifnil(secondServerUrl, '<nil>')))
-
-				local sharedAlbumUrls = {}
-				sharedAlbumUrls[1] = exportParams.psUrl .. "#!SharedAlbums/" .. exportParams.photoServer:getSharedAlbumId(sharedAlbumParams.sharedAlbumName)
-
-				if sharedAlbumParams.isPublic and shareResult.public_share_url then
-					local pathUrl = string.match(shareResult.public_share_url, 'http[s]*://[^/]*(.*)')
-					sharedAlbumUrls[2] = firstServerUrl .. pathUrl
-					if secondServerUrl then
-						sharedAlbumUrls[3] = secondServerUrl .. pathUrl
-					end
-				end
-				PSLrUtilities.addKeywordSynonyms(sharedAlbumParams.keywordId, sharedAlbumUrls)
-				if not sharedAlbumParams.isPublic then
-					local shareUrlPatterns = {}
-					shareUrlPatterns[1] = firstServerUrl .. '/photo/share/'
-					if secondServerUrl then shareUrlPatterns[2] = secondServerUrl .. '/photo/share/' end
-					PSLrUtilities.removeKeywordSynonyms(sharedAlbumParams.keywordId, shareUrlPatterns)
-				end
-]]
-			end
+            local success, sharedAlbumInfo = exportParams.photoServer:createAndAddPhotosToSharedAlbum(sharedAlbumParams, sharedAlbumUpdate.addPhotos)
+            -- TODO: if the sharedAlbum was created, then add sharedAlbum params to internal Album Metadata
+			-- if success then
+			-- 	PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, exportParams)
+			-- end
 		end
 
 		if #sharedAlbumUpdate.removePhotos > 0 then exportParams.photoServer:removePhotosFromSharedAlbumIfExists(sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
