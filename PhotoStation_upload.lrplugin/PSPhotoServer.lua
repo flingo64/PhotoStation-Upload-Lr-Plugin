@@ -139,8 +139,9 @@ PHOTOSERVER_API[70] =  {
     capabilities    =   PHOTOSERVER_METADATA_DESCRIPTION ..
                         PHOTOSERVER_METADATA_TAG ..
                         PHOTOSERVER_UPLOAD_THUMBS ..
-                        PHOTOSERVER_PERSONALAREA,
---                      .. PHOTOSERVER_SHAREDALBUM .. PHOTOSERVER_SHAREDALBUM_ADVANCED
+                        PHOTOSERVER_PERSONALAREA ..
+                        PHOTOSERVER_SHAREDALBUM,
+--                         PHOTOSERVER_SHAREDALBUM .. PHOTOSERVER_SHAREDALBUM_ADVANCED,
     thumbs          = {
         XL          =   "1280",
         M           =   "320",
