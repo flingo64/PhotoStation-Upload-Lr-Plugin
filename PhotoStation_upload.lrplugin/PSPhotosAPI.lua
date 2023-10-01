@@ -35,6 +35,10 @@ Photos object:
 	- removePhotoTag
 	- createAndAddPhotoTag
 
+    - getSharedAlbumId
+    - createSharedAlbum
+    - createAndAddPhotosToSharedAlbum
+
 Photos Photo object:
 	- new
 	- getXxx
@@ -74,7 +78,7 @@ local LrDate 		= import 'LrDate'
 local LrTasks		= import 'LrTasks'
 
 -- #####################################################################################################
--- ########################## PhotoStation object ######################################################
+-- ########################## Photos object ######################################################
 -- #####################################################################################################
 
 Photos = {}
@@ -123,7 +127,7 @@ local PSAPIerrorMsgs = {
 	[410] = 'Password must be changed',
 	[411] = 'Account is locked',
 --[[
-    -- SYNO.PhotoStation.Album (416-425)
+    -- SYNO.Photos.Album (416-425)
 	[416] = 'Photos_ALBUM_PASSWORD_ERROR',
 	[417] = 'Photos_ALBUM_NO_ACCESS_RIGHT',
 	[418] = 'Photos_ALBUM_NO_UPLOAD_RIGHT',
@@ -334,7 +338,7 @@ local function Photos_API (h, apiParams)
 end
 
 -- #####################################################################################################
--- ########################## list folder elements  ####################################################
+-- ########################## folder management  #######################################################
 -- #####################################################################################################
 
 ---------------------------------------------------------------------------------------------------------
@@ -761,8 +765,8 @@ end
 -- 		nil,					if remote photo was not found
 -- 		nil,		errorCode	on error
 function Photos.getPhotoInfoFromList(h, folderType, folderPath, photoPath, isVideo, useCache)
-    if folderType ~= 'album' then
-		writeLogfile(1, string.format("getPhotoInfoFromList('%s', '%s', '%s', useCache %s); invalid folderType!\n", folderType, folderPath, photoPath, useCache))
+    if folderType == 'sharedAlbum' then
+		writeLogfile(3, string.format("getPhotoInfoFromList('%s', '%s', '%s', useCache %s) returning nil to force re-adding of photo\n", folderType, folderPath, photoPath, useCache))
         return nil
     end
 
@@ -1595,6 +1599,276 @@ function Photos.createAndAddPhotoTag(h, dstFilename, type, name, addinfo)
 
 	writeLogfile(3, string.format("createAndAddPhotoTag('%s', '%s', '%s') returns OK.\n", dstFilename, type, name))
 	return true
+end
+
+-- #####################################################################################################
+-- ########################################## albumIdCache #############################################
+-- #####################################################################################################
+local Photos_listAlbums
+
+-- the albumIdCache holds the list of album name / album id mappings
+local albumIdCache = {
+	['local']	= {},   -- normal/conditional albums - not shared
+	['shared']	= {},   -- normal/conditional albums - shared
+}
+
+---------------------------------------------------------------------------------------------------------
+-- albumIdCacheUpdate(h, type)
+local function albumIdCacheUpdate(h, type)
+	writeLogfile(3, string.format('albumIdCacheUpdate(%s).\n', type))
+	albumIdCache[type] = Photos_listAlbums(h, type)
+	return albumIdCache[type]
+end
+
+---------------------------------------------------------------------------------------------------------
+-- albumIdCacheGetEntry(h, type, name)
+-- returns:
+--      id 
+--      full album info
+local function albumIdCacheGetEntry(h, type, name)
+	writeLogfile(4, string.format("albumIdCacheGetEntry(%s, %s)...\n", type, name))
+	local albumsOfType = albumIdCache[type]
+
+	if #albumsOfType == 0 and not albumIdCacheUpdate(h, type) then
+		return nil
+	end
+	albumsOfType = albumIdCache[type]
+
+	for i = 1, #albumsOfType do
+		if albumsOfType[i].name == name then
+			writeLogfile(3, string.format("albumIdCacheGetEntry(%s, '%s') found  %s.\n", type, name, albumsOfType[i].id))
+			return albumsOfType[i].id, albumsOfType[i]
+		end
+	end
+
+	writeLogfile(3, string.format("albumIdCacheGetEntry(%s, '%s') not found.\n", type, name))
+	return nil
+end
+
+-- #####################################################################################################
+-- ########################## shared album management ##################################################
+-- #####################################################################################################
+
+---------------------------------------------------------------------------------------------------------
+-- Photos_listAlbums(h, albumType)
+-- returns all albums
+-- returns
+--		itemList/subfolderList: table of item infos / subfolders, if success, otherwise nil
+--		errorcode:		errorcode, if not success
+function Photos_listAlbums(h, albumType)
+    local apiParams= {
+        api				= "SYNO.Foto.Browse.Album",
+        method			= "list",
+        version			= 2,
+        offset			= 0,
+        limit			= 5000,
+        sort_by			= "album_name",
+        sort_direction	= "asc",
+        additional		= '["sharing_info"]',
+-- 		additional		= '["thumbnail", "sharing_info"]',
+        category        = iif(albumType == '"shared"',  '')
+    }
+   
+	local respArray, errorCode, tryCount = nil, nil, 0
+
+    while tryCount < 2 do
+        respArray, errorCode = Photos_API(h, apiParams)
+        -- check if session is still active
+        if not respArray and errorCode == 803 then
+            writeLogfile(3, string.format("Photos_listAlbums('%s') returns error 803, trying again after re-login\n", albumType))
+            h:login()
+            tryCount = tryCount + 1
+        elseif not respArray then
+            return nil, errorCode
+        else
+            writeLogfile(3, string.format("Photos_listAlbums('%s') returns %d albums\n", albumType, #respArray.data.list))
+            writeTableLogfile(5, string.format("Photos_listAlbums('%s'):\n", respArray.data.list))
+            return respArray.data.list
+        end
+    end
+
+    return nil, errorCode
+end
+
+
+---------------------------------------------------------------------------------------------------------
+-- Photos_getAlbumInfo(h, type, albumName, useCache)
+-- 	returns the album id and info  of an Album w/ given type
+local function Photos_getAlbumInfo(h, type, albumName, useCache)
+    writeLogfile(5, string.format("Photos_getAlbumInfo(userid:%s, name:'%s', '%s') ...\n", h.userid, albumName, type))
+	if not useCache then albumIdCacheUpdate(h, 'shared') end
+	return albumIdCacheGetEntry(h, type, albumName)
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getSharedAlbumId(h, albumName, wantsInfo)
+-- 	returns the id and - if wantsInfo - additional info for a given shared album in Photos
+--  The item is searched in the albumIdCache
+function Photos.getSharedAlbumId(h, albumName)
+    return Photos_getAlbumInfo(h, 'shared', albumName, true)
+end
+
+---------------------------------------------------------------------------------------------------------
+-- Photos_createAlbum (h, type, name)
+-- create a new album of given type: local or shared
+local function Photos_createAlbum(h, type, name)
+	-- TODO: evaluate type
+	writeLogfile(3, string.format("Photos_createAlbum('%s', '%s') ...\n", type, name))
+
+    local apiParams = {
+		api 				= "SYNO.Foto.Browse.NormalAlbum",
+		method 				= "create",
+		version 			= "2",
+		name				= '"' .. urlencode(name) ..'"',
+        shared              = iif(type == 'local', "false", "tue")
+	}
+	local respArray, errorCode = Photos_API(h, apiParams)
+
+	if not respArray and errorCode == 641 then
+		writeLogfile(3, string.format("Photos_createAlbum('%s'): album already exists, returning albumId from cache\n", name))
+		return Photos_getAlbumInfo(h, type, name, true)
+	elseif not respArray then
+		writeLogfile(3, string.format("Photos_createAlbum('%s'): return <nil>, %s\n", name, Photos.getErrorMsg(errorCode)))
+		return nil, errorCode
+	end
+
+	local albumId = respArray.data.album.id
+
+    albumIdCacheUpdate(h, type)
+
+	writeLogfile(3, string.format("Photos_createAlbum('%s') returns %d\n", name, albumId))
+
+	return albumId
+end
+
+---------------------------------------------------------------------------------------------------------
+-- createSharedAlbum(h, sharedAlbumParams, useExisting)
+-- create a Shared Album 
+-- returns success and share-link (if public)
+function Photos.createSharedAlbum(h, sharedAlbumParams, useExisting)
+	writeLogfile(3, string.format("createSharedAlbum('%s')...\n", sharedAlbumParams.sharedAlbumName))
+	local sharedAlbumInfo = Photos_getAlbumInfo(h, 'shared', sharedAlbumParams.sharedAlbumName, false)
+	local sharedAlbumAttributes = {}
+
+	if sharedAlbumInfo and not useExisting then
+		writeLogfile(3, string.format('createSharedAlbum(%s, useExisting %s): returns error: Album already exists!\n',
+									sharedAlbumParams.sharedAlbumName, tostring(useExisting)))
+		return nil, 414
+	end
+
+    return sharedAlbumInfo
+    -- TODO create album if missing
+  --[[
+		local sharedAlbumId, errorCode = Photos_createSharedAlbum(h, sharedAlbumParams)
+
+		if not sharedAlbumId then return nil, errorCode end
+
+		sharedAlbumInfo = Photos_getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
+		if not sharedAlbumInfo then return nil, 555 end
+	end
+
+	sharedAlbumAttributes.is_shared = sharedAlbumParams.isPublic
+
+	if 	sharedAlbumParams.isPublic then
+--		sharedAlbumAttributes.status		= 'valid'
+		sharedAlbumAttributes.start_time 	= ifnil(sharedAlbumParams.startTime, sharedAlbumInfo.additional.public_share.start_time)
+		sharedAlbumAttributes.end_time 		= ifnil(sharedAlbumParams.stopTime, sharedAlbumInfo.additional.public_share.end_time)
+	end
+
+	if sharedAlbumParams.isAdvanced then
+		sharedAlbumAttributes.is_advanced = true
+
+		if sharedAlbumParams.sharedAlbumPassword then
+			sharedAlbumAttributes.enable_password = true
+			sharedAlbumAttributes.password = sharedAlbumParams.sharedAlbumPassword
+		else
+			sharedAlbumAttributes.enable_password = false
+		end
+
+		--get advanced album info from already existing Shared Albums or from defaults
+		local advancedInfo
+		if sharedAlbumInfo.additional and sharedAlbumInfo.additional.public_share and sharedAlbumInfo.additional.public_share.advanced_info then
+			advancedInfo = sharedAlbumInfo.additional.public_share.advanced_info
+		else
+			advancedInfo = {
+		    	enable_marquee_tool 	= true,
+    			enable_comment			= true,
+    			enable_color_label		= true,
+    			color_label_1			= 'red',
+    			color_label_2			= 'yellow',
+    			color_label_3			= 'green',
+		    	color_label_4			= '',
+    			color_label_5			= 'blue',
+		    	color_label_6			= 'purple',
+			}
+		end
+
+		-- set advanced album info: use existing/default values if not defined otherwise
+    	sharedAlbumAttributes.enable_marquee_tool	= ifnil(sharedAlbumParams.areaTool, 	 advancedInfo.enable_marquee_tool)
+    	sharedAlbumAttributes.enable_comment 		= ifnil(sharedAlbumParams.comments, 	 advancedInfo.enable_comment)
+    	-- TODO: use Lr defined color label names
+    	sharedAlbumAttributes.color_label_1 		= iif(sharedAlbumParams.colorRed	== nil, advancedInfo.color_label_1, iif(sharedAlbumParams.colorRed, 	'red', ''))
+    	sharedAlbumAttributes.color_label_2 		= iif(sharedAlbumParams.colorYellow == nil, advancedInfo.color_label_2, iif(sharedAlbumParams.colorYellow, 	'yellow', ''))
+    	sharedAlbumAttributes.color_label_3 		= iif(sharedAlbumParams.colorGreen	== nil, advancedInfo.color_label_3, iif(sharedAlbumParams.colorGreen, 	'green', ''))
+    	sharedAlbumAttributes.color_label_4 		= ''
+    	sharedAlbumAttributes.color_label_5 		= iif(sharedAlbumParams.colorBlue	== nil, advancedInfo.color_label_5, iif(sharedAlbumParams.colorBlue, 	'blue', ''))
+    	sharedAlbumAttributes.color_label_6 		= iif(sharedAlbumParams.colorPurple	== nil, advancedInfo.color_label_6, iif(sharedAlbumParams.colorPurple, 	'purple', ''))
+    	sharedAlbumAttributes.enable_color_label	= sharedAlbumParams.colorRed or sharedAlbumParams.colorYellow or sharedAlbumParams.colorGreen or
+            										  sharedAlbumParams.colorBlue or sharedAlbumParams.colorPurple or advancedInfo.enable_color_label
+	end
+
+	writeTableLogfile(3, "createSharedAlbum: sharedAlbumParams", sharedAlbumParams, true, '^password')
+	local shareResult, errorCode = Photos.editSharedAlbum(h, sharedAlbumParams.sharedAlbumName, sharedAlbumAttributes)
+
+	if not shareResult then return nil, errorCode end
+
+	return shareResult
+]]
+end
+
+---------------------------------------------------------------------------------------------------------
+-- Photos_addPhotosToAlbum(h, albumId, photoIds)
+-- add photos to an Album
+local function Photos_addPhotosToAlbum(h, albumId, photoIds)
+	writeLogfile(3, string.format('Photos_addPhotosToSharedAlbum(%d, %d photos):\n', albumId, #photoIds))
+
+	local itemList = table.concat(photoIds, ',')
+
+    local apiParams= {
+        api				= "SYNO.Foto.Browse.NormalAlbum",
+        method			= "add_item",
+        version			= 1,
+        id			    = albumId,
+        item            = '[' .. itemList ..']',
+    }
+
+	local respArray, errorCode = Photos_API(h,apiParams)
+    if not respArray then return nil, errorCode end
+
+	writeLogfile(3, string.format("Photos_addPhotosToSharedAlbum(%d, %d photos) returns OK\n", albumId, #photoIds))
+	return true
+end
+
+---------------------------------------------------------------------------------------------------------
+-- createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
+-- create a Shared Album and add a list of photos to it
+-- returns success and share-link (if public)
+function Photos.createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
+	writeLogfile(3, string.format("createAndAddPhotosToSharedAlbum('%s', %d photos)...\n", sharedAlbumParams.sharedAlbumName, #photos))
+	local albumId, albumInfo = Photos_getAlbumInfo(h, 'shared', sharedAlbumParams.sharedAlbumName, false)
+	if not albumId then
+		albumId = Photos.createSharedAlbum(h, sharedAlbumParams, true)
+		albumIdCacheUpdate(h, type)
+	end
+
+    if not albumId then return false end
+
+    local photoIds = {}
+	for i = 1, #photos do
+		photoIds[i] = Photos.getPhotoId(h, photos[i].dstFilename, photos[i].isVideo, false)
+	end
+
+	return Photos_addPhotosToAlbum(h, albumId, photoIds), albumInfo
 end
 
 -- #####################################################################################################
