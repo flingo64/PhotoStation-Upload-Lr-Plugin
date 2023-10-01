@@ -503,7 +503,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
     		if sharedAlbum.wasAdded or sharedAlbum.wasModified then
 				sharedAlbum.isAdvanced = iif(publishSettings.photoServer:supports(PHOTOSERVER_SHAREDALBUM_ADVANCED), true, false)
     			-- add/modify Shared Album in Photo Server
-    			local sharedAlbumInfo, errorCode = publishSettings.photoServer:createSharedAlbumAdvanced(sharedAlbum, true)
+    			local sharedAlbumInfo, errorCode = publishSettings.photoServer:createSharedAlbum(sharedAlbum, true)
     			if sharedAlbumInfo then
     				writeLogfile(2, string.format('writeSharedAlbumsToPS(%s): add/modify returns OK.\n', sharedAlbum.sharedAlbumName))
     				numAddOrMods = numAddOrMods + 1

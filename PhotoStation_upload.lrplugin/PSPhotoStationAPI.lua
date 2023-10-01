@@ -786,8 +786,8 @@ function PhotoStation.listSharedAlbum(h, sharedAlbumName, listItems)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createSharedAlbum(h, name)
-function PhotoStation.createSharedAlbum(h, sharedAlbumName)
+-- PhotoStattion_createSharedAlbumSimple(h, name)
+local function PhotoStation_createSharedAlbumSimple(h, sharedAlbumName)
 	local formData = 'method=create&' ..
 					 'version=1&' ..
 					 'name=' .. urlencode(sharedAlbumName)
@@ -796,7 +796,7 @@ function PhotoStation.createSharedAlbum(h, sharedAlbumName)
 
 	if not respArray then return false, errorCode end
 
-	writeLogfile(2, string.format('createSharedAlbum(%s) returns sharedAlbumId %s.\n', sharedAlbumName, respArray.data.id))
+	writeLogfile(2, string.format('PhotoStation_createSharedAlbumSimple(%s) returns sharedAlbumId %s.\n', sharedAlbumName, respArray.data.id))
 	return respArray.data.id
 end
 
@@ -1098,31 +1098,6 @@ local function checkPhotoStationAnswer(funcAndParams, respHeaders, respBody)
 end
 
 ----------- PhotoStation Upload: global functions ------------------------------------
---[[
--- Disabled: using createAlbum() instead
--- createFolder (h, parentDir, newDir)
--- parentDir must exit
--- newDir may or may not exist, will be created
-function PhotoStation.createFolder (h, parentDir, newDir)
-	local postHeaders = {
-		{ field = 'Content-Type',			value = 'application/x-www-form-urlencoded' },
-		{ field = 'X-PATH', 				value = urlencode(parentDir) },
---		{ field = 'X-DUPLICATE', 			value = 'OVERWRITE' },
-		{ field = 'X-DUPLICATE', 			value = 'SKIP' },
-		{ field = 'X-ORIG-FNAME', 			value =  urlencode(newDir) },
-		{ field = 'X-UPLOAD-TYPE',			value = 'FOLDER' },
-	}
-	local postBody = ''
-	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.uploadPath, postBody, postHeaders, 'POST', h.serverTimeout, 0)
-
-	writeLogfile(4, "createFolder: LrHttp.post(" .. h.serverUrl .. h.uploadPath .. ",...)\n")
-	writeTableLogfile(4, 'postHeaders', postHeaders, true)
-
-	return checkPhotoStationAnswer(string.format("PhotoStation.createFolder('%s', '%s')", parentDir, newDir),
-									respHeaders, respBody)
-end
-]]
-
 --[[
 uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dstFilename, picType, mimeType, position)
 upload a single file to Photo Station
@@ -1782,10 +1757,10 @@ PhotoStation.colorMapping = {
 }
 
 ---------------------------------------------------------------------------------------------------------
--- createSharedAlbumAdvanced(h, sharedAlbumParams, useExisting)
+-- createSharedAlbum(h, sharedAlbumParams, useExisting)
 -- create a Shared Album and add a list of photos to it
 -- returns success and share-link (if public)
-function PhotoStation.createSharedAlbumAdvanced(h, sharedAlbumParams, useExisting)
+function PhotoStation.createSharedAlbum(h, sharedAlbumParams, useExisting)
 	local sharedAlbumInfo = PhotoStation.getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 	local sharedAlbumAttributes = {}
 
@@ -1796,7 +1771,7 @@ function PhotoStation.createSharedAlbumAdvanced(h, sharedAlbumParams, useExistin
 	end
 
 	if not sharedAlbumInfo then
-		local sharedAlbumId, errorCode = PhotoStation.createSharedAlbum(h, sharedAlbumParams.sharedAlbumName)
+		local sharedAlbumId, errorCode = PhotoStation_createSharedAlbumSimple(h, sharedAlbumParams.sharedAlbumName)
 
 		if not sharedAlbumId then return nil, errorCode end
 
@@ -1854,7 +1829,7 @@ function PhotoStation.createSharedAlbumAdvanced(h, sharedAlbumParams, useExistin
             										  sharedAlbumParams.colorBlue or sharedAlbumParams.colorPurple or advancedInfo.enable_color_label
 	end
 
-	writeTableLogfile(3, "PhotoStation.createSharedAlbum: sharedAlbumParams", sharedAlbumParams, true, '^password')
+	writeTableLogfile(3, "createSharedAlbum: sharedAlbumParams", sharedAlbumParams, true, '^password')
 	local shareResult, errorCode = PhotoStation.editSharedAlbum(h, sharedAlbumParams.sharedAlbumName, sharedAlbumAttributes)
 
 	if not shareResult then return nil, errorCode end
@@ -1866,7 +1841,7 @@ end
 -- create a Shared Album and add a list of photos to it
 -- returns success and share-link (if public)
 function PhotoStation.createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
-	local shareResult = h:createSharedAlbumAdvanced(sharedAlbumParams, true)
+	local shareResult = h:createSharedAlbum(sharedAlbumParams, true)
 
 	if 		not shareResult
 		or	not h:addPhotosToSharedAlbum(sharedAlbumParams.sharedAlbumName, photos)
