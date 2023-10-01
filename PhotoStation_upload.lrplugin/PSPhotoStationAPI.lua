@@ -1622,9 +1622,9 @@ function PhotoStation.getPhotoInfoFromList(h, albumType, albumName, photoName, i
 end
 
 ---------------------------------------------------------------------------------------------------------
--- PhotoStation.getSharedAlbumInfo(h, sharedAlbumName, useCache)
+-- PhotoStation_getSharedAlbumInfo(h, sharedAlbumName, useCache)
 -- 	returns the shared album info  of a given SharedAlbum
-function PhotoStation.getSharedAlbumInfo(h, sharedAlbumName, useCache)
+local function PhotoStation_getSharedAlbumInfo(h, sharedAlbumName, useCache)
 	if not useCache then sharedAlbumsCacheUpdate(h) end
 	return sharedAlbumsCacheFind(h, sharedAlbumName)
 end
@@ -1758,10 +1758,10 @@ PhotoStation.colorMapping = {
 
 ---------------------------------------------------------------------------------------------------------
 -- createSharedAlbum(h, sharedAlbumParams, useExisting)
--- create a Shared Album and add a list of photos to it
+-- create a Shared Album
 -- returns success and share-link (if public)
 function PhotoStation.createSharedAlbum(h, sharedAlbumParams, useExisting)
-	local sharedAlbumInfo = PhotoStation.getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
+	local sharedAlbumInfo = PhotoStation_getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 	local sharedAlbumAttributes = {}
 
 	if sharedAlbumInfo and not useExisting then
@@ -1775,7 +1775,7 @@ function PhotoStation.createSharedAlbum(h, sharedAlbumParams, useExisting)
 
 		if not sharedAlbumId then return nil, errorCode end
 
-		sharedAlbumInfo = PhotoStation.getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
+		sharedAlbumInfo = PhotoStation_getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 		if not sharedAlbumInfo then return nil, 555 end
 	end
 
