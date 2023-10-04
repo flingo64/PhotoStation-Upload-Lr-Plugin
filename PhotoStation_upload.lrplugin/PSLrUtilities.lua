@@ -676,10 +676,8 @@ function PSLrUtilities.getKeywordByPath(keywordPath, createIfMissing, includeOnE
 	end
 
 	writeLogfile(4, string.format("getKeywordByPath('%s', create: %s, include: %s) returns keyword id %d\n",
----@diagnostic disable-next-line: need-check-nil
-									keywordPath, tostring(ifnil(createIfMissing, '<nil>')), tostring(ifnil(includeOnExport, '<nil>')), keyword.localIdentifier))
----@diagnostic disable-next-line: need-check-nil
-	return keyword.localIdentifier, keyword
+									keywordPath, tostring(ifnil(createIfMissing, '<nil>')), tostring(ifnil(includeOnExport, '<nil>')), keyword and keyword.localIdentifier))
+	return keyword and keyword.localIdentifier, keyword
 end
 
 --------------------------------------------------------------------------------------------
