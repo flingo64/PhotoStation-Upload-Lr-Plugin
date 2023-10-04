@@ -448,7 +448,7 @@ function PhotoStation_getTagList(h, type)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Tag', formData)
 
-	if not respArray then return false, errorCode end
+	if not respArray then return nil, errorCode end
 
 	writeLogfile(3, string.format('getTags returns %d tags.\n', respArray.data.total))
 	return respArray.data.tags
@@ -640,6 +640,7 @@ function PhotoStation.deletePhoto (h, dstFilename, isVideo)
 	if not respArray and errorCode ~= 101 then return false, errorCode end
 
 	writeLogfile(3, string.format('deletePhoto(%s) returns OK (errorCode was %d)\n', dstFilename, ifnil(errorCode, 0)))
+---@diagnostic disable-next-line: need-check-nil
 	return respArray.success
 end
 
@@ -1379,7 +1380,8 @@ function PhotoStation.createTree(h, srcDir, srcRoot, dstRoot, dirsCreated)
 	writeLogfile(4,"  createTree: dstDir is: " .. dstDir .. "\n")
 
 	local parentDir = dstRoot
-	local restDir = dstDirRel
+	local restDir
+    restDir = dstDirRel
 
 	while restDir do
 		local slashPos = ifnil(string.find(restDir,"/", 1, true), 0)
