@@ -2005,7 +2005,7 @@ end
 
 -- getTags(): get all general and person tags: treat person tags as general tags due to missing face region support in Photos
 function PhotosPhoto:getTags()
-	local tagList
+	local tagList = {}
 	if self.additional and self.additional.tag then
 		tagList = {}
 		for i = 1, #self.additional.tag do

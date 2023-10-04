@@ -283,7 +283,7 @@ end
 --   - the elements 'tableField' or the whole structure
 --   - all elements with filterAttr matching any of the patterns in filterPatternList (csv) or all
 function getTableExtract(inputTable, tableField, filterAttr, filterPatternList)
-    if not inputTable then return nil end
+    if not inputTable then return {} end
 
 	local j, tableExtract = 1, {}
     local patternMatched = false
@@ -292,10 +292,12 @@ function getTableExtract(inputTable, tableField, filterAttr, filterPatternList)
             patternMatched = true
         else
             local patternArray = split(filterPatternList, ',')
-            for _, pattern in ipairs(patternArray) do
-                if string.match(inputTable[i][filterAttr], pattern) then
-                    patternMatched = true
-                    break
+            if patternArray then
+                for _, pattern in ipairs(patternArray) do
+                    if string.match(inputTable[i][filterAttr], pattern) then
+                        patternMatched = true
+                        break
+                    end
                 end
             end
         end
@@ -1058,16 +1060,16 @@ function PSUtilities.denormalizeArea(area, photoDimension)
 									area.x, area.y, area.width, area.height))
 
 	local areaNew = tableShallowCopy(area)
-	local photoRotation = string.format("%1.5f", 0)
+	local photoRotation = tonumber(string.format("%1.5f", 0))
 
 	if string.find(photoDimension.orient, 'Horizontal') then
-		photoRotation	= string.format("%1.5f", 0)
+		photoRotation	= tonumber(string.format("%1.5f", 0))
 	elseif string.find(photoDimension.orient, '90') then
-		photoRotation = string.format("%1.5f", math.rad(90))
+		photoRotation = tonumber(string.format("%1.5f", math.rad(90)))
 	elseif string.find(photoDimension.orient, '180') then
-		photoRotation	= string.format("%1.5f", math.rad(180))
+		photoRotation	= tonumber(string.format("%1.5f", math.rad(180)))
 	elseif string.find(photoDimension.orient, '270') then
-		photoRotation = string.format("%1.5f", math.rad(-90))
+		photoRotation = tonumber(string.format("%1.5f", math.rad(-90)))
 	end
 
 	--	 transform upper left to center coords

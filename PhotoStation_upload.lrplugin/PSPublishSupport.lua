@@ -675,6 +675,9 @@ function publishServiceProvider.imposeSortOrderOnPublishedCollection( publishSet
 	then
 		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Sorting of photos not supported or not configured --> done.\n")
 		return false
+	elseif not collectionSettings then
+		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Cannot get collectionSettings --> done.\n")
+		return false
 	elseif collectionSettings.copyTree then
 		writeLogfile(3, "imposeSortOrderOnPublishedCollection: Cannot sort photos in 'Tree Copy' collection --> done.\n")
 		return false
@@ -1445,7 +1448,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 				local keywordNamesExported = trimTable(split(srcPhoto:getFormattedMetadata("keywordTagsForExport"), ','))
 				-- transform keywordNamesExported into a list of objects {name, type}, so it can be table-compared with tagsPS based on the name
                 local keywordsExported = {}
-                if #keywordNamesExported > 0 then
+                if keywordNamesExported and #keywordNamesExported > 0 then
                     for key, value in ipairs(keywordNamesExported) do
                         keywordsExported[key] = { name = value, type = "unknown" }
                     end
@@ -1513,8 +1516,8 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
 					facesAdd = facesPS
 					facesRemove = {}
 				end
-       			faceNamesAdd 		= getTableExtract(facesAdd, 'name')
-       			faceNamesRemove 	= getTableExtract(facesRemove, 'name')
+       			faceNamesAdd 		= getTableExtract(facesAdd, 'name') or {}
+       			faceNamesRemove 	= getTableExtract(facesRemove, 'name') or {}
 
     			-- allow update of faces only if faces were added or changed, not if faces were removed
     			if (#facesAdd > 0) and (#facesAdd >= #facesRemove) then

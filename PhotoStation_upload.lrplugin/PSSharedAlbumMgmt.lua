@@ -350,6 +350,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
     			local srcPhotos = PSLrUtilities.getKeywordPhotos(sharedAlbum.keywordId)
 
     			for j = 1, #srcPhotos do
+                    ---@diagnostic disable-next-line: need-check-nil
     				local srcPhoto = srcPhotos[j]
     				local sharedAlbums = PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto)
         			if sharedAlbums then
@@ -473,7 +474,11 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 			end
 		end
 
-		if sharedAlbum.wasDeleted then
+        if not publishSettings then
+            writeLogfile(1, "PSSharedAlbumMgmt.writeSharedAlbumsToPS(): could not get publishSettings (should not happen)!\n")
+            return false
+
+        elseif sharedAlbum.wasDeleted then
 			if  not sharedAlbum.wasAdded then
     			-- delete Shared Album in Photo Server
     			writeLogfile(3, string.format('writeSharedAlbumsToPS: deleting %s.\n', sharedAlbum.sharedAlbumName))
@@ -690,6 +695,12 @@ local function getColorLabelsFromPublishService(functionContext, publishServiceN
 	local nPhotos =  #arrayOfPhotoInfo
 	local nProcessed 	= 0
 	local nColorLabels	= 0
+
+	if not publishSettings then
+		writeLogfile(2, string.format("Get color labels: Cannot get publishSettings (should not happen)!\n"))
+		closeLogfile()
+		return
+	end
 
 	-- make sure logfile is opened
 	openLogfile(publishSettings.logLevel)
