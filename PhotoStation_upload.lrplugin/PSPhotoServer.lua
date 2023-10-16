@@ -59,8 +59,8 @@ PHOTOSERVER_PERSONALAREA             = "'PERSONALAREA'"           -- support for
 PHOTOSERVER_PERSONALAREA_XUPLOAD     = "'PERDONALAREA_XUPLOAD'"   -- support for upload to personal area of different user
 
 -- shared album support  --
-PHOTOSERVER_SHAREDALBUM	            = "'SHAREDALBUM'"
-PHOTOSERVER_SHAREDALBUM_ADVANCED	= "'SHAREDALBUM_ADVANCED'"
+PHOTOSERVER_SHAREDALBUM	            = "'SHAREDALBUM'"               -- support for shared albums
+PHOTOSERVER_SHAREDALBUM_ADVANCED	= "'SHAREDALBUM_ADVANCED'"      -- support for valid_from, area tool, comments, color tags (Photo Station)
 
 --======PhotoServer versions ==============================================--
 
@@ -141,7 +141,6 @@ PHOTOSERVER_API[70] =  {
                         PHOTOSERVER_UPLOAD_THUMBS ..
                         PHOTOSERVER_PERSONALAREA ..
                         PHOTOSERVER_SHAREDALBUM,
---                         PHOTOSERVER_SHAREDALBUM .. PHOTOSERVER_SHAREDALBUM_ADVANCED,
     thumbs          = {
         XL          =   "1280",
         M           =   "320",
@@ -166,6 +165,27 @@ PHOTOSERVER_API[72] =  {
 
 PHOTOSERVER_API[73] =  {
     name	        =   'Photos 1.3',
+    API 	        =   Photos,
+    capabilities    =   PHOTOSERVER_API[71].capabilities,
+    thumbs          =   PHOTOSERVER_API[70].thumbs
+}
+
+PHOTOSERVER_API[74] =  {
+    name	        =   'Photos 1.4',
+    API 	        =   Photos,
+    capabilities    =   PHOTOSERVER_API[71].capabilities,
+    thumbs          =   PHOTOSERVER_API[70].thumbs
+}
+
+PHOTOSERVER_API[75] =  {
+    name	        =   'Photos 1.5',
+    API 	        =   Photos,
+    capabilities    =   PHOTOSERVER_API[71].capabilities,
+    thumbs          =   PHOTOSERVER_API[70].thumbs
+}
+
+PHOTOSERVER_API[76] =  {
+    name	        =   'Photos 1.6',
     API 	        =   Photos,
     capabilities    =   PHOTOSERVER_API[71].capabilities,
     thumbs          =   PHOTOSERVER_API[70].thumbs
