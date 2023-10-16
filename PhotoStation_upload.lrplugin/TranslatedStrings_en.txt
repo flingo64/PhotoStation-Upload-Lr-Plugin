@@ -237,6 +237,7 @@
 "$$$/PSUpload/SharedAlbumMgmt/Messages/SharedAlbumAlreadyExist=Shared Album already exists!"
 "$$$/PSUpload/SharedAlbumMgmt/Messages/SharedAlbumNameMissing=Please enter a Shared Album Name!"
 "$$$/PSUpload/SharedAlbumMgmt/Password=Password"
+"$$$/PSUpload/SharedAlbumMgmt/Permissions=Public Permissions"
 "$$$/PSUpload/SharedAlbumMgmt/privateUrl=Private URL:"
 "$$$/PSUpload/SharedAlbumMgmt/Public=Public"
 "$$$/PSUpload/SharedAlbumMgmt/publicUrl=Public URL:"
