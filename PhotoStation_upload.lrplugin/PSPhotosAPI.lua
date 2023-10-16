@@ -268,14 +268,26 @@ local PSAPIerrorMsgs = {
 
 	[803]	= 'No permission to use this function (probably a session timeout)',
 
-	-- Lr HTTP errors
-	[1001]  = 'Http error: no response body, no response header',
-	[1002]  = 'Http error: no response data, no errorcode in response header',
-	[1003]  = 'Http error: No JSON response data',
-	[12002] = 'Http error: requestTimeout',
-	[12007] = 'Http error: cannotFindHost',
-	[12029] = 'Http error: cannotConnectToHost: check TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
-	[12038] = 'Http error: serverCertificateHasUnknownRoot',
+    -- Plugin internal error codes
+    [1001]  = 'Http error: no response body, no response header',
+    [1002]  = 'Http error: no response data, no errorcode in response header',
+    [1003]  = 'Http error: No JSON response data',
+
+    -- Lr HTTP errors
+    -- MacOS: negative error codes
+    [-1001] = 'Http error: timedOut - check IP address, port and TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
+    [-1003] = 'Http error: cannotFindHost - check servername / domainname',
+    [-1004] = 'SSL/TLS error: cannotConnectToHost - check IP address, port and TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
+    [-1200] = 'SSL/TLS error: security error - could not establish SSL/TLS connection, check protocol and port',
+    [-1202] = 'SSL/TLS error: security error - hostname in server certificate is invalid or does not match servername',
+
+    -- Windows: error codes 12xxx
+    [12002] = 'Http error: requestTimeout',
+    [12007] = 'Http error: cannotFindHost - check servername / domainname',
+    [12029] = 'SSL/TLS error: cannotConnectToHost - check IP address, port and TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
+    [12038] = 'SSL/TLS error: serverCertificateHasUnknownRoot - hostname in server certificate is invalid or does not match servername',
+    [12157] = 'SSL/TLS error: could not establish SSL/TLS connection, check protocol and port',
+
 }
 
 -- #####################################################################################################
@@ -311,7 +323,7 @@ local function Photos_API (h, apiParams)
 	local respBody, respHeaders = LrHttp.post(h.serverUrl .. h.psWebAPI .. h.apiInfo[synoAPI].path, postBody, postHeaders, 'POST', h.serverTimeout, string.len(postBody))
 
 	if not respBody then
-	    writeTableLogfile(3, 'respHeaders', respHeaders)
+	    writeTableLogfile(3, 'respHeaders', respHeaders, true, 'password')
     	if respHeaders then
       		writeLogfile(3, string.format("Error %s on http request: %s\n",
       				ifnil(respHeaders["error"].errorCode, 'Unknown'),
@@ -1650,6 +1662,22 @@ end
 -- ########################## shared album management ##################################################
 -- #####################################################################################################
 
+Photos.sharedAlbumDefaults = {
+	isAdvanced			= false,
+	isPublic			= true,
+    publicPermissions   = 'View',
+    sharedAlbumPassword	= '',
+	startTime			= '',
+	stopTime 			= '',
+	colorRed			= false,
+	colorYellow			= false,
+	colorGreen			= false,
+	colorBlue			= false,
+	colorPurple			= false,
+	comments			= false,
+	areaTool			= false,
+}
+
 ---------------------------------------------------------------------------------------------------------
 -- Photos_listAlbums(h, albumType)
 -- returns all albums
@@ -1764,7 +1792,7 @@ function Photos.createSharedAlbum(h, sharedAlbumParams, useExisting)
     if not sharedAlbumInfo then
     -- shared album not found: create it
         local errorCode
-  		sharedAlbumId, errorCode = Photos_createAlbum(h, 'shared', sharedAlbumParams.sharedAlbumName)
+  		sharedAlbumId, errorCode = Photos_createAlbum(h, 'shared', sharedAlbumParams.sharedAlbumName, {})
 		if not sharedAlbumId then 
             writeLogfile(1, string.format("createSharedAlbum('%s'): failed (%d: %s)!\n", sharedAlbumParams.sharedAlbumName, errorCode, Photos.getErrorMsg(errorCode)))
             return nil, errorCode
