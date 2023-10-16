@@ -849,9 +849,7 @@ end
 -- deleteKeyword(keywordId)
 function PSLrUtilities.deleteKeyword(keywordId)
 	-- there is no API to remove a keyword from catalog
-
-	-- TODO: inform the user to remove the keyword manually
-
+	writeLogfile(3, string.format("deleteKeyword(%d') not supported by Lr API!\n", keywordId))
 	return true
 end
 
