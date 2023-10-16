@@ -1411,7 +1411,7 @@ function publishServiceProvider.getRatingsFromPublishedCollection( publishSettin
         			nChanges = nChanges + 1
         			resultText = resultText ..  string.format(" label changed from %s to %s,",
         												srcPhoto:getRawMetadata('colorNameForLabel'), labelPS)
-        			writeLogfile(3, string.format("Get ratings/metadata: %s - label changed from %s to %s\n",
+        			writeLogfile(3, string.format("Get ratings/metadata: %s - label changed from '%s' to '%s'\n",
         										photoInfo.remoteId, srcPhoto:getRawMetadata('colorNameForLabel'), labelPS))
         		elseif not labelPS and photoInfo.photo:getRawMetadata('colorNameForLabel') ~= 'grey' then
         			resultText = resultText ..  string.format(" label %s removal ignored,", srcPhoto:getRawMetadata('colorNameForLabel'))
