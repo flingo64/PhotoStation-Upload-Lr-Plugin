@@ -120,7 +120,12 @@ JSON.onDecodeOfHTMLError = JSON.onDecodeError
 ---------------------- useful helpers ----------------------------------------------------------
 
 function ifnil(str, subst)
-	return ((str == nil) and subst) or str
+    if str ~= nil then
+        return str
+    else
+        return subst
+    end
+-- 	return ((str == nil) and subst) or str
 end
 
 function iif(condition, thenExpr, elseExpr)
