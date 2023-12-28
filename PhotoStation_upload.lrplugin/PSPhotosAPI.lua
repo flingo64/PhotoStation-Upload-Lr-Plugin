@@ -1774,19 +1774,13 @@ local function Photos_createAlbum(h, sharedAlbumParams, photoIds)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- createSharedAlbum(h, sharedAlbumParams, useExisting)
+-- createSharedAlbum(h, sharedAlbumParams)
 -- create a Shared Album 
 -- returns success and share-link (if public)
-function Photos.createSharedAlbum(h, sharedAlbumParams, useExisting)
+function Photos.createSharedAlbum(h, sharedAlbumParams)
 	writeLogfile(4, string.format("createSharedAlbum('%s')...\n", sharedAlbumParams.sharedAlbumName))
 	local sharedAlbumId, sharedAlbumInfo = Photos_getAlbumInfo(h, 'shared', sharedAlbumParams.sharedAlbumName, false)
 	local sharedAlbumAttributes = {}
-
-	if sharedAlbumInfo and not useExisting then
-		writeLogfile(1, string.format('createSharedAlbum(%s, useExisting %s): returns error: Album already exists!\n',
-									sharedAlbumParams.sharedAlbumName, tostring(useExisting)))
-		return nil, 414
-	end
 
     if not sharedAlbumInfo then
     -- shared album not found: create it

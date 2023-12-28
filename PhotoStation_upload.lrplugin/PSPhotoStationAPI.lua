@@ -1766,18 +1766,12 @@ PhotoStation.colorMapping = {
 }
 
 ---------------------------------------------------------------------------------------------------------
--- createSharedAlbum(h, sharedAlbumParams, useExisting)
+-- createSharedAlbum(h, sharedAlbumParams)
 -- create a Shared Album
 -- returns success and share-link (if public)
-function PhotoStation.createSharedAlbum(h, sharedAlbumParams, useExisting)
+function PhotoStation.createSharedAlbum(h, sharedAlbumParams)
 	local sharedAlbumInfo = PhotoStation_getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 	local sharedAlbumAttributes = {}
-
-	if sharedAlbumInfo and not useExisting then
-		writeLogfile(3, string.format('createSharedAlbum(%s, useExisting %s): returns error: Album already exists!\n',
-									sharedAlbumParams.sharedAlbumName, tostring(useExisting)))
-		return nil, 414
-	end
 
 	if not sharedAlbumInfo then
 		local sharedAlbumId, errorCode = PhotoStation_createSharedAlbumSimple(h, sharedAlbumParams.sharedAlbumName)
