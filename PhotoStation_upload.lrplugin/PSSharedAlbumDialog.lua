@@ -22,23 +22,17 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 ------------------------------------------------------------------------------]]
 
 -- Lightroom SDK
-local LrApplication		= import 'LrApplication'
 local LrBinding			= import 'LrBinding'
 local LrColor			= import 'LrColor'
 local LrDate			= import 'LrDate'
 local LrDialogs			= import 'LrDialogs'
-local LrFileUtils		= import 'LrFileUtils'
 local LrFunctionContext	= import 'LrFunctionContext'
 local LrHttp 			= import 'LrHttp'
-local LrPathUtils 		= import 'LrPathUtils'
-local LrPrefs			= import 'LrPrefs'
 local LrTasks	 		= import 'LrTasks'
 local LrView 			= import 'LrView'
 
 local bind 				= LrView.bind
-local share 			= LrView.share
 local conditionalItem 	= LrView.conditionalItem
-local negativeOfKey 	= LrBinding.negativeOfKey
 
 -- Photo StatLr plug-in
 require "PSDialogs"
@@ -58,28 +52,29 @@ local nExtraRows 			= 5		-- add this number of rows for additions
 
 local columnWidth = {
 	-- header section
-	header			= 300,
-	label			= 80,
-	data			= 250,
-	url				= 400,
-	password		= 166,
+	header			   	= 300,
+	label			    = 80,
+	data			    = 250,
+	url				    = 400,
+	password		    = 166,
 
 	-- list section
-	delete			= 30,
-	albumName		= 170,
-	publishService	= 120,
-	public			= 40,
-	start			= 70,
-	stop			= 70,
-	area 			= 35,
-	comments		= 60,
-	colors			= 100,
-	sync			= 40,
+	delete			    = 30,
+	albumName		    = 170,
+	publishService	    = 120,
+	publicPermissions   = 80,
+	public			    = 40,
+	start			    = 70,
+	stop			    = 70,
+	area 			    = 35,
+	comments		    = 60,
+	colors			    = 100,
+	sync			    = 40,
 
-	total			= 740,
+	total			    = 820,
 
-	color			= 16,
-	scrollbar		= 50,
+	color			    = 16,
+	scrollbar		    = 50,
 }
 
 -------------------------------------------------------------------------------
@@ -185,8 +180,8 @@ local function activateRow(propertyTable, i)
 
     		for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
         		if lastRowProps[key] ~= propertyTable[key] then
-    				writeLogfile(3, string.format("activateRow(%s/%s): key %s changed from %s to %s\n",
-    										lastRowProps.publishServiceName, lastRowProps.sharedAlbumeName, key, lastRowProps[key], propertyTable[key]))
+    				writeLogfile(3, string.format("activateRow(%s/%s): key '%s' changed from '%s' to '%s'\n",
+    										lastRowProps.publishServiceName, lastRowProps.sharedAlbumName, key, lastRowProps[key], propertyTable[key]))
         			lastRowProps[key] = propertyTable[key]
         			lastRowProps.wasModified = true
         		end
@@ -200,7 +195,9 @@ local function activateRow(propertyTable, i)
 	for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
 		propertyTable[key] = rowsPropertyTable[i][key]
 	end
-	propertyTable.wasAdded = rowsPropertyTable[i].wasAdded
+	propertyTable.wasAdded              = rowsPropertyTable[i].wasAdded
+    propertyTable.sharedAlbumName       = rowsPropertyTable[i].sharedAlbumName
+    propertyTable.publishServiceName    = rowsPropertyTable[i].publishServiceName
 
 	updateActiveAlbumStatus(propertyTable)
 
@@ -310,10 +307,20 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 	           				width 			= columnWidth.public,
                 		},
 
+                		f:static_text {
+                	  		title 			= bind 'publicPermissions',
+                    		alignment		= 'left',
+            				width 			= columnWidth.publicPermissions,
+            				mouse_down		= function()
+            					return activateRow(propertyTable, i)
+            				end,
+                	   },
+
                 		f:edit_field {
               				value 			= bind 'startTime',
 							enabled 		= false,
-                   			visible			= bind 'isPublic',
+--                            visible			= bind 'isPublic',
+                            visible			= bind 'isAdvanced',
                				immediate 		= true,
                				validate		= PSSharedAlbumDialog.validateDate,
                     		alignment		= 'left',
@@ -336,14 +343,15 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                 		f:checkbox {
                 			value 			= bind 'areaTool',
 							enabled 		= false,
-                   			visible			= bind 'isPublic',
+--                            visible			= bind 'isPublic',
+                            visible			= bind 'isAdvanced',
             				width 			= columnWidth.area,
                 		},
 
                 		f:checkbox {
                 			value 			= bind 'comments',
 							enabled 		= false,
-                   			visible			= bind 'isPublic',
+                   			visible			= bind 'isAdvanced',
             				width 			= columnWidth.comments,
                 		},
 
@@ -353,35 +361,35 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                     		f:checkbox {
                     			value 			= bind 'colorRed',
 								enabled 		= false,
-            	       			visible			= bind 'isPublic',
+            	       			visible			= bind 'isAdvanced',
                 				width 			= columnWidth.color,
                     		},
 
                     		f:checkbox {
                     			value 			= bind 'colorYellow',
 								enabled 		= false,
-            	       			visible			= bind 'isPublic',
+            	       			visible			= bind 'isAdvanced',
                 				width 			= columnWidth.color,
                     		},
 
                     		f:checkbox {
                     			value 			= bind 'colorGreen',
 								enabled 		= false,
-            	       			visible			= bind 'isPublic',
+            	       			visible			= bind 'isAdvanced',
                 				width 			= columnWidth.color,
                     		},
 
                     		f:checkbox {
                     			value 			= bind 'colorBlue',
 								enabled 		= false,
-            	       			visible			= bind 'isPublic',
+            	       			visible			= bind 'isAdvanced',
                 				width 			= columnWidth.color,
                     		},
 
                     		f:checkbox {
                     			value 			= bind 'colorPurple',
 								enabled 		= false,
-            	       			visible			= bind 'isPublic',
+            	       			visible			= bind 'isAdvanced',
                 				width 			= columnWidth.color,
                     		},
 --                		},
@@ -535,32 +543,6 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 
             		f:row {
             			f:view {
-							width	= columnWidth.password,
-
-            				f:static_text {
-            		  			title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Password=Password",
-                    			alignment		= 'left',
-            					visible			= bind 'isAdvanced',
-        					},
-
-                    		f:edit_field {
-                  				value 			= bind 'sharedAlbumPassword',
-            					visible			= bind {
-            						keys = {
-            							{	key = 'isAdvanced' },
-            							{	key = 'isPublic'},
-            						},
-            						operation = function( _, values, _ )
-            							return values.isAdvanced and values.isPublic
-            						end,
-            					},
-                   				immediate 		= true,
-                        		alignment		= 'left',
-                	       		font			= '<system/small>',
-               				},
-						},
-
-            			f:view {
             				width 			= columnWidth.public,
 
                 			f:static_text {
@@ -573,6 +555,49 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                         		alignment		= 'center',
                     		},
     					},
+
+            			f:view {
+							width	= columnWidth.password,
+
+            				f:static_text {
+            		  			title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Permissions=Permissions",
+            					visible		    	= bind 'isPublic',
+                    			alignment		= 'left',
+        					},
+
+                			f:popup_menu {
+                				items 			    = PSSharedAlbumMgmt.sharedAlbumPermissionItems,
+                				value 			    = bind 'publicPermissions',
+            					visible		    	= bind 'isPublic',
+                				alignment 		    = 'left',
+								fill_horizontal 	= 1,
+                			},
+                        },
+
+            			f:view {
+							width	= columnWidth.password,
+
+            				f:static_text {
+            		  			title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Password=Password",
+                    			alignment		= 'left',
+            					visible			= bind 'isPublic',
+        					},
+
+                    		f:edit_field {
+                  				value 			= bind 'sharedAlbumPassword',
+            					visible			= bind {
+            						keys = {
+            							{	key = 'isPublic'},
+            						},
+            						operation = function( _, values, _ )
+            							return values.isPublic
+            						end,
+            					},
+                   				immediate 		= true,
+                        		alignment		= 'left',
+                	       		font			= '<system/small>',
+               				},
+						},
 
             			f:view {
 							width	= columnWidth.start,
@@ -607,18 +632,17 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                 			f:static_text {
 			    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/StopTime=Until",
                         		alignment		= 'left',
-            					visible			= bind 'isAdvanced',
+            					visible			= bind 'isPublic',
                 			},
 
                 			f:edit_field {
                 		  		value 			= bind 'stopTime',
             					visible			= bind {
             						keys = {
-            							{	key = 'isAdvanced' },
             							{	key = 'isPublic'},
             						},
             						operation = function( _, values, _ )
-            							return values.isAdvanced and values.isPublic
+            							return values.isPublic
             						end,
             					},
                 		  		immediate		= true,
@@ -794,12 +818,14 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 
                 			f:static_text {
     					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Advanced=Advanced",
+                                visible         = bind 'isAdvanced',
                         		alignment		= 'right',
                         		fill_horizontal = 1
                 			},
 
                     		f:checkbox {
                     			value 			= bind 'isAdvanced',
+                                visible         = bind 'isAdvanced',
                     			enabled			= false,
                         		alignment		= 'right',
                         		place_horizontal = 1
@@ -841,6 +867,12 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
     		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Public=Public",
             		alignment		= 'left',
     				width 			= columnWidth.public,
+    		  	},
+
+    			f:static_text {
+    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Permissions=Permissions",
+            		alignment		= 'left',
+    				width 			= columnWidth.publicPermissions,
     		  	},
 
     			f:static_text {
