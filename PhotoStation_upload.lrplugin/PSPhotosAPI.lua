@@ -1739,28 +1739,27 @@ function Photos.getSharedAlbumId(h, albumName)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- Photos_createAlbum (h, type, name, photoIds)
+-- Photos_createAlbum (h, sharedAlbumParams, photoIds)
 -- create a new album of given type: local or shared and assign a list of photos to it
-local function Photos_createAlbum(h, type, name, photoIds)
-	-- TODO: evaluate type
-	writeLogfile(4, string.format("Photos_createAlbum('%s', '%s', %d photos) ...\n", type, name, #photoIds))
+local function Photos_createAlbum(h, sharedAlbumParams, photoIds)
+	writeLogfile(4, string.format("Photos_createAlbum('%s', %d photos) ...\n", sharedAlbumParams.sharedAlbumName, #photoIds))
 
 	local itemList = table.concat(photoIds, ',')
     local apiParams = {
 		api 			= "SYNO.Foto.Browse.NormalAlbum",
 		method 			= "create",
 		version 		= "1",
-		name			= '"' .. urlencode(name) ..'"',
+		name			= '"' .. urlencode(sharedAlbumParams.sharedAlbumName) ..'"',
         item            = '[' .. itemList ..']',
-        shared          = iif(type == 'shared', "true", "false")
+        shared          = "true"
 	}
 	local respArray, errorCode = Photos_API(h, apiParams)
 
 	if not respArray and errorCode == 641 then
-		writeLogfile(3, string.format("Photos_createAlbum('%s'): album already exists, returning albumId from cache\n", name))
-		return Photos_getAlbumInfo(h, type, name, true)
+		writeLogfile(3, string.format("Photos_createAlbum('%s'): album already exists, returning albumId from cache\n", sharedAlbumParams.sharedAlbumName))
+		return Photos_getAlbumInfo(h, type, sharedAlbumParams.sharedAlbumName, true)
 	elseif not respArray then
-		writeLogfile(1, string.format("Photos_createAlbum('%s'): return <nil>, %s\n", name, Photos.getErrorMsg(errorCode)))
+		writeLogfile(1, string.format("Photos_createAlbum('%s'): return <nil>, %s\n", sharedAlbumParams.sharedAlbumName, Photos.getErrorMsg(errorCode)))
 		return nil, errorCode
 	end
 
@@ -1768,7 +1767,7 @@ local function Photos_createAlbum(h, type, name, photoIds)
 
     albumIdCacheUpdate(h, type)
 
-	writeLogfile(3, string.format("Photos_createAlbum('%s') returns %d\n", name, albumId))
+	writeLogfile(3, string.format("Photos_createAlbum('%s') returns %d\n", sharedAlbumParams.sharedAlbumName, albumId))
 
     -- TODO: configure the album: password access, valdity_until, ...
 	return albumId
@@ -1792,7 +1791,7 @@ function Photos.createSharedAlbum(h, sharedAlbumParams, useExisting)
     if not sharedAlbumInfo then
     -- shared album not found: create it
         local errorCode
-  		sharedAlbumId, errorCode = Photos_createAlbum(h, 'shared', sharedAlbumParams.sharedAlbumName, {})
+  		sharedAlbumId, errorCode = Photos_createAlbum(h, sharedAlbumParams, {})
 		if not sharedAlbumId then 
             writeLogfile(1, string.format("createSharedAlbum('%s'): failed (%d: %s)!\n", sharedAlbumParams.sharedAlbumName, errorCode, Photos.getErrorMsg(errorCode)))
             return nil, errorCode
@@ -1934,7 +1933,7 @@ function Photos.createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
         -- shared album not found: create it
         writeLogfile(3, string.format("createAndAddPhotosToSharedAlbum('%s', %d photos): album not found, create it\n", sharedAlbumParams.sharedAlbumName, #photos))
         local errorCode
-            albumId, errorCode = Photos_createAlbum(h, 'shared', sharedAlbumParams.sharedAlbumName, photoIds)
+            albumId, errorCode = Photos_createAlbum(h, sharedAlbumParams, photoIds)
         if not albumId then
             writeLogfile(1, string.format("createAndAddPhotosToSharedAlbum('%s'): failed to create album (%d: %s)!\n", sharedAlbumParams.sharedAlbumName, errorCode, Photos.getErrorMsg(errorCode)))
             return nil, errorCode
