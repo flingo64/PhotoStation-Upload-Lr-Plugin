@@ -737,6 +737,22 @@ end
 
 -- ########################## shared album management ##################################################
 
+PhotoStation.sharedAlbumDefaults = {
+	isAdvanced			= true,
+    isPublic			= true,
+    publicPermissions   = 'View',
+    sharedAlbumPassword	= '',
+	startTime			= '',
+	stopTime 			= '',
+	colorRed			= true,
+	colorYellow			= true,
+	colorGreen			= true,
+	colorBlue			= true,
+	colorPurple			= true,
+	comments			= true,
+	areaTool			= true,
+}
+
 ---------------------------------------------------------------------------------------------------------
 -- getSharedAlbums (h)
 -- get table of sharedAlbumId/sharedAlbumName mappings
