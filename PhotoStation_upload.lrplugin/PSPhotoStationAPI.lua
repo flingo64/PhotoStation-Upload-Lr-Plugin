@@ -1768,7 +1768,7 @@ PhotoStation.colorMapping = {
 ---------------------------------------------------------------------------------------------------------
 -- createSharedAlbum(h, sharedAlbumParams)
 -- create a Shared Album
--- returns success and share-link (if public)
+-- returns sharedAlbumInfo or nil and errorCode
 function PhotoStation.createSharedAlbum(h, sharedAlbumParams)
 	local sharedAlbumInfo = PhotoStation_getSharedAlbumInfo(h, sharedAlbumParams.sharedAlbumName, false)
 	local sharedAlbumAttributes = {}
@@ -1842,21 +1842,21 @@ end
 ---------------------------------------------------------------------------------------------------------
 -- createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
 -- create a Shared Album and add a list of photos to it
--- returns success and share-link (if public)
+-- returns sharedAlbumInfo or nil and errorCode
 function PhotoStation.createAndAddPhotosToSharedAlbum(h, sharedAlbumParams, photos)
-	local shareResult = h:createSharedAlbum(sharedAlbumParams, true)
+	local shareResult = h:createSharedAlbum(sharedAlbumParams)
 
 	if 		not shareResult
 		or	not h:addPhotosToSharedAlbum(sharedAlbumParams.sharedAlbumName, photos)
 	then
-		return false
+		return nil
 	end
 
 	writeLogfile(3, string.format('createAndAddPhotosToSharedAlbum(%s, %s, %s, pw: %s, %d photos) returns OK.\n',
 			sharedAlbumParams.sharedAlbumName, iif(sharedAlbumParams.isAdvanced, 'advanced', 'old'),
 			iif(sharedAlbumParams.isPublic, 'public', 'private'), iif(sharedAlbumParams.sharedAlbumPassword, 'w/ passwd', 'w/o passwd'),
 			#photos))
-	return true, shareResult
+	return shareResult
 end
 
 ---------------------------------------------------------------------------------------------------------

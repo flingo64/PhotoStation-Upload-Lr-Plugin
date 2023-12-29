@@ -645,7 +645,7 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 		progressScope:setCaption(sharedAlbumUpdate.sharedAlbumName)
 
 		if #sharedAlbumUpdate.addPhotos > 0 then
-            local success, sharedAlbumInfo = exportParams.photoServer:createAndAddPhotosToSharedAlbum(sharedAlbumParams, sharedAlbumUpdate.addPhotos)
+            local sharedAlbumInfo, errorCode = exportParams.photoServer:createAndAddPhotosToSharedAlbum(sharedAlbumParams, sharedAlbumUpdate.addPhotos)
             -- TODO: if the sharedAlbum was created, then add sharedAlbum params to internal Album Metadata
 			-- if success then
 			-- 	PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, exportParams)
