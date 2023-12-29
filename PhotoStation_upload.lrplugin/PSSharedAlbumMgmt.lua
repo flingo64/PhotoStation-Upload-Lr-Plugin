@@ -318,7 +318,6 @@ function PSSharedAlbumMgmt.readSharedAlbumsFromLr()
 					sharedAlbum.wasAdded			= false
 					sharedAlbum.wasModified			= false
 					sharedAlbum.wasDeleted	 		= false
-					sharedAlbum.wasRenamed	 		= false
 
                     -- copy only SharedAlbum params mentioned in sharedAlbumDefaults
                     for key, defaultValue in pairs(sharedAlbumDefaults) do
@@ -402,13 +401,6 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
 	   			writeTableLogfile(2, "PSSharedAlbumMgmt.writeSharedAlbumsToLr: keywordAttributes", keywordAttributes, true)
     		end
 
-    		if sharedAlbum.wasRenamed and not sharedAlbum.wasAdded and not sharedAlbum.wasDeleted then
-    			writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: PubServ '%s', ShAlbum: '%s': renaming Album to '%s'\n",
-    								sharedAlbum.publishServiceName, sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
-    			PSLrUtilities.renameKeyword(sharedAlbum.keywordId, sharedAlbum.sharedAlbumName)
-                -- TODO: remove sharedAlbumParams for old keywordId
-    		end
-
     		if (sharedAlbum.wasAdded or sharedAlbum.wasModified) and not sharedAlbum.wasDeleted then
     			writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr: PubServ: '%s', ShAlbum: '%s': storing modified params\n",
     								sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName))
@@ -439,7 +431,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 		local publishSettings
 
 		if 	 sharedAlbum.isEntry and
-			(sharedAlbum.wasAdded or sharedAlbum.wasDeleted or sharedAlbum.wasRenamed or sharedAlbum.wasModified) then
+			(sharedAlbum.wasAdded or sharedAlbum.wasDeleted or sharedAlbum.wasModified) then
 
     		-- open session only if publish service changed or session not yet opened
 			if 		activePublishing.publishServiceName ~= sharedAlbum.publishServiceName
@@ -474,39 +466,20 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
     				numFailDeletes = numFailDeletes + 1
     			end
 			end
-		else
-
-    		if sharedAlbum.wasRenamed and not sharedAlbum.wasAdded then
-    			-- rename Shared Album in Photo Server
-    			writeLogfile(3, string.format('writeSharedAlbumsToPS: rename %s to %s.\n', sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName))
-                ---@diagnostic disable-next-line: need-check-nil
-    			local success, errorCode = publishSettings.photoServer:renameSharedAlbum(sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName)
-
-    			writeLogfile(2, string.format('writeSharedAlbumsToPS(%s):renameSharedAlbum to %s returns %s.\n',
-    											sharedAlbum.oldSharedAlbumName, sharedAlbum.sharedAlbumName, iif(success, 'OK', tostring(ifnil(errorCode, '<nil>')))))
-    			if success then
-    				numRenames = numRenames + 1
-    			else
-    				numFailRenames = numFailRenames + 1
-    			end
-    			-- TODO: update plugin metadata for all belonging photos
-    		end
-
-    		if sharedAlbum.wasAdded or sharedAlbum.wasModified then
-                ---@diagnostic disable-next-line: need-check-nil
-				sharedAlbum.isAdvanced = iif(publishSettings.photoServer:supports(PHOTOSERVER_SHAREDALBUM_ADVANCED), true, false)
-    			-- add/modify Shared Album in Photo Server
-                ---@diagnostic disable-next-line: need-check-nil
-    			local sharedAlbumInfo, errorCode = publishSettings.photoServer:createSharedAlbum(sharedAlbum)
-    			if sharedAlbumInfo then
-    				writeLogfile(2, string.format('writeSharedAlbumsToPS(%s): add/modify returns OK.\n', sharedAlbum.sharedAlbumName))
-    				numAddOrMods = numAddOrMods + 1
+		elseif sharedAlbum.wasAdded or sharedAlbum.wasModified then
+			---@diagnostic disable-next-line: need-check-nil
+			sharedAlbum.isAdvanced = iif(publishSettings.photoServer:supports(PHOTOSERVER_SHAREDALBUM_ADVANCED), true, false)
+			-- add/modify Shared Album in Photo Server
+			---@diagnostic disable-next-line: need-check-nil
+			local sharedAlbumInfo, errorCode = publishSettings.photoServer:createSharedAlbum(sharedAlbum)
+			if sharedAlbumInfo then
+				writeLogfile(2, string.format('writeSharedAlbumsToPS(%s): add/modify returns OK.\n', sharedAlbum.sharedAlbumName))
+				numAddOrMods = numAddOrMods + 1
 --	    			PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbum, sharedAlbumInfo, publishSettings)
-    			else
-    				writeLogfile(1, string.format('writeSharedAlbumsToPS(%s) add/modify returns errorn%s.\n', sharedAlbum.sharedAlbumName, tostring(errorCode)))
-    				numFailAddOrMods = numFailAddOrMods + 1
-    			end
-    		end
+			else
+				writeLogfile(1, string.format('writeSharedAlbumsToPS(%s) add/modify returns errorn%s.\n', sharedAlbum.sharedAlbumName, tostring(errorCode)))
+				numFailAddOrMods = numFailAddOrMods + 1
+			end
 		end
 	end
 

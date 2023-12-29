@@ -142,53 +142,26 @@ local function updateGlobalRowsSelected( propertyTable )
 
 end
 
---[[
--------------------------------------------------------------------------------
--- updateActiveSharedAlbumParams:
--- 		set Modify-Flag,
--- 		update sharedAlbum params in belonging row
-local function updateActiveSharedAlbumParams( propertyTable )
---	local message = nil
-
-	writeLogfile(2, string.format("updateActiveSharedAlbumParams(%s) started\n", propertyTable.sharedAlbumName))
-	local rowProps = rowsPropertyTable[propertyTable.activeRowIndex]
-
-	for _, key in ipairs(activeAlbumModifyKeys) do
-		rowProps[key] = propertyTable[key]
-	end
-
-	rowProps.wasModified = true
-
-end
-]]
-
 -------------------------------------------------------------------------------
 -- activateRow()
 -- 		activate the given row in dialog rows area
 local function activateRow(propertyTable, i)
 	if not propertyTable.hasError then
-    	-- save old values
+    	-- save values of current active row if a new row was selected
     	if ifnil(propertyTable.activeRowIndex, i)  ~= i then
-    		local lastRowProps = rowsPropertyTable[propertyTable.activeRowIndex]
-
-    		if lastRowProps.sharedAlbumName ~= propertyTable.sharedAlbumName then
-    			if not lastRowProps.wasRenamed then
-    				lastRowProps.oldSharedAlbumName	= lastRowProps.sharedAlbumName
-    			end
-    			lastRowProps.wasRenamed = true
-    		end
+    		local activeRowProps = rowsPropertyTable[propertyTable.activeRowIndex]
 
     		for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
-        		if lastRowProps[key] ~= propertyTable[key] then
+        		if activeRowProps[key] ~= propertyTable[key] then
     				writeLogfile(3, string.format("activateRow(%s/%s): key '%s' changed from '%s' to '%s'\n",
-											propertyTable.publishServiceName, propertyTable.sharedAlbumName, key, lastRowProps[key], propertyTable[key]))
-        			lastRowProps[key] = propertyTable[key]
-        			lastRowProps.wasModified = true
+											propertyTable.publishServiceName, propertyTable.sharedAlbumName, key, activeRowProps[key], propertyTable[key]))
+        			activeRowProps[key] = propertyTable[key]
+        			activeRowProps.wasModified = true
         		end
     		end
 			-- in case the current album is about to be added, do not forget to store publish service and album name
-			lastRowProps.publishServiceName = propertyTable.publishServiceName
-			lastRowProps.sharedAlbumName	= propertyTable.sharedAlbumName
+			activeRowProps.publishServiceName = propertyTable.publishServiceName
+			activeRowProps.sharedAlbumName	= propertyTable.sharedAlbumName
     	end
 	end
 
@@ -1119,7 +1092,6 @@ function PSSharedAlbumDialog.doDialog( )
 	    	rowsPropertyTable[i] = LrBinding.makePropertyTable(context)
 			rowsPropertyTable[i].isEntry		= false
 			rowsPropertyTable[i].wasAdded		= false
-			rowsPropertyTable[i].wasRenamed		= false
 			rowsPropertyTable[i].wasModified	= false
 			rowsPropertyTable[i].wasDeleted		= false
 			rowsPropertyTable[i].isActive		= false
@@ -1163,7 +1135,7 @@ function PSSharedAlbumDialog.doDialog( )
     						sharedAlbum[key] = value
     					end
     				end
-    				if sharedAlbum.wasAdded or sharedAlbum.wasModified or sharedAlbum.wasRenamed or sharedAlbum.wasDeleted then
+    				if sharedAlbum.wasAdded or sharedAlbum.wasModified or sharedAlbum.wasDeleted then
     					saveSharedAlbums = true
     				end
     				if 	sharedAlbum.isSelected
