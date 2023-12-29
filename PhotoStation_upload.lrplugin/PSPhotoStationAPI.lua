@@ -330,8 +330,8 @@ function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeo
 	local apiInfo = {}
 	local psPath = iif(usePersonalPS, "/~" .. ifnil(personalPSOwner, "unknown") .. "/photo/", "/photo/")
 
-	writeLogfile(4, string.format("PhotoStation.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=%s)\n",
-                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password))
+	writeLogfile(4, string.format("PhotoStation.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=***)\n",
+                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username))
 
 	h.serverUrl 	= serverUrl
 	h.serverTimeout = serverTimeout
@@ -366,7 +366,7 @@ function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeo
 	h.serverCapabilities = PHOTOSERVER_API[version].capabilities
 	h.thumbs 			 = PHOTOSERVER_API[version].thumbs
 
-	writeLogfile(3, 'PhotoStation.new() returns:\n' .. JSON:encode(h) .."\n")
+	writeLogfile(3, 'PhotoStation.new() returns:\n' .. string.gsub(JSON:encode(h), '"password":"[^"]+"', '"password":"***"') .. "\n")
 
 	-- rewrite the apiInfo table with API infos retrieved via SYNO.API.Info
 	h.apiInfo 	= respArray.data
