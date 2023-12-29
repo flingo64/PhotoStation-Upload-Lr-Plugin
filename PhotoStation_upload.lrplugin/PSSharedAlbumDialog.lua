@@ -181,11 +181,14 @@ local function activateRow(propertyTable, i)
     		for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
         		if lastRowProps[key] ~= propertyTable[key] then
     				writeLogfile(3, string.format("activateRow(%s/%s): key '%s' changed from '%s' to '%s'\n",
-    										lastRowProps.publishServiceName, lastRowProps.sharedAlbumName, key, lastRowProps[key], propertyTable[key]))
+											propertyTable.publishServiceName, propertyTable.sharedAlbumName, key, lastRowProps[key], propertyTable[key]))
         			lastRowProps[key] = propertyTable[key]
         			lastRowProps.wasModified = true
         		end
     		end
+			-- in case the current album is about to be added, do not forget to store publish service and album name
+			lastRowProps.publishServiceName = propertyTable.publishServiceName
+			lastRowProps.sharedAlbumName	= propertyTable.sharedAlbumName
     	end
 	end
 
