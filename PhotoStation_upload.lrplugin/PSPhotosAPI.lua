@@ -917,8 +917,8 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 	local h = {} -- the handle
 	local apiInfo = {}
 
-	writeLogfile(4, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=%s)\n", 
-                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password))
+	writeLogfile(4, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=***)\n", 
+                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username))
 
 	h.serverUrl 	= serverUrl
 	h.serverTimeout = serverTimeout
@@ -960,7 +960,7 @@ function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, ve
 	h.Photo 	= PhotosPhoto.new()
 
 	writeLogfile(3, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d) returns\n%s\n",
-						serverUrl, usePersonalPS, personalPSOwner, serverTimeout, JSON:encode(h)))
+						serverUrl, usePersonalPS, personalPSOwner, serverTimeout, string.gsub(JSON:encode(h), '"password":"[^"]+"', '"password":"***"')))
 
 	-- rewrite the apiInfo table with API infos retrieved via SYNO.API.Info
 	h.apiInfo 	= respArray.data
