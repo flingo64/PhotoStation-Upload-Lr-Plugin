@@ -1653,6 +1653,29 @@ function PhotoStation.getSharedAlbumId(h, sharedAlbumName)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- getSharedAlbumUrls(h, publishSettings, sharedAlbumName)
+-- 	returns three URLsfor the given album
+function PhotoStation.getSharedAlbumUrls(h, publishSettings, sharedAlbumName)
+    writeLogfile(4, string.format("PhotoStation.getSharedAlbumUrls('%s') ...\n", sharedAlbumName))
+	local albumId, albumInfo = PhotoStation_getSharedAlbumInfo(h,  sharedAlbumName, true)
+	local privateUrl, publicUrl, publicUrl2 = '', '', ''
+	
+	if  not (albumId and albumInfo) then
+		writeLogfile(4, string.format("PhotoStation.getSharedAlbumUrls('%s') found no albumInfo\n", sharedAlbumName))
+		return nil, nil, nil
+	end
+	
+	privateUrl 	= publishSettings.proto  .. "://" .. publishSettings.servername  .. publishSettings.psPath .. "#!SharedAlbums/" .. albumId
+	if albumInfo.public_share_url then
+		local publicSharePath = string.match(albumInfo.public_share_url, 'http[s]*://[^/]*(.*)')
+		publicUrl 		= publishSettings.proto  .. "://" .. publishSettings.servername  .. publicSharePath
+		publicUrl2 		= publishSettings.proto2 .. "://" .. publishSettings.servername2 .. publicSharePath
+	end
+    writeLogfile(3, string.format("PhotoStation.getSharedAlbumUrls('%s') returns '%s', '%s', '%s'\n", sharedAlbumName, privateUrl, publicUrl, publicUrl2))
+	return privateUrl, publicUrl, publicUrl2
+end
+
+---------------------------------------------------------------------------------------------------------
 -- PhotoStation.isSharedAlbumPublic(h, sharedAlbumName)
 --  returns the public flage of a given SharedAlbum using the Shared Album cache
 function PhotoStation.isSharedAlbumPublic(h, sharedAlbumName)

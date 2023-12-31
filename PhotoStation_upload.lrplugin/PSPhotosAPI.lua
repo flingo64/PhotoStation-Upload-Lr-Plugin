@@ -1731,11 +1731,32 @@ local function Photos_getAlbumInfo(h, type, albumName, useCache)
 end
 
 ---------------------------------------------------------------------------------------------------------
--- getSharedAlbumId(h, albumName, wantsInfo)
+-- getSharedAlbumId(h, albumName)
 -- 	returns the id and - if wantsInfo - additional info for a given shared album in Photos
 --  The item is searched in the albumIdCache
 function Photos.getSharedAlbumId(h, albumName)
     return Photos_getAlbumInfo(h, 'shared', albumName, true)
+end
+
+---------------------------------------------------------------------------------------------------------
+-- getSharedAlbumUrls(h, publishSettings, albumName)
+-- 	returns three URLsfor the given album
+function Photos.getSharedAlbumUrls(h, publishSettings, albumName)
+    writeLogfile(4, string.format("Photos.getSharedAlbumUrls('%s') ...\n", albumName))
+	local albumId, albumInfo = Photos_getAlbumInfo(h, 'shared', albumName, true)
+	local privateUrl, publicUrl, publicUrl2
+	
+	if  not (albumId and albumInfo) then
+		writeLogfile(4, string.format("Photos.getSharedAlbumUrls('%s') found no albumInfo\n", albumName))
+		return nil, nil, nil
+	end
+
+	privateUrl 	= publishSettings.proto  .. "://" .. publishSettings.servername .. '/#/album/' .. albumId
+	publicUrl 	= publishSettings.proto  .. "://" .. publishSettings.servername .. '/mo/sharing/' .. albumInfo.passphrase
+	publicUrl2 	= publishSettings.proto2 .. "://" .. publishSettings.servername2 .. '/mo/sharing/' .. albumInfo.passphrase
+
+    writeLogfile(3, string.format("Photos.getSharedAlbumUrls('%s') returns '%s', '%s', '%s'\n", albumName, privateUrl, publicUrl, publicUrl2))
+	return privateUrl, publicUrl, publicUrl2
 end
 
 ---------------------------------------------------------------------------------------------------------
