@@ -45,6 +45,7 @@ require "PSSharedAlbumMgmt"
 local observedKeys = {'publishServiceName', 'sharedAlbumName', 'startTime', 'stopTime'}
 
 local allPublishServiceNames
+local allPublishServiceVersions
 local allSharedAlbums				-- all Shared Albums
 
 local rowsPropertyTable 	= {}	-- the visible rows in the dialog
@@ -69,9 +70,9 @@ local columnWidth = {
 	area 			    = 35,
 	comments		    = 60,
 	colors			    = 100,
-	sync			    = 40,
+	donwload		    = 60,
 
-	total			    = 820,
+	total			    = 840,
 
 	color			    = 16,
 	scrollbar		    = 50,
@@ -125,10 +126,17 @@ local function updateActiveAlbumStatus( propertyTable )
 		propertyTable.message = message
 		propertyTable.hasError = true
 		propertyTable.hasNoError = false
+		-- ignore a new entry as long as there is an error
+		if propertyTable.wasAdded then
+			propertyTable.isEntry = false
+		end
 	else
 		propertyTable.message = nil
 		propertyTable.hasError = false
 		propertyTable.hasNoError = true
+		if propertyTable.wasAdded then
+			propertyTable.isEntry = true
+		end
 	end
 end
 
@@ -137,35 +145,36 @@ end
 local function updateGlobalRowsSelected( propertyTable )
 	writeLogfile(2, "updateGlobalRowsSelected() started\n")
 	for i = 1, #rowsPropertyTable do
-		rowsPropertyTable[i].isSelected = propertyTable.selectAll
+		if rowsPropertyTable[i].isAdvanced then
+			rowsPropertyTable[i].isSelected = propertyTable.selectAll
+		end
 	end
-
 end
 
 -------------------------------------------------------------------------------
--- activateRow()
--- 		activate the given row in dialog rows area
-local function activateRow(propertyTable, i)
+-- saveActiveRow()
+-- 		save the Active Album settings into its row
+local function saveActiveRow(propertyTable)
 	if not propertyTable.hasError then
-    	-- save values of current active row if a new row was selected
-    	if ifnil(propertyTable.activeRowIndex, i)  ~= i then
-    		local activeRowProps = rowsPropertyTable[propertyTable.activeRowIndex]
+		local activeRowProps = rowsPropertyTable[propertyTable.activeRowIndex]
 
-    		for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
-        		if activeRowProps[key] ~= propertyTable[key] then
-    				writeLogfile(3, string.format("activateRow(%s/%s): key '%s' changed from '%s' to '%s'\n",
-											propertyTable.publishServiceName, propertyTable.sharedAlbumName, key, activeRowProps[key], propertyTable[key]))
-        			activeRowProps[key] = propertyTable[key]
-        			activeRowProps.wasModified = true
-        		end
-    		end
-			-- in case the current album is about to be added, do not forget to store publish service and album name
-			activeRowProps.publishServiceName = propertyTable.publishServiceName
-			activeRowProps.sharedAlbumName	= propertyTable.sharedAlbumName
-    	end
+		for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
+			if activeRowProps[key] ~= propertyTable[key] then
+				activeRowProps[key] = propertyTable[key]
+				activeRowProps.wasModified = true
+			end
+		end
+		-- in case the current album is about to be added, do not forget to store publish service and album name
+		activeRowProps.isEntry 				= true
+		activeRowProps.publishServiceName 	= propertyTable.publishServiceName
+		activeRowProps.sharedAlbumName		= propertyTable.sharedAlbumName
 	end
+end
 
-	-- load new values
+-------------------------------------------------------------------------------
+-- loadRow()
+-- 		load the given row into Active Album settings section
+local function loadRow(propertyTable, i)
 	propertyTable.activeRowIndex		= i
 
 	for key, _ in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
@@ -264,7 +273,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                     		alignment		= 'left',
             				width 			= columnWidth.albumName,
             				mouse_down		= function()
-            					return activateRow(propertyTable, i)
+            					return loadRow(propertyTable, i)
             				end,
                 	   },
 
@@ -273,7 +282,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                     		alignment		= 'left',
             				width 			= columnWidth.publishService,
             				mouse_down		= function()
-            					return activateRow(propertyTable, i)
+            					return loadRow(propertyTable, i)
             				end,
                 	   },
 
@@ -285,17 +294,17 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 
                 		f:static_text {
                 	  		title 			= bind 'publicPermissions',
-                    		alignment		= 'left',
+							visible			= bind 'isPublic',
+							alignment		= 'left',
             				width 			= columnWidth.publicPermissions,
             				mouse_down		= function()
-            					return activateRow(propertyTable, i)
+            					return loadRow(propertyTable, i)
             				end,
                 	   },
 
                 		f:edit_field {
               				value 			= bind 'startTime',
 							enabled 		= false,
---                            visible			= bind 'isPublic',
                             visible			= bind 'isAdvanced',
                				immediate 		= true,
                				validate		= PSSharedAlbumDialog.validateDate,
@@ -319,7 +328,6 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                 		f:checkbox {
                 			value 			= bind 'areaTool',
 							enabled 		= false,
---                            visible			= bind 'isPublic',
                             visible			= bind 'isAdvanced',
             				width 			= columnWidth.area,
                 		},
@@ -373,9 +381,9 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                 		f:checkbox {
                 			title 			= "",
                 			value 			= bind 'isSelected',
+							visible			= bind 'isAdvanced',
             				width_in_chars	= 0,
                 		},
-
             		},
         		},
         	}
@@ -408,7 +416,6 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
    		f:row {
 			width 			= columnWidth.total,
    			f:column {
---	   			fill_horizontal = 1,
    				PSDialogs.photoStatLrSmallView(f, nil),
    			},
 
@@ -416,11 +423,27 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 	   			fill_horizontal = 1,
 	   			fill_vertical = 1,
 				f:group_box {
-		   			title			= LOC "$$$/PSUpload/SharedAlbumMgmt/activeSharedAlbum=Active Shared Album",
+		   			title			= LOC "$$$/PSUpload/SharedAlbumMgmt/activeSharedAlbum=Edit Shared Album",
 		   			fill_horizontal = 1,
 		   			fill_vertical	= 1,
 
-               		f:row {
+					f:row {
+						f:static_text  {
+							title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service"
+													.. ":",
+	           				width 			= columnWidth.label,
+						},
+
+						f:popup_menu {
+							items 			= publishServiceItems,
+							alignment 		= 'left',
+							value 			= bind 'publishServiceName',
+							enabled 		= false,
+            				width 			= columnWidth.data,
+						},
+					},
+
+					f:row {
             			f:static_text {
 					  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album"
 					  								.. ":",
@@ -433,89 +456,9 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                				enabled 		= bind 'wasAdded',
             		  		immediate		= true,
                     		alignment		= 'left',
---                    		font			= '<system/bold>',
             				width 			= columnWidth.data,
             		   },
-
- 		           		f:row {
-							width				= columnWidth.data,
-							fill_horizontal 	= 1,
-
-                   			f:static_text  {
-                		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service"
-                		  							   .. ":",
-    --            				width 			= columnWidth.label,
-                   			},
-
-                			f:popup_menu {
-                				items 			= publishServiceItems,
-                				alignment 		= 'left',
-                --				fill_horizontal = 1,
-                				value 			= bind 'publishServiceName',
-                				enabled 		= bind 'wasAdded',
-								fill_horizontal 	= 1,
-                			},
-            			},
-
-    				},
-
-       				f:row {
-            			f:static_text {
-            		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/privateUrl=Private URL:",
-                    		alignment		= 'left',
-            				width 			= columnWidth.label,
-            		   },
-
-                		f:static_text {
-                	  		title 			= bind 'privateUrl',
-                    		alignment		= 'left',
-            				width 			= columnWidth.url,
-            				text_color		= LrColor("blue"),
-                    		font			= '<system/small>',
-            				mouse_down		= function()
-           						LrHttp.openUrlInBrowser(propertyTable.privateUrl)
-           					end,
-                	   },
-       				},
-
-       				f:row {
-            			f:static_text {
-            		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/publicUrl=Public URL:",
-                    		alignment		= 'left',
-            				width 			= columnWidth.label,
-            		   },
-
-                		f:static_text {
-                	  		title 			= bind 'publicUrl',
-                    		alignment		= 'left',
-            				text_color		= LrColor("blue"),
-                    		font			= '<system/small>',
-            				width 			= columnWidth.url,
-            				mouse_down		= function()
-           						LrHttp.openUrlInBrowser(propertyTable.publicUrl)
-           					end,
-                	   },
-
-       				},
-
-       				f:row {
-            			f:static_text {
-            		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/publicUrl2=Public URL 2:",
-                    		alignment		= 'left',
-            				width 			= columnWidth.label,
-            		   },
-
-                		f:static_text {
-                	  		title 			= bind 'publicUrl2',
-                    		alignment		= 'left',
-            				text_color		= LrColor("blue"),
-                    		font			= '<system/small>',
-            				width 			= columnWidth.url,
-            				mouse_down		= function()
-            					LrHttp.openUrlInBrowser(propertyTable.publicUrl2)
-           					end,
-                		},
-       				},
+           			},
 
             		f:row {
             			f:view {
@@ -561,14 +504,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 
                     		f:edit_field {
                   				value 			= bind 'sharedAlbumPassword',
-            					visible			= bind {
-            						keys = {
-            							{	key = 'isPublic'},
-            						},
-            						operation = function( _, values, _ )
-            							return values.isPublic
-            						end,
-            					},
+            					visible			= bind 'isPublic',
                    				immediate 		= true,
                         		alignment		= 'left',
                 	       		font			= '<system/small>',
@@ -581,7 +517,15 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                 			f:static_text {
 			    		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/StartTime=From",
                         		alignment		= 'left',
-            					visible			= bind 'isAdvanced',
+            					visible			= bind {
+            						keys = {
+            							{	key = 'isAdvanced' },
+            							{	key = 'isPublic'},
+            						},
+            						operation = function( _, values, _ )
+            							return values.isAdvanced and values.isPublic
+            						end,
+            					},
                 			},
 
                 			f:edit_field {
@@ -632,7 +576,15 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                 			f:static_text {
                 				width 			= columnWidth.area,
                 		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AreaTool=Area",
-            					visible			= bind 'isAdvanced',
+								  visible			= bind {
+            						keys = {
+            							{	key = 'isAdvanced' },
+            							{	key = 'isPublic'},
+            						},
+            						operation = function( _, values, _ )
+            							return values.isAdvanced and values.isPublic
+            						end,
+            					},
                         		alignment		= 'left',
                 			},
 
@@ -656,7 +608,15 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                 				width 			= columnWidth.comments,
                 		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/Comments=Comments",
                         		alignment		= 'left',
-            					visible			= bind 'isAdvanced',
+            					visible			= bind {
+            						keys = {
+            							{	key = 'isAdvanced' },
+            							{	key = 'isPublic'},
+            						},
+            						operation = function( _, values, _ )
+            							return values.isAdvanced and values.isPublic
+            						end,
+            					},
                 			},
 
                     		f:checkbox {
@@ -680,36 +640,76 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
             	   				f:color_well {
                						value			= LrColor('red'),
                						enabled			= false,
-	            					visible			= bind 'isAdvanced',
-            						width 			= columnWidth.color,
+									   visible			= bind {
+										keys = {
+											{	key = 'isAdvanced' },
+											{	key = 'isPublic'},
+										},
+										operation = function( _, values, _ )
+											return values.isAdvanced and values.isPublic
+										end,
+									},
+										width 			= columnWidth.color,
                					},
 
             	   				f:color_well {
                						value			= LrColor('yellow'),
                						enabled			= false,
-	            					visible			= bind 'isAdvanced',
-            						width 			= columnWidth.color,
+									   visible			= bind {
+										keys = {
+											{	key = 'isAdvanced' },
+											{	key = 'isPublic'},
+										},
+										operation = function( _, values, _ )
+											return values.isAdvanced and values.isPublic
+										end,
+									},
+										width 			= columnWidth.color,
                					},
 
             	   				f:color_well {
                						value			= LrColor('green'),
                						enabled			= false,
-	            					visible			= bind 'isAdvanced',
-            						width 			= columnWidth.color,
+									   visible			= bind {
+										keys = {
+											{	key = 'isAdvanced' },
+											{	key = 'isPublic'},
+										},
+										operation = function( _, values, _ )
+											return values.isAdvanced and values.isPublic
+										end,
+									},
+										width 			= columnWidth.color,
                					},
 
             	   				f:color_well {
                						value			= LrColor('blue'),
                						enabled			= false,
-	            					visible			= bind 'isAdvanced',
-            						width 			= columnWidth.color,
+									   visible			= bind {
+										keys = {
+											{	key = 'isAdvanced' },
+											{	key = 'isPublic'},
+										},
+										operation = function( _, values, _ )
+											return values.isAdvanced and values.isPublic
+										end,
+									},
+										width 			= columnWidth.color,
                					},
 
             	   				f:color_well {
                						value			= LrColor('purple'),
                						enabled			= false,
-	            					visible			= bind 'isAdvanced',
-            						width 			= columnWidth.color,
+									   visible			= bind {
+										keys = {
+											{	key = 'isAdvanced' },
+											{	key = 'isPublic'},
+										},
+										operation = function( _, values, _ )
+											return values.isAdvanced and values.isPublic
+										end,
+									},
+										width 			= columnWidth.color,
                					},
             				},
 
@@ -808,15 +808,86 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
                     		},
         				},
 					},
+
+					f:row {
+						f:push_button {
+							title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SaveAlbum=Save Changes",
+							font			= '<system/small>',
+							enabled			= bind 'hasNoError',
+							action 			= function()
+								saveActiveRow(propertyTable)
+							end,
+						},
+					},
+					
+					f:separator { fill_horizontal = 1 },
+
+					f:row {
+            			f:static_text {
+            		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/privateUrl=Private URL:",
+                    		alignment		= 'left',
+            				width 			= columnWidth.label,
+            			},
+
+                		f:static_text {
+                	  		title 			= bind 'privateUrl',
+                    		alignment		= 'left',
+            				width 			= columnWidth.url,
+            				text_color		= LrColor("blue"),
+                    		font			= '<system/small>',
+            				mouse_down		= function()
+								if propertyTable.privateUrl ~= '' then LrHttp.openUrlInBrowser(propertyTable.privateUrl) end
+           					end,
+                		},
+       				},
+
+       				f:row {
+            			f:static_text {
+            		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/publicUrl=Public URL:",
+                    		alignment		= 'left',
+            				width 			= columnWidth.label,
+            			},
+
+                		f:static_text {
+                	  		title 			= bind 'publicUrl',
+                    		alignment		= 'left',
+            				text_color		= LrColor("blue"),
+                    		font			= '<system/small>',
+            				width 			= columnWidth.url,
+            				mouse_down		= function()
+           						if propertyTable.publicUrl ~= '' then LrHttp.openUrlInBrowser(propertyTable.publicUrl) end
+           					end,
+                		},
+       				},
+
+       				f:row {
+            			f:static_text {
+            		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/publicUrl2=Public URL 2:",
+                    		alignment		= 'left',
+            				width 			= columnWidth.label,
+            			},
+
+                		f:static_text {
+                	  		title 			= bind 'publicUrl2',
+                    		alignment		= 'left',
+            				text_color		= LrColor("blue"),
+                    		font			= '<system/small>',
+            				width 			= columnWidth.url,
+            				mouse_down		= function()
+								if propertyTable.publicUrl2 ~= '' then LrHttp.openUrlInBrowser(propertyTable.publicUrl2) end
+							end,
+                		},
+       				},
 				},
    			},
 		},
 
     	-----------------------------------------------------------------
-    	-- Column Header
+    	-- List box
     	-----------------------------------------------------------------
 		f:group_box {
        		fill_horizontal = 1,
+			title			= LOC "$$$/PSUpload/SharedAlbumMgmt/allSharedAlbum=All Shared Albums",
 
     		f:row {
     			width = columnWidth.total,
@@ -912,21 +983,21 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 
     			f:view {
         			f:row {
-          				width 			= columnWidth.sync,
+          				width 			= columnWidth.download,
                			f:static_text  {
-               				title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColor=Sync",
---               				width 			= columnWidth.sync,
-               			},
+               				title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColor=Download",
+            				tooltip 		= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColorTT=Download Color Labels from Shared Album",
+						},
     				},
 
-        			f:row {
-                   		width 			= columnWidth.sync,
-            			f:checkbox {
-            				tooltip 		= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColorTT=Select All",
-            				width_in_chars	= 0,
-            				value 			= bind 'selectAll',
-            			},
-    				},
+        			-- f:row {
+                   	-- 	width 			= columnWidth.sync,
+            		-- 	f:checkbox {
+            		-- 		tooltip 		= LOC "$$$/PSUpload/SharedAlbumMgmt/DownloadColorAllTT=Select All",
+            		-- 		width_in_chars	= 0,
+            		-- 		value 			= bind 'selectAll',
+            		-- 	},
+    				-- },
 				},
     		},
 
@@ -934,7 +1005,40 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
         	-- Srcoll row area
         	-----------------------------------------------------------------
     		scrollView,
+
+			f:row {
+				f:static_text  {
+					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/NewAlbum=Add Shared Album to Publish Service: ",
+				},
+
+				f:popup_menu {
+					items 			= publishServiceItems,
+					alignment 		= 'left',
+					value			= bind 'newPublishServiceName'
+				},
+
+				f:push_button {
+					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SaveAlbum=Add ...",
+					font			= '<system/small>',
+					action 			= function()
+						local newRowId = findEmptyRow()
+						-- TODO check newRowId ~= -1
+						local rowProps = rowsPropertyTable[newRowId]
+						rowProps.wasAdded 			= true
+						rowProps.wasModified		= true
+						rowProps.publishServiceName = propertyTable.newPublishServiceName
+						local sharedAlbumDefaults = PHOTOSERVER_API[allPublishServiceVersions[propertyTable.newPublishServiceName]].API.sharedAlbumDefaults
+						if sharedAlbumDefaults then
+							for key, value in pairs(sharedAlbumDefaults) do
+								rowProps[key] = value
+							end
+							loadRow(propertyTable, newRowId)
+						end
+					end,
+				},
+			},
 		},
+
 		f:spacer {	fill_horizontal = 1,},
 
     	-----------------------------------------------------------------
@@ -944,56 +1048,13 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 			fill_horizontal = 1,
 			fill_vertical 	= 1,
 
-			f:column {
+			f:static_text {
+				title 			= bind 'message',
+				text_color 		= LrColor("red"),
+				font			= '<system/bold>',
+				alignment		= 'center',
 				fill_horizontal = 1,
-				fill_vertical 	= 1,
-
-    			f:static_text {
-    				title 			= bind 'message',
-    				text_color 		= LrColor("red"),
-   					font			= '<system/bold>',
-   					alignment		= 'center',
-    				fill_horizontal = 1,
-    				visible 		= bind 'hasError'
-    			},
-    		},
-
-			f:column {
-				fill_horizontal = 1,
-				fill_vertical 	= 1,
-			},
-
-			f:column {
-				fill_horizontal = 1,
-				fill_vertical 	= 1,
-				f:group_box {
-					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyActions=Apply Changes",
-					place_horizontal	= 1,
---					fill_horizontal	= 1,
-					fill_vertical	= 1,
-
-					f:row {
-            			f:push_button {
-            				title 			= "Add Shared Album",
-        					font			= '<system/small>',
---    	    				place_horizontal= 1,
---    	    				place_vertical	= 0.8,
-        					fill_horizontal	= 1,
-            				action 			= function()
-           						local emptyRowIndex = findEmptyRow()
-           						-- TODO check emptyRowIndex ~= -1
-           						local rowProps = rowsPropertyTable[emptyRowIndex]
-        						rowProps.isEntry 			= true
-        						rowProps.wasAdded 			= true
-        						rowProps.wasModified		= true
-								for key, value in pairs(PSSharedAlbumMgmt.sharedAlbumDefaults) do
-									rowProps[key] = value
-								end
-    							activateRow(propertyTable, emptyRowIndex)
-            				end,
-            			},
-					},
-    			},
+				visible 		= bind 'hasError'
 			},
 		},
 	}
@@ -1002,68 +1063,18 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 		{
 			title 		= "Manage Photo Server Shared Albums",
 			contents 	= dialogContents,
-			actionVerb 	=  LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyPS=Apply to Lr and PS (online)",
-			otherVerb	=  LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyLocal=Apply to Lr (offline)",
-		}
-	)
-
-end
-
---[[
--------------------------------------------------------------------------------
--- showAddAlbumDialog
-function PSSharedAlbumDialog.showAddAlbumDialog(f, propertyTable, context)
-	writeLogfile(4, "showAddAlbumDialog(): starting ...\n")
-
-	local publishServiceItems = {}
-    for i = 1, #allPublishServiceNames	do
-    	table.insert(publishServiceItems, {
-    		title	= allPublishServiceNames[i],
-    		value	= allPublishServiceNames[i],
-    	})
-    end
-	writeLogfile(4, "showAddAlbumDialog(): copied " .. tostring(#allPublishServiceNames) .. " Publish Service Names.\n")
-
-
-	local dialogContents = f:view {
-		bind_to_object 	=	propertyTable,
-
-   		f:row {
-   			f:static_text  {
-   				title 	= LOC "$$$/PSUpload/SharedAlbumMgmt/SharedAlbum=Shared Album",
-   				width 	= share 'labelWidth',
-   			},
-
-   			f:edit_field {
-   			value	= bind 'sharedAlbumName',
-   			},
-   		},
-
-   		f:row {
-   			f:static_text  {
-		  		title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/PublishService=Publish Service",
-   				width 	= share 'labelWidth',
-   			},
-
-			f:popup_menu {
-				items 			= publishServiceItems,
-				alignment 		= 'left',
---				fill_horizontal = 1,
-				value 			= bind 'activePublishServiceName',
+			actionVerb 	=  LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyPS=Apply changes to Lr and PS (online)",
+			actionBinding = {
+				enabled = {
+					bind_to_object 	= propertyTable,
+					key 			= 'hasNoError'
+				},
 			},
-   		},
-   	}
-
-	writeLogfile(4, "showAddAlbumDialog(): calling presentModalDialog() ...\n")
-	return LrDialogs.presentModalDialog(
-		{
-			title 		= "Add Shared Album",
-			contents 	= dialogContents,
+			otherVerb	=  LOC "$$$/PSUpload/SharedAlbumMgmt/ApplyLocal=Apply changes to Lr (offline)",
 		}
 	)
 
 end
-]]
 
 -------------------------------------------------------------------------------
 -- PSSharedAlbumDialog.doDialog(  )
@@ -1085,7 +1096,11 @@ function PSSharedAlbumDialog.doDialog( )
     		props:addObserver(observedKeys[i], updateActiveAlbumStatus)
     	end
 
-       	allPublishServiceNames, allSharedAlbums = PSSharedAlbumMgmt.readSharedAlbumsFromLr()
+		local allPublishServices
+		allPublishServiceNames, allPublishServiceVersions, allSharedAlbums = PSSharedAlbumMgmt.readSharedAlbumsFromLr()
+
+		-- set default PublishServiceName for new Shared Albums
+		props.newPublishServiceName = allPublishServiceNames[1]
 
     	-- initialize all rows, both filled and empty
     	for i = 1, #allSharedAlbums + nExtraRows do
@@ -1107,12 +1122,10 @@ function PSSharedAlbumDialog.doDialog( )
 	    	for key, value in pairs(allSharedAlbums[i]) do
 	    		rowsPropertyTable[i][key] = value
 	    	end
-
-			rowsPropertyTable[i].sharedAlbumNameOld	= rowsPropertyTable[i].sharedAlbumName
     	end
 
 --		writeTableLogfile(4, "allSharedAlbums", allSharedAlbums, false, 'Password')
-		activateRow(props, 1)
+		loadRow(props, 1)
 
 		local saveSharedAlbums 		= false
 		local downloadColorLabels 	= false
@@ -1120,8 +1133,6 @@ function PSSharedAlbumDialog.doDialog( )
 
 		-- if not canceled: copy params back from rowsPropertyTable to allShardAlbums
 		if retcode ~= 'cancel' then
-			-- write back active row
-			activateRow(props, findEmptyRow())
 	    	for i = 1,#rowsPropertyTable do
 	    		local rowProps = rowsPropertyTable[i]
 				if not allSharedAlbums[rowProps.index] then
@@ -1135,10 +1146,12 @@ function PSSharedAlbumDialog.doDialog( )
     						sharedAlbum[key] = value
     					end
     				end
-    				if sharedAlbum.wasAdded or sharedAlbum.wasModified or sharedAlbum.wasDeleted then
+    				if 			(sharedAlbum.wasAdded or sharedAlbum.wasModified or sharedAlbum.wasDeleted)
+						and not (sharedAlbum.wasAdded and sharedAlbum.wasDeleted)
+					then
     					saveSharedAlbums = true
     				end
-    				if 	sharedAlbum.isSelected
+    				if 	sharedAlbum.isSelected and not sharedAlbum.wasDeleted
     				and	(sharedAlbum.colorRed or sharedAlbum.colorYellow or sharedAlbum.colorGreen or sharedAlbum.colorBlue or sharedAlbum.colorPurple)
     				then
     					downloadColorLabels = true
@@ -1193,7 +1206,10 @@ end
 function PSSharedAlbumDialog.doDialogTask( )
 	openLogfile(4)
 	writeLogfile(4, "PSSharedAlbumDialog.doDialogTask\n")
+	local oldLoglevel = getLogLevel()
+	changeLogLevel(4)
 	LrTasks.startAsyncTask(PSSharedAlbumDialog.doDialog, "Photo StatLr: Shared Album Mgmt")
+	changeLogLevel(oldLoglevel)
 end
 --------------------------------------------------------------------------------
 
