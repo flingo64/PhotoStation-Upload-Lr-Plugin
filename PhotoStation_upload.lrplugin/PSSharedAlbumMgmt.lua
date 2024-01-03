@@ -51,6 +51,9 @@ PSSharedAlbumMgmt.sharedAlbumDefaults = {
 	colorPurple			= true,
 	comments			= true,
 	areaTool			= true,
+	privateUrl			= '',
+	publicUrl			= '',
+	publicUrl2			= '',
 }
 
 PSSharedAlbumMgmt.sharedAlbumPermissionItems = {
@@ -135,36 +138,28 @@ end
 
 --------------------------------------------------------------------------------------------
 -- setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, publishSettings)
---   adds the private and public Shared Album URLs to the Shared Album Keyword
+--   adds the private and public Shared Album URLs to the Shared Album params in Lr Plugin prefs
 function PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, publishSettings)
-	local firstServerUrl 	= publishSettings.proto .. "://" .. publishSettings.servername
-	local secondServerUrl	= iif(ifnil(publishSettings.servername2, '') ~= '', publishSettings.proto2 .. "://" .. publishSettings.servername2, nil)
-	local sharedAlbumId		= publishSettings.photoServer:getSharedAlbumId(sharedAlbumParams.sharedAlbumName)
+	local myPrefs 			    	= LrPrefs.prefsForPlugin()
+	local sharedAlbumKeywordPath	= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(sharedAlbumParams.publishServiceName, sharedAlbumParams.sharedAlbumName)
+	local sharedAlbumId, _			= PSLrUtilities.getKeywordByPath(sharedAlbumKeywordPath, false)
 
-	local sharedAlbumUrls 	= {}
-
-    sharedAlbumUrls[1] 		= publishSettings.psUrl .. "#!SharedAlbums/" .. sharedAlbumId
-
-	writeLogfile(3, string.format("setSharedAlbumUrls: firstServer: %s secondServer: %s, albumId: %s, share_url: %s\n",
-	firstServerUrl, ifnil(secondServerUrl, '<nil>'), sharedAlbumId, sharedAlbumInfo.public_share_url))
-
-	if sharedAlbumInfo.public_share_url then
-		local pathUrl = string.match(sharedAlbumInfo.public_share_url, 'http[s]*://[^/]*(.*)')
-		sharedAlbumUrls[2] = firstServerUrl .. pathUrl
-
-		if secondServerUrl then
-			sharedAlbumUrls[3] = secondServerUrl .. pathUrl
-		end
+    writeLogfile(4, string.format("PSSharedAlbumMgmt.setSharedAlbumUrls('%s') ...", sharedAlbumParams.sharedAlbumName))
+	if not openSession(publishSettings, nil, 'ManageSharedAlbums') or not sharedAlbumId then
+		return
 	end
+	local privateUrl, publicUrl, publicUrl2 	= PHOTOSERVER_API[publishSettings.psVersion].API.getSharedAlbumUrls(publishSettings.photoServer, publishSettings, sharedAlbumParams.sharedAlbumName)
+	local sharedAlbumPrefs = myPrefs.sharedAlbums[sharedAlbumId]
 
-	PSLrUtilities.addKeywordSynonyms(sharedAlbumParams.keywordId, sharedAlbumUrls)
-
-	if not sharedAlbumParams.isPublic then
-		local shareUrlPatterns = {}
-		shareUrlPatterns[1] = '/photo/share/'
-		PSLrUtilities.removeKeywordSynonyms(sharedAlbumParams.keywordId, shareUrlPatterns, true)
-	end
-
+	sharedAlbumPrefs.privateUrl = privateUrl
+	sharedAlbumPrefs.publicUrl  = publicUrl
+	sharedAlbumPrefs.publicUrl2 = publicUrl2
+	
+	-- do self-assignment to force Lr to store the prefs
+	myPrefs.sharedAlbums[sharedAlbumId] = myPrefs.sharedAlbums[sharedAlbumId]
+	myPrefs.sharedAlbums = myPrefs.sharedAlbums
+    writeLogfile(3, string.format("PSSharedAlbumMgmt.setSharedAlbumUrls('%s'): added '%s', '%s', '%s' to myPrefs[%d].\n",
+								sharedAlbumParams.sharedAlbumName, privateUrl, publicUrl, publicUrl2, sharedAlbumId))
 end
 
 --------------------------------------------------------------------------------------------
@@ -286,9 +281,10 @@ end
 -------------------------------------------------------------------------------
 -- PSSharedAlbumMgmt.readSharedAlbumsFromLr()
 function PSSharedAlbumMgmt.readSharedAlbumsFromLr()
-	local activeCatalog = LrApplication.activeCatalog()
-	local publishServices = activeCatalog:getPublishServices(_PLUGIN.id)
-	local publishServiceNames = {}
+	local activeCatalog 		 = LrApplication.activeCatalog()
+	local publishServices 		 = activeCatalog:getPublishServices(_PLUGIN.id)
+	local publishServiceNames 	 = {}
+	local publishServiceVersions = {}
     local sharedAlbumDefaults
 	local nAlbums = 0
 
@@ -297,14 +293,15 @@ function PSSharedAlbumMgmt.readSharedAlbumsFromLr()
 	local k = 0
 
     for i = 1, #publishServices	do
-    	local publishService 		= publishServices[i]
-    	local publishServiceSettings= publishService:getPublishSettings()
+    	local publishService 		 = publishServices[i]
+    	local publishServiceSettings = publishService:getPublishSettings()
 
 		if PHOTOSERVER_API.supports (publishServiceSettings.psVersion, PHOTOSERVER_SHAREDALBUM) then
             sharedAlbumDefaults = PHOTOSERVER_API[publishServiceSettings.psVersion].API.sharedAlbumDefaults
 			writeLogfile(3, string.format("readSharedAlbumsFromLr: publish service '%s': psVersion: %d\n", publishService:getName(), publishServiceSettings.psVersion))
 			k = k + 1
 			publishServiceNames[k] 		= publishService:getName()
+			publishServiceVersions[publishServiceNames[k]] = publishServiceSettings.psVersion
 
 			local pubServiceSharedAlbums = PSSharedAlbumMgmt.getPublishServiceSharedAlbums(publishServiceNames[k])
 
@@ -330,22 +327,21 @@ function PSSharedAlbumMgmt.readSharedAlbumsFromLr()
 		end
 	end
 
-	return publishServiceNames, sharedAlbums
+	return publishServiceNames, publishServiceVersions, sharedAlbums
 end
 
 -------------------------------------------------------------------------------
 -- PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
 function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
-    local isPattern, createIfMissing, includeOnExport = true, true, true
-	local myPrefs = LrPrefs.prefsForPlugin()
-
+    local includeOnExport = true
+	
 	for i = 1, #sharedAlbumParamsList do
         local sharedAlbum = sharedAlbumParamsList[i]
 
 		if sharedAlbum.isEntry then
             local sharedAlbumKeyword
             local sharedAlbumKeywordPath 				= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(sharedAlbum.publishServiceName, sharedAlbum.sharedAlbumName)
-            sharedAlbum.keywordId, sharedAlbumKeyword	= PSLrUtilities.getKeywordByPath(sharedAlbumKeywordPath, createIfMissing, includeOnExport)
+            sharedAlbum.keywordId, sharedAlbumKeyword	= PSLrUtilities.getKeywordByPath(sharedAlbumKeywordPath, not sharedAlbum.wasDeleted, includeOnExport)
     
             -- only keys mentioned in sharedAlbumDefaults have to be stored in plugin prefs
             -- so, copy only those keys from sharedAlbum to sharedAlbumParams
@@ -475,9 +471,9 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 			if sharedAlbumInfo then
 				writeLogfile(2, string.format('writeSharedAlbumsToPS(%s): add/modify returns OK.\n', sharedAlbum.sharedAlbumName))
 				numAddOrMods = numAddOrMods + 1
---	    			PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbum, sharedAlbumInfo, publishSettings)
+    			PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbum, sharedAlbumInfo, publishSettings)
 			else
-				writeLogfile(1, string.format('writeSharedAlbumsToPS(%s) add/modify returns errorn%s.\n', sharedAlbum.sharedAlbumName, tostring(errorCode)))
+				writeLogfile(1, string.format('writeSharedAlbumsToPS(%s) add/modify returns error %s.\n', sharedAlbum.sharedAlbumName, tostring(errorCode)))
 				numFailAddOrMods = numFailAddOrMods + 1
 			end
 		end
