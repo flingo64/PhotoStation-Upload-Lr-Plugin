@@ -751,6 +751,9 @@ PhotoStation.sharedAlbumDefaults = {
 	colorPurple			= true,
 	comments			= true,
 	areaTool			= true,
+	privateUrl			= '',
+	publicUrl			= '',
+	publicUrl2			= '',
 }
 
 ---------------------------------------------------------------------------------------------------------

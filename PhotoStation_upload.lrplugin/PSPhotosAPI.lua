@@ -1676,6 +1676,9 @@ Photos.sharedAlbumDefaults = {
 	colorPurple			= false,
 	comments			= false,
 	areaTool			= false,
+	privateUrl			= '',
+	publicUrl			= '',
+	publicUrl2			= '',
 }
 
 ---------------------------------------------------------------------------------------------------------
