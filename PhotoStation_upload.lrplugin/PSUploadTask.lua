@@ -1128,7 +1128,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					writeLogfile(2, string.format('CheckExisting: No upload needed for "%s" to "%s" \n', srcPhoto:getRawMetadata('path'), publishedPhotoId))
 					ackRendition(rendition, publishedPhotoId, publishedCollection.localIdentifier)
 					nNotCopied = nNotCopied + 1
-					PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
+					PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams, publishedCollection:getService():getName())
 				else -- error
 					nNeedCopy = nNeedCopy + 1
 					table.insert( failures, srcPath )
@@ -1207,7 +1207,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					rendition:uploadFailed("Upload failed")
 				else
 					if publishedCollection then
-						PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams)
+						PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams, publishedCollection:getService():getName())
 					end
 					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' done.\n") end
 				end

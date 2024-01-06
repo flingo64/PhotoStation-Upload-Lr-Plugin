@@ -137,18 +137,18 @@ function PSSharedAlbumMgmt.removeSharedAlbumParams(sharedAlbumKeyword)
 end
 
 --------------------------------------------------------------------------------------------
--- setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, publishSettings)
+-- setSharedAlbumUrls(publishServiceName, sharedAlbumParams, publishSettings)
 --   adds the private and public Shared Album URLs to the Shared Album params in Lr Plugin prefs
-function PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, publishSettings)
+function PSSharedAlbumMgmt.setSharedAlbumUrls(publishServiceName, sharedAlbumParams, publishSettings)
 	local myPrefs 			    	= LrPrefs.prefsForPlugin()
-	local sharedAlbumKeywordPath	= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(sharedAlbumParams.publishServiceName, sharedAlbumParams.sharedAlbumName)
+	local sharedAlbumKeywordPath	= PSSharedAlbumMgmt.getSharedAlbumKeywordPath(publishServiceName, sharedAlbumParams.sharedAlbumName)
 	local sharedAlbumId, _			= PSLrUtilities.getKeywordByPath(sharedAlbumKeywordPath, false)
 
     writeLogfile(4, string.format("PSSharedAlbumMgmt.setSharedAlbumUrls('%s') ...", sharedAlbumParams.sharedAlbumName))
 	if not openSession(publishSettings, nil, 'ManageSharedAlbums') or not sharedAlbumId then
 		return
 	end
-	local privateUrl, publicUrl, publicUrl2 	= PHOTOSERVER_API[publishSettings.psVersion].API.getSharedAlbumUrls(publishSettings.photoServer, publishSettings, sharedAlbumParams.sharedAlbumName)
+	local privateUrl, publicUrl, publicUrl2 	= publishSettings.photoServer:getSharedAlbumUrls(publishSettings, sharedAlbumParams.sharedAlbumName)
 	local sharedAlbumPrefs = myPrefs.sharedAlbums[sharedAlbumId]
 
 	sharedAlbumPrefs.privateUrl = privateUrl
@@ -429,7 +429,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 		if 	 sharedAlbum.isEntry and
 			(sharedAlbum.wasAdded or sharedAlbum.wasDeleted or sharedAlbum.wasModified) then
 
-    		-- open session only if publish service changed or session not yet opened
+    		-- open session only if publish service if different from last album or session not yet opened
 			if 		activePublishing.publishServiceName ~= sharedAlbum.publishServiceName
 				or 	not	activePublishing.publishSettings
 				or 	not	activePublishing.publishSettings.photoServer then
@@ -471,7 +471,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 			if sharedAlbumInfo then
 				writeLogfile(2, string.format('writeSharedAlbumsToPS(%s): add/modify returns OK.\n', sharedAlbum.sharedAlbumName))
 				numAddOrMods = numAddOrMods + 1
-    			PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbum, sharedAlbumInfo, publishSettings)
+	   			PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbum.publishServiceName, sharedAlbum, publishSettings)
 			else
 				writeLogfile(1, string.format('writeSharedAlbumsToPS(%s) add/modify returns error %s.\n', sharedAlbum.sharedAlbumName, tostring(errorCode)))
 				numFailAddOrMods = numFailAddOrMods + 1
@@ -486,10 +486,10 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 end
 
 --------------------------------------------------------------------------------------------
--- noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
+-- noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams, publishServiceName)
 -- 	  sharedAlbumUpdates holds the list of required Shared Album updates (adds and removes)
 -- 	  sharedPhotoUpdates holds the list of required plugin metadata updates
-function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams)
+function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollectionId, exportParams, publishServiceName)
 	local pubServiceName = LrApplication.activeCatalog():getPublishedCollectionByLocalIdentifier(publishedCollectionId):getService():getName()
 	local sharedAlbumsLr 	= PSSharedAlbumMgmt.getPhotoSharedAlbums(srcPhoto, pubServiceName)
 	local oldSharedAlbumsPS	= ifnil(PSSharedAlbumMgmt.getPhotoPluginMetaLinkedSharedAlbums(srcPhoto), {})
@@ -512,25 +512,14 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
     			end
     		end
     		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s' as entry %d due to addPhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s'/'%s' as entry %d due to addPhoto\n", publishedPhotoId, publishServiceName, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
+					publishServiceName		= publishServiceName,
     				sharedAlbumName			= sharedAlbumName,
     				addPhotos 				= {},
     				removePhotos 			= {},
     			}
-
---[[
-    			sharedAlbumUpdate = {
-    				sharedAlbumName 		= sharedAlbumName,
-    				isAdvanced 				= isAdvanced,
-    				isPublic 				= isPublic,
-    				sharedAlbumPassword 	= sharedAlbumPassword,
-    				keywordId 				= keywordId,
-    				addPhotos 				= {},
-    				removePhotos 			= {},
-    			}
-]]
-    			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
+	   			sharedAlbumUpdates[#sharedAlbumUpdates + 1] = sharedAlbumUpdate
     		end
 
 			if not sharedAlbumUpdate.sharedAlbumParams then
@@ -542,7 +531,7 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
 
     		local addPhotos = sharedAlbumUpdate.addPhotos
     		addPhotos[#addPhotos+1] = { dstFilename = publishedPhotoId, isVideo = srcPhoto:getRawMetadata('isVideo') }
-   			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note in entry '%s' --> addPhotos[%d]\n", publishedPhotoId, sharedAlbumName, #addPhotos))
+   			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note in entry '%s'/'%s' --> addPhotos[%d]\n", publishedPhotoId, publishServiceName, sharedAlbumName, #addPhotos))
 
    			if not findInStringTable(newSharedAlbumsPS, photoSharedAlbum) then
    				table.insert(newSharedAlbumsPS, photoSharedAlbum)
@@ -564,8 +553,9 @@ function PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhot
     		end
 
     		if not sharedAlbumUpdate then
-    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s' as entry %d due to removePhoto\n", publishedPhotoId, sharedAlbumName, #sharedAlbumUpdates + 1))
+    			writeLogfile(3, string.format("noteSharedAlbumUpdates(%s): note Shared Album '%s'/'%s' as entry %d due to removePhoto\n", publishedPhotoId, publishServiceName, sharedAlbumName, #sharedAlbumUpdates + 1))
     			sharedAlbumUpdate = {
+					publishServiceName		= publishServiceName,
     				sharedAlbumName			= sharedAlbumName,
     				addPhotos 				= {},
     				removePhotos 			= {},
@@ -608,17 +598,19 @@ function PSSharedAlbumMgmt.updateSharedAlbums(functionContext, sharedAlbumUpdate
 							 	})
 	for i = 1, #sharedAlbumUpdates do
 		if progressScope:isCanceled() then break end
-		local sharedAlbumUpdate = sharedAlbumUpdates[i]
-		local sharedAlbumParams = sharedAlbumUpdate.sharedAlbumParams
+		local sharedAlbumUpdate  = sharedAlbumUpdates[i]
+		local publishServiceName = sharedAlbumUpdate.publishServiceName
+		local sharedAlbumParams  = sharedAlbumUpdate.sharedAlbumParams
 
 		progressScope:setCaption(sharedAlbumUpdate.sharedAlbumName)
 
 		if #sharedAlbumUpdate.addPhotos > 0 then
             local sharedAlbumInfo, errorCode = exportParams.photoServer:createAndAddPhotosToSharedAlbum(sharedAlbumParams, sharedAlbumUpdate.addPhotos)
-            -- TODO: if the sharedAlbum was created, then add sharedAlbum params to internal Album Metadata
-			-- if success then
-			-- 	PSSharedAlbumMgmt.setSharedAlbumUrls(sharedAlbumParams, sharedAlbumInfo, exportParams)
-			-- end
+			if sharedAlbumInfo then
+				PSSharedAlbumMgmt.setSharedAlbumUrls(publishServiceName, sharedAlbumParams, exportParams)
+			else
+				writeLogfile(1, string.format('Shared Album "%s": could not set Shared Album URLs (%s).\n',sharedAlbumUpdate.sharedAlbumName, exportParams.photoServer:getErrorMsg(errorCode)))
+			end
 		end
 
 		if #sharedAlbumUpdate.removePhotos > 0 then exportParams.photoServer:removePhotosFromSharedAlbum(sharedAlbumUpdate.sharedAlbumName, sharedAlbumUpdate.removePhotos) end
