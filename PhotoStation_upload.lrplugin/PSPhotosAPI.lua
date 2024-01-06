@@ -1912,7 +1912,7 @@ end
 function Photos.createSharedAlbum(h, sharedAlbumParams)
 	writeLogfile(4, string.format("createSharedAlbum('%s')...\n", sharedAlbumParams.sharedAlbumName))
 
-	local albumId, albumInfo = Photos_getAlbumInfo(h, 'shared', sharedAlbumParams.sharedAlbumName, true)
+	local albumId, albumInfo = Photos_getAlbumInfo(h, 'shared', sharedAlbumParams.sharedAlbumName, false)
 	local success, errorCode
 
 	-- if album not in cache, create it as empty album w/ standard params
