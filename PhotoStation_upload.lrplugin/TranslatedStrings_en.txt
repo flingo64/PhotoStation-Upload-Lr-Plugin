@@ -174,7 +174,7 @@
 "$$$/PSUpload/FinalMsg/GetRatingsFromPublishedCollection=^1 added/modified metadata items for ^2 of ^3 pics in ^4 seconds (^5 pics/sec)."
 "$$$/PSUpload/FinalMsg/Metadata=Uploaded metadata for ^1 of ^2 files in ^3 seconds (^4 secs/pic)."
 "$$$/PSUpload/FinalMsg/Move=Processed ^1 of ^2 pics in ^3 seconds (^4 pics/sec). ^5 pics moved.^n"
-"$$$/PSUpload/FinalMsg/UpdatePSSharedAlbums=Update Shared Albums: Add/Modify: ^1 OK / ^2 Fail, Rename: ^3 OK / ^4 Fail, Delete: ^5 OK / ^6 Fail^n"
+"$$$/PSUpload/FinalMsg/UpdatePSSharedAlbums=Update Shared Albums: Add/Modify: ^1 OK / ^2 Fail, Delete: ^3 OK / ^4 Fail^n"
 "$$$/PSUpload/FinalMsg/Upload/Error=Processed ^1 of ^2 pics in ^3 seconds (^4 secs/pic). ^5 failed to upload."
 "$$$/PSUpload/FinalMsg/Upload=Uploaded ^1 of ^2 files in ^3 seconds (^4 secs/pic)."
 "$$$/PSUpload/Metadat/commentCount=Comment Count"

@@ -415,8 +415,8 @@ end
 -- PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 -- update all modified/added/deleted Photo Server Shared Albums
 function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
-	local numDeletes, numAddOrMods, numRenames = 0, 0, 0
-	local numFailDeletes, numFailAddOrMods, numFailRenames = 0, 0, 0
+	local numDeletes, numAddOrMods = 0, 0
+	local numFailDeletes, numFailAddOrMods = 0, 0
 	
     -- cache for publish settings
     local activePublishing = {
@@ -483,9 +483,9 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToPS(sharedAlbumParamsList)
 		end
 	end
 
-	local message = LOC ("$$$/PSUpload/FinalMsg/UpdatePSSharedAlbums=Update Shared Albums: Add/Modify: ^1 OK / ^2 Fail, Rename: ^3 OK / ^4 Fail, Delete: ^5 OK / ^6 Fail\n",
-					numAddOrMods, numFailAddOrMods, numRenames, numFailRenames, numDeletes, numFailDeletes)
-	local messageType = iif(numFailAddOrMods > 0 or numFailRenames > 0 or numFailDeletes > 0, 'critical', 'info')
+	local message = LOC ("$$$/PSUpload/FinalMsg/UpdatePSSharedAlbums=Update Shared Albums: Add/Modify: ^1 OK / ^2 Fail, Delete: ^3 OK / ^4 Fail\n",
+					numAddOrMods, numFailAddOrMods, numDeletes, numFailDeletes)
+	local messageType = iif(numFailAddOrMods > 0 or numFailDeletes > 0, 'critical', 'info')
 	showFinalMessage ("Photo StatLr: Update Shared Albums done", message, messageType)
 end
 
