@@ -387,7 +387,7 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
     			-- delete album from Lr keyword hierarchy (currently not supported by Lr)
     			PSLrUtilities.deleteKeyword(sharedAlbum.keywordId, sharedAlbumKeywordPath)
 				LrDialogs.message("Remove Keyword!",
-									LOC("$$$/PSUpload/FinalMsg/UpdateSharedAlbums/RemoveKeyword=Please remove keyword\n'^1'\n after the Shared Album was deleted!", sharedAlbumKeywordPath),
+									LOC("$$$/PSUpload/SharedAlbumDialog/Info/RemoveSharedAlbumKeyword=Please remove keyword\n'^1'\n after the Shared Album was deleted!", sharedAlbumKeywordPath),
 									'info')
 
                 PSSharedAlbumMgmt.removeSharedAlbumParams(sharedAlbumKeyword)
