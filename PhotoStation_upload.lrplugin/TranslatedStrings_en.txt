@@ -246,7 +246,6 @@
 "$$$/PSUpload/SharedAlbumDialog/Label/StartTime=From"
 "$$$/PSUpload/SharedAlbumDialog/Label/StopTime=Until"
 "$$$/PSUpload/SharedAlbumDialog/Message/DateIncorrect=Date must be 'YYYY-mm-dd'!"
-"$$$/PSUpload/SharedAlbumDialog/Message/PublishServiceMissing=Please select a Publish Service!"
 "$$$/PSUpload/SharedAlbumDialog/Message/SharedAlbumAlreadyExist=Shared Album already exists!"
 "$$$/PSUpload/SharedAlbumDialog/Message/SharedAlbumNameMissing=Please enter a Shared Album Name!"
 "$$$/PSUpload/SharedAlbumDialog/Text/AddAlbum=Add Shared Album to Publish Service:"

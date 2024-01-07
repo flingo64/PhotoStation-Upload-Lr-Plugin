@@ -88,11 +88,6 @@ local function updateActiveAlbumStatus( propertyTable )
 		-- Use a repeat loop to allow easy way to "break" out.
 		-- (It only goes through once.)
 
-		if ifnil(propertyTable.publishServiceName, '') == '' then
-			message = LOC "$$$/PSUpload/SharedAlbumDialog/Message/PublishServiceMissing=Please select a Publish Service!"
-			break
-		end
-
 		if ifnil(propertyTable.sharedAlbumName, '') == '' then
 			message = LOC "$$$/PSUpload/SharedAlbumDialog/Message/SharedAlbumNameMissing=Please enter a Shared Album Name!"
 			break
