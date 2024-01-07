@@ -1020,7 +1020,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 
 			f:row {
 				f:static_text  {
-					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/NewAlbum=Add Shared Album to Publish Service: ",
+					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/NewAlbum=Add Shared Album to Publish Service:",
 				},
 
 				f:popup_menu {
@@ -1030,7 +1030,7 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 				},
 
 				f:push_button {
-					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/SaveAlbum=Add ...",
+					title 			= LOC "$$$/PSUpload/SharedAlbumMgmt/AddNewAlbum=Add ...",
 					font			= '<system/small>',
 					action 			= function()
 						local newRowId = findEmptyRow()
