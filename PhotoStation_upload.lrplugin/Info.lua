@@ -73,7 +73,7 @@ return {
 								'PSPluginTagsetComments.lua', },
 
 	LrLibraryMenuItems = {
-		title = "Manage PS Shared Albums",
+		title = LOC "$$$/PSUpload/SharedAlbumDialog/Title=Manage Shared Albums",
 		file = "PSSharedAlbumDialog.lua",
 	},
 

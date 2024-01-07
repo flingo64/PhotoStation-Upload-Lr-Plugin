@@ -1058,9 +1058,9 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 
 	return LrDialogs.presentModalDialog(
 		{
-			title 		= "Manage Photo Server Shared Albums",
+			title 		= LOC "$$$/PSUpload/SharedAlbumDialog/Title=Manage Shared Albums",
 			contents 	= dialogContents,
-			actionVerb 	=  LOC "$$$/PSUpload/SharedAlbumDialog/Button/ApplyPS=Apply changes to Lr and PS (online)",
+			actionVerb 	=  LOC "$$$/PSUpload/SharedAlbumDialog/Button/ApplyPS=Apply changes to Lr and PhotoServer (online)",
 			actionBinding = {
 				enabled = {
 					bind_to_object 	= propertyTable,
