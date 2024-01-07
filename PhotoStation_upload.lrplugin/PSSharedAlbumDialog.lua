@@ -267,10 +267,22 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 					},
 
 		       		f:row {
-
                 		f:static_text {
                 	  		title 			= bind 'sharedAlbumName',
                     		alignment		= 'left',
+							text_color		= bind {
+								keys = {
+									{	key = 'wasAdded' },
+									{	key = 'wasModified'},
+								},
+								operation = function( _, values, _ )
+									if values.wasAdded or values.wasModified then
+										return LrColor('blue')
+									else
+										return LrColor('black')
+									end
+								end,
+							},
             				width 			= columnWidth.albumName,
             				mouse_down		= function()
             					return loadRow(propertyTable, i)
@@ -1025,7 +1037,6 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
 						-- TODO check newRowId ~= -1
 						local rowProps = rowsPropertyTable[newRowId]
 						rowProps.wasAdded 			= true
-						rowProps.wasModified		= true
 						rowProps.publishServiceName = propertyTable.newPublishServiceName
 						local sharedAlbumDefaults = PHOTOSERVER_API[allPublishServiceVersions[propertyTable.newPublishServiceName]].API.sharedAlbumDefaults
 						if sharedAlbumDefaults then
