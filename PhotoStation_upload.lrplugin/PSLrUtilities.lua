@@ -846,10 +846,10 @@ function PSLrUtilities.renameKeyword(keywordId, newKeywordName)
 end
 
 --------------------------------------------------------------------------------------------
--- deleteKeyword(keywordId)
-function PSLrUtilities.deleteKeyword(keywordId)
+-- deleteKeyword(keywordId, keywordPath)
+function PSLrUtilities.deleteKeyword(keywordId, keywordPath)
 	-- there is no API to remove a keyword from catalog
-	writeLogfile(3, string.format("deleteKeyword(%d') not supported by Lr API!\n", keywordId))
+	writeLogfile(2, string.format("deleteKeyword('%s'/%d) not supported by Lr API!\n", keywordPath, keywordId))
 	return true
 end
 

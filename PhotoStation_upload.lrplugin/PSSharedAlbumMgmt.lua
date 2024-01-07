@@ -24,6 +24,7 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 -- Lightroom SDK
 local LrApplication		= import 'LrApplication'
 local LrDate			= import 'LrDate'
+local LrDialogs			= import 'LrDialogs'
 local LrPathUtils 		= import 'LrPathUtils'
 local LrProgressScope 	= import 'LrProgressScope'
 local LrPrefs			= import 'LrPrefs'
@@ -383,9 +384,12 @@ function PSSharedAlbumMgmt.writeSharedAlbumsToLr(sharedAlbumParamsList)
 
     			end
 
-    			-- delete album from Lr keyword hierarchy  (currently not supported by Lr)
-                writeLogfile(2, string.format("PSSharedAlbumMgmt.writeSharedAlbumsToLr('%s'): keyword removal not supported by Lr API, please remove keyword manually!\n", sharedAlbum.sharedAlbumName))
-    			PSLrUtilities.deleteKeyword(sharedAlbum.keywordId)
+    			-- delete album from Lr keyword hierarchy (currently not supported by Lr)
+    			PSLrUtilities.deleteKeyword(sharedAlbum.keywordId, sharedAlbumKeywordPath)
+				LrDialogs.message("Remove Keyword!",
+									LOC("$$$/PSUpload/FinalMsg/UpdateSharedAlbums/RemoveKeyword=Please remove keyword\n'^1'\n after the Shared Album was deleted!", sharedAlbumKeywordPath),
+									'info')
+
                 PSSharedAlbumMgmt.removeSharedAlbumParams(sharedAlbumKeyword)
     		end
 
