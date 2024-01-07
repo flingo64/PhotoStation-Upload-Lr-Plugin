@@ -1,5 +1,17 @@
 Photo StatLr Changelog
 ======================
+Version 7.4.0
+-------------
+### New Featues:
+- Photos:
+  - Support for Shared Albums
+### Changes:
+- All:PhotoServers
+  - MacOS: Show error messages rather than error codes for local LrHttp errors
+  - Hide passwords in log messages
+- Photos:
+  - Added support for Photos 1.4, 1.5 and 1.6
+
 Version 7.3.2
 -------------
 ### Changes:

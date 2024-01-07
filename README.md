@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.3.2<br>
+Version 7.4.0<br>
 __[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
@@ -38,11 +38,11 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 	- MacOS 12:	0.0 - 1.0
 * Lightroom: 
   	- Lr 4.0 - 6.14
-	- Lr Classic 7.0 - 11.1
+	- Lr Classic 7.0 - 13.1
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
 * Synology Photos:
-	Photos 1.0, 1.1
+	Photos 1.0 - 1.6
 * For local thumbnail generation and for video upload, we need the following tools (not included, check the links under [Credits](#credits)). Alternatively, you may use the Synology Photo Station Uploader, which includes the required components:
 	- ImageMagick/convert(.exe) 7.x
 	- ffmpeg/ffmpeg(.exe) 4.x
@@ -64,7 +64,7 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 ![](Screenshots-Windows/01-Install-Plugin.jpg)
  - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required converters and tools are correct.\
  Note for MacOS: please use the real path of the tools, not a symbolic link! To find out the realpath of the convert tool for example, you may use the following command:\
-  `which convert | xargs realpath {}`
+  `which convert | xargs realpath`
  ![](Screenshots-Windows/03-Install_OK.jpg)
 
 # Description
@@ -264,20 +264,20 @@ For more information on video processing with Photo StatLr read the [Video uploa
   To identify the Default Collection, just edit an existing Published Collection: the name of the Default Collection will be shown in the header section of the dialog.
   If the Default Collection has been removed before (this was possible in Photo StatLr befor v5.8.0) there is no way to create a new Default Collection for that Publish Service.     
 
-- Manage __Photo Station Shared Albums__ * via Shared Album keyword hierarchies in Lr:<br>
-  Define Shared Album keywords under "Photo StatLr" | "Shared Albums" | "\<Publish Service Name\>" and assign them to photos you want to link to Photo Station Shared Albums.
-  As soon as you publish the respective photos (using Publish mode "Upload" or "CheckExisting") via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums.<br>
-  You may define whether a Shared Album should be public (default) or private (using __keyword synonym 'private'__)<br>
-  You may define a __password__ for a public Shared Album (using __keyword synonym 'password:\<AlbumPassword\>'__) (requires Photo Station 6.6 or above)<br>
-  For more infos please read the [Shared Albums FAQ](Documentation/06-Publish-Managing%20Photo%20Station%20Shared%20Albums%20in%20Lightroom%20via%20Photo%20StatLr.md).
-![](Screenshots-Windows/14-ManageSharedAlbums.jpg)
-  
-## Download / Sync Functionality:
-- Support for download of __Comments__
+- Manage __Photo Server Shared Albums__ * via Shared Album keyword hierarchies in Lr:<br>
+  Define Shared Album keywords under "Photo StatLr" | "Shared Albums" | "\<Publish Service Name\>" and assign them to photos you want to link to Photo Server Shared Albums.
+  As soon as you publish the respective photos (Publish mode "CheckExisting" is fine enough) via the given \<Publish Service\>, they will be linked to or removed from the given Shared Albums.<br>
+  ![](Screenshots-Windows/14b-ManageSharedAlbums.jpg)
+  You may also use the 'Manage Shared Albums' dialog found under  __Library -> Plug-in Extras -> Manage Shared Albums__  to define further Shared Album settings for public access such as access permissions, password or expiration date or to add and delete Shared Albums.<br>
+![](Screenshots-Windows/14c-ManageSharedAlbums.jpg)
+  For more info please read the [Shared Albums FAQ](Documentation/06-Publish-Managing%20Photos%20Shared%20Albums%20in%20Lightroom%20via%20Photo%20StatLr.md).
+
+## Download / Sync Functionality
+- Support for download of __Comments__v
 	- Download of private and public comments* from Photo Station
 	- Lr plugin metadata for comments: __search and filter__ photos with comments<br>
 	- __Metadata Tagsets__ to view comments in the Metadata panel<br>
-	For more infos please read the [Comments FAQ](Documentation/08-Publish-Some%20comments%20on%20comments.md).
+	For more info please read the [Comments FAQ](Documentation/08-Publish-Some%20comments%20on%20comments.md).
 
   ![](Screenshots-Windows/15-Comment-Metadata.jpg)
 
@@ -331,7 +331,7 @@ Face regions can't be downloaded for cropped photos, since Lr won't accept the f
 tbd.
 
 # Copyright
-Copyright(c) 2015-2023, Martin Messmer
+Copyright(c) 2015-2024, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
