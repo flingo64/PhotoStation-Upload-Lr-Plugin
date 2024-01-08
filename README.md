@@ -32,10 +32,9 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 * OS (Windows or Mac OS X):
 	- Windows 7
 	- Windows 8.0, 8.1
-	- Windows 10
-	- MacOS X:	7.5 - 16.0
-	- MacOS 11:	0.1 - 6.2
-	- MacOS 12:	0.0 - 1.0
+	- Windows 10, Windows 11
+	- macOS X:	7.5 - 16.0
+	- macOS 11.0.1 - macOS 14.2.1 (Sonoma)
 * Lightroom: 
   	- Lr 4.0 - 6.14
 	- Lr Classic 7.0 - 13.1
