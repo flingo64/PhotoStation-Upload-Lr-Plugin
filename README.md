@@ -12,7 +12,8 @@ __[Important note for updating to V3.6.x and above]releases/tag/v3.6.0)__<br>
 
 Forum threads: 
 - [English Synology forum](https://community.synology.com/enu/forum/17/post/80082)
-- [German Synology forum](https://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
+- [German Synology forum - Photo Station](https://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
+- [German Synology forum - Photos](https://www.synology-forum.de/threads/photo-statlr-lightroom-plugin-fuer-synology-photos.118856/)
 
 [Support Page](https://messmer-online.de/index.php/software/11-photo-statlr)<br>
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
