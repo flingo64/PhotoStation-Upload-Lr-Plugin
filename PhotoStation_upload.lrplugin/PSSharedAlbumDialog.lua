@@ -65,14 +65,14 @@ local columnWidth = {
 	publishService	    = 120,
 	publicPermissions   = 80,
 	public			    = 40,
-	start			    = 70,
-	stop			    = 70,
+	start			    = 75,
+	stop			    = 75,
 	area 			    = 35,
 	comments		    = 60,
 	colors			    = 100,
 	donwload		    = 60,
 
-	total			    = 840,
+	total			    = 850,
 
 	color			    = 16,
 	scrollbar		    = 50,
@@ -309,23 +309,17 @@ function PSSharedAlbumDialog.showDialog(f, propertyTable, context)
             				end,
                 	   },
 
-                		f:edit_field {
-              				value 			= bind 'startTime',
-							enabled 		= false,
+                		f:static_text {
+              				title 			= bind 'startTime',
                             visible			= bind 'isAdvanced',
-               				immediate 		= true,
-               				validate		= PSSharedAlbumDialog.validateDate,
                     		alignment		= 'left',
                     		font			= '<system/small>',
             				width 			= columnWidth.start,
                 	   },
 
-                		f:edit_field {
-              				value 			= bind 'stopTime',
-							enabled 		= false,
+                		f:static_text {
+              				title 			= bind 'stopTime',
                    			visible			= bind 'isPublic',
-               				immediate 		= true,
-               				validate		= PSSharedAlbumDialog.validateDate,
                     		alignment		= 'left',
                     		font			= '<system/small>',
                     		width 			= columnWidth.stop,
