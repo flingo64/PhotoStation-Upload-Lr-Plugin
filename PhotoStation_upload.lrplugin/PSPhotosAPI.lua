@@ -1756,7 +1756,10 @@ function Photos.getSharedAlbumUrls(h, publishSettings, albumName)
 
 	privateUrl 	= publishSettings.proto  .. "://" .. publishSettings.servername .. '/#/album/' .. albumId
 	publicUrl 	= publishSettings.proto  .. "://" .. publishSettings.servername .. '/mo/sharing/' .. albumInfo.passphrase
-	publicUrl2 	= publishSettings.proto2 .. "://" .. publishSettings.servername2 .. '/mo/sharing/' .. albumInfo.passphrase
+	publicUrl2 	= iif(	publishSettings.servername2 ~= '',
+						publishSettings.proto2 .. "://" .. publishSettings.servername2 .. '/mo/sharing/' .. albumInfo.passphrase,
+						''
+				)
 
     writeLogfile(3, string.format("Photos.getSharedAlbumUrls('%s') returns '%s', '%s', '%s'\n", albumName, privateUrl, publicUrl, publicUrl2))
 	return privateUrl, publicUrl, publicUrl2
