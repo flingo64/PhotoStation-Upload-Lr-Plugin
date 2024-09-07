@@ -31,9 +31,8 @@ local LrFunctionContext	= import 'LrFunctionContext'
 local LrPrefs			= import 'LrPrefs'
 local LrTasks			= import 'LrTasks'
 
-local bind = LrView.bind
-local share = LrView.share
-local conditionalItem = LrView.conditionalItem
+local bind 				= LrView.bind
+local conditionalItem 	= LrView.conditionalItem
 
 -- Photo StatLr plug-in
 require "PSDialogs"
