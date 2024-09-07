@@ -45,6 +45,9 @@ local LrShell 			= import 'LrShell'
 require "PSUtilities"
 require "PSDialogs"
 
+local bind 				= LrView.bind
+local conditionalItem 	= LrView.conditionalItem
+
 --============================================================================--
 
 PSUploadExportDialogSections = {}
@@ -77,9 +80,6 @@ function PSUploadExportDialogSections.sectionsForBottomOfDialog( f, propertyTabl
 --	writeLogfile(2, 'sectionsForBottomOfDialog(): starting....\n')
 
 --	local f = LrView.osFactory()
-	local bind = LrView.bind
-	local share = LrView.share
-	local conditionalItem = LrView.conditionalItem
 
 	if propertyTable.isCollection == nil then
 		propertyTable.isCollection = false
