@@ -701,7 +701,7 @@ function PSDialogs.converterToolsView(f, propertyTable)
 			title	= 'Converter Tools',
 			fill_horizontal = 1,
 
-    		f:row {
+			f:row {
     			f:static_text {
     				title 			= LOC "$$$/PSUpload/PluginDialog/ConverterDescription=Enter the paths of 'ImageMagick convert' and 'dcraw'.\nRequired, if you want to generate thumbs locally or upload videos.\n",
     			},
