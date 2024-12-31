@@ -278,6 +278,7 @@ local PSAPIerrorMsgs = {
     [-1001] = 'Http error: timedOut - check IP address, port and TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
     [-1003] = 'Http error: cannotFindHost - check servername / domainname',
     [-1004] = 'SSL/TLS error: cannotConnectToHost - check IP address, port and TLS/SSL settings on Diskstation - "Intermediate compatibility" is recommended',
+    [-1005] = 'Http(s) connection error: check local FW configuration',
     [-1200] = 'SSL/TLS error: security error - could not establish SSL/TLS connection, check protocol and port',
     [-1202] = 'SSL/TLS error: security error - hostname in server certificate is invalid or does not match servername',
 
