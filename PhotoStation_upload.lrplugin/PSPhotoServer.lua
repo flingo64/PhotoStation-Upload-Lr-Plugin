@@ -80,7 +80,9 @@ PHOTOSERVER_API[50] =  {
         B           =   "640",
         M           =   "320",
         S           =   "120",
-    }
+    },
+	vid_containers 	= "'3gp''avi''mpg''m4v''mp4''mts'",
+	vid_codecs	 	= "'h264'"
 }
 
 PHOTOSERVER_API[60] =  {
@@ -94,12 +96,15 @@ PHOTOSERVER_API[60] =  {
                         PHOTOSERVER_PERSONALAREA .. PHOTOSERVER_PERSONALAREA_XUPLOAD ..
                         PHOTOSERVER_ALBUM_SORT ..
                         PHOTOSERVER_SHAREDALBUM,
-    thumbs    = {
+
+	thumbs    = {
         XL          =   "1280",
         B           =   "640",
         M           =   "320",
         S           =   "120",
-    }
+    },
+	vid_containers	= "'mp4''m4v'",
+	vid_codecs	 	= "'h264'"
 }
 
 PHOTOSERVER_API[65] =  {
@@ -107,14 +112,18 @@ PHOTOSERVER_API[65] =  {
     API 	        =   PhotoStation,
     capabilities    =   PHOTOSERVER_API[60].capabilities ..
                         PHOTOSERVER_METADATA_RATING,
-    thumbs          =   PHOTOSERVER_API[60].thumbs
+    thumbs          =   PHOTOSERVER_API[60].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[60].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[60].vid_codecs
 }
 
 PHOTOSERVER_API[66] =  {
     name	        =   'Photo Station 6.6',
     API 	        =   PhotoStation,
     capabilities    =   PHOTOSERVER_API[65].capabilities,
-    thumbs          =   PHOTOSERVER_API[60].thumbs
+    thumbs          =   PHOTOSERVER_API[65].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[65].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[65].vid_codecs
 }
 
 PHOTOSERVER_API[67] =  {
@@ -123,14 +132,18 @@ PHOTOSERVER_API[67] =  {
     capabilities    =   PHOTOSERVER_API[66].capabilities ..
                         PHOTOSERVER_METADATA_LABEL_PUB ..
                         PHOTOSERVER_SHAREDALBUM_ADVANCED,
-    thumbs          =   PHOTOSERVER_API[60].thumbs
+    thumbs          =   PHOTOSERVER_API[66].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[66].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[66].vid_codecs
 }
 
 PHOTOSERVER_API[68] =  {
     name	        =   'Photo Station 6.8',
     API 	        =   PhotoStation,
     capabilities    =   PHOTOSERVER_API[67].capabilities,
-    thumbs          =   PHOTOSERVER_API[60].thumbs
+    thumbs          =   PHOTOSERVER_API[67].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[67].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[67].vid_codecs
 }
 
 PHOTOSERVER_API[70] =  {
@@ -145,7 +158,9 @@ PHOTOSERVER_API[70] =  {
         XL          =   "1280",
         M           =   "320",
         S           =   "240",
-    }
+    },
+	vid_containers	= "'3gp''avi''m4v''mp4''mpg''mov''mts'",
+	vid_codecs	 	= "'h263''h264''hevc''mpeg1vide''mpeg4''mjpeg''rawvideo'"
 }
 
 PHOTOSERVER_API[71] =  {
@@ -153,46 +168,69 @@ PHOTOSERVER_API[71] =  {
     API 	        =   Photos,
     capabilities    =   PHOTOSERVER_API[70].capabilities ..
                         PHOTOSERVER_METADATA_RATING,
-    thumbs          =   PHOTOSERVER_API[70].thumbs
+    thumbs          =   PHOTOSERVER_API[70].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[70].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[70].vid_codecs
 }
 
 PHOTOSERVER_API[72] =  {
     name	        =   'Photos 1.2',
     API 	        =   Photos,
     capabilities    =   PHOTOSERVER_API[71].capabilities,
-    thumbs          =   PHOTOSERVER_API[70].thumbs
+    thumbs          =   PHOTOSERVER_API[71].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[71].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[71].vid_codecs
 }
 
 PHOTOSERVER_API[73] =  {
     name	        =   'Photos 1.3',
     API 	        =   Photos,
-    capabilities    =   PHOTOSERVER_API[71].capabilities,
-    thumbs          =   PHOTOSERVER_API[70].thumbs
+    capabilities    =   PHOTOSERVER_API[72].capabilities,
+    thumbs          =   PHOTOSERVER_API[72].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[72].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[72].vid_codecs
 }
 
 PHOTOSERVER_API[74] =  {
     name	        =   'Photos 1.4',
     API 	        =   Photos,
-    capabilities    =   PHOTOSERVER_API[71].capabilities,
-    thumbs          =   PHOTOSERVER_API[70].thumbs
+    capabilities    =   PHOTOSERVER_API[73].capabilities,
+    thumbs          =   PHOTOSERVER_API[73].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[73].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[73].vid_codecs
 }
 
 PHOTOSERVER_API[75] =  {
     name	        =   'Photos 1.5',
     API 	        =   Photos,
-    capabilities    =   PHOTOSERVER_API[71].capabilities,
-    thumbs          =   PHOTOSERVER_API[70].thumbs
+    capabilities    =   PHOTOSERVER_API[74].capabilities,
+    thumbs          =   PHOTOSERVER_API[74].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[74].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[74].vid_codecs
 }
 
 PHOTOSERVER_API[76] =  {
     name	        =   'Photos 1.6',
     API 	        =   Photos,
-    capabilities    =   PHOTOSERVER_API[71].capabilities,
-    thumbs          =   PHOTOSERVER_API[70].thumbs
+    capabilities    =   PHOTOSERVER_API[75].capabilities,
+    thumbs          =   PHOTOSERVER_API[75].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[75].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[75].vid_codecs
 }
 
 ---------------------------------------------------------------------------------------------------------
 -- supports(h, metadataType)
 function PHOTOSERVER_API.supports (version, capabilityType)
 	return (string.find(PHOTOSERVER_API[version].capabilities, capabilityType) and true) or false
+end
+
+-- isSupportedVideoContainer(version, videoExt)
+function PHOTOSERVER_API.isSupportedVideoContainer (version, videoExt)
+	return (string.find(PHOTOSERVER_API[version].vid_containers, string.lower(videoExt)) and true) or false
+end
+
+-- isSupportedVideoCodec(h, version, vinfo)
+function PHOTOSERVER_API.isSupportedVideoCodec (version, vinfo)
+
+	return (string.find(PHOTOSERVER_API[version].vid_codecs, string.lower(vinfo.vformat)) and true) or false
 end

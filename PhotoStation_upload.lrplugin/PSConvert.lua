@@ -13,7 +13,6 @@ conversion primitives:
 	- ffmpegGetRotateParams
 	- ffmpegGetThumbFromVideo
 	- getConvertKey
-	- videoIsNativePSFormat
 	- convertVideo
 
 	- writeTitleFile
@@ -610,19 +609,6 @@ function PSConvert.getConvertKey(h, height)
 
 	return #videoConversion, videoConversion[#videoConversion].id
 
-end
-
----------------- videoIsNativePSFormat --------------------------------------------------------------------
--- return true if video format is natively supported by PS, i.e. it needs no conversion
-function PSConvert.videoIsNativePSFormat(videoExt)
-
-	if 	   string.lower(videoExt) == 'mp4'
-		or string.lower(videoExt) == 'm4v'
-	then
-		return true
-	end
-
-	return false
 end
 
 -- convertVideo(h, srcVideoFilename, vinfo, dstHeight, hardRotate, videoQuality, dstVideoFilename) --------------------------

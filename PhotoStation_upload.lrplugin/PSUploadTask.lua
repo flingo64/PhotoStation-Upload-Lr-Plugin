@@ -256,8 +256,8 @@ local function getVideoSettings(videoPath, vinfo, photoServer, converter, orgVid
 	--		- exportParams.orgVideoForceConv was set
 	if tonumber(vinfo.rotation) > 0
 	or tonumber(vinfo.mrotation) > 0
-	or (converter.videoIsNativePSFormat(vidExtOrg) and vinfo.vformat ~= 'h264')
-	or vinfo.aFormat == nil
+	or not photoServer:isSupportedVideoContainer(vidExtOrg)
+	or not photoServer:isSupportedVideoCodec(vinfo)
 	or orgVideoForceConv then
 		videoSettings.replaceOrgVideo = true
 		videoSettings.Orig_Filename = videoSettings.Replace_Filename
@@ -268,7 +268,8 @@ local function getVideoSettings(videoPath, vinfo, photoServer, converter, orgVid
 
 	-- Additional MP4 in orig dimension if video is not MP4
 	-- Non-MP4 will not be opened by PS, so it's safe to upload the original version plus an additional MP4
-	if not converter.videoIsNativePSFormat(vidExtOrg) and not videoSettings.replaceOrgVideo then
+	-- if not converter.videoIsNativePSFormat(vidExtOrg) and not videoSettings.replaceOrgVideo then
+	if not photoServer:isSupportedVideoContainer(vidExtOrg) and not videoSettings.replaceOrgVideo then
 	else
 		videoSettings.addOrigAsMp4 = true
 	end

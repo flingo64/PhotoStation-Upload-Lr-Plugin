@@ -381,6 +381,18 @@ function PhotoStation.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- isSupportedVideoContainer(h, videoExt)
+function PhotoStation.isSupportedVideoContainer (h, videoExt)
+	return PHOTOSERVER_API.isSupportedVideoContainer (h.serverVersion, videoExt)
+end
+
+---------------------------------------------------------------------------------------------------------
+-- isSupportedVideoCodec(h, vinfo)
+function PhotoStation.isSupportedVideoCodec (h, vinfo)
+	return PHOTOSERVER_API.isSupportedVideoCodec (h.serverVersion, vinfo)
+end
+
+---------------------------------------------------------------------------------------------------------
 -- validateServername(view, servername)
 -- a valid servername looks like
 -- 		<name_or_ip> or 

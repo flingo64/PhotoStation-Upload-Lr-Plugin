@@ -853,6 +853,30 @@ function Photos.supports (h, capabilityType)
 end
 
 ---------------------------------------------------------------------------------------------------------
+-- isSupportedVideoContainer(h, videoExt)
+function Photos.isSupportedVideoContainer (h, videoExt)
+	local result = PHOTOSERVER_API.isSupportedVideoContainer (h.serverVersion, videoExt)
+	writeLogfile(3,
+		string.format("Photos.isSupportedVideoContainer(PhotoServerVersion: %s, VideoExtension: %s) returns %s\n",
+			h.serverVersion, videoExt, result
+		)
+	)
+	return result
+end
+
+---------------------------------------------------------------------------------------------------------
+-- isSupportedVideoCodec(h, vinfo)
+function Photos.isSupportedVideoCodec (h, vinfo)
+	local result = PHOTOSERVER_API.isSupportedVideoCodec (h.serverVersion, vinfo)
+	writeLogfile(3,
+		string.format("Photos.isSupportedVideoCodec(PhotoServerVersion:%s, VCodec:%s) returns %s\n",
+			h.serverVersion, vinfo.vformat, result
+		)
+	)
+	return result
+end
+
+---------------------------------------------------------------------------------------------------------
 -- validateServername(view, servername)
 -- a valid servername looks like
 -- 		<name_or_ip>:<psPort> or
