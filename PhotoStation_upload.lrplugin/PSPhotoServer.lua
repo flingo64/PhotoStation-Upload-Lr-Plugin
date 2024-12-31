@@ -218,6 +218,15 @@ PHOTOSERVER_API[76] =  {
 	vid_codecs	 	= 	PHOTOSERVER_API[75].vid_codecs
 }
 
+PHOTOSERVER_API[77] =  {
+    name	        =   'Photos 1.7',
+    API 	        =   Photos,
+    capabilities    =   PHOTOSERVER_API[76].capabilities,
+    thumbs          =   PHOTOSERVER_API[76].thumbs,
+	vid_containers 	= 	PHOTOSERVER_API[76].vid_containers,
+	vid_codecs	 	= 	PHOTOSERVER_API[76].vid_codecs
+}
+
 ---------------------------------------------------------------------------------------------------------
 -- supports(h, metadataType)
 function PHOTOSERVER_API.supports (version, capabilityType)
