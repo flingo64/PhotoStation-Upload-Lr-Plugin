@@ -1,12 +1,24 @@
 Photo StatLr Changelog
 ======================
+
+Version 7.4.1
+-------------
+### New Featues:
+
+### Changes:
+- All PhotoServers:
+	- Native Video format support (which video containers/codecs do not need to be transcoded for the PhotoServer) is now configurable per PhotoServer API version
+	- Added 'official' support for Photos 1.7
+	- Update list of tested OS and Lr version
+	- Added description for error code -1005 (macOS)
+
 Version 7.4.0
 -------------
 ### New Featues:
 - Photos:
   - Support for Shared Albums
 ### Changes:
-- All:PhotoServers
+- All PhotoServers:
   - MacOS: Show error messages rather than error codes for local LrHttp errors
   - Hide passwords in log messages
 - Photos:
