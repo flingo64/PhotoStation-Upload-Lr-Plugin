@@ -12,8 +12,8 @@ __[Important note for updating to V3.6.x and above]releases/tag/v3.6.0)__<br>
 
 Forum threads: 
 - [English Synology forum](https://community.synology.com/enu/forum/17/post/80082)
-- [German Synology forum - Photo Station](https://www.synology-forum.de/showthread.html?62754-Lightroom-Export-Plugin-PhotoStation-Upload)
-- [German Synology forum - Photos](https://www.synology-forum.de/threads/photo-statlr-lightroom-plugin-fuer-synology-photos.118856/)
+- [German Synology forum - Photo Station](https://www.synology-forum.de/threads/lightroom-export-plugin-photostation-upload.62754/)
+- [German Synology forum - Photos](https://www.synology-forum.de/threads/photo-statlr-lightroom-plugin-fuer-synology-photos.118856//)
 
 [Support Page](https://messmer-online.de/index.php/software/11-photo-statlr)<br>
 [Donate to a good cause](https://messmer-online.de/index.php/software/donate-for-photo-statlr)<br>
@@ -42,7 +42,7 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
 * Synology Photos:
-	Photos 1.0 - 1.7
+	Photos 1.0 - 1.8
 * For local thumbnail generation and for video upload, we need the following tools (not included, check the links under [Credits](#credits)). Alternatively, you may use the Synology Photo Station Uploader, which includes the required components:
 	- ImageMagick/convert(.exe) 7.x
 	- ffmpeg/ffmpeg(.exe) 4.x
