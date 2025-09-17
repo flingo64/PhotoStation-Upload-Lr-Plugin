@@ -99,6 +99,8 @@ local LrPathUtils = import 'LrPathUtils'
 local LrHttp = import 'LrHttp'
 local LrDate = import 'LrDate'
 
+require "PSLrUtilities"
+
 -- #####################################################################################################
 -- ########################## PhotoStation object ######################################################
 -- #####################################################################################################
@@ -1150,7 +1152,7 @@ function PhotoStation.uploadPictureFile(h, srcFilename, srcDateTime, dstDir, dst
 	if thisPhoto ~= lastPhoto then
 		if position ~= 'FIRST' then
 			writeLogfile(1, string.format("uploadPictureFile(%s) to (%s - %s - %s) interrupts upload of %s\n",
-										LrPathUtils.leafName(srcFilename), thisPhoto, position, picType, lastPhoto))
+										PSLrUtilities.leafName(srcFilename), thisPhoto, position, picType, lastPhoto))
 		end
 		lastPhoto = thisPhoto
 	end
@@ -1964,7 +1966,7 @@ function PhotoStationPhoto.new(photoServer, photoPath, isVideo, infoTypeList, us
 	end
 
 	if string.find(infoTypeList, 'photo') then
-		local photoInfoFromList, errorCode = photoServer:getPhotoInfoFromList('album', normalizeDirname(LrPathUtils.parent(photoPath)), photoPath, isVideo, useCache)
+		local photoInfoFromList, errorCode = photoServer:getPhotoInfoFromList('album', normalizeDirname(PSLrUtilities.parent(photoPath)), photoPath, isVideo, useCache)
 		if photoInfoFromList then
 			photoInfo = tableDeepCopy(photoInfoFromList)
 		else
@@ -2036,7 +2038,7 @@ end
 function PhotoStationPhoto:getTitle()
 	if not self.info then return '' end
 	-- ignore pseudo title (== filename)
-	return iif(self.info.title == LrPathUtils.removeExtension(LrPathUtils.leafName(self.photoPath)), '', ifnil(self.info.title, ''))
+	return iif(self.info.title == PSLrUtilities.removeExtension(PSLrUtilities.leafName(self.photoPath)), '', ifnil(self.info.title, ''))
 end
 
 function PhotoStationPhoto:getType()

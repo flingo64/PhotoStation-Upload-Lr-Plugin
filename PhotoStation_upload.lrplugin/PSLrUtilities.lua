@@ -75,6 +75,56 @@ local LrProgressScope 	= import 'LrProgressScope'
 
 PSLrUtilities = {}
 
+---------------------- Path routines suitable for Photo Servers ---------------------------------------
+-- These routines are equivalents to LrPathUtils functions, but won't change umlaut encoding
+
+function PSLrUtilities.addExtension(basename, extension)
+	writeLogfile(5, string.format("PSLrUtilities.addExtension(%s, %s) returns %s\n", basename, extension, basename .. '.' .. extension))
+	return basename .. '.' .. extension
+end
+
+function PSLrUtilities.child(parent, leaf)
+	writeLogfile(5, string.format("PSLrUtilities.child(%s, %s) returns %s\n", parent, leaf, parent .. '/' .. leaf))
+	return parent .. '/' .. leaf
+end
+
+function PSLrUtilities.extension(path)
+	local extension = string.match(path, '.*%.([^%.]+)')
+	if extension == nil then extension = '' end
+	writeLogfile(5, string.format("PSLrUtilities.extension(%s) returns '%s'\n", path, extension))
+	return extension
+end
+
+function PSLrUtilities.leafName(path)
+	writeLogfile(5, string.format("PSLrUtilities.leafName(%s) returns %s\n", path, string.match(path, '.*[/\\]([^/\\]+)')))
+	return string.match(path, '.*[/\\]([^/\\]+)')
+end
+
+function PSLrUtilities.makeRelative(path, base)
+	writeLogfile(5, string.format("PSLrUtilities.makeRelative(%s, %s) returns %s\n", path, base, string.gsub(path, '^' .. base .. '[/\\]', '')))
+	return string.gsub(path, '^' .. base .. '[/\\]', '')
+end
+
+function PSLrUtilities.parent(path)
+	local parent = string.match(path, '(.+)[/\\][^/\\]+')
+	if parent == nil then parent = '/' end
+	writeLogfile(5, string.format("PSLrUtilities.parent(%s) returns %s\n", path, parent))
+
+	return parent
+end
+
+function PSLrUtilities.removeExtension(path)
+	local basename = string.match(path, '(.+)%.[^.]+')
+	if basename == nil then basename = path end
+	writeLogfile(4, string.format("PSLrUtilities.removeExtension(%s) returns %s\n", path, basename))
+	return basename
+end
+
+function PSLrUtilities.replaceExtension(path, extension)
+	writeLogfile(5, string.format("PSLrUtilities.addExtension(%s, %s) returns %s\n", path, extension, PSLrUtilities.addExtension(PSLrUtilities.removeExtension(path), extension)))
+	return PSLrUtilities.addExtension(PSLrUtilities.removeExtension(path), extension)
+end
+
 --------------------------------------------------------------------------------------------
 -- printError()
 -- Cleanup handler for a function context
@@ -183,11 +233,11 @@ end
 -- 		remoteAbsPath 		- absolute remote path as unix-path
 function PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRoot)
 	local srcPhotoPath 			= srcPhoto:getRawMetadata('path')
-	local srcPhotoDir 			= LrPathUtils.parent(srcPhotoPath)
-	local srcPhotoExtension 	= LrPathUtils.extension(srcPhotoPath)
+	local srcPhotoDir 			= PSLrUtilities.parent(srcPhotoPath)
+	local srcPhotoExtension 	= PSLrUtilities.extension(srcPhotoPath)
 
-	local localRenderedPath 	= LrPathUtils.child(srcPhotoDir, dstFilename)
-	local renderedExtension 	= LrPathUtils.extension(dstFilename)
+	local localRenderedPath 	= PSLrUtilities.child(srcPhotoDir, dstFilename)
+	local renderedExtension 	= PSLrUtilities.extension(dstFilename)
 
 	local localRelativePath
 	local remoteAbsPath
@@ -198,22 +248,23 @@ function PSLrUtilities.getPublishPath(srcPhoto, dstFilename, exportParams, dstRo
 		local vcSuffix =  srcPhoto:getFormattedMetadata('copyName')
 		if not vcSuffix or vcSuffix == '' then vcSuffix = string.sub(srcPhoto:getRawMetadata('uuid'), -3) end
 
-		localRenderedPath = LrPathUtils.addExtension(LrPathUtils.removeExtension(localRenderedPath) .. '-' .. vcSuffix,	renderedExtension)
+		localRenderedPath = PSLrUtilities.addExtension(PSLrUtilities.removeExtension(localRenderedPath) .. '-' .. vcSuffix,	renderedExtension)
 		writeLogfile(3, 'isVirtualCopy: new localRenderedPath is: ' .. localRenderedPath .. '"\n')
 	end
 
 	-- if original and rendered photo extensions are different and 'RAW+JPG to same album' is set, ...
 	if not srcPhoto:getRawMetadata("isVideo") and exportParams.RAWandJPG and (string.lower(srcPhotoExtension) ~= string.lower(renderedExtension)) then
 		-- then append original extension to photoname (e.g. '_rw2.jpg')
-		localRenderedPath = LrPathUtils.addExtension(
-								LrPathUtils.removeExtension(localRenderedPath) .. '_' .. srcPhotoExtension, renderedExtension)
+		localRenderedPath = PSLrUtilities.addExtension(
+								PSLrUtilities.removeExtension(localRenderedPath) .. '_' .. srcPhotoExtension, renderedExtension)
 		writeLogfile(3, 'different extentions and RAW+JPG set: new localRenderedPath is: ' .. localRenderedPath .. '"\n')
 	end
 
 	if exportParams.copyTree then
-		localRelativePath =	string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
+		localRelativePath =	string.gsub(PSLrUtilities.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
+		-- localRelativePath =	string.gsub(LrPathUtils.makeRelative(localRenderedPath, exportParams.srcRoot), "\\", "/")
 	else
-		localRelativePath =	LrPathUtils.leafName(localRenderedPath)
+		localRelativePath =	PSLrUtilities.leafName(localRenderedPath)
 	end
 	remoteAbsPath = iif(dstRoot ~= '', dstRoot .. '/' .. localRelativePath, localRelativePath)
 	writeLogfile(3, string.format("getPublishPath('%s', %s, %s, '%s')\n    returns '%s', '%s'\n",
@@ -505,7 +556,7 @@ function PSLrUtilities.evaluatePlaceholderString(path, srcPhoto, type, published
 	end
 
 	if 	type == 'filename'	then
-		path = LrPathUtils.addExtension(path, LrPathUtils.extension(srcPhoto:getFormattedMetadata('fileName')))
+		path = PSLrUtilities.addExtension(path, PSLrUtilities.extension(srcPhoto:getFormattedMetadata('fileName')))
 	end
 	if type ~= 'tag' then
 		path = normalizeDirname(path)

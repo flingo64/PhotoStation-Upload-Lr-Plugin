@@ -60,8 +60,8 @@ PSUploadTask = {}
 -----------------
 -- getDirAndBasename(photoPath)
 local function getDirAndBasename(photoPath)
-	local picDir = LrPathUtils.parent(photoPath)
-	local picBasename = mkSafeFilename(LrPathUtils.removeExtension(LrPathUtils.leafName(photoPath)))
+	local picDir = PSLrUtilities.parent(photoPath)
+	local picBasename = mkSafeFilename(PSLrUtilities.removeExtension(PSLrUtilities.leafName(photoPath)))
 
 	return picDir, picBasename
 end
@@ -71,7 +71,7 @@ end
 local function getTitleFilename(photoPath, photoServer)
 	if photoServer:supports(PHOTOSERVER_UPLOAD_TITLE) then
 		local picDir, picBasename = getDirAndBasename(photoPath)
-		return LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_TITLE', 'txt'))
+		return PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_TITLE', 'txt'))
 	end
 	return nil
 end
@@ -110,23 +110,23 @@ local function getThumbSettings(photoPath, photoServer, doLargeThumbs, thumbQual
 
 	if photoServer.thumbs.XL then
 		thumbSettings.XL_Dim		= photoServer.thumbs.XL .. 'x' .. photoServer.thumbs.XL ..'>' .. iif(doLargeThumbs, '^', '')
-		thumbSettings.XL_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_XL', picExt))
+		thumbSettings.XL_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_XL', picExt))
 	end
 	if photoServer.thumbs.L then
 		thumbSettings.L_Dim			= photoServer.thumbs.L .. 'x' .. photoServer.thumbs.L ..'>' .. iif(doLargeThumbs, '^', '')
-		thumbSettings.L_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_L', picExt))
+		thumbSettings.L_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_L', picExt))
 	end
 	if photoServer.thumbs.M then
 		thumbSettings.M_Dim			= photoServer.thumbs.M .. 'x' .. photoServer.thumbs.M ..'>' .. iif(doLargeThumbs, '^', '')
-		thumbSettings.M_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_M', picExt))
+		thumbSettings.M_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_M', picExt))
 	end
 	if photoServer.thumbs.B then
 		thumbSettings.B_Dim			= photoServer.thumbs.B .. 'x' .. photoServer.thumbs.B ..'>' .. iif(doLargeThumbs, '^', '')
-		thumbSettings.B_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_B', picExt))
+		thumbSettings.B_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_B', picExt))
 	end
 	if photoServer.thumbs.S then
 		thumbSettings.S_Dim			= photoServer.thumbs.S .. 'x' .. photoServer.thumbs.S ..'>' .. iif(doLargeThumbs, '^', '')
-		thumbSettings.S_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_S', picExt))
+		thumbSettings.S_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_S', picExt))
 	end
 
 	return thumbSettings
@@ -214,14 +214,14 @@ end
 -- get additional video settings for a photo based on photoServer and export params
 local function getVideoSettings(videoPath, vinfo, photoServer, converter, orgVideoForceConv, addVideoQuality, addVideoUltra, addVideoHigh, addVideoMed, addVideoLow)
 	local picDir, picBasename 	= getDirAndBasename(videoPath)
-	local vidExtOrg 			= LrPathUtils.extension(videoPath)
+	local vidExtOrg 			= PSLrUtilities.extension(videoPath)
 	local vidExt 				= 'mp4'
 
 	local videoSettings = {
-		MOB_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MOB', vidExt)), 	--  240p
-		LOW_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_LOW', vidExt)),	--  360p
-		MED_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_MED', vidExt)),	--  720p
-		HIGH_Filename	= LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename .. '_HIGH', vidExt)),	-- 1080p
+		MOB_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_MOB', vidExt)), 	--  240p
+		LOW_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_LOW', vidExt)),	--  360p
+		MED_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_MED', vidExt)),	--  720p
+		HIGH_Filename	= PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename .. '_HIGH', vidExt)),	-- 1080p
 	}
 
 	videoSettings.convParams = {
@@ -268,11 +268,11 @@ local function getVideoSettings(videoPath, vinfo, photoServer, converter, orgVid
 
 	-- Additional MP4 in orig dimension if video is not MP4
 	-- Non-MP4 will not be opened by PS, so it's safe to upload the original version plus an additional MP4
-	-- if not converter.videoIsNativePSFormat(vidExtOrg) and not videoSettings.replaceOrgVideo then
-	if not photoServer:isSupportedVideoContainer(vidExtOrg) and not videoSettings.replaceOrgVideo then
-	else
-		videoSettings.addOrigAsMp4 = true
-	end
+	-- if not photoServer:isSupportedVideoContainer(vidExtOrg) and not videoSettings.replaceOrgVideo then
+	-- 	videoSettings.addOrigAsMp4 = false
+	-- else
+	-- 	videoSettings.addOrigAsMp4 = true
+	-- end
 
 	return videoSettings
 end
@@ -280,7 +280,7 @@ end
 -----------------
 -- uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exportParams, vinfo)
 --[[
-	generate all required thumbnails, at least one video with alternative resolution (if we don't do, Photo Station will do)
+	generate all required thumbnails, and for PhotoStation at least one video with alternative resolution (if we don't do, Photo Station will do)
 	and upload thumbnails, alternative video and the original video as a batch.
 	The upload batch must start with any of the thumbs and end with the original video.
 	When uploading to Photo Station 6, we don't need to upload the THUMB_L
@@ -290,7 +290,7 @@ local function uploadVideo(renderedVideoPath, srcPhoto, dstDir, dstFilename, exp
 	local photoServer = exportParams.photoServer
 	local picDir, picBasename = getDirAndBasename(renderedVideoPath)
 	local picExt = 'jpg'
-	local thmb_ORG_Filename = LrPathUtils.child(picDir, LrPathUtils.addExtension(picBasename, picExt))
+	local thmb_ORG_Filename = PSLrUtilities.child(picDir, PSLrUtilities.addExtension(picBasename, picExt))
 	local retcode
 
 	-- upload file timestamp: PS uses the file timestamp as capture date for videos
@@ -706,10 +706,10 @@ local function checkMoved(publishedCollection, exportContext, exportParams)
     		)
     		nMoved = nMoved + 1
     	else
-    		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, LrPathUtils.leafName(publishedPath), exportParams, dstRoot)
+    		local localPath, remotePath = PSLrUtilities.getPublishPath(srcPhoto, PSLrUtilities.leafName(publishedPath), exportParams, dstRoot)
     		writeLogfile(3, "CheckMoved(" .. tostring(i) .. ", s= "  .. srcPath  .. ", r =" .. remotePath .. ", lastRemote= " .. publishedPath .. ", edited= " .. tostring(edited) .. ")\n")
     		-- ignore leafname: might be different due to renaming options
-    		if LrPathUtils.parent(remotePath) ~= LrPathUtils.parent(publishedPath) then
+    		if PSLrUtilities.parent(remotePath) ~= PSLrUtilities.parent(publishedPath) then
     			writeLogfile(2, "CheckMoved(" .. localPath .. "): Must be moved at target from " .. publishedPath ..
     							" to " .. remotePath .. ", edited= " .. tostring(edited) .. "\n")
     			catalog:withWriteAccessDo(
@@ -781,9 +781,9 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 
 			local srcPhoto = rendition.photo
 			local srcPath = srcPhoto:getRawMetadata("path")
-			local srcFilename = LrPathUtils.leafName(srcPath)
-			local renderedFilename = LrPathUtils.leafName( pathOrMessage )
-			local renderedExtension = LrPathUtils.extension(renderedFilename)
+			local srcFilename = PSLrUtilities.leafName(srcPath)
+			local renderedFilename = PSLrUtilities.leafName( pathOrMessage )
+			local renderedExtension = PSLrUtilities.extension(renderedFilename)
 			local dstRoot
 			local dstDir
 			local dstFilename
@@ -807,7 +807,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
     			else
     				dstFilename = srcFilename
     			end
-       			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
+       			dstFilename = 	PSLrUtilities.replaceExtension(dstFilename, renderedExtension)
 
     			-- check if dstRoot or dstFilename contains missing required metadata ('?') (which means: skip photo)
     			skipPhoto = iif(string.find(dstRoot, '?', 1, true) or string.find(dstFilename, '?', 1, true), true, false)
@@ -826,7 +826,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
 				 								ifnil(publishedPhotoId, '<Nil>'), newPublishedPhotoId))
 
 				-- if photo was renamed locally ...
-				if LrPathUtils.leafName(publishedPhotoId) ~= LrPathUtils.leafName(newPublishedPhotoId) then
+				if PSLrUtilities.leafName(publishedPhotoId) ~= PSLrUtilities.leafName(newPublishedPhotoId) then
 						writeLogfile(1, 'MovePhotos: Cannot move renamed photo from "' .. publishedPhotoId .. '" to "' .. newPublishedPhotoId .. '"!\n')
 						skipPhoto = true
 
@@ -847,7 +847,7 @@ local function movePhotos(publishedCollection, exportContext, exportParams)
     						dstDir = dstRoot
     					end
     				else
-    					dstDir = exportParams.photoServer:createTree(LrPathUtils.parent(srcPath), exportParams.srcRoot, dstRoot,
+    					dstDir = exportParams.photoServer:createTree(PSLrUtilities.parent(srcPath), exportParams.srcRoot, dstRoot,
     										dirsCreated)
     				end
 
@@ -1040,9 +1040,9 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 
 			local srcPhoto 			= rendition.photo
 			local srcPath 			= srcPhoto:getRawMetadata("path")
-			local srcFilename 		= LrPathUtils.leafName(srcPath)
-			local renderedFilename 	= LrPathUtils.leafName(pathOrMessage)
-			local renderedExtension = LrPathUtils.extension(renderedFilename)
+			local srcFilename 		= PSLrUtilities.leafName(srcPath)
+			local renderedFilename 	= PSLrUtilities.leafName(pathOrMessage)
+			local renderedExtension = PSLrUtilities.extension(renderedFilename)
 			local dstRoot
 			local dstDir
 			local dstFilename
@@ -1070,7 +1070,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 			else
 				dstFilename = iif(publishMode == 'Export', 	renderedFilename, srcFilename)
 			end
-   			dstFilename = 	LrPathUtils.replaceExtension(dstFilename, renderedExtension)
+   			dstFilename = 	PSLrUtilities.replaceExtension(dstFilename, renderedExtension)
 
 			-- check if dstRoot or dstFilename contains missing required metadata ('?') (which means: skip photo)
    			skipPhoto = iif(string.find(dstRoot, '?', 1, true) or string.find(dstFilename, '?', 1, true), true, false)
@@ -1115,7 +1115,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 					end
 				end
 				publishedPhotoId = newPublishedPhotoId
-				dstFilename = LrPathUtils.leafName(publishedPhotoId)
+				dstFilename = PSLrUtilities.leafName(publishedPhotoId)
 			end
 
 			if skipPhoto then
@@ -1160,7 +1160,7 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
     						dstDir = dstRoot
     					end
     				else
-    					dstDir = exportParams.photoServer:createTree(LrPathUtils.parent(srcPath), exportParams.srcRoot, dstRoot,
+    					dstDir = exportParams.photoServer:createTree(PSLrUtilities.parent(srcPath), exportParams.srcRoot, dstRoot,
     										dirsCreated)
     				end
 
@@ -1203,14 +1203,14 @@ function PSUploadTask.processRenderedPhotos( functionContext, exportContext )
 						)
 					)
 				then
-					if string.find('Export,Publish', publishMode, 1, true) then	writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' failed!\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then	writeLogfile(1, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. PSLrUtilities.child(dstDir, dstFilename) .. "' failed!\n") end
 					table.insert( failures, srcPath )
 					rendition:uploadFailed("Upload failed")
 				else
 					if publishedCollection then
 						PSSharedAlbumMgmt.noteSharedAlbumUpdates(sharedAlbumUpdates, sharedPhotoUpdates, srcPhoto, publishedPhotoId, publishedCollection.localIdentifier, exportParams, publishedCollection:getService():getName())
 					end
-					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. LrPathUtils.child(dstDir, dstFilename) .. "' done.\n") end
+					if string.find('Export,Publish', publishMode, 1, true) then writeLogfile(2, "Upload of '" .. srcPhoto:getRawMetadata('path') .. "' to '" .. PSLrUtilities.child(dstDir, dstFilename) .. "' done.\n") end
 				end
 			end
 
