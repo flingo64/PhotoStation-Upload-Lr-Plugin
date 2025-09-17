@@ -116,7 +116,7 @@ end
 function PSLrUtilities.removeExtension(path)
 	local basename = string.match(path, '(.+)%.[^.]+')
 	if basename == nil then basename = path end
-	writeLogfile(4, string.format("PSLrUtilities.removeExtension(%s) returns %s\n", path, basename))
+	writeLogfile(5, string.format("PSLrUtilities.removeExtension(%s) returns %s\n", path, basename))
 	return basename
 end
 
