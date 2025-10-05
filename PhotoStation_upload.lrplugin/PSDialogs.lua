@@ -1211,6 +1211,13 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 					fill_horizontal = 1,
 					value 			= bind 'password',
 				},
+
+				f:checkbox {
+					title 			= LOC "$$$/PSUpload/ExportDialog/UseOtp=Use Otp",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/UseOtpTT=Use Otp:\nSelect only, if your user has OTP activated.",
+					fill_horizontal = 1,
+					value 			= bind 'useOtp',
+				},
 			},
 
 			f:separator { fill_horizontal = 1 },

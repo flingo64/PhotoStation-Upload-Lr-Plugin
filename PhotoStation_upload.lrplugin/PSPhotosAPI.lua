@@ -938,18 +938,19 @@ end
 
 ---------------------------------------------------------------------------------------------------------
 -- Photos.new: initialize a Photos API object
-function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password)
+function Photos.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, password, otp)
 	local h = {} -- the handle
 	local apiInfo = {}
 
-	writeLogfile(4, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=***)\n", 
-                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username))
+	writeLogfile(4, string.format("Photos.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, otp=%s, password=***)\n", 
+                                    serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username, otp))
 
 	h.serverUrl 	= serverUrl
 	h.serverTimeout = serverTimeout
 	h.serverVersion	= version
     h.username	    = username
     h.password	    = password
+    h.otp 			= otp
 
 	if usePersonalPS then
 		h.userid 		= personalPSOwner
@@ -1004,6 +1005,7 @@ function Photos.login(h)
 		session 			= "webui",
 		account				= urlencode(h.username),
 		passwd				= urlencode(h.password),
+		otp_code			= h.otp,
 --		logintype			= "local",
 		hhid 				= h.hhid,
 		enable_syno_token 	= "yes",
