@@ -534,12 +534,17 @@ function PSConvert.ffmpegGetAdditionalInfo(h, srcPhoto, renderedVideoFilename, e
 		vinfo.realDimension = string.format("%dx%d", vinfo.realWidth, vinfo.height)
 	end
 
-	-------------- rotation: search for avp like:  -------------------------
-	-- rotate          : 90
+	-------------- rotation:  -------------------------
+	-- as of version 5 ffmpeg no longer returns a 'rotate' tag, but a 'displaymatrix: rotation' tag
+	-- with a slidely different syntax:
+	--	'rotate          : 0'		--> 'displaymatrix: rotation of -0.00 degrees'
+	--	'rotate          : 90'		--> 'displaymatrix: rotation of -90.00 degrees'
+	--	'rotate          : 180'		--> 'displaymatrix: rotation of -180.00 degrees'
+	--	'rotate          : 270'		-->	'displaymatrix: rotation of 90.00 degrees'
 	vinfo.rotation = '0'
-	for v in string.gmatch(ffmpegReport, "rotate%s+:%s+([%d]+)") do
-		vinfo.rotation = v
-		writeLogfile(4, string.format("\trotation: %s\n", vinfo.rotation))
+	for v in string.gmatch(ffmpegReport, "displaymatrix:%s+rotation%s+of%s+(-*[%d]+)") do
+		vinfo.rotation = iif(v == "-180", 180, iif(v == 0, 0, v + 180))
+		writeLogfile(4, string.format("\trotation: %s (displaymatrix rotation: %s)\n", vinfo.rotation, v))
 	end
 
 	-- Meta-Rotation: search for "Rotate-nn" in keywords
