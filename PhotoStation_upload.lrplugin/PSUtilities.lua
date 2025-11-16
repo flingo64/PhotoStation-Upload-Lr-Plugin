@@ -800,25 +800,27 @@ function openSession(exportParams, publishedCollection, operation)
 			if not exportParams.converter then return false, 'Cannot initialize converters, check logfile for detailed information' end
 	end
 
-	-- Login to Photo Server: not required for CheckMoved, not required on Download if Download was disabled
-	if not exportParams.photoServerLoggedIn then
-		if 	exportParams.publishMode ~= 'CheckMoved'
-		and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
-			local errorCode
-            exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login()
-			if not exportParams.photoServerLoggedIn then
-				local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
-										iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space"),
-										iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
-										exportParams.serverUrl,
-										exportParams.photoServer.getErrorMsg(errorCode))
-				writeLogfile(1, errorMsg)
-				return 	false, errorMsg
-			end
-			writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space") ..
-									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") ..
-									"(" .. exportParams.serverUrl .. ") OK\n")
+	-- Login to Photo Server, if required. Not required, if:
+	-- 	- already logged in or 
+	-- 	- PublisMode is 'CheckMoved', or 
+	--	- PublishMode is 'GetComments/GetRatings' and  Download is disabled
+	if not exportParams.photoServerLoggedIn
+	and exportParams.publishMode ~= 'CheckMoved'
+	and not (string.find('GetCommentsFromPublishedCollection,GetRatingsFromPublishedCollection', operation) and exportParams.downloadMode == 'No') then
+		local errorCode
+		exportParams.photoServerLoggedIn, errorCode = exportParams.photoServer:login()
+		if not exportParams.photoServerLoggedIn then
+			local errorMsg = string.format("Login to %s %s at\n%s\nfailed!\nReason: %s\n",
+									iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space"),
+									iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, ""),
+									exportParams.serverUrl,
+									exportParams.photoServer.getErrorMsg(errorCode))
+			writeLogfile(1, errorMsg)
+			return 	false, errorMsg
 		end
+		writeLogfile(2, "Login to " .. iif(exportParams.usePersonalPS, "Personal Space of ", "Shared Space") ..
+								iif(exportParams.usePersonalPS and exportParams.personalPSOwner,exportParams.personalPSOwner, "") ..
+								"(" .. exportParams.serverUrl .. ") OK\n")
 	end
 
 	-- exiftool: required if Export/Publish and exif translation was selected, or if downloading faces
