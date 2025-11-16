@@ -1,6 +1,21 @@
 Photo StatLr Changelog
 ======================
 
+Version 7.5.0
+-------------
+### New Featues:
+- Added generic support for 2FA / OTP authentication: supported by Photos only
+  
+### Bugfixes:
+- Fixed issue #81: video rotation was not performed with ffmpgeg version 5 and and above, due code using obsoleted metadata tag 'rotation', new code will look for tag 'displaymatrix' which is supported in ffmpeg 4.x and above
+- Photos / MacOS: fixed an issue where umlauts in path or filenames would prevent photos from being uploaded to Photos
+
+### Changes:
+- Updated list of tested OS and Lr versions
+
+- Photos:
+	- Added 'official' support for Photos 1.8  
+
 Version 7.4.1
 -------------
 ### New Featues:
@@ -9,7 +24,7 @@ Version 7.4.1
 - All PhotoServers:
 	- Native Video format support (which video containers/codecs do not need to be transcoded for the PhotoServer) is now configurable per PhotoServer API version
 	- Added 'official' support for Photos 1.7
-	- Update list of tested OS and Lr version
+	- Updated list of tested OS and Lr versions
 	- Added description for error code -1005 (macOS)
 
 Version 7.4.0

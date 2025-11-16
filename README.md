@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.4.1<br>
+Version 7.5.0<br>
 __[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
@@ -35,17 +35,17 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 	- Windows 8.0, 8.1
 	- Windows 10, Windows 11
 	- macOS X:	7.5 - 16.0
-	- macOS 11.0.1 - macOS 15.1.1 (Sequoia)
+	- macOS 11.0.1 - macOS 15.6.1 (Sequoia)
 * Lightroom: 
   	- Lr 4.0 - 6.14
-	- Lr Classic 7.0 - 14.1
+	- Lr Classic 7.0 - 15.0.1
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
 * Synology Photos:
 	Photos 1.0 - 1.8
-* For local thumbnail generation and for video upload, we need the following tools (not included, check the links under [Credits](#credits)). Alternatively, you may use the Synology Photo Station Uploader, which includes the required components:
-	- ImageMagick/convert(.exe) 7.x
-	- ffmpeg/ffmpeg(.exe) 4.x
+* For local thumbnail generation and for video upload, we need the following tools (not included, check the links under [Credits](#credits)):
+	- ImageMagick/magick(.exe) 7.x
+	- ffmpeg/ffmpeg(.exe) 4.x, 5.x, 6.x, 7.x (see #81)
 * When uploading RAW (original) photos with locally generated thumbnails:
 	- ImageMagick/dcraw.exe (Win) or dcraw/dcraw (MacOS)
 * For metadata translations (e.g Lr/Picasa face regions, ratings and color labels):
@@ -63,8 +63,8 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 		"PhotoStation_upload.lrplugin" 
 ![](Screenshots-Windows/01-Install-Plugin.jpg)
  - Select the 'Photo StatLr' plugin, open the section 'General Settings' and make sure the paths to the required converters and tools are correct.\
- Note for MacOS: please use the real path of the tools, not a symbolic link! To find out the realpath of the convert tool for example, you may use the following command:\
-  `which convert | xargs realpath`
+ Note for MacOS: please use the real path of the tools, not a symbolic link! To find out the realpath of the magick tool for example, you may use the following command:\
+  `which magick | xargs realpath`
  ![](Screenshots-Windows/03-Install_OK.jpg)
 
 # Description
@@ -331,7 +331,7 @@ Face regions can't be downloaded for cropped photos, since Lr won't accept the f
 tbd.
 
 # Copyright
-Copyright(c) 2015-2024, Martin Messmer
+Copyright(c) 2015-2025, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -348,17 +348,16 @@ along with Photo StatLr.  If not, see <http://www.gnu.org/licenses/>.
 
 # Credits
 Photo StatLr uses the following phantastic free software to do its job:
-- [convert](http://www.imagemagick.org/) by ImageMagick
+- [magick](http://www.imagemagick.org/) by ImageMagick
 - [dcraw](http://www.dechifro.org/dcraw/) by David J. Coffin
 - [ffmpeg](https://www.ffmpeg.org/) by ffmpeg.org
 - [JSON.lua](http://regex.info/blog/lua/json) by Jeffrey Friedl
 - [exiftool](http://www.sno.phy.queensu.ca/~phil/exiftool/) by Phil Harvey
-- Optional: [Synology Photo Station Uploader](https://www.synology.com/de-de/support/download/DS218+?version=6.2#utilities) by Synology
 
 Thanks to all you folks providing these real valuable software gems. This plugin would be nothing without it!
 
 Thanks for contributing code to the project:
-	- Filip Kis (metadata placeholder {LrPC})
-
+	- Filip Kis metadata placeholder {LrPC}
+	- ben-coding-code: 2FA/OTP support
 Thanks for the amazing, astounding, boooor-ing quotes from:
 http://www.imdb.com/character/ch0000704/quotes ;-)
