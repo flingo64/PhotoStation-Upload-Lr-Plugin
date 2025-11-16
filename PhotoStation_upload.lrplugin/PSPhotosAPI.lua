@@ -78,6 +78,8 @@ local LrHttp 		= import 'LrHttp'
 local LrDate 		= import 'LrDate'
 local LrTasks		= import 'LrTasks'
 
+require "PSLrUtilities"
+
 -- #####################################################################################################
 -- ########################## Photos object ######################################################
 -- #####################################################################################################
@@ -496,9 +498,9 @@ local function pathIdCacheNormalizePathname(path, type)
 	end
 
 	if type == 'item' then
-		local folderPath = ifnil(LrPathUtils.parent(cachePath), '/')
-		local filename = string.lower(LrPathUtils.leafName(cachePath))
-		cachePath = LrPathUtils.child(folderPath, filename)
+		local folderPath = ifnil(PSLrUtilities.parent(cachePath), '/')
+		local filename = string.lower(PSLrUtilities.leafName(cachePath))
+		cachePath = PSLrUtilities.child(folderPath, filename)
 	end
 	return cachePath
 end
@@ -539,8 +541,8 @@ local function pathIdCacheGetEntry(h, path, type, wantsInfo)
     end
 
     -- Check for the given path in the cache object of its parent folder
-    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
-    local leafName      = LrPathUtils.leafName(path)
+    local parentFolder  = ifnil(PSLrUtilities.parent(path), '/')
+    local leafName      = PSLrUtilities.leafName(path)
 
     if not  folderCache[parentFolder]
     or (
@@ -583,7 +585,7 @@ local function pathIdCacheGetEntry(h, path, type, wantsInfo)
             writeLogfile(4, string.format("pathIdCacheGetEntry(userid:%s, path:'%s') listSubfolders found %d subfolders in '%s'\n", userid, path, #subfolderList, parentFolder))
             folderCache[parentFolder].subfolder = {}
             for i = 1, #subfolderList do
-                folderCache[parentFolder].subfolder[LrPathUtils.leafName(subfolderList[i].name)] = {
+                folderCache[parentFolder].subfolder[PSLrUtilities.leafName(subfolderList[i].name)] = {
                     id  = subfolderList[i].id,
                     type    = 'folder'
                 }
@@ -632,8 +634,8 @@ local function pathIdCacheAddEntry(h, path, id, type, addinfo)
 	if not pathIdCache.cache[userid] then pathIdCacheInitialize(h) end
 	local folderCache = pathIdCache.cache[userid].folder
 
-    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
-    local leafName      = LrPathUtils.leafName(path)
+    local parentFolder  = ifnil(PSLrUtilities.parent(path), '/')
+    local leafName      = PSLrUtilities.leafName(path)
 
     if  type == 'folder' then
         -- folder: generate the folder entry w/o subfolders or items
@@ -679,8 +681,8 @@ local function pathIdCacheRemoveEntry(h, path, type)
 
     if not folderCache then return end
 
-    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
-    local leafName      = LrPathUtils.leafName(path)
+    local parentFolder  = ifnil(PSLrUtilities.parent(path), '/')
+    local leafName      = PSLrUtilities.leafName(path)
 
     if type == 'folder' then
         if path ~= '/' and folderCache[path] then
@@ -743,8 +745,8 @@ function Photos.getFolderId(h, path, doCreate)
 	end
 
     -- folder does not exist but doCreate was set
-    local parentFolder  = ifnil(LrPathUtils.parent(path), '/')
-    local leafName      = LrPathUtils.leafName(path)
+    local parentFolder  = ifnil(PSLrUtilities.parent(path), '/')
+    local leafName      = PSLrUtilities.leafName(path)
     local errorCode
     folderId, errorCode = Photos_createFolder(h, parentFolder, h:getFolderId(parentFolder, doCreate), leafName)
     -- Photos_createFolder() will add the folderPath to the pathIdCache
@@ -826,7 +828,7 @@ end
 function Photos.getPhotoUrl(h, photoPath, isVideo)
 	writeLogfile(3, string.format("getPhotoUrl(server='%s', userid='%s', path='%s'\n)",
 				h.serverUrl, h.userid, photoPath))
-	local folderId	= h:getFolderId(ifnil(LrPathUtils.parent(photoPath),'/'), false)
+	local folderId	= h:getFolderId(ifnil(PSLrUtilities.parent(photoPath),'/'), false)
 	local itemId 	= h:getPhotoId(photoPath, isVideo, false)
 
 	if not folderId or not itemId then
@@ -1065,7 +1067,7 @@ function Photos_createFolder (h, parentDir, parentDirId, newDir)
 
 	if not respArray and errorCode == 641 then
 		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): folder already exists, returning folderId from cache\n", parentDir, ifnil(parentDirId, '<nil>'), newDir))
-		return h:getFolderId(LrPathUtils.child(parentDir, newDir), false)
+		return h:getFolderId(PSLrUtilities.child(parentDir, newDir), false)
 	elseif not respArray then
 		writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s'): return <nil>, %s\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, Photos.getErrorMsg(errorCode)))
 		return nil, errorCode
@@ -1073,7 +1075,7 @@ function Photos_createFolder (h, parentDir, parentDirId, newDir)
 
 	local folderId = respArray.data.folder.id
 
-    pathIdCacheAddEntry(h, LrPathUtils.child(parentDir, newDir), folderId, "folder", nil)
+    pathIdCacheAddEntry(h, PSLrUtilities.child(parentDir, newDir), folderId, "folder", nil)
 
 	writeLogfile(3, string.format("Photos_createFolder('%s', '%s', '%s') returns %d\n", parentDir, ifnil(parentDirId, '<nil>'), newDir, folderId))
 
@@ -1316,7 +1318,7 @@ end
 -- uploadPhotoFiles
 -- upload photo plus its thumbnails (if configured)
 function Photos.uploadPhotoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, photo_Filename, title_Filename, thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename)
-	local dstFilePath = LrPathUtils.child(dstDir, dstFilename)
+	local dstFilePath = PSLrUtilities.child(dstDir, dstFilename)
 
 	local oldPhotoId, oldPhotoInfo = h:getPhotoId(dstFilePath, false, true)
 	if oldPhotoId and oldPhotoInfo then
@@ -1349,7 +1351,7 @@ end
 function Photos.uploadVideoFiles(h, dstDir, dstFilename, dstFileTimestamp, thumbGenerate, video_Filename, title_Filename,
 										thmb_XL_Filename, thmb_L_Filename, thmb_B_Filename, thmb_M_Filename, thmb_S_Filename,
 										vid_Add_Filename, vid_Replace_Filename, convParams, convKeyOrig, convKeyAdd, addOrigAsMp4)
-	local dstFilePath = LrPathUtils.child(dstDir, dstFilename)
+	local dstFilePath = PSLrUtilities.child(dstDir, dstFilename)
 
 	local oldPhotoId, oldPhotoInfo = h:getPhotoId(dstFilePath, true, true)
 	if oldPhotoId and oldPhotoInfo then
@@ -1415,7 +1417,7 @@ function Photos.movePhoto(h, srcPhotoPath, dstFolder, isVideo)
 		writeLogfile(3, string.format('movePhoto(%s): does not exist, returns false\n', srcPhotoPath))
 		return false
 	end
-	local srcFolderId = h:getFolderId(LrPathUtils.parent(srcPhotoPath), false)
+	local srcFolderId = h:getFolderId(PSLrUtilities.parent(srcPhotoPath), false)
 	local dstFolderId = h:getFolderId(dstFolder, false)
 	if not dstFolderId then
 		writeLogfile(3, string.format('movePhoto(%s): does not exist, returns false\n', srcPhotoPath))
@@ -1439,7 +1441,7 @@ function Photos.movePhoto(h, srcPhotoPath, dstFolder, isVideo)
 	if not respArray then return nil, errorCode end
 
     pathIdCacheRemoveEntry(h, srcPhotoPath, 'item')
-    pathIdCacheAddEntry(h, LrPathUtils.child(dstFolder, LrPathUtils.leafName(srcPhotoPath)), photoId, 'item', nil)
+    pathIdCacheAddEntry(h, PSLrUtilities.child(dstFolder, PSLrUtilities.leafName(srcPhotoPath)), photoId, 'item', nil)
 
 	writeLogfile(3, string.format('movePhoto(%s, %s) returns OK\n', srcPhotoPath, dstFolder))
 	return respArray.success, errorCode
@@ -2061,7 +2063,7 @@ function PhotosPhoto.new(photoServer, photoPath, isVideo, infoTypeList, useCache
 	end
 
 	if string.find(infoTypeList, 'photo') then
-		local photoInfoFromList, errorCode = photoServer:getPhotoInfoFromList('album', pathIdCacheNormalizePathname(LrPathUtils.parent(photoPath)), photoPath, nil, useCache)
+		local photoInfoFromList, errorCode = photoServer:getPhotoInfoFromList('album', pathIdCacheNormalizePathname(PSLrUtilities.parent(photoPath)), photoPath, nil, useCache)
 		if photoInfoFromList then
 			photoInfo = tableDeepCopy(photoInfoFromList)
 		else
