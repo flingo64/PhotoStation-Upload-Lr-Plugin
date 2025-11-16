@@ -1005,7 +1005,6 @@ function Photos.login(h)
 		session 			= "webui",
 		account				= urlencode(h.username),
 		passwd				= urlencode(h.password),
-		otp_code			= h.otp,
 --		logintype			= "local",
 		hhid 				= h.hhid,
 		enable_syno_token 	= "yes",
