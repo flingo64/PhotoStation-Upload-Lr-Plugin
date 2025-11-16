@@ -82,6 +82,13 @@ PSDialogs = {}
 
 
 --============================ complex key binding checks ===================================================
+local check2FASupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_AUTH_2FA)
+	end,
+}
+
 local checkPersonalAreaOwner = {
 	keys 		= { 'psVersion',  'usePersonalPS' },
 	operation 	= function( binder, values, fromTable )
@@ -1213,10 +1220,11 @@ function PSDialogs.targetPhotoStationView(f, propertyTable)
 				},
 
 				f:checkbox {
-					title 			= LOC "$$$/PSUpload/ExportDialog/UseOtp=Use Otp",
-					tooltip 		= LOC "$$$/PSUpload/ExportDialog/UseOtpTT=Use Otp:\nSelect only, if your user has OTP activated.",
+					title 			= LOC "$$$/PSUpload/ExportDialog/UseOtp=2FA",
+					tooltip 		= LOC "$$$/PSUpload/ExportDialog/UseOtpTT=Two-factor authentication:\nSelect, if your account has two-factor authentication (2FA) activated.\nYou will be prompted for the OTP during login",
 					fill_horizontal = 1,
 					value 			= bind 'useOtp',
+					visible			= bind(check2FASupport),
 				},
 			},
 

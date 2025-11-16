@@ -33,6 +33,9 @@ PHOTOSERVER_USE_CACHE = true
 
 --======PhotoServer capabilities ==============================================--
 
+-- authentication options --
+PHOTOSERVER_AUTH_2FA 		    	= "'AUTH_2FA'"            -- title
+
 -- metadata support --
 PHOTOSERVER_METADATA_TITLE 		    = "'META_TITLE'"            -- title
 PHOTOSERVER_METADATA_DESCRIPTION	= "'META_DECRIPTION'"       -- description/caption
@@ -149,7 +152,8 @@ PHOTOSERVER_API[68] =  {
 PHOTOSERVER_API[70] =  {
     name	        =   'Photos 1.0',
     API 	        =   Photos,
-    capabilities    =   PHOTOSERVER_METADATA_DESCRIPTION ..
+    capabilities    =   PHOTOSERVER_AUTH_2FA ..
+						PHOTOSERVER_METADATA_DESCRIPTION ..
                         PHOTOSERVER_METADATA_TAG ..
                         PHOTOSERVER_UPLOAD_THUMBS ..
                         PHOTOSERVER_PERSONALAREA ..

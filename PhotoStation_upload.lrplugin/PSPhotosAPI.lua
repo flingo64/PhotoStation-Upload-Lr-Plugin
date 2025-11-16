@@ -1012,6 +1012,11 @@ function Photos.login(h)
 --		format				= "cookie",
 --		format				= "sid",
 	}
+
+	if h.otp ~= "" then
+		apiParams["otp_code"] = h.otp
+	end
+
 	local respArray, errorCode = Photos_API(h, apiParams)
 
 	if not respArray then return false, errorCode end
