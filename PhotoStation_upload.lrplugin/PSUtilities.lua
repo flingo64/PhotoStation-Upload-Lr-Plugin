@@ -714,11 +714,16 @@ function openSession(exportParams, publishedCollection, operation)
 		exportParams.serverUrl = exportParams.proto2 .. "://" .. exportParams.servername2
 	end
 
+	-- Get missing settings, if not stored in preset.
+	if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
+		return false, 'cancel'
+	end
+
 	-- Create a photoServer object in any case
 	if not exportParams.photoServer then
 		local errorCode
 		exportParams.photoServer, errorCode = PHOTOSERVER_API[exportParams.psVersion].API.new(exportParams.serverUrl, exportParams.usePersonalPS, exportParams.personalPSOwner,
-																exportParams.serverTimeout, exportParams.psVersion, exportParams.username, exportParams.password)
+																exportParams.serverTimeout, exportParams.psVersion, exportParams.username, exportParams.password, exportParams.otp)
 		if not exportParams.photoServer then
 			local errorMsg = string.format("Initialization of %s %s (%s) at\n%s\nfailed!\nReason: %s\n",
 			iif(exportParams.usePersonalPS, "Personal ", "Global "),
@@ -789,9 +794,9 @@ function openSession(exportParams, publishedCollection, operation)
 	exportParams.exifTranslate 			= exportParams.exifXlatFaceRegions or exportParams.exifXlatLabel or exportParams.exifXlatRating
 
 	-- Get missing settings, if not stored in preset.
-	if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
-		return false, 'cancel'
-	end
+	--if promptForMissingSettings(exportParams, publishedCollection, operation) == 'cancel' then
+	--	return false, 'cancel'
+	--end
 
 	-- ConvertAPI: required if Export/Publish/Metadata
 	if operation == 'ProcessRenderedPhotos' and string.find('Export,Publish,Metadata', exportParams.publishMode, 1, true) and not exportParams.converter then
@@ -862,6 +867,7 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 	local share = LrView.share
 	local conditionalItem = LrView.conditionalItem
 	local needPw = (ifnil(exportParams.password, "") == "")
+	local needOtp = exportParams.useOtp
 	local needDstRoot = not exportParams.storeDstRoot
 	local needPublishMode = false
 	local needDownloadMode = false
@@ -885,7 +891,7 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 		needLoglevel = true
 	end
 
-	if not (needPw or needDstRoot or needPublishMode or needDownloadMode or needLoglevel) then
+	if not (needPw or needOtp or needDstRoot or needPublishMode or needDownloadMode or needLoglevel) then
 		return "ok"
 	end
 
@@ -931,6 +937,25 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 		},
 	}
 
+	local otpView = f:view {
+		f:row {
+			f:static_text {
+				title = LOC "$$$/PSUpload/ExportDialog/Otp=Otp:",
+				alignment = 'right',
+				width = share 'labelWidth',
+			},
+
+			f:edit_field {
+				value = bind 'otp',
+				tooltip = LOC "$$$/PSUpload/ExportDialog/OtpTT=Enter the OTP for Photo Server access.",
+				truncation = 'middle',
+				immediate = true,
+				width_in_chars = 16,
+				fill_horizontal = 1,
+			},
+		},
+	}
+
 	-- Create the contents for the dialog.
 	local c = f:view {
 		bind_to_object = exportParams,
@@ -938,6 +963,8 @@ function promptForMissingSettings(exportParams, publishedCollection, operation)
 		PSDialogs.missingParamsHeaderView(f, exportParams, operation),
 		f:spacer {	height = 10, },
 		conditionalItem(needPw, passwdView),
+		f:spacer {	height = 10, },
+		conditionalItem(needOtp, otpView),
 		f:spacer {	height = 10, },
 		conditionalItem(needDstRoot, 	 PSDialogs.dstRootView(f, exportParams, isAskForMissingParams)),
 		f:spacer {	height = 10, },

@@ -182,12 +182,12 @@ PSConvert_mt = { __index = PSConvert }
 
 PSConvert.downloadUrlIMConvert			= 'https://imagemagick.org/script/download.php'
 PSConvert.defaultInstallPathIMConvert 	= iif(WIN_ENV,
-    										'C:/Program Files/ImageMagick-7.1.0-Q16-HDRI/convert.exe',
+    										'C:/Program Files/ImageMagick-7.1.0-Q16-HDRI/magick.exe',
     										'/usr/local/bin/convert')
 
 PSConvert.downloadUrlDcraw				= 'http://www.dechifro.org/dcraw/'
 PSConvert.defaultInstallPathDcraw 		= iif(WIN_ENV,
-    										'C:/Program Files/ImageMagick-7.1.0-Q16-HDRI/convert.exe/dcraw.exe',
+    										'C:/Program Files/ImageMagick-7.1.0-Q16-HDRI/dcraw.exe',
     										'/usr/local/bin/dcraw')
 
 PSConvert.downloadUrlFfmpeg				= 'https://ffmpeg.org/download.html'
