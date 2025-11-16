@@ -330,7 +330,7 @@ function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeo
 	local apiInfo = {}
 	local psPath = iif(usePersonalPS, "/~" .. ifnil(personalPSOwner, "unknown") .. "/photo/", "/photo/")
 
-	writeLogfile(4, string.format("PhotoStation.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=***, otp=***)\n",
+	writeLogfile(4, string.format("PhotoStation.new(url=%s, personal=%s, persUser=%s, timeout=%d, version=%d, username=%s, password=***)\n",
                                     serverUrl, usePersonalPS, personalPSOwner, serverTimeout, version, username))
 
 	h.serverUrl 	= serverUrl
@@ -338,7 +338,6 @@ function PhotoStation.new(serverUrl, usePersonalPS, personalPSOwner, serverTimeo
 	h.serverVersion	= version
     h.username	    = username
     h.password	    = password
-    h.otp 			= otp
 
 	h.psAlbumRoot	= psPath .. '#!Albums'
 	h.psWebAPI 		= psPath .. 'webapi/'
@@ -429,8 +428,7 @@ function PhotoStation.login(h)
 					 'version=1&' ..
 --					 'enable_syno_token=true&' ..
 					 'username=' .. urlencode(h.username) .. '&' ..
-					 'password=' .. urlencode(h.password) .. '&' ..
-					 'otp_code=' .. otp
+					 'password=' .. urlencode(h.password)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Auth', formData)
 
