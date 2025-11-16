@@ -77,8 +77,7 @@ exportServiceProvider.exportPresetFields = {
 		{ key = 'personalPSOwner', 	default = '' },		-- owner of the Personal Photo Server to upload to
 		{ key = 'username', 		default = '' },		-- account for Photo Server upload
 		{ key = 'password', 		default = '' },		-- guess what...
-		{ key = 'useOtp', 			default = false },		-- OTP
-		{ key = 'otp', 				default = '' },		-- OTP allways empty
+		{ key = 'useOtp', 			default = false },	-- 2FA / OTP is required
 		{ key = 'psVersion', 		default = 68 },		-- Photo Server version: default PS 6.8
 		{ key = 'uploadTimestamp',	default = 'capture' },-- file timestamp for uploaded photos: 'capture', 'upload' or 'mixed' (photos=upload, videos=capture)
 
