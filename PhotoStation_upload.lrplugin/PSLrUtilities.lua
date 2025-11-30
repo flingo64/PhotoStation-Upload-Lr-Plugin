@@ -101,8 +101,17 @@ function PSLrUtilities.leafName(path)
 end
 
 function PSLrUtilities.makeRelative(path, base)
-	writeLogfile(5, string.format("PSLrUtilities.makeRelative(%s, %s) returns %s\n", path, base, string.gsub(path, '^' .. base .. '[/\\]', '')))
-	return string.gsub(path, '^' .. base .. '[/\\]', '')
+	-- we cannot use string.gsub to remove the base from the path, because it may contain regexp metachars
+	local startIdx, stopIdx = string.find (path, base, 1, true)
+	local result
+
+	if startIdx == 1 then
+		result = string.gsub(string.sub(path, stopIdx + 1, 1000), '^[/\\]', '')
+	else
+  		result = path
+	end
+	writeLogfile(5, string.format("PSLrUtilities.makeRelative(%s, %s) returns %s\n", path, base, result))
+	return result
 end
 
 function PSLrUtilities.parent(path)
