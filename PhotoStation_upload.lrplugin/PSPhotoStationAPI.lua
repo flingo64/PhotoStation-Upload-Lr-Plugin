@@ -431,8 +431,7 @@ function PhotoStation.login(h)
 					 'version=1&' ..
 --					 'enable_syno_token=true&' ..
 					 'username=' .. urlencode(h.username) .. '&' ..
-					 'password=' .. urlencode(h.password) .. '&' ..
-					 'otp_code=' .. otp
+					 'password=' .. urlencode(h.password)
 
 	local respArray, errorCode = PhotoStation.callSynoAPI (h, 'SYNO.PhotoStation.Auth', formData)
 
