@@ -1,6 +1,14 @@
 Photo StatLr Changelog
 ======================
 
+Version 7.5.1
+-------------
+### Bugfixes:
+- Fixed issue #86<br>`"ERROR: That does it, I'm leaving! ! Internal error: '[string "PSPhotosAPI.lua"]:586: attempt to index field '?' (a nil value)'`<br>
+  This error occured when trying to re-publish an already published photo/video via a Published Collection with Tree Mirror copy configured and the mirror base path containing a character out of `+-()[]^$`.<br>This bug was introduced in v 7.5.0. You may experience this issue also in later versions for photos having been published with v7.5.0. If so, you have to delete and re-create the belonging Published Collection. You do not need to remove or re-upload the corresponding photos, though. A publish with PublishMode 'CheckExisting' will do the job.
+- Fixed an exception reported in this [post in the German Synology Forum](https://www.synology-forum.de/threads/lightroom-export-plugin-photostation-upload.62754/)<br>` That does it, I'm leaving! Internal error: '[string "PSLrUtilities.lua"]:87: attempt to concatenate local 'leaf' (a nil value)'`
+  This issue occured when uploading photos to the root folder .<br>This bug was introduced in v 7.5.0.
+
 Version 7.5.0
 -------------
 ### New Featues:

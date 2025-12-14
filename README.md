@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.5.0<br>
+Version 7.5.1<br>
 __[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
