@@ -96,8 +96,9 @@ function PSLrUtilities.extension(path)
 end
 
 function PSLrUtilities.leafName(path)
-	writeLogfile(5, string.format("PSLrUtilities.leafName(%s) returns %s\n", path, string.match(path, '.*[/\\]([^/\\]+)')))
-	return string.match(path, '.*[/\\]([^/\\]+)')
+    local leafName = string.match(path, '.*[/\\]([^/\\]+)') or string.match(path, '([^/\\]+)')
+	writeLogfile(5, string.format("PSLrUtilities.leafName(%s) returns %s\n", path, leafName))
+	return leafName
 end
 
 function PSLrUtilities.makeRelative(path, base)
