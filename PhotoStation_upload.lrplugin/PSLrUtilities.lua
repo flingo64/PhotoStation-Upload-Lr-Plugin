@@ -84,8 +84,9 @@ function PSLrUtilities.addExtension(basename, extension)
 end
 
 function PSLrUtilities.child(parent, leaf)
-	writeLogfile(5, string.format("PSLrUtilities.child(%s, %s) returns %s\n", parent, leaf, parent .. '/' .. leaf))
-	return parent .. '/' .. leaf
+	local child = iif(parent == '/', '', parent) .. '/' .. leaf
+	writeLogfile(5, string.format("PSLrUtilities.child(%s, %s) returns %s\n", parent, leaf, child))
+	return child
 end
 
 function PSLrUtilities.extension(path)
