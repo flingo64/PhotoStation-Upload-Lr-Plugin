@@ -1,6 +1,12 @@
 Photo StatLr Changelog
 ======================
 
+Version 7.5.2
+-------------
+### Changes:
+- Photos:
+	- Do not show unsupported 'Sort Photos' option in Export Dialog and Published Collections
+
 Version 7.5.1
 -------------
 ### Bugfixes:

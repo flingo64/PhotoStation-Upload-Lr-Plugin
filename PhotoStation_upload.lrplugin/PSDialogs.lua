@@ -112,6 +112,12 @@ local checkAddVideoSelected = {
 	end,
 }
 
+local checkSortPhotosSupport = {
+	key			= 'psVersion',
+	transform 	= function( value, fromTable )
+		return PHOTOSERVER_API.supports(value, PHOTOSERVER_ALBUM_SORT)
+	end,
+}
 local checkTitleSupport = {
 	key			= 'psVersion',
 	transform 	= function( value, fromTable )
@@ -1679,6 +1685,7 @@ function PSDialogs.targetAlbumView(f, propertyTable)
 					fill_horizontal = 1,
 					value 			= bind 'sortPhotos',
 					enabled 		= negativeOfKey 'copyTree',
+					visible			= bind(checkSortPhotosSupport)
 				},
 			}),
 		},
