@@ -3,6 +3,9 @@ Photo StatLr Changelog
 
 Version 7.5.2
 -------------
+### Bugfixes:
+- Photos:
+  - Fixed an issue (#88) where the first time publishing of a collection will throw an exception, when the target folder requires creating a folder in the root folder.
 ### Changes:
 - Photos:
 	- Do not show unsupported 'Sort Photos' option in Export Dialog and Published Collections

@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.5.1<br>
+Version 7.5.2<br>
 __[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
@@ -35,10 +35,10 @@ This plugin supports Synology Photo Station and Synology Photos. Some of the plu
 	- Windows 8.0, 8.1
 	- Windows 10, Windows 11
 	- macOS X:	7.5 - 16.0
-	- macOS 11.0.1 - macOS 15.6.1 (Sequoia)
+	- macOS 11.0.1 - macOS 26.2 (Tahoe)
 * Lightroom: 
   	- Lr 4.0 - 6.14
-	- Lr Classic 7.0 - 15.0.1
+	- Lr Classic 7.0 - 15.2
 * Synology Photo Station:
 	Photo Station 5, Photo Station 6, 6.5, 6.6, 6.7, 6.8
 * Synology Photos:
