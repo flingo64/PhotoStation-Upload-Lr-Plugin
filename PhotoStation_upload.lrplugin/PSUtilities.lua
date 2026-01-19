@@ -566,7 +566,7 @@ function waitSemaphore(semaName, owner)
 							owner, semaName, semaphores[semaName].owner, LrDate.currentTime() - semaphores[semaName].timestamp))
 		-- warn user and exit if we are waiting too long  for a possibly orphaned semaphore
 		if semaphores[semaName].timestamp < LrDate.currentTime() - 300 then
-			writeLogfile(1, string.format("waitSemaphore('%s'): '%s' is blocked by '%s' since %d sec! Please, restart Lr if it this is not going to end!\n",
+			writeLogfile(1, string.format("waitSemaphore('%s'): '%s' is blocked by '%s' since %d sec! Please, restart Lr if this is not going to end!\n",
 							owner, semaName, semaphores[semaName].owner, LrDate.currentTime() - semaphores[semaName].timestamp))
 			return false
 		end
