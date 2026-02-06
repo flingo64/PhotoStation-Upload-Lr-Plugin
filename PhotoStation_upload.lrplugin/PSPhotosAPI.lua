@@ -1875,7 +1875,7 @@ local function Photos_setAlbumAttributes(h, pubAlbumName, sharedAlbumParams)
 			method 			= "update",
 			version 		= "1",
 			passphrase		= '"' .. pubAlbumName ..'"',
-			password		= sharedAlbumParams.sharedAlbumPassword,
+			password		= '"' .. sharedAlbumParams.sharedAlbumPassword ..'"',
 			expiration		= expireTimestamp,
 			permission		= '[{"action":"update","role":"' .. string.lower(sharedAlbumParams.publicPermissions) .. '","member":{"type":"public"}}]'
 		}
