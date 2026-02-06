@@ -1,6 +1,6 @@
 # Photo StatLr (Lightroom plugin)
 
-Version 7.5.2<br>
+Version 7.5.3<br>
 __[Notes for migrating from Photo Station to Photos](Documentation/40-Migrating-from-PhotoStation-to-Photos.md)__<br>
 
 __[Important note for updating to V5.0 and above](releases/tag/v5.0.0)__<br>
@@ -331,7 +331,7 @@ Face regions can't be downloaded for cropped photos, since Lr won't accept the f
 tbd.
 
 # Copyright
-Copyright(c) 2015-2025, Martin Messmer
+Copyright(c) 2015-2026, Martin Messmer
 
 Photo StatLr is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

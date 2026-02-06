@@ -1,6 +1,17 @@
 Photo StatLr Changelog
 ======================
 
+Version 7.5.3
+-------------
+### Bugfixes:
+- Photos:
+  - Fixed issue #91 where a Shared Album could not be created/modified, when the password was a numeric value.
+  
+### Enhancements:
+- Updated Copyright year
+- Photos:
+	- Added an error message for error code -1009 (MacOS): a server certificate error when using https (see issue #90)
+
 Version 7.5.2
 -------------
 ### Bugfixes:

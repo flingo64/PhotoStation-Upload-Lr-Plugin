@@ -2,7 +2,7 @@
 
 Info.lua
 This file is part of Photo StatLr - Lightroom plugin.
-Copyright(c) 2015-2025, Martin Messmer
+Copyright(c) 2015-2026, Martin Messmer
 
 Summary information for Photo StatLr
 
@@ -41,8 +41,8 @@ of it requires the prior written permission of Adobe.
 ------------------------------------------------------------------------------]]
 local plugin_major = 7
 local plugin_minor = 5
-local plugin_rev = 2
-local plugin_build = 20260119
+local plugin_rev = 3
+local plugin_build = 20260206
 
 PLUGIN_VERSION = plugin_major .. '.' .. plugin_minor .. '.' ..plugin_rev .. '.' .. plugin_build
 PLUGIN_TKID = 'de.messmer-online.lightroom.export.photostation_upload'
